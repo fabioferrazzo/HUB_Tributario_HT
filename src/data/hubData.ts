@@ -5,6 +5,8 @@ const SHEET_ID = import.meta.env.VITE_SHEETS_ID || "1rpAcGBQCmm5KlMX1TMBN-qBL1va
 const SHEET_GID = import.meta.env.VITE_SHEETS_HUB_GID || "1705398292";
 const LOCAL_PAUTAS_CSV = "/data/pautas-hub.csv";
 
+export const sheetsHubUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${SHEET_GID}`;
+
 export const mockPautas: Pauta[] = [
   {
     id: "pauta-1",
