@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3a36">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenda Tributária">
+<meta name="description" content="Agenda Tributária integrada — Federal (RFB), Estadual (SEFAZ-RS) e Municipal (ISS)">
+<title>Agenda Tributária · Federal · RS · Municipal</title>
+
+<!-- PWA manifest inline via data URL: torna o app instalável -->
+<link rel="manifest" href='data:application/manifest+json;charset=utf-8,{"name":"Agenda Tributária Federal","short_name":"Agenda Trib","description":"Calendário interativo da Receita Federal do Brasil","start_url":".","display":"standalone","background_color":"%23f5f1e8","theme_color":"%231a3a36","orientation":"portrait-primary","icons":[{"src":"data:image/svg%2Bxml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 192 192%22><rect width=%22192%22 height=%22192%22 fill=%22%231a3a36%22/><text x=%2296%22 y=%22120%22 font-size=%2280%22 font-family=%22serif%22 font-style=%22italic%22 fill=%22%23c89a3a%22 text-anchor=%22middle%22>RFB</text></svg>","sizes":"192x192","type":"image/svg+xml","purpose":"any maskable"},{"src":"data:image/svg%2Bxml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22%231a3a36%22/><text x=%22256%22 y=%22320%22 font-size=%22220%22 font-family=%22serif%22 font-style=%22italic%22 fill=%22%23c89a3a%22 text-anchor=%22middle%22>RFB</text></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}'>
+
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%231a3a36" rx="3"/><text x="16" y="22" font-size="14" font-family="serif" font-style="italic" fill="%23c89a3a" text-anchor="middle">R</text></svg>'>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#f5f1e8;--bg-elev:#fbf8f1;--paper:#fffdf7;
+    --ink:#1c2520;--ink-soft:#3b4640;--ink-mute:#6b7268;
+    --line:#d9d0bc;--line-soft:#e6dfcd;
+    --primary:#1a3a36;--primary-soft:#2f574f;--primary-tint:#d8e4dd;
+    --gold:#a07920;--gold-soft:#c89a3a;--gold-tint:#f0e4c4;
+    --crimson:#8b1f2c;--crimson-soft:#a83a48;--crimson-tint:#f0d6d8;
+    --indigo:#26385a;--indigo-tint:#d6dde9;
+    --terracotta:#9a4a26;--terracotta-tint:#f0dccd;
+    --olive:#5a5a1f;--olive-tint:#e6e3c4;
+    --azure:#1d3557;--azure-tint:#d4dde9;
+    --plum:#6e2a4d;--plum-tint:#ead6df;
+    --shadow:0 1px 0 rgba(28,37,32,.04), 0 8px 24px -12px rgba(28,37,32,.18);
+    --shadow-lg:0 2px 0 rgba(28,37,32,.05), 0 24px 60px -24px rgba(28,37,32,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+  body{
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(160,121,32,.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(26,58,54,.05) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.11 0 0 0 0 0.14 0 0 0 0 0.13 0 0 0 .025 0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:24px 24px 60px}
+
+  /* HEADER */
+  header.page-header{
+    border-top:3px solid var(--ink);
+    padding:18px 0 18px;
+    margin-bottom:18px;
+    display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand-mark{
+    width:42px;height:42px;background:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--gold-soft);font-family:'Fraunces',serif;
+    font-style:italic;font-weight:500;font-size:22px;
+    border-radius:2px;
+  }
+  .brand-text{line-height:1.15}
+  .brand-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;
+  }
+  .brand-title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:18px;
+    color:var(--ink);letter-spacing:-.005em;
+    font-variation-settings:"opsz" 144;
+  }
+  .brand-title em{font-style:italic;color:var(--primary)}
+
+  .month-nav{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .nav-btn{
+    width:36px;height:36px;
+    border:1px solid var(--line);background:var(--paper);
+    color:var(--ink-soft);cursor:pointer;border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;transition:.18s;
+  }
+  .nav-btn:hover:not(:disabled){background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .nav-btn:disabled{opacity:.35;cursor:not-allowed}
+  .month-pill{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:500;
+    font-size:22px;color:var(--ink);
+    padding:6px 22px;background:var(--paper);
+    border:1px solid var(--line);border-radius:50px;
+    min-width:230px;text-align:center;letter-spacing:-.01em;
+    cursor:pointer;transition:.18s;position:relative;
+    font-variation-settings:"opsz" 144;
+  }
+  .month-pill:hover{border-color:var(--gold);background:var(--gold-tint)}
+  .month-pill sup{
+    font-family:'JetBrains Mono',monospace;
+    font-style:normal;font-size:10px;letter-spacing:.1em;
+    color:var(--ink-mute);font-weight:600;margin-left:4px;
+    vertical-align:super;
+  }
+  .month-dropdown{
+    position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);
+    background:var(--paper);border:1px solid var(--line);border-radius:2px;
+    box-shadow:var(--shadow-lg);
+    display:none;flex-direction:column;min-width:280px;
+    z-index:10;overflow:hidden;
+  }
+  .month-dropdown.open{display:flex}
+  .month-dropdown-year{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-mute);font-weight:700;
+    padding:10px 16px;background:var(--bg-elev);
+    border-bottom:1px solid var(--line);
+  }
+  .month-dropdown-list{display:grid;grid-template-columns:repeat(3,1fr);padding:6px}
+  .md-item{
+    padding:10px 8px;border:none;background:transparent;cursor:pointer;
+    font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;
+    color:var(--ink-soft);text-align:center;border-radius:2px;
+    transition:.15s;display:flex;flex-direction:column;align-items:center;gap:2px;
+  }
+  .md-item:hover{background:var(--gold-tint);color:var(--gold)}
+  .md-item.current{background:var(--ink);color:var(--paper)}
+  .md-item.empty{color:var(--ink-mute);opacity:.5}
+  .md-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8.5px;letter-spacing:.05em;font-weight:500;
+    color:var(--ink-mute);text-transform:uppercase;
+  }
+  .md-item.current .md-status{color:var(--gold-soft)}
+
+  .header-actions{display:flex;gap:8px}
+  .icon-btn{
+    width:38px;height:38px;
+    border:1px solid var(--line);background:var(--paper);
+    color:var(--ink-soft);cursor:pointer;border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    transition:.18s;position:relative;
+  }
+  .icon-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .icon-btn svg{width:18px;height:18px}
+  .icon-btn .badge{
+    position:absolute;top:-4px;right:-4px;
+    width:14px;height:14px;background:var(--crimson);
+    color:var(--paper);font-size:9px;font-weight:700;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--bg);
+  }
+
+  /* STATUS BAR */
+  .status-bar{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:10px 14px;background:var(--paper);
+    border:1px solid var(--line);border-radius:2px;
+    margin-bottom:14px;font-size:11.5px;
+    font-family:'JetBrains Mono',monospace;
+    color:var(--ink-mute);box-shadow:var(--shadow);
+  }
+  .status-led{
+    width:7px;height:7px;border-radius:50%;background:var(--primary);
+    box-shadow:0 0 0 2px var(--primary-tint);
+  }
+  .status-led.warn{background:var(--gold);box-shadow:0 0 0 2px var(--gold-tint)}
+  .status-led.error{background:var(--crimson);box-shadow:0 0 0 2px var(--crimson-tint)}
+  .status-bar strong{color:var(--ink);font-weight:600}
+  .status-bar a{color:var(--primary);text-decoration:none;border-bottom:1px solid var(--primary-tint)}
+  .status-bar .sep{color:var(--line);margin:0 4px}
+  .status-spacer{flex:1}
+  .status-update{
+    cursor:pointer;color:var(--gold);font-weight:600;
+    border-bottom:1px solid var(--gold-tint);transition:.15s;
+  }
+  .status-update:hover{color:var(--ink);border-color:var(--ink)}
+
+  /* CRITICAL STRIP */
+  .critical-strip{
+    background:linear-gradient(135deg,var(--ink) 0%, var(--primary) 70%, var(--primary-soft) 100%);
+    color:var(--paper);
+    padding:14px 18px;border-radius:2px;margin-bottom:16px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    position:relative;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .critical-strip::before{
+    content:"";position:absolute;top:0;right:0;width:200px;height:100%;
+    background:radial-gradient(circle at top right,rgba(200,154,58,.18),transparent 70%);
+    pointer-events:none;
+  }
+  .crit-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--gold-soft);font-weight:700;
+    padding:3px 9px;border:1px solid rgba(200,154,58,.4);border-radius:50px;
+  }
+  .crit-text{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:400;
+    font-size:15px;line-height:1.4;flex:1;min-width:240px;color:var(--paper);
+  }
+  .crit-text strong{font-style:normal;color:var(--gold-soft);font-weight:700;font-family:'Manrope',sans-serif}
+  .crit-button{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--gold);color:var(--ink);
+    padding:8px 14px;border-radius:1px;border:none;cursor:pointer;transition:.18s;
+  }
+  .crit-button:hover{background:var(--gold-soft);transform:translateY(-1px)}
+
+  /* TOOLBAR */
+  .toolbar{
+    display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+    padding:12px 14px;background:var(--paper);
+    border:1px solid var(--line);border-radius:2px;
+    margin-bottom:18px;box-shadow:var(--shadow);
+  }
+  .toolbar-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-mute);margin-right:6px;font-weight:600;
+  }
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 11px;border:1px solid var(--line);border-radius:50px;
+    background:var(--bg-elev);color:var(--ink-soft);
+    font-size:11.5px;font-weight:500;cursor:pointer;
+    transition:.18s ease;user-select:none;
+  }
+  .chip:hover{border-color:var(--ink-soft);transform:translateY(-1px)}
+  .chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .chip .dot{width:6.5px;height:6.5px;border-radius:50%;display:inline-block}
+  .chip[data-cat="pf"] .dot{background:var(--crimson)}
+  .chip[data-cat="pj-fed"] .dot{background:var(--primary)}
+  .chip[data-cat="pj-aces"] .dot{background:var(--indigo)}
+  .chip[data-cat="serv"] .dot{background:var(--olive)}
+  .chip[data-cat="ret"] .dot{background:var(--terracotta)}
+  .chip[data-cat="simples"] .dot{background:var(--gold)}
+  .chip[data-cat="estadual"] .dot{background:var(--azure)}
+  .chip[data-cat="municipal"] .dot{background:var(--plum)}
+  .chip[data-group="federal"]{font-weight:600}
+  .chip-divider{width:1px;height:18px;background:var(--line);margin:0 4px}
+  .toolbar-spacer{flex:1}
+  .legend-key{font-size:10.5px;color:var(--ink-mute);font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:20px}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+
+  /* CALENDAR */
+  .calendar{background:var(--paper);border:1px solid var(--line);border-radius:2px;overflow:hidden;box-shadow:var(--shadow)}
+  .cal-header{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:14px 20px 12px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, var(--bg-elev) 0%, var(--paper) 100%);
+  }
+  .cal-month-display{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:400;
+    font-size:22px;color:var(--ink);letter-spacing:-.01em;
+  }
+  .cal-month-display sup{font-style:normal;font-weight:500;font-size:10px;color:var(--ink-mute);vertical-align:super;letter-spacing:.1em;margin-left:5px}
+  .cal-stats{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-mute);letter-spacing:.04em}
+  .cal-stats strong{color:var(--primary);font-weight:600}
+
+  .weekdays{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--line);background:var(--bg-elev)}
+  .weekday{padding:9px 0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);font-weight:600}
+  .weekday.weekend{color:var(--crimson-soft)}
+
+  .days{display:grid;grid-template-columns:repeat(7,1fr)}
+  .day{
+    aspect-ratio:1/1.05;padding:9px 11px;
+    border-right:1px solid var(--line-soft);
+    border-bottom:1px solid var(--line-soft);
+    background:var(--paper);position:relative;
+    transition:.18s ease;display:flex;flex-direction:column;
+  }
+  .day:nth-child(7n){border-right:none}
+  .day.outside{background:repeating-linear-gradient(45deg,var(--bg-elev),var(--bg-elev) 4px,var(--paper) 4px,var(--paper) 8px)}
+  .day.outside .daynum{color:var(--ink-mute);opacity:.4}
+  .day.weekend{background:linear-gradient(180deg,#fbf8f1 0%,var(--paper) 100%)}
+  .day.has-events{cursor:pointer}
+  .day.has-events:hover{background:var(--gold-tint);transform:scale(1.005);z-index:1;box-shadow:0 4px 14px -6px rgba(28,37,32,.2)}
+  .day.selected{background:var(--ink);color:var(--paper);z-index:2;box-shadow:var(--shadow-lg)}
+  .day.selected .daynum{color:var(--gold-soft)}
+  .day.selected .daycount{background:var(--gold);color:var(--ink)}
+  .day.selected .day-tags .pill{background:rgba(255,253,247,.15);color:var(--paper);border-color:transparent}
+  .day.critical:not(.selected){background:linear-gradient(180deg,var(--crimson-tint) 0%,var(--paper) 80%)}
+  .day.critical:not(.selected) .daynum{color:var(--crimson)}
+  .day.today:not(.selected){
+    box-shadow:inset 0 0 0 2px var(--gold);
+  }
+  .day.today .daynum::after{
+    content:"";position:absolute;top:6px;left:11px;
+    width:5px;height:5px;background:var(--gold);border-radius:50%;
+  }
+
+  .daynum{font-family:'Fraunces',serif;font-size:21px;font-weight:500;line-height:1;margin-bottom:4px;font-variation-settings:"opsz" 144;position:relative}
+  .daycount{position:absolute;top:9px;right:11px;background:var(--ink);color:var(--paper);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:50px;letter-spacing:.05em}
+  .day-tags{margin-top:auto;display:flex;flex-wrap:wrap;gap:3px}
+  .pill{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:600;letter-spacing:.04em;padding:2px 5px;border-radius:1px;background:var(--bg-elev);color:var(--ink-soft);border:1px solid var(--line-soft);text-transform:uppercase;line-height:1.3}
+  .pill[data-cat="pf"]{background:var(--crimson-tint);color:var(--crimson);border-color:transparent}
+  .pill[data-cat="pj-fed"]{background:var(--primary-tint);color:var(--primary);border-color:transparent}
+  .pill[data-cat="pj-aces"]{background:var(--indigo-tint);color:var(--indigo);border-color:transparent}
+  .pill[data-cat="serv"]{background:var(--olive-tint);color:var(--olive);border-color:transparent}
+  .pill[data-cat="ret"]{background:var(--terracotta-tint);color:var(--terracotta);border-color:transparent}
+  .pill[data-cat="simples"]{background:var(--gold-tint);color:var(--gold);border-color:transparent}
+  .pill[data-cat="estadual"]{background:var(--azure-tint);color:var(--azure);border-color:transparent}
+  .pill[data-cat="municipal"]{background:var(--plum-tint);color:var(--plum);border-color:transparent}
+  .day.dim{opacity:.32;filter:saturate(.4)}
+
+  /* EMPTY MONTH STATE */
+  .month-empty-state{
+    padding:56px 32px;text-align:center;
+  }
+  .month-empty-icon{
+    font-family:'Fraunces',serif;font-style:italic;
+    font-size:88px;color:var(--gold);line-height:1;margin-bottom:8px;
+  }
+  .month-empty-title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:22px;
+    color:var(--ink);margin-bottom:10px;letter-spacing:-.01em;
+    font-variation-settings:"opsz" 144;
+  }
+  .month-empty-title em{font-style:italic;color:var(--primary)}
+  .month-empty-text{font-size:13.5px;color:var(--ink-mute);max-width:440px;margin:0 auto 22px;line-height:1.6}
+  .month-empty-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;
+    padding:10px 16px;border-radius:1px;border:1px solid var(--ink);
+    background:var(--ink);color:var(--paper);cursor:pointer;transition:.18s;
+    text-decoration:none;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{background:var(--primary);border-color:var(--primary);transform:translateY(-1px)}
+  .btn.btn-ghost{background:transparent;color:var(--ink)}
+  .btn.btn-ghost:hover{background:var(--ink);color:var(--paper)}
+  .btn svg{width:13px;height:13px}
+
+  /* DETAIL PANEL */
+  .panel{position:sticky;top:18px;background:var(--paper);border:1px solid var(--line);border-radius:2px;box-shadow:var(--shadow);max-height:calc(100vh - 36px);overflow:hidden;display:flex;flex-direction:column}
+  .panel-head{padding:18px 22px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--bg-elev),var(--paper));display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .panel-date{flex:1}
+  .panel-eyebrow{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:3px}
+  .panel-day{font-family:'Fraunces',serif;font-weight:400;font-size:38px;line-height:1;color:var(--ink);letter-spacing:-.02em;font-variation-settings:"opsz" 144}
+  .panel-day em{font-style:italic;color:var(--primary)}
+  .panel-weekday{font-family:'Manrope',sans-serif;font-weight:500;font-size:12px;color:var(--ink-mute);margin-top:5px;letter-spacing:.02em}
+  .panel-counter{text-align:right;font-family:'Fraunces',serif}
+  .panel-counter .num{font-size:32px;font-weight:500;color:var(--primary);font-style:italic;line-height:1}
+  .panel-counter .lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);font-weight:500;display:block;margin-top:3px}
+
+  .panel-body{overflow-y:auto;flex:1;padding:6px 0}
+  .panel-body::-webkit-scrollbar{width:8px}
+  .panel-body::-webkit-scrollbar-track{background:transparent}
+  .panel-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+
+  .obligation{border-bottom:1px solid var(--line-soft);padding:14px 22px;transition:.18s;cursor:pointer}
+  .obligation:hover{background:var(--bg-elev)}
+  .obligation:last-child{border-bottom:none}
+  .obligation.expanded{background:var(--bg-elev)}
+  .ob-row{display:flex;align-items:center;gap:11px}
+  .ob-cat{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;padding:3px 6px;border-radius:1px;text-transform:uppercase;flex-shrink:0}
+  .ob-cat[data-cat="pf"]{background:var(--crimson-tint);color:var(--crimson)}
+  .ob-cat[data-cat="pj-fed"]{background:var(--primary-tint);color:var(--primary)}
+  .ob-cat[data-cat="pj-aces"]{background:var(--indigo-tint);color:var(--indigo)}
+  .ob-cat[data-cat="serv"]{background:var(--olive-tint);color:var(--olive)}
+  .ob-cat[data-cat="ret"]{background:var(--terracotta-tint);color:var(--terracotta)}
+  .ob-cat[data-cat="simples"]{background:var(--gold-tint);color:var(--gold)}
+  .ob-cat[data-cat="estadual"]{background:var(--azure-tint);color:var(--azure)}
+  .ob-cat[data-cat="municipal"]{background:var(--plum-tint);color:var(--plum)}
+  .ob-name{font-weight:600;font-size:13.5px;color:var(--ink);flex:1;line-height:1.35}
+  .ob-name strong{font-weight:700;color:var(--primary)}
+  .ob-toggle{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-mute);font-size:10px;transition:.18s;flex-shrink:0}
+  .obligation.expanded .ob-toggle{background:var(--ink);color:var(--paper);transform:rotate(180deg);border-color:var(--ink)}
+  .ob-detail{display:none;margin-top:13px;padding:13px;background:var(--paper);border:1px solid var(--line-soft);border-radius:2px}
+  .obligation.expanded .ob-detail{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  .ob-meta-grid{display:grid;grid-template-columns:auto 1fr;gap:5px 13px;font-size:12px;line-height:1.5}
+  .ob-meta-grid dt{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;padding-top:2px}
+  .ob-meta-grid dd{color:var(--ink-soft);font-weight:500}
+  .ob-meta-grid dd code{font-family:'JetBrains Mono',monospace;background:var(--gold-tint);color:var(--gold);padding:1px 5px;border-radius:1px;font-size:11px;font-weight:600}
+  .ob-meta-grid dd a{color:var(--primary);text-decoration:none;border-bottom:1px solid var(--primary-tint)}
+  .ob-meta-grid dd a:hover{border-color:var(--primary)}
+  .ob-desc{font-size:12.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:11px}
+
+  .empty{padding:36px 22px;text-align:center;color:var(--ink-mute);font-size:12.5px;line-height:1.6}
+  .empty .ico{font-family:'Fraunces',serif;font-style:italic;font-size:38px;color:var(--gold);margin-bottom:6px;display:block}
+
+  /* MODAL */
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(28,37,32,.6);
+    backdrop-filter:blur(4px);z-index:100;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-backdrop.open{display:flex;animation:fade .2s ease}
+  .modal{
+    background:var(--paper);border-radius:3px;
+    max-width:560px;width:100%;max-height:90vh;
+    overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:var(--shadow-lg);
+  }
+  .modal-head{
+    padding:20px 24px 16px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:start;gap:16px;
+    background:linear-gradient(180deg,var(--bg-elev),var(--paper));
+  }
+  .modal-title{
+    font-family:'Fraunces',serif;font-size:22px;font-weight:500;
+    color:var(--ink);letter-spacing:-.01em;
+    font-variation-settings:"opsz" 144;
+  }
+  .modal-title em{font-style:italic;color:var(--primary)}
+  .modal-close{
+    width:30px;height:30px;border:1px solid var(--line);background:var(--paper);
+    border-radius:50%;cursor:pointer;color:var(--ink-mute);
+    display:flex;align-items:center;justify-content:center;transition:.18s;
+    flex-shrink:0;
+  }
+  .modal-close:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .modal-body{padding:20px 24px 24px;overflow-y:auto;font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+  .modal-body p{margin-bottom:11px}
+  .modal-body p strong{color:var(--ink)}
+  .modal-body h4{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.16em;text-transform:uppercase;font-weight:700;
+    color:var(--ink);margin:16px 0 8px;
+  }
+  .modal-body ol,.modal-body ul{margin:8px 0 11px 22px}
+  .modal-body li{margin-bottom:5px}
+  .modal-body code{font-family:'JetBrains Mono',monospace;background:var(--bg-elev);color:var(--primary);padding:1px 6px;border-radius:2px;font-size:12px;border:1px solid var(--line-soft)}
+  .modal-body a{color:var(--primary);text-decoration:none;border-bottom:1px solid var(--primary-tint)}
+  .modal-body a:hover{border-color:var(--primary)}
+  .modal-actions{
+    display:flex;gap:8px;flex-wrap:wrap;
+    padding-top:14px;border-top:1px solid var(--line);
+    margin-top:14px;
+  }
+  .info-block{
+    background:var(--gold-tint);border-left:3px solid var(--gold);
+    padding:11px 14px;font-size:12.5px;line-height:1.55;color:var(--ink);
+    margin:11px 0;border-radius:0 2px 2px 0;
+  }
+  .info-block strong{color:var(--gold)}
+
+  /* INSTALL PROMPT */
+  .install-toast{
+    position:fixed;bottom:20px;right:20px;
+    background:var(--ink);color:var(--paper);
+    padding:12px 16px;border-radius:2px;
+    display:none;align-items:center;gap:10px;
+    box-shadow:var(--shadow-lg);z-index:50;
+    max-width:300px;font-size:12px;line-height:1.4;
+  }
+  .install-toast.show{display:flex;animation:fade .3s ease}
+  .install-toast button{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--gold);color:var(--ink);
+    padding:5px 10px;border-radius:1px;border:none;cursor:pointer;
+  }
+  .install-toast .close{background:transparent;color:var(--paper);font-size:18px;padding:0 4px}
+
+  /* RESPONSIVE */
+  @media (max-width:900px){
+    header.page-header{grid-template-columns:1fr;gap:12px;text-align:center}
+    .month-nav{justify-content:center}
+    .header-actions{justify-content:center}
+    .month-pill{min-width:auto;font-size:18px;padding:6px 16px}
+  }
+  @media (max-width:680px){
+    .wrap{padding:14px 12px 40px}
+    .day{padding:6px 7px}
+    .daynum{font-size:16px}
+    .daycount{font-size:8px;padding:1px 4px;top:6px;right:6px}
+    .pill{font-size:7.5px;padding:1px 3px}
+    .day-tags{gap:2px}
+    .panel{position:relative;top:0;max-height:none}
+    .crit-text{font-size:13px}
+    .panel-day{font-size:30px}
+  }
+  @media print{
+    body{background:#fff}
+    .toolbar,.crit-button,.header-actions,.icon-btn,.month-nav button{display:none}
+    .layout{grid-template-columns:1fr}
+    .panel{position:relative;max-height:none;page-break-before:always}
+    .day:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div class="brand-text">
+        <div class="brand-eyebrow">Federal · Estadual RS · Municipal</div>
+        <div class="brand-title">Agenda Tributária <em>Integrada</em></div>
+      </div>
+    </div>
+
+    <div class="month-nav">
+      <button class="nav-btn" id="prevMonth" aria-label="Mês anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="month-pill" id="monthPill" aria-label="Selecionar mês">
+        <span id="monthName">Maio</span> <sup id="monthYear">2026</sup>
+        <div class="month-dropdown" id="monthDropdown" role="menu"></div>
+      </button>
+      <button class="nav-btn" id="nextMonth" aria-label="Próximo mês">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+
+    <div class="header-actions">
+      <button class="icon-btn" id="btnUpdate" title="Atualizar dados deste mês a partir da Receita Federal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+      <button class="icon-btn" id="btnInstall" title="Instalar como aplicativo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="icon-btn" id="btnInfo" title="Ajuda e informações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar" id="statusBar">
+    <span class="status-led" id="statusLed"></span>
+    <span id="statusText"><strong>Maio/2026</strong> · carregando...</span>
+    <span class="sep">|</span>
+    <span>Fontes: <a href="https://www.gov.br/receitafederal/pt-br/assuntos/agenda-tributaria" target="_blank" rel="noopener">RFB</a> · <a href="https://atendimento.receita.rs.gov.br" target="_blank" rel="noopener">SEFAZ-RS</a> · Município</span>
+    <span class="sep">|</span>
+    <span id="statusUpdated">Atualizado em 06/05/2026</span>
+    <span class="status-spacer"></span>
+    <span class="status-update" id="statusUpdate">↻ atualizar</span>
+  </div>
+
+  <!-- CRITICAL STRIP (only shown when month has criticals) -->
+  <div class="critical-strip" id="criticalStrip" style="display:none">
+    <span class="crit-label">Atenção</span>
+    <p class="crit-text" id="critText"></p>
+    <button class="crit-button" id="critJump">Ver</button>
+  </div>
+
+  <!-- TOOLBAR (filtros) -->
+  <div class="toolbar" id="toolbar">
+    <span class="toolbar-label">Filtrar</span>
+    <button class="chip active" data-cat="all">Todos</button>
+    <span class="chip-divider"></span>
+    <span class="toolbar-label" style="margin:0 4px 0 0;color:var(--primary)">Federal</span>
+    <button class="chip" data-cat="pf"><span class="dot"></span>Pessoa Física</button>
+    <button class="chip" data-cat="pj-fed"><span class="dot"></span>PJ Federal</button>
+    <button class="chip" data-cat="pj-aces"><span class="dot"></span>Acessórias</button>
+    <button class="chip" data-cat="ret"><span class="dot"></span>Retenções</button>
+    <button class="chip" data-cat="simples"><span class="dot"></span>Simples / MEI</button>
+    <button class="chip" data-cat="serv"><span class="dot"></span>Servidor</button>
+    <span class="chip-divider"></span>
+    <span class="toolbar-label" style="margin:0 4px 0 0;color:var(--azure)">Estadual</span>
+    <button class="chip" data-cat="estadual"><span class="dot"></span>ICMS / RS</button>
+    <span class="chip-divider"></span>
+    <span class="toolbar-label" style="margin:0 4px 0 0;color:var(--plum)">Municipal</span>
+    <button class="chip" data-cat="municipal"><span class="dot"></span>ISS</button>
+    <span class="toolbar-spacer"></span>
+    <span class="legend-key" id="filterStats"></span>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <section class="calendar" id="calendarSection" aria-label="Calendário">
+      <div class="cal-header">
+        <div class="cal-month-display" id="calMonthDisplay">Maio<sup>26</sup></div>
+        <div class="cal-stats" id="cal-stats">— obrigações visíveis</div>
+      </div>
+      <div class="weekdays">
+        <div class="weekday weekend">Dom</div>
+        <div class="weekday">Seg</div>
+        <div class="weekday">Ter</div>
+        <div class="weekday">Qua</div>
+        <div class="weekday">Qui</div>
+        <div class="weekday">Sex</div>
+        <div class="weekday weekend">Sáb</div>
+      </div>
+      <div class="days" id="days"></div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <div class="panel-head">
+        <div class="panel-date">
+          <div class="panel-eyebrow" id="panel-eyebrow">Dia selecionado</div>
+          <div class="panel-day" id="panel-day"><em>—</em></div>
+          <div class="panel-weekday" id="panel-weekday">selecione um dia no calendário</div>
+        </div>
+        <div class="panel-counter">
+          <div class="num" id="panel-num">·</div>
+          <span class="lbl">obrig.</span>
+        </div>
+      </div>
+      <div class="panel-body" id="panel-body">
+        <div class="empty">
+          <span class="ico">∎</span>
+          Clique em qualquer data destacada do calendário para visualizar as obrigações tributárias daquele dia, com fundamentação legal e período de apuração.
+        </div>
+      </div>
+    </aside>
+  </div>
+
+</div>
+
+<!-- MODAL: Atualizar -->
+<div class="modal-backdrop" id="updateModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="brand-eyebrow">Atualização de dados</div>
+        <h3 class="modal-title">Atualizar <em id="updateModalMonth">mês</em></h3>
+      </div>
+      <button class="modal-close" data-close-modal>×</button>
+    </div>
+    <div class="modal-body">
+      <p>Por motivos de segurança do navegador (CORS), este aplicativo <strong>não consegue buscar dados diretamente</strong> do site da Receita Federal em tempo real. Existem três caminhos para manter os dados atualizados:</p>
+
+      <h4>Opção 1 — Consultar a fonte oficial</h4>
+      <p>Abra a página oficial em uma nova aba e confira as datas. Útil para verificar se houve alteração ou prorrogação.</p>
+      <a class="btn" id="openOfficialBtn" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Abrir agenda oficial
+      </a>
+
+      <h4>Opção 2 — Importar dados manualmente</h4>
+      <p>Se você tem um JSON com os dados de outro mês (gerado pelo Claude ou pela sua equipe), cole aqui e o app atualiza:</p>
+      <textarea id="importJson" placeholder='{"month":6,"year":2026,"dates":{...}}' style="width:100%;min-height:90px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:2px;background:var(--bg-elev);resize:vertical;color:var(--ink)"></textarea>
+      <div class="modal-actions">
+        <button class="btn" id="btnDoImport">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Importar JSON
+        </button>
+        <button class="btn btn-ghost" id="btnExportTemplate">↓ Modelo JSON</button>
+      </div>
+
+      <div class="info-block">
+        <strong>💡 Dica:</strong> peça ao Claude — "<em>gere o JSON da agenda tributária integrada de junho/2026 (Federal + RS + Municipal) no formato deste app</em>" — e cole o resultado acima. O Claude consultará as três fontes oficiais (Receita Federal, SEFAZ-RS e legislação municipal) e devolverá o JSON pronto para importar.
+      </div>
+
+      <h4>Opção 3 — Automação completa (avançada)</h4>
+      <p>Para atualização <strong>100% automática</strong>, é possível configurar:</p>
+      <ul>
+        <li><strong>GitHub Actions</strong> + GitHub Pages: robô roda dia 1 de cada mês, faz scraping da Receita Federal e atualiza o JSON. Custo zero.</li>
+        <li><strong>Cloudflare Workers</strong> + fetch: backend serverless faz proxy do site oficial, expõe API JSON. Custo zero até 100k requisições/dia.</li>
+        <li><strong>Make.com</strong> (que você já usa): cenário mensal que extrai do gov.br, transforma em JSON e publica em URL fixa.</li>
+      </ul>
+      <p>Posso te ajudar a montar qualquer uma dessas. A mais simples é a Make — leva ~30min para configurar e fica rodando sozinha.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Info / Ajuda -->
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="brand-eyebrow">Sobre · Como usar</div>
+        <h3 class="modal-title">Agenda Tributária <em>interativa</em></h3>
+      </div>
+      <button class="modal-close" data-close-modal>×</button>
+    </div>
+    <div class="modal-body">
+      <h4>Como compartilhar com sua equipe</h4>
+      <p>Este é um arquivo HTML único e autônomo. Para que outras pessoas acessem por URL:</p>
+      <ol>
+        <li><strong>GitHub Pages</strong> (recomendado): suba o arquivo num repositório → Settings → Pages → ative. URL fica em <code>seu-usuario.github.io/repo</code>. Gratuito.</li>
+        <li><strong>Netlify Drop</strong>: arraste o arquivo em <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a>. URL gerada na hora. Gratuito.</li>
+        <li><strong>Google Drive</strong>: <em>não funciona</em> para hospedagem direta de HTML, mas serve para compartilhar o arquivo.</li>
+      </ol>
+
+      <h4>Funciona offline?</h4>
+      <p><strong>Sim.</strong> Após a primeira visita, todos os dados ficam no cache do navegador. Você pode até <strong>instalar como aplicativo</strong> (ícone de download no topo) — ele aparece na tela inicial do celular ou no desktop, abre em janela própria e roda 100% offline.</p>
+
+      <h4>Navegação</h4>
+      <ul>
+        <li>Setas <strong>← →</strong> ou clique no nome do mês para abrir o seletor</li>
+        <li>Clique em qualquer data colorida para ver as obrigações</li>
+        <li>Clique em uma obrigação para expandir e ver código DARF, fundamento legal, período de apuração</li>
+        <li>Use os filtros do topo para ocultar categorias</li>
+      </ul>
+
+      <h4>Categorias</h4>
+      <p><strong>Federal</strong> (Receita Federal):</p>
+      <ul>
+        <li><strong>PF</strong> — Pessoa Física (IRPF, Carnê-Leão)</li>
+        <li><strong>PJ Federal</strong> — Tributos federais principais (IRPJ, CSLL, PIS, Cofins, IPI)</li>
+        <li><strong>PJ Acessórias</strong> — Declarações e escriturações (DCTFWeb, EFD-Reinf, ECD, DOI)</li>
+        <li><strong>Retenções</strong> — IRRF, IOF, retenções na fonte</li>
+        <li><strong>Simples / MEI</strong> — DAS, PGDAS-D, DASN-SIMEI</li>
+        <li><strong>Servidor</strong> — CPSS de servidores civis</li>
+      </ul>
+      <p><strong>Estadual</strong> (SEFAZ-RS):</p>
+      <ul>
+        <li><strong>ICMS / RS</strong> — ICMS próprio (Apêndice III RICMS/RS), GIA-ICMS, GIA-ST, EFD ICMS/IPI, DeSTDA</li>
+      </ul>
+      <p><strong>Municipal</strong>:</p>
+      <ul>
+        <li><strong>ISS</strong> — Imposto Sobre Serviços (LC nº 116/2003 + legislação municipal). <em>Atenção:</em> o vencimento varia por município.</li>
+      </ul>
+
+      <div class="info-block">
+        <strong>📍 Sobre as obrigações estaduais e municipais:</strong> as datas estaduais seguem a regra geral do RICMS/RS e da IN RE nº 064/2018 (alinhamento GIA + EFD ao dia 15). O ICMS próprio dia 12 é uma data de referência da categoria Geral — o Apêndice III do RICMS/RS prevê dezenas de prazos diferentes por CAE/atividade. Sempre confirme o prazo aplicável a cada cliente. O ISS varia de município para município (em geral entre dia 5 e dia 20).
+      </div>
+
+      <div class="info-block">
+        <strong>⚖️ Aviso legal:</strong> Este app não substitui a consulta direta à Receita Federal. Sempre confirme prazos prorrogados, atos normativos supervenientes e particularidades setoriais no portal oficial antes de tomar decisões fiscais.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSTALL TOAST -->
+<div class="install-toast" id="installToast">
+  <span>Instalar este app no seu dispositivo?</span>
+  <button id="installAccept">Instalar</button>
+  <button class="close" id="installClose" aria-label="fechar">×</button>
+</div>
+
+<script>
+/* ========================================================================
+   AGENDA TRIBUTÁRIA · APP STATE
+   ======================================================================== */
+const APP = {
+  currentYear: 2026,
+  currentMonth: 5, // 1-12
+  data: {}, // { "2026-05": { dates: {...}, updated: "...", source: "..." } }
+  selectedDay: null,
+  filter: "all"
+};
+
+const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const MESES_PT_ABREV = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const WEEKDAYS_LONG = ["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+const CAT_LABEL = {
+  "pf":"Pessoa Física","pj-fed":"PJ · Federal","pj-aces":"PJ · Acessória",
+  "ret":"Retenção","simples":"Simples / MEI","serv":"Servidor",
+  "estadual":"Estadual · RS","municipal":"Municipal · ISS"
+};
+
+/* ========================================================================
+   DADOS · MAIO/2026 (fonte: Receita Federal · ADE Corat 15/2026)
+   ======================================================================== */
+const DATA_2026_05 = {
+  source: "Receita Federal — ADE Corat nº 15, de 27/04/2026 + RICMS/RS (Apêndice III) + IN RE nº 045/98",
+  sourceUrl: "https://www.gov.br/receitafederal/pt-br/assuntos/agenda-tributaria/2026/maio",
+  updated: "06/05/2026",
+  critical: { day: 29, text: "O dia <strong>29 de maio</strong> concentra o fim do prazo do <strong>IRPF 2026</strong>, declarações de Espólio, <strong>DCTFWeb</strong>, DOI, DME e ECD. Para o RS, atenção também ao <strong>dia 15</strong> (GIA-ICMS + EFD) e <strong>dia 28</strong> (DeSTDA). <strong>31/05</strong> é domingo — DASN-SIMEI prorroga." },
+  dates: {
+    5:[
+      {cat:"serv", title:"CPSS — Servidor Civil Ativo", code:"1661", periodo:"3º decêndio · abril/2026 (30/04/2026)", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 4º"},
+      {cat:"serv", title:"CPSS — Servidor Civil Inativo", code:"1700", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 4º"},
+      {cat:"serv", title:"CPSS — Pensionista Civil", code:"1717", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 4º"},
+      {cat:"serv", title:"CPSS — Patronal · Servidor Civil Ativo · Operação Intra-Orçamentária", code:"1769", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 8º"},
+      {cat:"serv", title:"CPSS — Patronal · Servidor no Exterior · Operação Intra-Orçamentária", code:"1814", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 8º"},
+      {cat:"serv", title:"CPSS — Servidor Civil Ativo · Precatório / RPV", code:"1723", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 4º"},
+      {cat:"serv", title:"CPSS — Servidor Civil Inativo · Precatório / RPV", code:"1730", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 5º"},
+      {cat:"serv", title:"CPSS — Pensionista · Precatório / RPV", code:"1752", periodo:"3º decêndio · abril/2026", doc:"DARF · DCTFWeb Geral Mensal / MIT", base:"Lei nº 10.887/2004, art. 5º"},
+    ],
+    6:[
+      {cat:"ret", title:"IOF — Imposto sobre Operações Financeiras", periodo:"3º decêndio · abril/2026", doc:"DARF", base:"Lei nº 8.894/1994; Decreto nº 6.306/2007 (RIOF)", desc:"Pagamento do IOF apurado no 3º decêndio de abril/2026 sobre operações de crédito, câmbio, seguro e títulos."},
+      {cat:"ret", title:"IRRF — Rendimentos de Aplicações Financeiras e Diversos", periodo:"Fato gerador entre 26 e 30/04/2026", doc:"DARF", base:"Lei nº 11.196/2005, art. 70, I, 'b'", desc:"Recolhimento do Imposto de Renda Retido na Fonte sobre rendimentos não tratados como decendiais (juros sobre capital próprio, prêmios, etc.)."},
+    ],
+    8:[
+      {cat:"pj-aces", title:"SisObraPrefWeb", periodo:"abril/2026", doc:"Internet · Município (Prefeitura)", base:"IN RFB nº 2.061/2021", desc:"Envio, pelo Município, da relação de todos os alvarás para construção civil e documentos de habite-se concedidos no mês de abril de 2026."},
+      {cat:"ret", title:"IRRF — Juros sobre empréstimos externos", periodo:"Fato gerador semanal", doc:"DARF", base:"RIR/2018, art. 776", desc:"IRRF sobre juros, comissões, descontos e demais rendimentos pagos a residentes no exterior decorrentes de operações de empréstimo."},
+    ],
+    11:[
+      {cat:"estadual", title:"<strong>GIA-ST</strong> — Guia Nacional de Informação e Apuração do ICMS Substituição Tributária", periodo:"abril/2026", doc:"Internet (TED-SEFAZ RS)", base:"RICMS/RS, Apêndice III; IN RE nº 064/2018", desc:"Vencimento original em 10/05/2026 (domingo), prorrogado para o próximo dia útil. A GIA-ST é apresentada pelos contribuintes substitutos tributários localizados em outras UFs com inscrição no RS, e contém as informações relativas ao ICMS-ST recolhido."},
+    ],
+    12:[
+      {cat:"estadual", title:"ICMS Próprio — Categoria Geral (atividades comerciais selecionadas)", periodo:"abril/2026", doc:"GA SEFAZ RS · GNRE", base:"RICMS/RS, Livro I, art. 43; Apêndice III", desc:"Vencimento do ICMS para determinadas atividades comerciais conforme CAE e categoria do contribuinte. <em>O prazo exato varia por CAE — consulte sempre o Apêndice III do RICMS/RS para confirmar a data aplicável ao cliente.</em>"},
+    ],
+    13:[
+      {cat:"ret", title:"IOF — Imposto sobre Operações Financeiras", periodo:"1º decêndio · maio/2026", doc:"DARF", base:"Lei nº 8.894/1994; Decreto nº 6.306/2007 (RIOF)"},
+      {cat:"ret", title:"IRRF — Rendimentos diversos", periodo:"1º decêndio · maio/2026", doc:"DARF", base:"Lei nº 11.196/2005, art. 70"},
+    ],
+    15:[
+      {cat:"pj-aces", title:"<strong>EFD-Reinf</strong> — Escrituração Fiscal Digital de Retenções e Outras Informações Fiscais", periodo:"abril/2026", doc:"Internet (SPED)", base:"IN RFB nº 2.043/2021 (alt. IN RFB nº 2.237/2024)", desc:"Transmissão da EFD-Reinf relativa às retenções e demais informações fiscais do mês anterior. Pré-requisito para a DCTFWeb."},
+      {cat:"pj-aces", title:"<strong>EFD-Contribuições</strong> — PIS/Pasep e Cofins", periodo:"março/2026", doc:"Internet (SPED)", base:"IN RFB nº 1.252/2012", desc:"Escrituração Fiscal Digital das contribuições incidentes sobre a receita (PIS/Pasep e Cofins) referente a março/2026."},
+      {cat:"pj-aces", title:"DCP — Demonstrativo do Crédito Presumido do IPI", periodo:"jan a mar/2026 (1º trimestre)", doc:"Internet (PGD)", base:"IN SRF nº 419/2004", desc:"Demonstrativo do Crédito Presumido do IPI referente ao 1º trimestre de 2026."},
+      {cat:"ret", title:"Cofins / PIS-Pasep — Retenção na Fonte · Autopeças", periodo:"1º a 15/04/2026", doc:"DARF", base:"Lei nº 10.485/2002, art. 3º, §5º", desc:"Pagamento da Cofins e do PIS-Pasep retidos na fonte sobre remunerações pagas por PJ relativas à aquisição de autopeças."},
+      {cat:"pj-fed", title:"Contribuição Previdenciária — Contribuintes Individuais", periodo:"abril/2026", doc:"GPS", base:"Lei nº 8.212/1991, art. 30, II", desc:"Recolhimento da contribuição previdenciária do contribuinte individual e facultativo."},
+      {cat:"estadual", title:"<strong>GIA-ICMS</strong> — Guia de Informação e Apuração do ICMS", periodo:"abril/2026", doc:"Internet (TED-SEFAZ RS)", base:"RICMS/RS; IN RE nº 064/2018", desc:"Declaração eletrônica mensal pela qual o contribuinte inscrito no CGC/TE, classificado na categoria Geral, informa a movimentação da empresa e o ICMS a recolher. Desde 2019 o prazo está alinhado ao da EFD (dia 15 do mês subsequente)."},
+      {cat:"estadual", title:"<strong>EFD ICMS/IPI</strong> — Escrituração Fiscal Digital (SPED Fiscal)", periodo:"abril/2026", doc:"Internet (SPED)", base:"Convênio ICMS nº 143/2006; RICMS/RS, Livro II, art. 175-N; IN RE nº 064/2018", desc:"Transmissão dos arquivos da EFD relativos aos fatos geradores ocorridos em abril/2026, contendo livros fiscais (Registro de Entradas, Saídas, Apuração do ICMS e do IPI, Inventário e CIAP)."},
+    ],
+    20:[
+      {cat:"simples", title:"<strong>PGDAS-D</strong> — Documento de Arrecadação do Simples Nacional", periodo:"abril/2026", doc:"PGDAS-D · DAS", base:"LC nº 123/2006, art. 21, III; Resolução CGSN nº 140/2018", desc:"Apuração e pagamento do DAS referente ao Simples Nacional de abril/2026."},
+      {cat:"pj-aces", title:"<strong>Dirbi</strong> — Declaração de Incentivos, Renúncias, Benefícios e Imunidades", periodo:"março/2026", doc:"Internet (e-CAC)", base:"IN RFB nº 2.198/2024", desc:"Informa créditos tributários referentes a impostos e contribuições não recolhidos por renúncias, benefícios, incentivos e imunidades."},
+      {cat:"pj-fed", title:"IRPJ / CSLL — Apuração mensal por estimativa", periodo:"abril/2026", doc:"DARF", base:"Lei nº 9.430/1996, art. 28", desc:"Pagamento do IRPJ e da CSLL devidos por PJ que optaram pelo recolhimento mensal por estimativa (Lucro Real anual)."},
+      {cat:"pj-fed", title:"Contribuição Previdenciária Patronal e Retida — Empresas em geral", periodo:"abril/2026", doc:"DCTFWeb · DARF", base:"Lei nº 8.212/1991, art. 30, I", desc:"Recolhimento das contribuições previdenciárias patronais, RAT e Terceiros, e as retidas dos segurados empregados (via DCTFWeb)."},
+      {cat:"municipal", title:"<strong>ISS</strong> — Imposto Sobre Serviços de Qualquer Natureza", periodo:"abril/2026", doc:"DAM / Guia Municipal", base:"LC nº 116/2003; legislação municipal específica", desc:"Recolhimento do ISS apurado em abril/2026 pelos prestadores de serviços. <em>O vencimento varia conforme o município:</em> em geral cai entre os dias 5 e 20 do mês subsequente. Confira sempre a legislação do município de domicílio do prestador (e do tomador, em casos de retenção)."},
+    ],
+    25:[
+      {cat:"pj-fed", title:"<strong>PIS/Pasep</strong> e <strong>Cofins</strong> — Apuração mensal", periodo:"abril/2026", doc:"DARF", base:"Lei nº 10.637/2002 e Lei nº 10.833/2003", desc:"Pagamento da contribuição para o PIS/Pasep e da Cofins relativas ao período de apuração de abril/2026."},
+      {cat:"pj-fed", title:"IPI — Imposto sobre Produtos Industrializados", periodo:"abril/2026", doc:"DARF", base:"Lei nº 4.502/1964; RIPI/2010", desc:"Pagamento do IPI apurado em abril/2026, exceto para regimes específicos."},
+      {cat:"ret", title:"IOF — Imposto sobre Operações Financeiras", periodo:"2º decêndio · maio/2026", doc:"DARF", base:"Decreto nº 6.306/2007 (RIOF)"},
+      {cat:"ret", title:"IRRF — Rendimentos diversos", periodo:"2º decêndio · maio/2026", doc:"DARF", base:"Lei nº 11.196/2005, art. 70"},
+    ],
+    28:[
+      {cat:"estadual", title:"<strong>DeSTDA</strong> — Declaração de Substituição Tributária, Diferencial de Alíquota e Antecipação", periodo:"abril/2026", doc:"Aplicativo SEDIF-SN · transmissão pela internet", base:"Ajuste SINIEF nº 12/2015; Convênio ICMS nº 142/2018; IN RE nº 045/98", desc:"Declaração mensal obrigatória para os contribuintes optantes pelo Simples Nacional (exceto MEI), informando o ICMS devido a título de substituição tributária, diferencial de alíquota (DIFAL) e antecipação tributária. Prazo até o dia 28 do mês subsequente ao período de apuração — em maio/2026 cai em quinta-feira (sem prorrogação)."},
+    ],
+    29:[
+      {cat:"pf", title:"<strong>IRPF 2026</strong> — Fim do prazo da Declaração de Ajuste Anual", periodo:"ano-calendário 2025", doc:"Programa IRPF 2026 / e-CAC", base:"IN RFB nº 2.312/2026", desc:"Encerramento do prazo de entrega da DAA do IRPF (AC 2025). Primeira data de pagamento da quota única e do 1º lote de restituição."},
+      {cat:"pf", title:"Declaração Inicial e Intermediária de <strong>Espólio</strong>", periodo:"ano-calendário 2025", doc:"Programa IRPF 2026", base:"IN RFB nº 2.312/2026; IN SRF nº 81/2001", desc:"Entrega da Declaração de Espólio (inicial e intermediária) referente ao ano-calendário de 2025."},
+      {cat:"pj-aces", title:"<strong>DCTFWeb</strong> — Declaração de Débitos e Créditos Tributários Federais", periodo:"abril/2026", doc:"Internet (e-CAC) · MIT", base:"IN RFB nº 2.237/2024, art. 6º", desc:"DCTFWeb mensal unificada (com a antiga DCTF/PGD) abrangendo IRPJ, CSLL, PIS, Cofins, IPI, IOF, Cide e contribuições previdenciárias."},
+      {cat:"pj-aces", title:"<strong>ECD</strong> — Escrituração Contábil Digital", periodo:"ano-calendário 2025", doc:"Internet (SPED Contábil)", base:"IN RFB nº 2.003/2021", desc:"Transmissão da ECD relativa ao AC 2025 — último dia útil de maio. Pré-requisito da ECF (jul/2026)."},
+      {cat:"pj-aces", title:"DOI — Declaração sobre Operações Imobiliárias", periodo:"abril/2026", doc:"Internet", base:"IN RFB nº 2.186/2024, art. 5º", desc:"Entrega pelos Cartórios da DOI relativa às operações de aquisição/alienação de imóveis em abril/2026."},
+      {cat:"pj-aces", title:"DME — Declaração de Operações Liquidadas com Moeda em Espécie", periodo:"abril/2026", doc:"Internet (e-CAC)", base:"IN RFB nº 1.761/2017", desc:"Operações com moeda em espécie ≥ R$ 30.000,00 ocorridas em abril/2026."},
+      {cat:"pj-fed", title:"IRPJ / CSLL — Apuração trimestral · 1ª quota / cota única", periodo:"1º trimestre/2026", doc:"DARF", base:"Lei nº 9.430/1996, art. 28", desc:"Pagamento da 1ª quota (ou cota única) do IRPJ e CSLL apurados no 1º trimestre de 2026 (Lucro Real, Presumido ou Arbitrado)."},
+      {cat:"ret", title:"IOF — Imposto sobre Operações Financeiras", periodo:"3º decêndio · maio/2026", doc:"DARF", base:"Decreto nº 6.306/2007 (RIOF)"},
+    ],
+    31:[
+      {cat:"simples", title:"<strong>DASN-SIMEI</strong> — Declaração Anual do Simples Nacional para o MEI", periodo:"ano-calendário 2025", doc:"Portal Simples Nacional", base:"LC nº 123/2006; Resolução CGSN nº 140/2018", desc:"Declaração anual do MEI referente ao faturamento de 2025. <em>Observação:</em> 31/05/2026 cai em domingo — em regra o vencimento é prorrogado para o próximo dia útil (01/06/2026)."},
+    ]
+  }
+};
+
+/* Inicializa estado */
+APP.data["2026-05"] = DATA_2026_05;
+
+/* ========================================================================
+   PERSISTÊNCIA · localStorage
+   ======================================================================== */
+const STORAGE_KEY = "agenda-tributaria-rfb-v1";
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const stored = JSON.parse(raw);
+    Object.keys(stored).forEach(k=>{
+      if(!APP.data[k]) APP.data[k] = stored[k];
+    });
+  }catch(e){console.warn("Storage load failed:",e)}
+}
+function saveToStorage(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(APP.data));
+  }catch(e){console.warn("Storage save failed:",e)}
+}
+loadFromStorage();
+
+/* ========================================================================
+   RENDER · CALENDAR
+   ======================================================================== */
+function key(y,m){return `${y}-${String(m).padStart(2,'0')}`;}
+function getMonthData(){return APP.data[key(APP.currentYear, APP.currentMonth)] || null;}
+function daysInMonth(y,m){return new Date(y, m, 0).getDate();}
+function firstWeekday(y,m){return new Date(y, m-1, 1).getDay();} // 0=Dom
+
+function renderCalendar(){
+  const md = getMonthData();
+  const days = daysInMonth(APP.currentYear, APP.currentMonth);
+  const startWd = firstWeekday(APP.currentYear, APP.currentMonth);
+  const calSection = document.getElementById('calendarSection');
+  const calMonthDisplay = document.getElementById('calMonthDisplay');
+
+  calMonthDisplay.innerHTML = `${MESES_PT[APP.currentMonth-1]}<sup>${String(APP.currentYear).slice(-2)}</sup>`;
+
+  // Quando não há dados para o mês
+  if(!md){
+    calSection.innerHTML = `
+      <div class="cal-header">
+        <div class="cal-month-display">${MESES_PT[APP.currentMonth-1]}<sup>${String(APP.currentYear).slice(-2)}</sup></div>
+        <div class="cal-stats">sem dados carregados</div>
+      </div>
+      <div class="month-empty-state">
+        <div class="month-empty-icon">∅</div>
+        <div class="month-empty-title">Agenda de <em>${MESES_PT[APP.currentMonth-1]}/${APP.currentYear}</em> não carregada</div>
+        <div class="month-empty-text">A Receita Federal publica a agenda de cada mês geralmente nos últimos dias do mês anterior. Verifique no portal oficial e importe os dados pelo botão de atualização.</div>
+        <div class="month-empty-actions">
+          <a class="btn" href="${officialUrl()}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Ver no gov.br
+          </a>
+          <button class="btn btn-ghost" onclick="openModal('updateModal')">↻ Atualizar / Importar</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('panel-body').innerHTML = `<div class="empty"><span class="ico">∅</span>Sem dados para este mês.<br>Use o botão de atualização no topo para importar.</div>`;
+    document.getElementById('panel-day').innerHTML = `<em>—</em>`;
+    document.getElementById('panel-weekday').textContent = `nenhum dia disponível`;
+    document.getElementById('panel-num').textContent = '·';
+    document.getElementById('panel-eyebrow').textContent = `${MESES_PT[APP.currentMonth-1]}/${APP.currentYear}`;
+    document.getElementById('criticalStrip').style.display = 'none';
+    updateStatusBar();
+    return;
+  }
+
+  // Reconstrói layout do calendário (foi destruído pelo empty state)
+  calSection.innerHTML = `
+    <div class="cal-header">
+      <div class="cal-month-display">${MESES_PT[APP.currentMonth-1]}<sup>${String(APP.currentYear).slice(-2)}</sup></div>
+      <div class="cal-stats" id="cal-stats">— obrigações visíveis</div>
+    </div>
+    <div class="weekdays">
+      <div class="weekday weekend">Dom</div><div class="weekday">Seg</div><div class="weekday">Ter</div>
+      <div class="weekday">Qua</div><div class="weekday">Qui</div><div class="weekday">Sex</div>
+      <div class="weekday weekend">Sáb</div>
+    </div>
+    <div class="days" id="days"></div>
+  `;
+
+  const daysEl = document.getElementById('days');
+  let html = "";
+
+  // Prefix: dias do mês anterior
+  const prevMonthDays = daysInMonth(APP.currentYear, APP.currentMonth===1?12:APP.currentMonth-1);
+  for(let i=startWd-1; i>=0; i--){
+    html += `<div class="day outside"><span class="daynum">${prevMonthDays-i}</span></div>`;
+  }
+
+  const today = new Date();
+  const isThisMonth = (today.getFullYear()===APP.currentYear && (today.getMonth()+1)===APP.currentMonth);
+
+  // Dias do mês
+  for(let d=1; d<=days; d++){
+    const wd = (startWd + d - 1) % 7;
+    const isWeekend = (wd===0 || wd===6);
+    const events = md.dates[d] || [];
+    const cats = [...new Set(events.map(e=>e.cat))];
+    const isCritical = (md.critical && md.critical.day===d);
+    const isToday = isThisMonth && today.getDate()===d;
+    const tagsHTML = cats.map(c=>`<span class="pill" data-cat="${c}">${shortCat(c)}</span>`).join("");
+    const countHTML = events.length ? `<span class="daycount">${events.length}</span>` : "";
+
+    html += `
+      <div class="day ${isWeekend?'weekend':''} ${events.length?'has-events':''} ${isCritical?'critical':''} ${isToday?'today':''}"
+           data-day="${d}" data-cats="${cats.join(',')}" tabindex="${events.length?0:-1}">
+        <span class="daynum">${d}</span>
+        ${countHTML}
+        <div class="day-tags">${tagsHTML}</div>
+      </div>
+    `;
+  }
+
+  // Suffix
+  const totalCells = startWd + days;
+  const suffixCount = (7 - (totalCells % 7)) % 7;
+  for(let d=1; d<=suffixCount; d++){
+    html += `<div class="day outside"><span class="daynum">${d}</span></div>`;
+  }
+  daysEl.innerHTML = html;
+
+  // Click handlers
+  daysEl.addEventListener('click', e=>{
+    const dayEl = e.target.closest('.day.has-events');
+    if(dayEl) showDay(+dayEl.dataset.day);
+  });
+  daysEl.addEventListener('keydown', e=>{
+    if((e.key==="Enter" || e.key===" ")){
+      const dayEl = e.target.closest('.day.has-events');
+      if(dayEl){e.preventDefault(); showDay(+dayEl.dataset.day);}
+    }
+  });
+
+  // Critical strip
+  const critStrip = document.getElementById('criticalStrip');
+  if(md.critical){
+    critStrip.style.display = 'flex';
+    document.getElementById('critText').innerHTML = md.critical.text;
+    document.getElementById('critJump').onclick = ()=>{
+      showDay(md.critical.day);
+      document.querySelector(`.day[data-day="${md.critical.day}"]`).scrollIntoView({behavior:'smooth',block:'center'});
+    };
+  } else {
+    critStrip.style.display = 'none';
+  }
+
+  // Mostra dia padrão (crítico, ou primeiro com eventos, ou hoje)
+  let defaultDay = null;
+  if(md.critical) defaultDay = md.critical.day;
+  else {
+    const dayKeys = Object.keys(md.dates).map(Number).sort((a,b)=>a-b);
+    if(dayKeys.length) defaultDay = dayKeys[0];
+  }
+  if(isThisMonth && md.dates[today.getDate()]) defaultDay = today.getDate();
+  if(defaultDay) showDay(defaultDay);
+  applyFilter(APP.filter);
+  updateStatusBar();
+}
+
+function shortCat(c){
+  return {pf:"IRPF","pj-fed":"Federal","pj-aces":"Acess.",ret:"Retenção",simples:"Simples",serv:"CPSS",estadual:"ICMS",municipal:"ISS"}[c]||c;
+}
+
+/* ========================================================================
+   PANEL · DIA SELECIONADO
+   ======================================================================== */
+function showDay(d){
+  APP.selectedDay = d;
+  document.querySelectorAll('.day.selected').forEach(el=>el.classList.remove('selected'));
+  const dayEl = document.querySelector(`.day[data-day="${d}"]`);
+  if(dayEl) dayEl.classList.add('selected');
+
+  const md = getMonthData();
+  if(!md) return;
+  const wd = (firstWeekday(APP.currentYear, APP.currentMonth) + d - 1) % 7;
+  const events = md.dates[d] || [];
+
+  document.getElementById('panel-eyebrow').textContent = `Vencimento · ${String(APP.currentMonth).padStart(2,'0')}/${APP.currentYear}`;
+  document.getElementById('panel-day').innerHTML = `<em>${String(d).padStart(2,'0')}</em>`;
+  document.getElementById('panel-weekday').textContent = WEEKDAYS_LONG[wd] + ((wd===0||wd===6) ? " · ⚠ dia não útil" : "");
+  document.getElementById('panel-num').textContent = events.length || "—";
+
+  const panelEl = document.getElementById('panel-body');
+  if(!events.length){
+    panelEl.innerHTML = `<div class="empty"><span class="ico">∅</span>Sem obrigações federais para este dia.</div>`;
+    return;
+  }
+  panelEl.innerHTML = events.map((e,i)=>`
+    <div class="obligation" data-cat="${e.cat}" data-idx="${i}">
+      <div class="ob-row">
+        <span class="ob-cat" data-cat="${e.cat}">${CAT_LABEL[e.cat]}</span>
+        <span class="ob-name">${e.title}</span>
+        <span class="ob-toggle">▾</span>
+      </div>
+      <div class="ob-detail">
+        ${e.desc ? `<p class="ob-desc">${e.desc}</p>` : ""}
+        <dl class="ob-meta-grid">
+          ${e.code ? `<dt>Código</dt><dd><code>${e.code}</code></dd>` : ""}
+          <dt>Período</dt><dd>${e.periodo}</dd>
+          <dt>Documento</dt><dd>${e.doc}</dd>
+          <dt>Fundamento</dt><dd>${e.base}</dd>
+        </dl>
+      </div>
+    </div>
+  `).join("");
+  panelEl.querySelectorAll('.obligation').forEach(ob=>{
+    ob.addEventListener('click', ()=>ob.classList.toggle('expanded'));
+  });
+}
+
+/* ========================================================================
+   FILTROS
+   ======================================================================== */
+function applyFilter(cat){
+  APP.filter = cat;
+  document.querySelectorAll('#toolbar .chip').forEach(c=>c.classList.toggle('active', c.dataset.cat===cat));
+  const md = getMonthData();
+  if(!md) return;
+
+  let visibleObligs = 0, visibleDays = 0;
+  document.querySelectorAll('.day').forEach(el=>{
+    if(el.classList.contains('outside')) return;
+    const day = +el.dataset.day;
+    const evs = md.dates[day] || [];
+    if(cat==="all"){
+      el.classList.remove('dim');
+      if(evs.length){visibleObligs+=evs.length; visibleDays++;}
+    } else {
+      const filtered = evs.filter(e=>e.cat===cat);
+      if(filtered.length){
+        el.classList.remove('dim');
+        visibleObligs+=filtered.length; visibleDays++;
+      } else {
+        el.classList.add('dim');
+      }
+    }
+  });
+  const stats = document.getElementById('cal-stats');
+  if(stats) stats.innerHTML = `<strong>${visibleObligs}</strong> obrigações · <strong>${visibleDays}</strong> data(s)`;
+  document.getElementById('filterStats').textContent = `${visibleDays} dias · ${visibleObligs} obrigações`;
+}
+document.querySelectorAll('#toolbar .chip').forEach(c=>{
+  c.addEventListener('click', ()=>applyFilter(c.dataset.cat));
+});
+
+/* ========================================================================
+   NAVEGAÇÃO ENTRE MESES
+   ======================================================================== */
+function changeMonth(delta){
+  let m = APP.currentMonth + delta;
+  let y = APP.currentYear;
+  if(m<1){m=12; y--;}
+  if(m>12){m=1; y++;}
+  APP.currentMonth = m;
+  APP.currentYear = y;
+  updateMonthDisplay();
+  renderCalendar();
+}
+document.getElementById('prevMonth').addEventListener('click', ()=>changeMonth(-1));
+document.getElementById('nextMonth').addEventListener('click', ()=>changeMonth(1));
+
+function updateMonthDisplay(){
+  document.getElementById('monthName').textContent = MESES_PT[APP.currentMonth-1];
+  document.getElementById('monthYear').textContent = APP.currentYear;
+}
+
+/* DROPDOWN seletor de meses */
+function buildMonthDropdown(){
+  const dd = document.getElementById('monthDropdown');
+  let html = `<div class="month-dropdown-year">${APP.currentYear}</div><div class="month-dropdown-list">`;
+  for(let i=1; i<=12; i++){
+    const has = !!APP.data[key(APP.currentYear, i)];
+    const isCurrent = i===APP.currentMonth;
+    html += `<button class="md-item ${isCurrent?'current':''} ${!has?'empty':''}" data-month="${i}">
+      ${MESES_PT_ABREV[i-1]}
+      <span class="md-status">${has?'✓ dados':'vazio'}</span>
+    </button>`;
+  }
+  html += `</div>`;
+  dd.innerHTML = html;
+  dd.querySelectorAll('.md-item').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      APP.currentMonth = +b.dataset.month;
+      updateMonthDisplay();
+      renderCalendar();
+      dd.classList.remove('open');
+    });
+  });
+}
+document.getElementById('monthPill').addEventListener('click', e=>{
+  e.stopPropagation();
+  buildMonthDropdown();
+  document.getElementById('monthDropdown').classList.toggle('open');
+});
+document.addEventListener('click', ()=>{
+  document.getElementById('monthDropdown').classList.remove('open');
+});
+
+/* ========================================================================
+   STATUS BAR
+   ======================================================================== */
+function updateStatusBar(){
+  const md = getMonthData();
+  const led = document.getElementById('statusLed');
+  const txt = document.getElementById('statusText');
+  const upd = document.getElementById('statusUpdated');
+  if(!md){
+    led.className = 'status-led error';
+    txt.innerHTML = `<strong>${MESES_PT[APP.currentMonth-1]}/${APP.currentYear}</strong> · sem dados carregados`;
+    upd.textContent = '—';
+    return;
+  }
+  const totalDays = Object.keys(md.dates).length;
+  const totalObligs = Object.values(md.dates).reduce((s,d)=>s+d.length, 0);
+  led.className = 'status-led';
+  txt.innerHTML = `<strong>${MESES_PT[APP.currentMonth-1]}/${APP.currentYear}</strong> · ${totalDays} datas · ${totalObligs} obrigações`;
+  upd.textContent = `Atualizado ${md.updated || '—'}`;
+}
+
+/* ========================================================================
+   ATUALIZAÇÃO · MODAL
+   ======================================================================== */
+function officialUrl(){
+  const monthSlugs = {1:"janeiro",2:"fevereiro",3:"marco",4:"abril",5:"maio",6:"junho",7:"julho",8:"agosto",9:"setembro",10:"outubro",11:"novembro",12:"dezembro"};
+  return `https://www.gov.br/receitafederal/pt-br/assuntos/agenda-tributaria/${APP.currentYear}/${monthSlugs[APP.currentMonth]}`;
+}
+
+function openModal(id){
+  if(id==='updateModal'){
+    document.getElementById('updateModalMonth').textContent = `${MESES_PT[APP.currentMonth-1]}/${APP.currentYear}`;
+    document.getElementById('openOfficialBtn').href = officialUrl();
+  }
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('[data-close-modal]').forEach(b=>{
+  b.addEventListener('click', e=>e.target.closest('.modal-backdrop').classList.remove('open'));
+});
+document.querySelectorAll('.modal-backdrop').forEach(b=>{
+  b.addEventListener('click', e=>{if(e.target===b) b.classList.remove('open');});
+});
+
+document.getElementById('btnUpdate').addEventListener('click', ()=>openModal('updateModal'));
+document.getElementById('statusUpdate').addEventListener('click', ()=>openModal('updateModal'));
+document.getElementById('btnInfo').addEventListener('click', ()=>openModal('infoModal'));
+
+/* IMPORT JSON */
+document.getElementById('btnDoImport').addEventListener('click', ()=>{
+  const txt = document.getElementById('importJson').value.trim();
+  if(!txt) return alert("Cole o JSON antes de importar.");
+  try{
+    const obj = JSON.parse(txt);
+    if(!obj.month || !obj.year || !obj.dates) throw new Error("JSON precisa ter os campos: month, year, dates");
+    const k = key(obj.year, obj.month);
+    APP.data[k] = {
+      source: obj.source || "Importado manualmente",
+      sourceUrl: obj.sourceUrl || officialUrl(),
+      updated: obj.updated || new Date().toLocaleDateString('pt-BR'),
+      critical: obj.critical || null,
+      dates: obj.dates
+    };
+    saveToStorage();
+    APP.currentYear = obj.year;
+    APP.currentMonth = obj.month;
+    updateMonthDisplay();
+    renderCalendar();
+    closeModal('updateModal');
+    alert(`✓ Dados de ${MESES_PT[obj.month-1]}/${obj.year} importados com sucesso (${Object.keys(obj.dates).length} datas).`);
+  }catch(e){
+    alert(`Erro ao processar JSON:\n\n${e.message}`);
+  }
+});
+
+/* EXPORT TEMPLATE */
+document.getElementById('btnExportTemplate').addEventListener('click', ()=>{
+  const template = {
+    month: APP.currentMonth,
+    year: APP.currentYear,
+    source: "Receita Federal — ADE Corat nº ___",
+    sourceUrl: officialUrl(),
+    updated: new Date().toLocaleDateString('pt-BR'),
+    critical: { day: 0, text: "<strong>Texto destacado</strong>" },
+    dates: {
+      "5": [
+        {cat:"serv", title:"CPSS — Servidor Civil Ativo", code:"1661", periodo:"3º decêndio · mês anterior", doc:"DARF", base:"Lei nº 10.887/2004, art. 4º"}
+      ],
+      "20": [
+        {cat:"simples", title:"PGDAS-D", periodo:"mês anterior", doc:"PGDAS-D · DAS", base:"LC nº 123/2006", desc:"Pagamento do DAS do Simples Nacional."}
+      ]
+    }
+  };
+  document.getElementById('importJson').value = JSON.stringify(template, null, 2);
+});
+
+/* ========================================================================
+   PWA · INSTALL
+   ======================================================================== */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installToast').classList.add('show');
+});
+document.getElementById('installAccept').addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installToast').classList.remove('show');
+});
+document.getElementById('installClose').addEventListener('click', ()=>{
+  document.getElementById('installToast').classList.remove('show');
+});
+document.getElementById('btnInstall').addEventListener('click', ()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{deferredPrompt=null});
+  } else {
+    alert("Para instalar este app:\n\n• Chrome/Edge desktop: ícone ⊕ na barra de endereço\n• iPhone (Safari): botão Compartilhar → 'Adicionar à Tela de Início'\n• Android (Chrome): menu ⋮ → 'Adicionar à tela inicial'\n\nUma vez instalado, funciona offline.");
+  }
+});
+
+/* ========================================================================
+   BOOT
+   ======================================================================== */
+updateMonthDisplay();
+renderCalendar();
+</script>
+</body>
+</html>
