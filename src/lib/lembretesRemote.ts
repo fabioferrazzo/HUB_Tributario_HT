@@ -107,10 +107,28 @@ export async function loadSupabaseLembretes(): Promise<Lembrete[]> {
   );
 }
 
-export async function upsertSupabaseLembrete(lembrete: Lembrete, user: HubUser) {
+export async function upsertSupabaseLembrete(
+  lembrete: Lembrete,
+  user: HubUser,
+  options: { isExisting?: boolean } = {}
+) {
   const client = assertSupabase();
   const authUserId = await getCurrentAuthUserId();
   const createdBy = lembrete.createdBy && lembrete.createdBy.includes("-") ? lembrete.createdBy : authUserId;
+
+  if (!options.isExisting) {
+    const { data, error } = await client.rpc("create_lembrete", {
+      p_titulo: lembrete.titulo,
+      p_descricao: lembrete.descricao,
+      p_prazo: lembrete.prazo || null,
+      p_prioridade: lembrete.prioridade,
+      p_status: lembrete.status,
+      p_responsaveis: lembrete.responsaveis
+    });
+
+    if (error) throw error;
+    return data as string;
+  }
 
   const { data, error } = await client
     .from("lembretes")
