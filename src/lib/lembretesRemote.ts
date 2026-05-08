@@ -1,3 +1,53 @@
+import type { HubUser, Lembrete } from "../types";
+import { isSupabaseConfigured, supabase } from "./supabase";
+import { normalizeLembrete, withResolvedStatus } from "./lembretes";
+
+type LembreteRow = {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  prazo: string | null;
+  prioridade: Lembrete["prioridade"];
+  status: Lembrete["status"];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type ProfileRow = {
+  id: string;
+  email: string;
+};
+
+function assertSupabase() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error("Supabase nao configurado.");
+  }
+
+  return supabase;
+}
+
+async function getCurrentAuthUserId() {
+  const client = assertSupabase();
+  const { data, error } = await client.auth.getUser();
+
+  if (error || !data.user?.id) {
+    throw new Error("Sessao Supabase expirada. Entre novamente.");
+  }
+
+  return data.user.id;
+}
+
+async function getProfilesByEmail(emails: string[]) {
+  const client = assertSupabase();
+  const uniqueEmails = [...new Set(emails.filter(Boolean))];
+  if (!uniqueEmails.length) return new Map<string, ProfileRow>();
+
+  const { data, error } = await client.from("profiles").select("id,email").in("email", uniqueEmails);
+  if (error) throw error;
+
+  return new Map((data || []).map((profile) => [profile.email, profile as ProfileRow]));
+}
 
 async function getEmailsByProfileId(ids: string[]) {
   const client = assertSupabase();
