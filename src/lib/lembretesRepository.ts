@@ -29,7 +29,9 @@ export async function saveAppLembrete({
   user: HubUser;
 }): Promise<Lembrete[]> {
   if (getLembretesSource(user) === "supabase") {
-    const lembreteId = await upsertSupabaseLembrete(lembrete, user);
+    const lembreteId = await upsertSupabaseLembrete(lembrete, user, {
+      isExisting: current.some((item) => item.id === lembrete.id)
+    });
 
     for (const file of files) {
       await uploadSupabaseLembreteAnexo(lembreteId, file, user);
@@ -55,7 +57,7 @@ export async function saveAppLembretesCollection({
 
   if (getLembretesSource(user) === "supabase" && user?.id) {
     for (const lembrete of resolved) {
-      await upsertSupabaseLembrete(lembrete, user);
+      await upsertSupabaseLembrete(lembrete, user, { isExisting: true });
     }
 
     window.dispatchEvent(new Event("hub:lembretes"));
