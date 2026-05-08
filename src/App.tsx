@@ -27,7 +27,7 @@ import {
   X
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { loadPautas, mockLegislacoes, mockNoticias, teamMembers } from "./data/hubData";
+import { loadPautas, mockLegislacoes, mockNoticias, sheetsHubUrl, teamMembers } from "./data/hubData";
 import { getStoredSession, signIn, signOut } from "./lib/auth";
 import {
   deleteAppLembrete,
@@ -254,8 +254,9 @@ export function App() {
           menuOpen={menuOpen}
           onMenu={() => setMenuOpen((open) => !open)}
           onNavigate={handleRoute}
+          onSignOut={handleSignOut}
         />
-        <section className="workspace-body">{renderRoute(route, user, hubUsers)}</section>
+        <section className="workspace-body">{renderRoute(route, user, hubUsers, handleRoute)}</section>
       </main>
     </div>
   );
@@ -324,7 +325,8 @@ function TopBar({
   user,
   menuOpen,
   onMenu,
-  onNavigate
+  onNavigate,
+  onSignOut
 }: {
   route: HubRoute;
   notificationItems: NotificationItem[];
@@ -332,6 +334,7 @@ function TopBar({
   menuOpen: boolean;
   onMenu: () => void;
   onNavigate: (route: HubRoute) => void;
+  onSignOut: () => void;
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -418,13 +421,17 @@ function TopBar({
         <div className="user-chip">
           <strong>{getInitials(user.nome)}</strong>
         </div>
+        <button className="top-sign-out" type="button" onClick={onSignOut} title="Sair" aria-label="Sair">
+          <LogOut size={16} />
+          <span>Sair</span>
+        </button>
       </div>
     </header>
   );
 }
 
-function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[]) {
-  if (route === "home") return <Dashboard hubUsers={hubUsers} user={user} />;
+function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
+  if (route === "home") return <Dashboard hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "tarefas") return <TasksModule />;
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
   if (route === "arquivos") return <ArquivosModule />;
@@ -433,10 +440,18 @@ function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[]) {
   if (route === "agenda" || route === "pomodoro" || route === "coord") {
     return <ModuleFrame title={appFrames[route].title} src={appFrames[route].src} />;
   }
-  return <Dashboard hubUsers={hubUsers} user={user} />;
+  return <Dashboard hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
 }
 
-function Dashboard({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
+function Dashboard({
+  hubUsers,
+  onNavigate,
+  user
+}: {
+  hubUsers: HubProfile[];
+  onNavigate: (route: HubRoute) => void;
+  user: HubUser;
+}) {
   const [pautas, setPautas] = useState<Pauta[]>([]);
   const [lembretes, setLembretes] = useState<Lembrete[]>([]);
   const [loading, setLoading] = useState(true);
@@ -492,13 +507,16 @@ function Dashboard({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }
   const statusCounts = useMemo(() => countPautaStatus(pautas), [pautas]);
   const overdueLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "danger").length;
   const todayLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "warning").length;
+  const canManagePautas = user.role === "admin";
 
   return (
     <div className="dashboard-grid">
       <section className="panel panel--pautas">
         <DashboardPanelHeader
-          actionLabel="Nova"
+          actionLabel={canManagePautas ? "Nova" : undefined}
+          actionTitle="Abrir planilha HUB para cadastrar pauta"
           icon={<ListChecks size={18} />}
+          onAction={canManagePautas ? () => window.open(sheetsHubUrl, "_blank", "noopener,noreferrer") : undefined}
           secondaryIcon={<Filter size={14} />}
           secondaryLabel="Filtrar"
           status={loading ? "Sincronizando" : "CSV HUB"}
@@ -543,6 +561,7 @@ function Dashboard({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }
         <DashboardPanelHeader
           actionLabel="Novo"
           icon={<Bell size={18} />}
+          onAction={() => onNavigate("lembretes")}
           secondaryIcon={<Bell size={14} />}
           secondaryLabel="Avisos"
           status={lembretesLoading ? "Carregando" : `${getLembretesSource(user)} · ${lembretes.length} itens`}
@@ -590,14 +609,18 @@ function Dashboard({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }
 
 function DashboardPanelHeader({
   actionLabel,
+  actionTitle,
   icon,
+  onAction,
   secondaryIcon,
   secondaryLabel,
   status,
   title
 }: {
-  actionLabel: string;
+  actionLabel?: string;
+  actionTitle?: string;
   icon: React.ReactNode;
+  onAction?: () => void;
   secondaryIcon: React.ReactNode;
   secondaryLabel: string;
   status: string;
@@ -616,10 +639,12 @@ function DashboardPanelHeader({
           {secondaryIcon}
           {secondaryLabel}
         </button>
-        <button className="btn-mini primary" type="button">
-          <Plus size={14} />
-          {actionLabel}
-        </button>
+        {actionLabel ? (
+          <button className="btn-mini primary" type="button" onClick={onAction} title={actionTitle || actionLabel}>
+            <Plus size={14} />
+            {actionLabel}
+          </button>
+        ) : null}
       </div>
     </header>
   );
