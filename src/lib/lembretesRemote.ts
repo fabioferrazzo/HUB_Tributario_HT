@@ -1,42 +1,3 @@
-import type { HubUser, Lembrete } from "../types";
-import { isSupabaseConfigured, supabase } from "./supabase";
-import { normalizeLembrete, withResolvedStatus } from "./lembretes";
-
-type LembreteRow = {
-  id: string;
-  titulo: string;
-  descricao: string | null;
-  prazo: string | null;
-  prioridade: Lembrete["prioridade"];
-  status: Lembrete["status"];
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-};
-
-type ProfileRow = {
-  id: string;
-  email: string;
-};
-
-function assertSupabase() {
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
-  }
-
-  return supabase;
-}
-
-async function getProfilesByEmail(emails: string[]) {
-  const client = assertSupabase();
-  const uniqueEmails = [...new Set(emails.filter(Boolean))];
-  if (!uniqueEmails.length) return new Map<string, ProfileRow>();
-
-  const { data, error } = await client.from("profiles").select("id,email").in("email", uniqueEmails);
-  if (error) throw error;
-
-  return new Map((data || []).map((profile) => [profile.email, profile as ProfileRow]));
-}
 
 async function getEmailsByProfileId(ids: string[]) {
   const client = assertSupabase();
@@ -98,8 +59,8 @@ export async function loadSupabaseLembretes(): Promise<Lembrete[]> {
 
 export async function upsertSupabaseLembrete(lembrete: Lembrete, user: HubUser) {
   const client = assertSupabase();
-  if (!user.id) throw new Error("Sessao Supabase sem ID de usuario.");
-  const createdBy = lembrete.createdBy && lembrete.createdBy.includes("-") ? lembrete.createdBy : user.id;
+  const authUserId = await getCurrentAuthUserId();
+  const createdBy = lembrete.createdBy && lembrete.createdBy.includes("-") ? lembrete.createdBy : authUserId;
 
   const { data, error } = await client
     .from("lembretes")
@@ -143,7 +104,7 @@ export async function deleteSupabaseLembrete(id: string) {
 
 export async function uploadSupabaseLembreteAnexo(lembreteId: string, file: File, user: HubUser) {
   const client = assertSupabase();
-  if (!user.id) throw new Error("Sessao Supabase sem ID de usuario.");
+  const authUserId = await getCurrentAuthUserId();
 
   const storagePath = `${lembreteId}/${crypto.randomUUID()}-${file.name}`;
   const { error: uploadError } = await client.storage.from("hub-anexos").upload(storagePath, file, {
@@ -158,7 +119,7 @@ export async function uploadSupabaseLembreteAnexo(lembreteId: string, file: File
     storage_path: storagePath,
     mime_type: file.type || null,
     size_bytes: file.size,
-    uploaded_by: user.id
+    uploaded_by: authUserId
   });
   if (metadataError) throw metadataError;
 
