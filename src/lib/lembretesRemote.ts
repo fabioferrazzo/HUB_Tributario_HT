@@ -9,6 +9,7 @@ type LembreteRow = {
   prazo: string | null;
   prioridade: Lembrete["prioridade"];
   status: Lembrete["status"];
+  confidencial: boolean | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -76,7 +77,7 @@ export async function loadSupabaseLembretes(): Promise<Lembrete[]> {
 
   const { data: lembretes, error } = await client
     .from("lembretes")
-    .select("id,titulo,descricao,prazo,prioridade,status,created_by,created_at,updated_at")
+    .select("id,titulo,descricao,prazo,prioridade,status,confidencial,created_by,created_at,updated_at")
     .order("prazo", { ascending: true, nullsFirst: false });
 
   if (error) throw error;
@@ -106,6 +107,7 @@ export async function loadSupabaseLembretes(): Promise<Lembrete[]> {
         prazo: row.prazo || "",
         prioridade: row.prioridade,
         status: row.status,
+        confidencial: Boolean(row.confidencial),
         createdBy: row.created_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -134,6 +136,7 @@ export async function upsertSupabaseLembrete(
       p_prazo: lembrete.prazo || null,
       p_prioridade: lembrete.prioridade,
       p_status: lembrete.status,
+      p_confidencial: Boolean(lembrete.confidencial && user.role === "admin"),
       p_responsaveis: lembrete.responsaveis
     });
 
@@ -150,6 +153,7 @@ export async function upsertSupabaseLembrete(
       prazo: lembrete.prazo || null,
       prioridade: lembrete.prioridade,
       status: lembrete.status,
+      confidencial: Boolean(lembrete.confidencial && user.role === "admin"),
       created_by: createdBy
     })
     .select("id")

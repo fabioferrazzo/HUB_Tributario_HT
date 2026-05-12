@@ -20,6 +20,7 @@ export function normalizeLembrete(value: PartialStoredLembrete): Lembrete {
     prazo: value.prazo || "",
     prioridade: value.prioridade || "normal",
     status,
+    confidencial: Boolean(value.confidencial),
     responsaveis: Array.isArray(value.responsaveis) ? value.responsaveis : [],
     anexos: Array.isArray(value.anexos) ? value.anexos : [],
     createdBy: value.createdBy || "fiscal10.hteixeira@gmail.com",
