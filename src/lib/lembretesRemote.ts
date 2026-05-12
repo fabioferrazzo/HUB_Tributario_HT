@@ -60,6 +60,17 @@ async function getEmailsByProfileId(ids: string[]) {
   return new Map((data || []).map((profile) => [profile.id, profile.email]));
 }
 
+function toSafeStorageFileName(fileName: string) {
+  const normalized = fileName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "");
+
+  return normalized || "anexo";
+}
+
 export async function loadSupabaseLembretes(): Promise<Lembrete[]> {
   const client = assertSupabase();
 
@@ -174,7 +185,7 @@ export async function uploadSupabaseLembreteAnexo(lembreteId: string, file: File
   const client = assertSupabase();
   const authUserId = await getCurrentAuthUserId();
 
-  const storagePath = `${lembreteId}/${crypto.randomUUID()}-${file.name}`;
+  const storagePath = `${lembreteId}/${crypto.randomUUID()}-${toSafeStorageFileName(file.name)}`;
   const { error: uploadError } = await client.storage.from("hub-anexos").upload(storagePath, file, {
     upsert: false,
     contentType: file.type || undefined
