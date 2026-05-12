@@ -1010,7 +1010,8 @@ select {
 
 .file-grid article,
 .admin-grid article,
-.link-list a {
+.link-list > a,
+.link-record {
   display: grid;
   gap: 5px;
   min-height: 92px;
@@ -1019,6 +1020,19 @@ select {
   background: #fafbf9;
   padding: 14px;
   text-decoration: none;
+}
+
+.link-record > a {
+  display: grid;
+  gap: 5px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.link-record small {
+  color: #65748b;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .file-grid span,

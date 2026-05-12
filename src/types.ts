@@ -87,6 +87,16 @@ export type FileResource = {
   updatedAt: string;
 };
 
+export type UsefulLink = {
+  id: string;
+  titulo: string;
+  url: string;
+  scope: FileResourceScope;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Noticia = {
   id: string;
   titulo: string;
