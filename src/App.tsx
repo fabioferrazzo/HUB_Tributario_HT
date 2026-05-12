@@ -47,6 +47,8 @@ type TaskItem = {
   anexos: string[];
 };
 
+type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
+
 type UsefulLink = {
   id: string;
   titulo: string;
@@ -449,6 +451,7 @@ function Dashboard({
   const [loading, setLoading] = useState(true);
   const [lembretesLoading, setLembretesLoading] = useState(true);
   const [pautaQuery, setPautaQuery] = useState("");
+  const [pautaFilter, setPautaFilter] = useState<PautaFilter>("todas");
   const [lembreteQuery, setLembreteQuery] = useState("");
 
   useEffect(() => {
@@ -479,16 +482,29 @@ function Dashboard({
     };
   }, [user]);
 
+  const canManagePautas = user.role === "admin";
+  const canSeeAllPautas = user.role === "admin" || user.role === "gestor";
+
+  const visiblePautas = useMemo(() => {
+    const allowed = canSeeAllPautas ? pautas : pautas.filter((pauta) => canUserViewPauta(pauta, user));
+    return sortPautasForDashboard(allowed);
+  }, [canSeeAllPautas, pautas, user]);
+
   const filteredPautas = useMemo(() => {
-    const query = pautaQuery.trim().toLowerCase();
-    if (!query) return pautas;
-    return pautas.filter((pauta) =>
-      [pauta.tema, pauta.acoes, pauta.responsavel, pauta.email, pauta.status, pauta.pendenciasObs]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [pautaQuery, pautas]);
+    const query = normalizeForSearch(pautaQuery);
+    return visiblePautas.filter((pauta) => {
+      if (pautaFilter === "minhas" && !isPautaAssignedToUser(pauta, user)) return false;
+      if (pautaFilter === "alta" && !isPautaAlta(pauta)) return false;
+      if (pautaFilter === "atrasadas" && !isPautaAtrasada(pauta)) return false;
+      if (pautaFilter === "semPrazo" && pauta.prazo.trim()) return false;
+
+      if (!query) return true;
+
+      return normalizeForSearch(
+        [pauta.tema, pauta.acoes, pauta.responsavel, pauta.email, pauta.status, pauta.prioridade, pauta.pendenciasObs, pauta.retorno].join(" ")
+      ).includes(query);
+    });
+  }, [pautaFilter, pautaQuery, user, visiblePautas]);
   const filteredLembretes = useMemo(() => {
     const query = lembreteQuery.trim().toLowerCase();
     if (!query) return lembretes;
@@ -496,10 +512,12 @@ function Dashboard({
       [lembrete.titulo, lembrete.descricao, lembrete.prioridade, lembrete.status].join(" ").toLowerCase().includes(query)
     );
   }, [lembreteQuery, lembretes]);
-  const statusCounts = useMemo(() => countPautaStatus(pautas), [pautas]);
+  const statusCounts = useMemo(() => countPautaStatus(visiblePautas, user), [user, visiblePautas]);
   const overdueLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "danger").length;
   const todayLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "warning").length;
-  const canManagePautas = user.role === "admin";
+  const pautaStatusLabel = loading
+    ? "Sincronizando"
+    : `${canSeeAllPautas ? "CSV HUB" : "minhas pautas"} · ${visiblePautas.length} itens`;
 
   return (
     <div className="dashboard-grid">
@@ -511,18 +529,32 @@ function Dashboard({
           onAction={canManagePautas ? () => window.open(sheetsHubUrl, "_blank", "noopener,noreferrer") : undefined}
           secondaryIcon={<Filter size={14} />}
           secondaryLabel="Filtrar"
-          status={loading ? "Sincronizando" : "CSV HUB"}
+          status={pautaStatusLabel}
           title="Pautas"
         />
         <div className="panel-toolbar">
-          <button className="filter-pill active" type="button">
-            Todas ({pautas.length})
+          <button className={`filter-pill ${pautaFilter === "todas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("todas")}>
+            Todas ({visiblePautas.length})
           </button>
-          <button className="filter-pill" type="button">
+          <button className={`filter-pill ${pautaFilter === "minhas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("minhas")}>
+            Minhas ({statusCounts.minhas})
+          </button>
+          <button className={`filter-pill ${pautaFilter === "alta" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("alta")}>
             Alta ({statusCounts.alta})
           </button>
-          <button className="filter-pill filter-pill--danger" type="button">
+          <button
+            className={`filter-pill filter-pill--danger ${pautaFilter === "atrasadas" ? "active" : ""}`}
+            type="button"
+            onClick={() => setPautaFilter("atrasadas")}
+          >
             Atrasadas ({statusCounts.atrasado})
+          </button>
+          <button
+            className={`filter-pill filter-pill--warning ${pautaFilter === "semPrazo" ? "active" : ""}`}
+            type="button"
+            onClick={() => setPautaFilter("semPrazo")}
+          >
+            Sem prazo ({statusCounts.semPrazo})
           </button>
           <label className="panel-search">
             <Search size={14} />
@@ -540,12 +572,24 @@ function Dashboard({
               <div>
                 <strong>{pauta.tema}</strong>
                 <span>{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
+                {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
                 <em>{pauta.responsavel || "Sem responsavel definido"}{pauta.email ? ` · ${pauta.email}` : ""}</em>
               </div>
-              <StatusPill label={pauta.status || pauta.prioridade} />
-              <small>{formatDate(pauta.prazo)}</small>
+              <div className="pauta-row-badges">
+                <StatusPill label={pauta.status || "Sem status"} />
+                {pauta.prioridade ? <StatusPill label={pauta.prioridade} /> : null}
+              </div>
+              <small className={`pauta-date pauta-date--${getPautaTone(pauta)}`}>
+                <CalendarDays size={12} />
+                {formatDate(pauta.prazo)} · {pauta.origem}
+              </small>
             </article>
           ))}
+          {!filteredPautas.length && !loading ? (
+            <div className="empty-state">
+              Nenhuma pauta encontrada para o filtro atual.
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -1512,15 +1556,88 @@ function formatResponsaveis(responsaveis: string[], profiles: Array<{ email: str
     .join(", ");
 }
 
-function countPautaStatus(pautas: Pauta[]) {
+function normalizeForSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function isPautaAssignedToUser(pauta: Pauta, user: HubUser) {
+  const pautaEmail = normalizeForSearch(pauta.email);
+  const userEmail = normalizeForSearch(user.email);
+  const pautaResponsavel = normalizeForSearch(pauta.responsavel);
+  const userName = normalizeForSearch(user.nome);
+
+  if (pautaEmail && pautaEmail === userEmail) return true;
+  if (!pautaResponsavel || !userName) return false;
+
+  return pautaResponsavel.includes(userName) || userName.includes(pautaResponsavel);
+}
+
+function isPautaGeneral(pauta: Pauta) {
+  const pautaEmail = normalizeForSearch(pauta.email);
+  const pautaResponsavel = normalizeForSearch(pauta.responsavel);
+
+  return (
+    !pautaEmail &&
+    (!pautaResponsavel ||
+      pautaResponsavel.includes("equipe") ||
+      pautaResponsavel.includes("todos") ||
+      pautaResponsavel.includes("geral"))
+  );
+}
+
+function canUserViewPauta(pauta: Pauta, user: HubUser) {
+  return isPautaGeneral(pauta) || isPautaAssignedToUser(pauta, user);
+}
+
+function isPautaAlta(pauta: Pauta) {
+  return normalizeForSearch(`${pauta.prioridade} ${pauta.status}`).includes("alta");
+}
+
+function isPautaConcluida(pauta: Pauta) {
+  return normalizeForSearch(`${pauta.status} ${pauta.concluidoEm}`).includes("conclu");
+}
+
+function isPautaAtrasada(pauta: Pauta) {
+  const status = normalizeForSearch(pauta.status);
+  if (isPautaConcluida(pauta)) return false;
+  if (status.includes("atrasad") || status.includes("vencid")) return true;
+  return getDueTone(pauta.prazo) === "danger";
+}
+
+function getPautaTone(pauta: Pauta) {
+  if (isPautaConcluida(pauta)) return "ok";
+  if (isPautaAtrasada(pauta)) return "danger";
+  return getDueTone(pauta.prazo);
+}
+
+function sortPautasForDashboard(pautas: Pauta[]) {
+  const toneOrder = { danger: 0, warning: 1, ok: 2, neutral: 3 } as const;
+
+  return [...pautas].sort((a, b) => {
+    const toneDiff = toneOrder[getPautaTone(a)] - toneOrder[getPautaTone(b)];
+    if (toneDiff !== 0) return toneDiff;
+
+    const priorityDiff = Number(isPautaAlta(b)) - Number(isPautaAlta(a));
+    if (priorityDiff !== 0) return priorityDiff;
+
+    return getDateSortValue(a.prazo) - getDateSortValue(b.prazo);
+  });
+}
+
+function countPautaStatus(pautas: Pauta[], user: HubUser) {
   return pautas.reduce(
     (acc, pauta) => {
-      const status = `${pauta.status} ${pauta.prioridade}`.toLowerCase();
-      if (status.includes("alta")) acc.alta += 1;
-      if (status.includes("atrasado")) acc.atrasado += 1;
+      if (isPautaAssignedToUser(pauta, user)) acc.minhas += 1;
+      if (isPautaAlta(pauta)) acc.alta += 1;
+      if (isPautaAtrasada(pauta)) acc.atrasado += 1;
+      if (!pauta.prazo.trim()) acc.semPrazo += 1;
       return acc;
     },
-    { alta: 0, atrasado: 0 }
+    { alta: 0, atrasado: 0, minhas: 0, semPrazo: 0 }
   );
 }
 

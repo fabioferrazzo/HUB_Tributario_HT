@@ -1821,10 +1821,18 @@ body {
   margin-top: 0;
 }
 
-.list-row--pauta .status-pill {
+.pauta-row-badges {
   grid-area: status;
   justify-self: end;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
   max-width: 124px;
+}
+
+.pauta-row-badges .status-pill {
   text-align: center;
   line-height: 1.2;
 }
@@ -1832,6 +1840,43 @@ body {
 .list-row--pauta small {
   grid-area: date;
   grid-column: auto;
+}
+
+.pauta-return {
+  color: #56677f;
+  font-size: 12px;
+}
+
+.pauta-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pauta-date--danger {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+.pauta-date--warning {
+  color: var(--warning);
+  font-weight: 800;
+}
+
+.pauta-date--ok {
+  color: var(--ok);
+  font-weight: 750;
+}
+
+.empty-state {
+  margin: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  color: var(--muted);
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .status-pill {
