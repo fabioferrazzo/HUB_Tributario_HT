@@ -9,12 +9,40 @@ export function getLembretesSource(user?: HubUser | null): LembretesSource {
   return isSupabaseConfigured && Boolean(user?.id) ? "supabase" : "local";
 }
 
+export function isLembreteOwner(lembrete: Lembrete, user?: HubUser | null) {
+  if (!user) return false;
+  return lembrete.createdBy === user.id || lembrete.createdBy === user.email;
+}
+
+export function isUserMarkedInLembrete(lembrete: Lembrete, user?: HubUser | null) {
+  if (!user) return false;
+  return lembrete.responsaveis.some((responsavel) => responsavel.toLowerCase() === user.email.toLowerCase());
+}
+
+export function canUserViewLembrete(lembrete: Lembrete, user?: HubUser | null) {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  if (isLembreteOwner(lembrete, user)) return true;
+  if (!lembrete.responsaveis.length) return false;
+  if (lembrete.confidencial) return isUserMarkedInLembrete(lembrete, user);
+  return true;
+}
+
+export function canUserManageLembrete(lembrete: Lembrete, user?: HubUser | null) {
+  if (!user) return false;
+  return user.role === "admin" || isLembreteOwner(lembrete, user);
+}
+
+function filterVisibleLembretes(lembretes: Lembrete[], user?: HubUser | null) {
+  return lembretes.filter((lembrete) => canUserViewLembrete(lembrete, user));
+}
+
 export async function listAppLembretes(user?: HubUser | null): Promise<Lembrete[]> {
   if (getLembretesSource(user) === "supabase") {
-    return loadSupabaseLembretes();
+    return filterVisibleLembretes(await loadSupabaseLembretes(), user);
   }
 
-  return loadLembretes().map(withResolvedStatus);
+  return filterVisibleLembretes(loadLembretes().map(withResolvedStatus), user);
 }
 
 export async function saveAppLembrete({
