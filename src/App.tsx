@@ -856,6 +856,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
   const [prazo, setPrazo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [prioridade, setPrioridade] = useState<Lembrete["prioridade"]>("normal");
+  const [confidencial, setConfidencial] = useState(false);
   const [responsaveis, setResponsaveis] = useState<string[]>([]);
   const [anexos, setAnexos] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -895,6 +896,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
         lembrete.descricao,
         lembrete.prioridade,
         lembrete.status,
+        lembrete.confidencial ? "confidencial" : "",
         formatResponsaveis(lembrete.responsaveis, hubUsers),
         lembrete.anexos.join(" ")
       ]
@@ -910,6 +912,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
     setDescricao("");
     setPrazo("");
     setPrioridade("normal");
+    setConfidencial(false);
     setResponsaveis([]);
     setAnexos([]);
     setSelectedFiles([]);
@@ -918,7 +921,6 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
   function canManageLembrete(lembrete: Lembrete) {
     return (
       user.role === "admin" ||
-      user.role === "gestor" ||
       lembrete.createdBy === user.id ||
       lembrete.createdBy === user.email
     );
@@ -935,6 +937,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
     setDescricao(lembrete.descricao);
     setPrazo(lembrete.prazo);
     setPrioridade(lembrete.prioridade);
+    setConfidencial(Boolean(lembrete.confidencial));
     setResponsaveis(lembrete.responsaveis);
     setAnexos(lembrete.anexos);
     setSelectedFiles([]);
@@ -953,6 +956,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
       prazo,
       prioridade,
       status: existing?.status || "aberto",
+      confidencial: user.role === "admin" ? confidencial : Boolean(existing?.confidencial),
       responsaveis,
       anexos,
       createdBy: existing?.createdBy || user.id || user.email,
@@ -1086,6 +1090,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
               </div>
 
               <div className="lembrete-tags">
+                {lembrete.confidencial ? <StatusPill label="Confidencial" /> : null}
                 <StatusPill label={lembrete.status} />
                 <StatusPill label={lembrete.prioridade} />
                 {lembrete.anexos.length ? (
@@ -1147,6 +1152,20 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
               </select>
             </label>
           </div>
+
+          {user.role === "admin" ? (
+            <label className="confidential-field">
+              <input
+                checked={confidencial}
+                onChange={(event) => setConfidencial(event.target.checked)}
+                type="checkbox"
+              />
+              <span>
+                <strong>Confidencial</strong>
+                <small>Visivel apenas para o admin criador e usuarios marcados.</small>
+              </span>
+            </label>
+          ) : null}
 
           <fieldset className="member-picker">
             <legend>Usuarios marcados</legend>

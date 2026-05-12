@@ -45,6 +45,7 @@ export type Lembrete = {
   prazo: string;
   prioridade: "alta" | "normal" | "baixa";
   status: "aberto" | "concluido" | "vencido";
+  confidencial: boolean;
   responsaveis: string[];
   anexos: string[];
   createdBy: string;

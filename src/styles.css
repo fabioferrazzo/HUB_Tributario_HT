@@ -901,6 +901,33 @@ select {
   padding: 10px 12px;
 }
 
+.confidential-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 10px;
+}
+
+.confidential-field input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.confidential-field span,
+.confidential-field strong,
+.confidential-field small {
+  display: block;
+}
+
+.confidential-field small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .member-picker {
   display: grid;
   gap: 10px;
