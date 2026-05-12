@@ -33,8 +33,7 @@ import {
   deleteAppLembrete,
   getLembretesSource,
   listAppLembretes,
-  saveAppLembrete,
-  saveAppLembretesCollection
+  saveAppLembrete
 } from "./lib/lembretesRepository";
 import { readStorage, writeStorage } from "./lib/storage";
 import { getUsersSource, listAppUsers, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
@@ -872,7 +871,21 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
     setSelectedFiles([]);
   }
 
+  function canManageLembrete(lembrete: Lembrete) {
+    return (
+      user.role === "admin" ||
+      user.role === "gestor" ||
+      lembrete.createdBy === user.id ||
+      lembrete.createdBy === user.email
+    );
+  }
+
   function startEdit(lembrete: Lembrete) {
+    if (!canManageLembrete(lembrete)) {
+      setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode altera-lo.");
+      return;
+    }
+
     setEditingId(lembrete.id);
     setTitulo(lembrete.titulo);
     setDescricao(lembrete.descricao);
@@ -922,14 +935,16 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
     }
   }
 
-  async function persistCollection(next: Lembrete[]) {
+  async function persistSingle(lembrete: Lembrete) {
     setSaving(true);
     setError("");
-    if (editingId) {
-      // The edit form remains open only while the save action is pending.
-    }
+
     try {
-      const saved = await saveAppLembretesCollection({ lembretes: next, user });
+      const saved = await saveAppLembrete({
+        current: lembretes,
+        lembrete,
+        user
+      });
       setLembretes(saved);
     } catch (persistError) {
       setError(getErrorMessage(persistError));
@@ -949,20 +964,28 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
   }
 
   async function toggleStatus(id: string) {
-    await persistCollection(
-      lembretes.map((lembrete) =>
-        lembrete.id === id
-          ? {
-              ...lembrete,
-              status: lembrete.status === "concluido" ? "aberto" : "concluido",
-              updatedAt: new Date().toISOString()
-            }
-          : lembrete
-      )
-    );
+    const target = lembretes.find((lembrete) => lembrete.id === id);
+    if (!target) return;
+
+    if (!canManageLembrete(target)) {
+      setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode altera-lo.");
+      return;
+    }
+
+    await persistSingle({
+      ...target,
+      status: target.status === "concluido" ? "aberto" : "concluido",
+      updatedAt: new Date().toISOString()
+    });
   }
 
   async function removeLembrete(id: string) {
+    const target = lembretes.find((lembrete) => lembrete.id === id);
+    if (target && !canManageLembrete(target)) {
+      setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode exclui-lo.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
@@ -1004,8 +1027,11 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
         {error ? <p className="module-error">{error}</p> : null}
 
         <div className="lembrete-records">
-          {filtered.map((lembrete) => (
-            <article className={`lembrete-record lembrete-record--${lembrete.status}`} key={lembrete.id}>
+          {filtered.map((lembrete) => {
+            const canManage = canManageLembrete(lembrete);
+
+            return (
+              <article className={`lembrete-record lembrete-record--${lembrete.status}`} key={lembrete.id}>
               <div className="lembrete-record-main">
                 <DueSignal prazo={lembrete.prazo} />
                 <div>
@@ -1026,22 +1052,29 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
                 ) : null}
               </div>
 
-              <div className="record-actions">
-                <button disabled={saving} type="button" onClick={() => startEdit(lembrete)}>
-                  <Edit3 size={14} />
-                  Editar
-                </button>
-                <button disabled={saving} type="button" onClick={() => toggleStatus(lembrete.id)}>
-                  <CheckCircle2 size={14} />
-                  {lembrete.status === "concluido" ? "Reabrir" : "Concluir"}
-                </button>
-                <button className="danger-action" disabled={saving} type="button" onClick={() => removeLembrete(lembrete.id)}>
-                  <Trash2 size={14} />
-                  Excluir
-                </button>
-              </div>
+              {canManage ? (
+                <div className="record-actions">
+                  <button disabled={saving} type="button" onClick={() => startEdit(lembrete)}>
+                    <Edit3 size={14} />
+                    Editar
+                  </button>
+                  <button disabled={saving} type="button" onClick={() => toggleStatus(lembrete.id)}>
+                    <CheckCircle2 size={14} />
+                    {lembrete.status === "concluido" ? "Reabrir" : "Concluir"}
+                  </button>
+                  <button className="danger-action" disabled={saving} type="button" onClick={() => removeLembrete(lembrete.id)}>
+                    <Trash2 size={14} />
+                    Excluir
+                  </button>
+                </div>
+              ) : (
+                <div className="record-actions record-actions--readonly">
+                  <span className="readonly-note">Somente visualizacao</span>
+                </div>
+              )}
             </article>
-          ))}
+            );
+          })}
         </div>
       </section>
 
