@@ -325,6 +325,12 @@ textarea:focus {
   padding: 12px 14px;
 }
 
+.notification-popover header > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
 .notification-popover header strong {
   color: var(--ink);
   font-size: 14px;
@@ -345,8 +351,9 @@ textarea:focus {
 .notification-item {
   width: 100%;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
+  align-items: flex-start;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -360,10 +367,42 @@ textarea:focus {
   background: var(--bg-soft);
 }
 
-.notification-item > span:last-child {
+.notification-link {
   min-width: 0;
   display: grid;
   gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-read,
+.notification-read-all {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.notification-read {
+  padding: 5px 7px;
+}
+
+.notification-read-all {
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.notification-read:hover,
+.notification-read-all:hover {
+  border-color: var(--accent);
+  background: #f7fbff;
 }
 
 .notification-item strong,
@@ -403,6 +442,10 @@ textarea:focus {
 
 .notification-item--warning .notification-dot {
   background: var(--warning);
+}
+
+.notification-item--info .notification-dot {
+  background: var(--accent);
 }
 
 .notification-empty {

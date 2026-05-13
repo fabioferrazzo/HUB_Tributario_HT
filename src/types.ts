@@ -108,6 +108,25 @@ export type Noticia = {
   sourceUrl?: string;
 };
 
+export type HubNotificationTone = "danger" | "warning" | "info";
+
+export type HubNotification = {
+  id: string;
+  dedupeKey: string;
+  tipo: string;
+  title: string;
+  detail: string;
+  meta: string;
+  tone: HubNotificationTone;
+  route: HubRoute;
+  targetType?: string;
+  targetRef?: string;
+  active: boolean;
+  readAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type HubRoute =
   | "home"
   | "tarefas"

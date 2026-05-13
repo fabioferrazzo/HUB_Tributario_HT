@@ -46,6 +46,7 @@ import {
   saveAppLembrete
 } from "./lib/lembretesRepository";
 import { deleteAppLink, getLinksSource, listAppLinks, saveAppLink } from "./lib/linksRepository";
+import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
 import { readStorage, writeStorage } from "./lib/storage";
 import { listAppUpdates } from "./lib/updatesRepository";
 import { getUsersSource, listAppUsers, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
@@ -55,6 +56,7 @@ import type {
   FileResourceCategory,
   FileResourceScope,
   HubProfile,
+  HubNotification,
   HubRoute,
   HubUser,
   Lembrete,
@@ -73,15 +75,6 @@ type TaskItem = {
 };
 
 type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
-
-type NotificationItem = {
-  id: string;
-  title: string;
-  detail: string;
-  meta: string;
-  tone: "danger" | "warning";
-  route: HubRoute;
-};
 
 const routes = [
   { id: "home", label: "Inicio", icon: Home },
@@ -130,7 +123,7 @@ export function App() {
   const [lembretesVersion, setLembretesVersion] = useState(0);
   const [usersVersion, setUsersVersion] = useState(0);
   const [hubUsers, setHubUsers] = useState<HubProfile[]>([]);
-  const [notificationItems, setNotificationItems] = useState<NotificationItem[]>([]);
+  const [notificationItems, setNotificationItems] = useState<HubNotification[]>([]);
 
   useEffect(() => {
     function handleLembretesChange() {
@@ -179,9 +172,14 @@ export function App() {
       return;
     }
 
-    listAppLembretes(user)
-      .then((lembretes) => {
-        if (active) setNotificationItems(buildLembreteNotifications(lembretes, hubUsers));
+    Promise.all([listAppLembretes(user), loadPautas()])
+      .then(([lembretes, pautas]) => {
+        if (!active) return undefined;
+        const visiblePautas = user.role === "colaborador" ? pautas.filter((pauta) => canUserViewPauta(pauta, user)) : pautas;
+        return syncAppNotifications(user, buildSystemNotifications({ hubUsers, lembretes, pautas: visiblePautas, user }));
+      })
+      .then((notifications) => {
+        if (active && notifications) setNotificationItems(notifications);
       })
       .catch(() => {
         if (active) setNotificationItems([]);
@@ -211,6 +209,19 @@ export function App() {
     signOut();
     setUser(null);
     setRoute("home");
+  }
+
+  async function handleNotificationRead(notificationId: string) {
+    if (!user) return;
+    setNotificationItems((items) => items.filter((item) => item.id !== notificationId));
+    await markAppNotificationRead(user, notificationId);
+  }
+
+  async function handleAllNotificationsRead() {
+    if (!user) return;
+    const ids = notificationItems.map((item) => item.id);
+    setNotificationItems([]);
+    await markAllAppNotificationsRead(user, ids);
   }
 
   return (
@@ -282,6 +293,8 @@ export function App() {
           menuOpen={menuOpen}
           onMenu={() => setMenuOpen((open) => !open)}
           onNavigate={handleRoute}
+          onNotificationRead={handleNotificationRead}
+          onNotificationsReadAll={handleAllNotificationsRead}
         />
         <section className="workspace-body">{renderRoute(route, user, hubUsers, handleRoute)}</section>
       </main>
@@ -352,14 +365,18 @@ function TopBar({
   user,
   menuOpen,
   onMenu,
-  onNavigate
+  onNavigate,
+  onNotificationRead,
+  onNotificationsReadAll
 }: {
   route: HubRoute;
-  notificationItems: NotificationItem[];
+  notificationItems: HubNotification[];
   user: HubUser;
   menuOpen: boolean;
   onMenu: () => void;
   onNavigate: (route: HubRoute) => void;
+  onNotificationRead: (notificationId: string) => void;
+  onNotificationsReadAll: () => void;
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -409,34 +426,52 @@ function TopBar({
           {notificationsOpen ? (
             <section className="notification-popover" id="hub-notifications" role="dialog" aria-label="Avisos ativos">
               <header>
-                <strong>Notificacoes</strong>
-                <small>{notificationItems.length ? `${notificationItems.length} aviso(s) ativo(s)` : "Sem avisos ativos"}</small>
+                <div>
+                  <strong>Notificacoes</strong>
+                  <small>{notificationItems.length ? `${notificationItems.length} aviso(s) nao lido(s)` : "Sem avisos ativos"}</small>
+                </div>
+                {notificationItems.length ? (
+                  <button className="notification-read-all" type="button" onClick={onNotificationsReadAll}>
+                    Marcar todas
+                  </button>
+                ) : null}
               </header>
 
               <div className="notification-list">
                 {notificationItems.length ? (
                   notificationItems.map((item) => (
-                    <button
+                    <div
                       className={`notification-item notification-item--${item.tone}`}
                       key={item.id}
-                      type="button"
-                      onClick={() => {
-                        onNavigate(item.route);
-                        setNotificationsOpen(false);
-                      }}
                     >
                       <span className="notification-dot" />
-                      <span>
+                      <button
+                        className="notification-link"
+                        type="button"
+                        onClick={() => {
+                          onNotificationRead(item.id);
+                          onNavigate(item.route);
+                          setNotificationsOpen(false);
+                        }}
+                      >
                         <strong>{item.title}</strong>
                         <em>{item.detail}</em>
                         <small>{item.meta}</small>
-                      </span>
-                    </button>
+                      </button>
+                      <button
+                        className="notification-read"
+                        type="button"
+                        onClick={() => onNotificationRead(item.id)}
+                        aria-label={`Marcar ${item.title} como lida`}
+                      >
+                        Lida
+                      </button>
+                    </div>
                   ))
                 ) : (
                   <div className="notification-empty">
                     <CheckCircle2 size={18} />
-                    <span>Nenhum lembrete vencido ou proximo do vencimento.</span>
+                    <span>Nenhuma notificacao pendente.</span>
                   </div>
                 )}
               </div>
@@ -2413,8 +2448,63 @@ function countPautaStatus(pautas: Pauta[], user: HubUser) {
   );
 }
 
-function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubProfile[]): NotificationItem[] {
-  return lembretes
+function buildSystemNotifications({
+  hubUsers,
+  lembretes,
+  pautas,
+  user
+}: {
+  hubUsers: HubProfile[];
+  lembretes: Lembrete[];
+  pautas: Pauta[];
+  user: HubUser;
+}): HubNotification[] {
+  return [...buildLembreteNotifications(lembretes, hubUsers, user), ...buildPautaNotifications(pautas, user)];
+}
+
+function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubProfile[], user: HubUser): HubNotification[] {
+  const eventNotifications = lembretes.flatMap((lembrete) => {
+    if (lembrete.status === "concluido") return [];
+    const notifications: HubNotification[] = [];
+    const isOwner = lembrete.createdBy === user.id || lembrete.createdBy === user.email;
+    const isMarked = lembrete.responsaveis.some((responsavel) => responsavel.toLowerCase() === user.email.toLowerCase());
+
+    if (isRecentIso(lembrete.createdAt, 7) && isOwner) {
+      notifications.push(
+        createNotification({
+          dedupeKey: `lembrete:${lembrete.id}:created`,
+          detail: `Criado em ${formatDateTime(lembrete.createdAt)}`,
+          meta: formatResponsaveis(lembrete.responsaveis, profiles),
+          route: "lembretes",
+          targetRef: lembrete.id,
+          targetType: "lembrete",
+          title: `Lembrete criado: ${lembrete.titulo}`,
+          tipo: "lembrete_created",
+          tone: "info"
+        })
+      );
+    }
+
+    if (isRecentIso(lembrete.createdAt, 7) && isMarked && !isOwner) {
+      notifications.push(
+        createNotification({
+          dedupeKey: `lembrete:${lembrete.id}:assigned:${user.email}`,
+          detail: `Prazo: ${formatDateTime(lembrete.prazo)}`,
+          meta: `Criado por ${formatOwner(lembrete.createdBy, profiles)}`,
+          route: "lembretes",
+          targetRef: lembrete.id,
+          targetType: "lembrete",
+          title: `Voce foi marcado: ${lembrete.titulo}`,
+          tipo: "lembrete_assigned",
+          tone: "info"
+        })
+      );
+    }
+
+    return notifications;
+  });
+
+  const dueNotifications = lembretes
     .map((lembrete) => ({ lembrete, tone: getDueTone(lembrete.prazo) }))
     .filter(
       (item): item is { lembrete: Lembrete; tone: "danger" | "warning" } =>
@@ -2425,14 +2515,104 @@ function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubProfile[
       if (toneOrder !== 0) return toneOrder;
       return getDateSortValue(a.lembrete.prazo) - getDateSortValue(b.lembrete.prazo);
     })
-    .map(({ lembrete, tone }) => ({
-      id: `lembrete-${lembrete.id}-${tone}`,
-      title: lembrete.titulo,
-      detail: tone === "danger" ? `Vencido: ${formatDateTime(lembrete.prazo)}` : `Vence em ate 24h: ${formatDateTime(lembrete.prazo)}`,
-      meta: formatResponsaveis(lembrete.responsaveis, profiles),
-      tone,
-      route: "lembretes"
-    }));
+    .map(({ lembrete, tone }) =>
+      createNotification({
+        dedupeKey: `lembrete:${lembrete.id}:${tone}`,
+        title: lembrete.titulo,
+        detail: tone === "danger" ? `Vencido: ${formatDateTime(lembrete.prazo)}` : `Vence em ate 24h: ${formatDateTime(lembrete.prazo)}`,
+        meta: formatResponsaveis(lembrete.responsaveis, profiles),
+        tone,
+        route: "lembretes",
+        tipo: tone === "danger" ? "lembrete_overdue" : "lembrete_due",
+        targetType: "lembrete",
+        targetRef: lembrete.id
+      })
+    );
+
+  return [...dueNotifications, ...eventNotifications].sort(sortNotificationsForDisplay);
+}
+
+function buildPautaNotifications(pautas: Pauta[], user: HubUser): HubNotification[] {
+  return pautas
+    .filter((pauta) => !isPautaConcluida(pauta) && pauta.prazo.trim())
+    .filter((pauta) => user.role !== "colaborador" || isPautaAssignedToUser(pauta, user))
+    .map((pauta) => ({ pauta, tone: isPautaAtrasada(pauta) ? "danger" : getDueTone(pauta.prazo) }))
+    .filter(
+      (item): item is { pauta: Pauta; tone: "danger" | "warning" } =>
+        item.tone === "danger" || item.tone === "warning"
+    )
+    .map(({ pauta, tone }) => {
+      return createNotification({
+        dedupeKey: `pauta:${pauta.id}:${tone}`,
+        title: pauta.tema,
+        detail: tone === "danger" ? `Pauta atrasada: ${formatDate(pauta.prazo)}` : `Pauta vence em ate 24h: ${formatDate(pauta.prazo)}`,
+        meta: pauta.responsavel || pauta.email || "Sem responsavel definido",
+        tone,
+        route: "home",
+        tipo: tone === "danger" ? "pauta_overdue" : "pauta_due",
+        targetType: "pauta",
+        targetRef: pauta.id
+      });
+    })
+    .sort(sortNotificationsForDisplay);
+}
+
+function createNotification({
+  dedupeKey,
+  detail,
+  meta,
+  route,
+  targetRef,
+  targetType,
+  title,
+  tipo,
+  tone
+}: {
+  dedupeKey: string;
+  detail: string;
+  meta: string;
+  route: HubRoute;
+  targetRef: string;
+  targetType: string;
+  title: string;
+  tipo: string;
+  tone: HubNotification["tone"];
+}): HubNotification {
+  const now = new Date().toISOString();
+
+  return {
+    id: dedupeKey,
+    dedupeKey,
+    tipo,
+    title,
+    detail,
+    meta,
+    tone,
+    route,
+    targetRef,
+    targetType,
+    active: true,
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+function sortNotificationsForDisplay(a: HubNotification, b: HubNotification) {
+  const toneOrder = { danger: 0, warning: 1, info: 2 } as const;
+  const toneDiff = toneOrder[a.tone] - toneOrder[b.tone];
+  if (toneDiff !== 0) return toneDiff;
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
+function formatOwner(owner: string, profiles: HubProfile[]) {
+  return profiles.find((profile) => profile.id === owner || profile.email === owner)?.nome || owner;
+}
+
+function isRecentIso(value: string, days: number) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return Date.now() - date.getTime() <= days * 24 * 60 * 60 * 1000;
 }
 
 function getDateSortValue(value: string) {
