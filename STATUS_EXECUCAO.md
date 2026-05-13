@@ -49,6 +49,9 @@
 - Funcao Netlify agendada `refresh-updates` criada para buscar fontes diariamente e limpar itens antigos.
 - Patch SQL `supabase/patch_updates_automaticos.sql` criado para classificar noticias/legislacoes e fontes oficiais/especializadas.
 - Rodapes automaticos ajustados para ignorar URLs genericas/home, exibir noticias com URL especifica e manter legislacoes oficiais relevantes quando nao houver novidade na semana.
+- Rodape de Noticias desacelerado e com pausa ao passar o mouse.
+- Rodape de Legislacoes ajustado para aceitar apenas normas oficiais especificas, normalizar titulos por nome/data da norma e remover materias gravadas indevidamente como legislacao.
+- Patch SQL `supabase/patch_updates_legislacao_cleanup.sql` criado para limpar legislacoes antigas/incorretas e semear normas oficiais recentes.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -114,5 +117,7 @@
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos filtro de URLs especificas nos rodapes.
 - `node --check netlify/functions/refresh-updates.mjs`: OK em 13/05/2026.
 - `npm.cmd run build`: OK em 13/05/2026 apos filtro de URLs especificas e fallback oficial de legislacoes.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos refinamento de Noticias/Legislacoes.
+- `node --check netlify/functions/refresh-updates.mjs`: OK em 13/05/2026 apos refinamento de Legislacoes.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
