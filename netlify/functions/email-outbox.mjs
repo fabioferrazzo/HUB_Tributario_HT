@@ -1,0 +1,280 @@
+const JSON_HEADERS = {
+  "content-type": "application/json",
+  "cache-control": "no-store"
+};
+
+const EMAIL_SELECT =
+  "id,dedupe_key,to_email,to_name,subject,html_body,text_body,category,target_type,target_ref,attempts,scheduled_for";
+
+export default async function handler(request) {
+  if (!["GET", "POST"].includes(request.method)) {
+    return json(405, { error: "Metodo nao permitido." });
+  }
+
+  const dispatchToken = getEnv("EMAIL_DISPATCH_TOKEN");
+  const requestToken = readToken(request);
+
+  if (!dispatchToken || requestToken !== dispatchToken) {
+    return json(401, { error: "Token de despacho de e-mail ausente ou invalido." });
+  }
+
+  const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
+  const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+  }
+
+  if (request.method === "GET") {
+    const preview = await readDueEmails(supabaseUrl, serviceRoleKey, 10);
+    return json(200, {
+      deliveryEnabled: isDeliveryEnabled(),
+      provider: getEmailProvider(),
+      queuedPreview: preview.length,
+      items: preview.map(toSafePreview)
+    });
+  }
+
+  const payload = await parseJsonBody(request);
+  const action = payload.action || "process";
+
+  if (action === "queue-deadlines") {
+    const queued = await callSupabaseRpc(supabaseUrl, serviceRoleKey, "queue_lembrete_deadline_emails", {});
+    return json(200, { queued: Number(queued || 0) });
+  }
+
+  if (action !== "process") {
+    return json(400, { error: "Acao invalida." });
+  }
+
+  const limit = clamp(Number(payload.limit || 20), 1, 50);
+  const dueEmails = await readDueEmails(supabaseUrl, serviceRoleKey, limit);
+
+  if (!isDeliveryEnabled()) {
+    return json(200, {
+      deliveryEnabled: false,
+      dryRun: true,
+      queued: dueEmails.length,
+      items: dueEmails.map(toSafePreview)
+    });
+  }
+
+  assertDeliveryConfig();
+
+  const results = [];
+
+  for (const email of dueEmails) {
+    await updateEmail(supabaseUrl, serviceRoleKey, email.id, {
+      status: "processing",
+      attempts: Number(email.attempts || 0) + 1,
+      last_error: null
+    });
+
+    try {
+      const sent = await sendEmail(email);
+      await updateEmail(supabaseUrl, serviceRoleKey, email.id, {
+        status: "sent",
+        provider: sent.provider,
+        provider_message_id: sent.id,
+        sent_at: new Date().toISOString(),
+        last_error: null
+      });
+      results.push({ id: email.id, status: "sent" });
+    } catch (error) {
+      await updateEmail(supabaseUrl, serviceRoleKey, email.id, {
+        status: "failed",
+        last_error: getErrorMessage(error)
+      });
+      results.push({ id: email.id, status: "failed", error: getErrorMessage(error) });
+    }
+  }
+
+  return json(200, {
+    deliveryEnabled: true,
+    processed: results.length,
+    results
+  });
+}
+
+async function readDueEmails(supabaseUrl, serviceRoleKey, limit) {
+  const now = encodeURIComponent(new Date().toISOString());
+  const url =
+    `${trimUrl(supabaseUrl)}/rest/v1/email_outbox` +
+    `?status=eq.queued&scheduled_for=lte.${now}` +
+    `&select=${encodeURIComponent(EMAIL_SELECT)}` +
+    `&order=scheduled_for.asc&limit=${limit}`;
+
+  const rows = await supabaseRequest(url, {
+    headers: serviceHeaders(serviceRoleKey)
+  });
+
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function callSupabaseRpc(supabaseUrl, serviceRoleKey, functionName, body) {
+  return supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/rpc/${functionName}`, {
+    method: "POST",
+    headers: {
+      ...serviceHeaders(serviceRoleKey),
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+}
+
+async function updateEmail(supabaseUrl, serviceRoleKey, id, patch) {
+  await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/email_outbox?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      ...serviceHeaders(serviceRoleKey),
+      "content-type": "application/json",
+      prefer: "return=minimal"
+    },
+    body: JSON.stringify(patch)
+  });
+}
+
+async function sendEmail(email) {
+  const provider = getEmailProvider();
+
+  if (provider !== "resend") {
+    throw new Error(`Provedor de e-mail nao suportado: ${provider}`);
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${getEnv("EMAIL_PROVIDER_API_KEY")}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      from: getEnv("EMAIL_FROM"),
+      to: [email.to_email],
+      subject: email.subject,
+      html: email.html_body,
+      text: email.text_body || stripHtml(email.html_body),
+      reply_to: getEnv("EMAIL_REPLY_TO") || undefined
+    })
+  });
+
+  const text = await response.text();
+  const data = parseJson(text);
+
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || text || "Erro ao enviar e-mail.");
+  }
+
+  return { provider, id: data?.id || "" };
+}
+
+async function supabaseRequest(url, options) {
+  const response = await fetch(url, options);
+  const text = await response.text();
+  const data = parseJson(text);
+
+  if (!response.ok) {
+    throw new Error(data?.message || data?.msg || data?.error || text || response.statusText);
+  }
+
+  return data;
+}
+
+function serviceHeaders(serviceRoleKey) {
+  return {
+    apikey: serviceRoleKey,
+    authorization: `Bearer ${serviceRoleKey}`
+  };
+}
+
+function assertDeliveryConfig() {
+  if (!getEnv("EMAIL_PROVIDER_API_KEY")) {
+    throw new Error("EMAIL_PROVIDER_API_KEY nao configurada.");
+  }
+
+  if (!getEnv("EMAIL_FROM")) {
+    throw new Error("EMAIL_FROM nao configurado.");
+  }
+}
+
+function isDeliveryEnabled() {
+  return getEnv("EMAIL_DELIVERY_ENABLED").toLowerCase() === "true";
+}
+
+function getEmailProvider() {
+  return (getEnv("EMAIL_PROVIDER") || "resend").toLowerCase();
+}
+
+function toSafePreview(email) {
+  return {
+    id: email.id,
+    category: email.category,
+    targetType: email.target_type,
+    targetRef: email.target_ref,
+    toEmail: maskEmail(email.to_email),
+    subject: email.subject,
+    scheduledFor: email.scheduled_for
+  };
+}
+
+function readToken(request) {
+  const auth = request.headers.get("authorization") || "";
+  const match = auth.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || request.headers.get("x-email-dispatch-token") || "";
+}
+
+async function parseJsonBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    return {};
+  }
+}
+
+function json(status, body) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: JSON_HEADERS
+  });
+}
+
+function getEnv(name) {
+  return globalThis.Netlify?.env?.get?.(name) || process.env[name] || "";
+}
+
+function trimUrl(value) {
+  return value.replace(/\/+$/, "");
+}
+
+function parseJson(value) {
+  if (!value) return null;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function clamp(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(Math.max(Math.trunc(value), min), max);
+}
+
+function stripHtml(value) {
+  return String(value || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function maskEmail(value) {
+  const [name, domain] = String(value || "").split("@");
+  if (!name || !domain) return "";
+  return `${name.slice(0, 2)}***@${domain}`;
+}
+
+function getErrorMessage(error) {
+  return error?.message || "Erro inesperado.";
+}
