@@ -1,8 +1,8 @@
-import type { HubProfile, HubUser, TaskItem } from "../types";
+import type { HubProfile, HubUser, TaskItem, TaskPriority, TaskStatus } from "../types";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
-type TarefasSource = "local" | "supabase";
+type TarefasSource = "calendario" | "local" | "supabase";
 
 type TarefaRow = {
   id: string;
@@ -28,29 +28,62 @@ type TarefaAnexoRow = {
 
 type ProfileRow = Pick<HubProfile, "id" | "email">;
 
+type CalendarAttachment = {
+  name: string;
+  type?: string;
+  dataUrl?: string;
+  size?: number;
+};
+
+type CalendarEvent = {
+  id: string;
+  title: string;
+  date: string;
+  description?: string;
+  category?: string;
+  attachments?: CalendarAttachment[];
+  hub?: {
+    createdBy?: string;
+    responsaveis?: string[];
+    status?: TaskStatus;
+    prioridade?: TaskPriority;
+    createdAt?: string;
+    updatedAt?: string;
+  };
+};
+
 const TASKS_STORAGE_KEY = "hub_tasks";
+const CALENDAR_DB_NAME = "CalAppDB";
+const CALENDAR_STORE_NAME = "events";
 const STORAGE_BUCKET = "hub-anexos";
 
+const useTasksSupabase =
+  import.meta.env.VITE_TAREFAS_SUPABASE === "true" ||
+  import.meta.env.VITE_TASKS_SUPABASE_ENABLED === "true";
+
 export function getTarefasSource(user?: HubUser | null): TarefasSource {
-  return isSupabaseConfigured && Boolean(user?.id) ? "supabase" : "local";
+  if (useTasksSupabase && isSupabaseConfigured && Boolean(user?.id)) return "supabase";
+  return canUseCalendarDb() ? "calendario" : "local";
 }
 
 export function canUserViewTask(task: TaskItem, user?: HubUser | null) {
   if (!user) return false;
   if (user.role === "admin" || user.role === "gestor") return true;
+  if (!task.createdBy && !task.responsaveis.length) return true;
   if (isTaskOwner(task, user)) return true;
   return task.responsaveis.some((responsavel) => responsavel.toLowerCase() === user.email.toLowerCase());
 }
 
 export function canUserManageTask(task: TaskItem, user?: HubUser | null) {
   if (!user) return false;
+  if (!task.createdBy) return true;
   return user.role === "admin" || user.role === "gestor" || isTaskOwner(task, user);
 }
 
 export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
-  if (getTarefasSource(user) === "supabase") {
-    return loadSupabaseTasks();
-  }
+  const source = getTarefasSource(user);
+  if (source === "supabase") return loadSupabaseTasks();
+  if (source === "calendario") return loadCalendarTasks(user);
 
   return filterVisibleTasks(readStorage<TaskItem[]>(TASKS_STORAGE_KEY, []).map(normalizeTask), user);
 }
@@ -66,7 +99,9 @@ export async function saveAppTask({
   task: TaskItem;
   user: HubUser;
 }): Promise<TaskItem[]> {
-  if (getTarefasSource(user) === "supabase") {
+  const source = getTarefasSource(user);
+
+  if (source === "supabase") {
     await upsertSupabaseTask(task, user, {
       isExisting: current.some((item) => item.id === task.id)
     });
@@ -75,6 +110,15 @@ export async function saveAppTask({
       await uploadSupabaseTaskAttachment(task.id, file);
     }
 
+    notifyTasksChanged();
+    return listAppTasks(user);
+  }
+
+  if (source === "calendario") {
+    const events = await readCalendarEvents();
+    const existing = events.find((event) => event.id === task.id);
+    await putCalendarEvent(await taskToCalendarEvent(task, existing, files));
+    notifyTasksChanged();
     return listAppTasks(user);
   }
 
@@ -85,6 +129,7 @@ export async function saveAppTask({
   });
   const next = [localTask, ...current.filter((item) => item.id !== localTask.id)];
   writeStorage(TASKS_STORAGE_KEY, next);
+  notifyTasksChanged();
   return filterVisibleTasks(next, user);
 }
 
@@ -97,16 +142,186 @@ export async function deleteAppTask({
   task: TaskItem;
   user: HubUser;
 }): Promise<TaskItem[]> {
-  if (getTarefasSource(user) === "supabase") {
+  const source = getTarefasSource(user);
+
+  if (source === "supabase") {
     const client = assertSupabase();
     const { error } = await client.from("tarefas").delete().eq("id", task.id);
     if (error) throw error;
+    notifyTasksChanged();
+    return listAppTasks(user);
+  }
+
+  if (source === "calendario") {
+    await deleteCalendarEvent(task.id);
+    notifyTasksChanged();
     return listAppTasks(user);
   }
 
   const next = current.filter((item) => item.id !== task.id);
   writeStorage(TASKS_STORAGE_KEY, next);
+  notifyTasksChanged();
   return filterVisibleTasks(next, user);
+}
+
+async function loadCalendarTasks(user: HubUser) {
+  const events = await readCalendarEvents();
+  return filterVisibleTasks(events.map(calendarEventToTask), user);
+}
+
+function calendarEventToTask(event: CalendarEvent): TaskItem {
+  const hub = event.hub || {};
+  const createdAt = hub.createdAt || event.date || new Date().toISOString();
+
+  return normalizeTask({
+    id: event.id,
+    titulo: event.title,
+    descricao: event.description || "",
+    prazo: event.date || "",
+    prioridade: hub.prioridade || categoryToPriority(event.category),
+    status: hub.status || "aberta",
+    responsaveis: Array.isArray(hub.responsaveis) ? hub.responsaveis : [],
+    anexos: (event.attachments || []).map((attachment) => attachment.name),
+    createdBy: hub.createdBy || "",
+    createdAt,
+    updatedAt: hub.updatedAt || createdAt
+  });
+}
+
+async function taskToCalendarEvent(
+  task: TaskItem,
+  existing: CalendarEvent | undefined,
+  files: File[]
+): Promise<CalendarEvent> {
+  return {
+    ...(existing || {}),
+    id: task.id,
+    title: task.titulo,
+    date: task.prazo,
+    description: task.descricao,
+    category: priorityToCategory(task.prioridade, existing?.category),
+    attachments: await mergeCalendarAttachments(task, existing, files),
+    hub: {
+      ...(existing?.hub || {}),
+      createdBy: task.createdBy,
+      responsaveis: task.responsaveis,
+      status: task.status,
+      prioridade: task.prioridade,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt
+    }
+  };
+}
+
+async function mergeCalendarAttachments(task: TaskItem, existing: CalendarEvent | undefined, files: File[]) {
+  const currentAttachments = existing?.attachments || [];
+  const selectedNames = new Set(task.anexos);
+  const preserved = selectedNames.size
+    ? currentAttachments.filter((attachment) => selectedNames.has(attachment.name))
+    : currentAttachments;
+  const uploaded = await Promise.all(files.map(fileToCalendarAttachment));
+  return [...preserved, ...uploaded];
+}
+
+function fileToCalendarAttachment(file: File): Promise<CalendarAttachment> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error || new Error("Nao foi possivel ler o anexo."));
+    reader.onload = () =>
+      resolve({
+        name: file.name,
+        type: file.type,
+        dataUrl: String(reader.result || ""),
+        size: file.size
+      });
+    reader.readAsDataURL(file);
+  });
+}
+
+function categoryToPriority(category?: string): TaskPriority {
+  if (category === "important") return "alta";
+  if (category === "other") return "baixa";
+  return "normal";
+}
+
+function priorityToCategory(priority: TaskPriority, existingCategory?: string) {
+  if (priority === "alta") return "important";
+  if (priority === "baixa") return "other";
+  return existingCategory || "work";
+}
+
+function canUseCalendarDb() {
+  return typeof indexedDB !== "undefined";
+}
+
+function openCalendarDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (!canUseCalendarDb()) {
+      reject(new Error("IndexedDB indisponivel neste navegador."));
+      return;
+    }
+
+    const request = indexedDB.open(CALENDAR_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(CALENDAR_STORE_NAME)) {
+        db.createObjectStore(CALENDAR_STORE_NAME, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Nao foi possivel abrir o calendario."));
+  });
+}
+
+async function readCalendarEvents(): Promise<CalendarEvent[]> {
+  const db = await openCalendarDb();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CALENDAR_STORE_NAME, "readonly");
+    const request = transaction.objectStore(CALENDAR_STORE_NAME).getAll();
+
+    request.onsuccess = () => resolve((request.result || []) as CalendarEvent[]);
+    request.onerror = () => reject(request.error || new Error("Nao foi possivel carregar as tarefas."));
+    transaction.oncomplete = () => db.close();
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error || new Error("Nao foi possivel carregar as tarefas."));
+    };
+  });
+}
+
+async function putCalendarEvent(event: CalendarEvent): Promise<void> {
+  const db = await openCalendarDb();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CALENDAR_STORE_NAME, "readwrite");
+    transaction.objectStore(CALENDAR_STORE_NAME).put(event);
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error || new Error("Nao foi possivel salvar a tarefa."));
+    };
+  });
+}
+
+async function deleteCalendarEvent(id: string): Promise<void> {
+  const db = await openCalendarDb();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CALENDAR_STORE_NAME, "readwrite");
+    transaction.objectStore(CALENDAR_STORE_NAME).delete(id);
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error || new Error("Nao foi possivel excluir a tarefa."));
+    };
+  });
 }
 
 async function loadSupabaseTasks(): Promise<TaskItem[]> {
@@ -275,11 +490,17 @@ function normalizeTask(value: Partial<TaskItem>): TaskItem {
 }
 
 function filterVisibleTasks(tasks: TaskItem[], user: HubUser) {
-  return tasks.filter((task) => canUserViewTask(task, user));
+  return tasks
+    .filter((task) => canUserViewTask(task, user))
+    .sort((a, b) => (a.prazo || "9999").localeCompare(b.prazo || "9999"));
 }
 
 function isTaskOwner(task: TaskItem, user: HubUser) {
   return task.createdBy === user.id || task.createdBy === user.email;
+}
+
+function notifyTasksChanged() {
+  window.dispatchEvent(new CustomEvent("hub:tasks"));
 }
 
 function toSafeStorageFileName(fileName: string) {
