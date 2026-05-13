@@ -204,6 +204,7 @@ function openDB(){
 function dbGetAll(){return new Promise((res,rej)=>{const req=db.transaction("events","readonly").objectStore("events").getAll();req.onsuccess=e=>res(e.target.result);req.onerror=e=>rej(e);});}
 function dbPut(ev){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").put(ev);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function dbDelete(id){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").delete(id);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
+function notifyParentTasksChanged(){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"hub:tasks"},window.location.origin);}catch(e){}}
 
 // ---- Init ----
 openDB().then(()=>dbGetAll()).then(evs=>{
@@ -403,14 +404,15 @@ async function saveEv(){
   const date=document.getElementById("f-date").value;
   const desc=document.getElementById("f-desc").value.trim();
   if(!title||!date){alert("Preencha título e data.");return;}
-  const ev={id:editingEvId||uid(),title,date,description:desc,category:window._formCat||"personal",attachments:pendingFiles};
+  const previous=editingEvId?events.find(e=>e.id===editingEvId):null;
+  const ev={...(previous||{}),id:editingEvId||uid(),title,date,description:desc,category:window._formCat||"personal",attachments:pendingFiles};
   await dbPut(ev);
   if(editingEvId)events=events.map(e=>e.id===editingEvId?ev:e);else events.push(ev);
-  closePanel();refresh();
+  closePanel();notifyParentTasksChanged();refresh();
 }
 async function deleteEv(id){
   if(!confirm("Excluir este evento?"))return;
-  await dbDelete(id);events=events.filter(e=>e.id!==id);refresh();
+  await dbDelete(id);events=events.filter(e=>e.id!==id);notifyParentTasksChanged();refresh();
 }
 
 // ---- Reminder ----
