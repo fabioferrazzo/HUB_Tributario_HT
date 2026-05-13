@@ -121,7 +121,8 @@
 - Seguir `GUIA_TAREFAS_SUPABASE.md` quando for ativar sincronizacao multiusuario real de Tarefas.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
-- Implementar reset de senha ou convite por e-mail para usuarios reais.
+- Reset de senha provisoria para usuarios reais implementado no Admin: atualiza Supabase Auth pelo servidor e enfileira e-mail pela `email_outbox`.
+- Testar reset de senha provisoria em producao no proximo deploy de marco.
 
 ## Validacoes da rodada
 
@@ -161,3 +162,6 @@
 - `npm.cmd run build`: OK em 13/05/2026 apos ponte de Tarefas calendario/Supabase e guia de ativacao futura.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
+- `node --check netlify/functions/admin-users.mjs`: OK em 13/05/2026 apos reset de senha provisoria.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos reset de senha provisoria.
+- `npm.cmd run build`: OK em 13/05/2026 apos reset de senha provisoria.
