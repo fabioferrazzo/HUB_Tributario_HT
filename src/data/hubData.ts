@@ -102,7 +102,7 @@ export const teamMembers: TeamMember[] = [
   { nome: "Colaborador", email: "colaborador@hteixeira.local", iniciais: "CO", role: "colaborador" }
 ];
 
-export const mockNoticias: Noticia[] = [
+const legacyMockNoticias: Noticia[] = [
   {
     id: "noticia-1",
     titulo: "Receita Federal publica nova orientacao tributaria",
@@ -126,7 +126,7 @@ export const mockNoticias: Noticia[] = [
   }
 ];
 
-export const mockLegislacoes: Noticia[] = [
+const legacyMockLegislacoes: Noticia[] = [
   {
     id: "leg-1",
     titulo: "Monitorar publicacoes oficiais relacionadas a IBS, CBS e Comite Gestor",
@@ -147,6 +147,84 @@ export const mockLegislacoes: Noticia[] = [
     fonte: "Senado",
     url: "https://www12.senado.leg.br/noticias",
     data: "2026-05-07"
+  }
+];
+
+export const mockNoticias: Noticia[] = [
+  {
+    id: "noticia-rfb-curso-rtc",
+    titulo: "Receita Federal e CFC iniciam capacitacao sobre a Reforma Tributaria do Consumo",
+    fonte: "Receita Federal",
+    url: "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/maio/receita-federal-e-conselho-federal-de-contabilidade-iniciam-capacitacao-inedita-sobre-a-reforma-tributaria-do-consumo",
+    data: "2026-05-12",
+    tipo: "noticia",
+    sourceType: "oficial"
+  },
+  {
+    id: "noticia-rfb-programacao-rtc",
+    titulo: "Receita Federal divulga programacao do Curso Reforma Tributaria do Consumo",
+    fonte: "Receita Federal",
+    url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/curso/programacao",
+    data: "2026-05-06",
+    tipo: "noticia",
+    sourceType: "oficial"
+  },
+  {
+    id: "noticia-rfb-orientacoes-2026",
+    titulo: "Receita Federal atualiza orientacoes da Reforma Tributaria para 2026",
+    fonte: "Receita Federal",
+    url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/orientacoes-2026",
+    data: "2026-05-06",
+    tipo: "noticia",
+    sourceType: "oficial"
+  }
+];
+
+export const mockLegislacoes: Noticia[] = [
+  {
+    id: "leg-portaria-mf-cgibs-7-2026",
+    titulo: "Portaria Conjunta MF/CGIBS 7/2026 - disposicoes comuns a CBS e ao IBS",
+    fonte: "Diario Oficial da Uniao",
+    url: "https://www.in.gov.br/web/dou/-/portaria-conjunta-mf/cgibs-n-7-de-30-de-abril-de-2026-702822417",
+    data: "2026-04-30",
+    tipo: "legislacao",
+    sourceType: "oficial"
+  },
+  {
+    id: "leg-resolucao-cgibs-6-2026",
+    titulo: "Resolucao CGIBS 6/2026 - Regulamento do IBS",
+    fonte: "Comite Gestor do IBS",
+    url: "https://www.cgibs.gov.br/upload/arquivos/202604/30084927-res-cgibs-n-6-30-abr-2026-regulamenta-o-ibs.pdf",
+    data: "2026-04-30",
+    tipo: "legislacao",
+    sourceType: "oficial"
+  },
+  {
+    id: "leg-decreto-12955-2026",
+    titulo: "Decreto 12.955/2026 - Regulamento da Contribuicao Social sobre Bens e Servicos (CBS)",
+    fonte: "Planalto",
+    url: "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/decreto/d12955.htm",
+    data: "2026-04-29",
+    tipo: "legislacao",
+    sourceType: "oficial"
+  },
+  {
+    id: "leg-lcp-227-2026",
+    titulo: "Lei Complementar 227/2026 - Comite Gestor do IBS e processo administrativo tributario do IBS",
+    fonte: "Planalto",
+    url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp227.htm",
+    data: "2026-01-13",
+    tipo: "legislacao",
+    sourceType: "oficial"
+  },
+  {
+    id: "leg-lcp-214-2025",
+    titulo: "Lei Complementar 214/2025 - institui IBS, CBS e Imposto Seletivo",
+    fonte: "Planalto",
+    url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/Lcp214compilado.htm",
+    data: "2025-01-16",
+    tipo: "legislacao",
+    sourceType: "oficial"
   }
 ];
 
