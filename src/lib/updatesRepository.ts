@@ -36,7 +36,15 @@ export async function listAppUpdates(kind: UpdateKind): Promise<Noticia[]> {
 
       if (error) throw error;
       const mapped = (data || []).map((row) => mapUpdateRow(row as UpdateRow)).filter(isSpecificUpdateUrl);
-      if (mapped.length) return mapped;
+      if (kind === "noticia") {
+        const news = rankNews(mapped.filter(isTaxNews)).slice(0, 3);
+        if (news.length) return news;
+      }
+
+      if (kind === "legislacao") {
+        const legislation = mergeUpdates(mapped, mockLegislacoes).filter(isSpecificUpdateUrl).sort(sortByDateDesc);
+        if (legislation.length >= 3) return legislation.slice(0, 8);
+      }
 
       const { data: latestData, error: latestError } = await supabase!
         .from("noticias")
@@ -48,14 +56,22 @@ export async function listAppUpdates(kind: UpdateKind): Promise<Noticia[]> {
 
       if (!latestError) {
         const latestMapped = (latestData || []).map((row) => mapUpdateRow(row as UpdateRow)).filter(isSpecificUpdateUrl);
-        if (latestMapped.length) return latestMapped;
+        if (kind === "noticia") {
+          const latestNews = rankNews(latestMapped.filter(isTaxNews)).slice(0, 3);
+          if (latestNews.length) return latestNews;
+        }
+
+        if (kind === "legislacao") {
+          const latestLegislation = mergeUpdates(latestMapped, mockLegislacoes).filter(isSpecificUpdateUrl).sort(sortByDateDesc);
+          if (latestLegislation.length) return latestLegislation.slice(0, 8);
+        }
       }
     } catch {
-      return kind === "legislacao" ? mockLegislacoes : mockNoticias;
+      return kind === "legislacao" ? mockLegislacoes : rankNews(mockNoticias.filter(isTaxNews)).slice(0, 3);
     }
   }
 
-  return kind === "legislacao" ? mockLegislacoes : mockNoticias;
+  return kind === "legislacao" ? mockLegislacoes : rankNews(mockNoticias.filter(isTaxNews)).slice(0, 3);
 }
 
 function mapUpdateRow(row: UpdateRow): Noticia {
@@ -141,6 +157,87 @@ function isNormativeLegislation(item: Noticia) {
   if (url.includes("cgibs.gov.br/regulamentos")) return false;
 
   return /\b(lei complementar|decreto|portaria conjunta|portaria|resolucao|instrucao normativa|ato declaratorio|convenio icms|ajuste sinief|protocolo icms)\b/.test(title);
+}
+
+function isTaxNews(item: Noticia) {
+  const title = normalizeText(item.titulo);
+  const haystack = normalizeText(`${item.titulo} ${item.url}`);
+  const rejectedTitles = new Set([
+    "arrecadacao e cobranca",
+    "cidadania fiscal",
+    "combate ao contrabando",
+    "combate a corrupcao",
+    "aduana e comercio exterior",
+    "atendimento",
+    "institucional"
+  ]);
+
+  if (rejectedTitles.has(title)) return false;
+  if (title.includes("contrabando") || title.includes("corrupcao") || title.includes("cidadania fiscal")) return false;
+
+  return [
+    "tribut",
+    "imposto",
+    "icms",
+    "iss",
+    "simples nacional",
+    "reforma tributaria",
+    "ibs",
+    "cbs",
+    "imposto seletivo",
+    "sped",
+    "efd",
+    "nf-e",
+    "nfe",
+    "nota fiscal",
+    "contribuicao",
+    "piscofins",
+    "arrecadacao",
+    "obrigacao acessoria",
+    "receita federal do brasil"
+  ].some((keyword) => haystack.includes(keyword));
+}
+
+function rankNews(items: Noticia[]) {
+  return [...items].sort((a, b) => newsScore(b) - newsScore(a) || sortByDateDesc(a, b));
+}
+
+function newsScore(item: Noticia) {
+  const haystack = normalizeText(`${item.titulo} ${item.url}`);
+  let score = 0;
+  if (haystack.includes("reforma tributaria") || haystack.includes("ibs") || haystack.includes("cbs")) score += 40;
+  if (haystack.includes("imposto seletivo")) score += 28;
+  if (haystack.includes("tribut") || haystack.includes("imposto")) score += 22;
+  if (haystack.includes("icms") || haystack.includes("iss") || haystack.includes("simples nacional")) score += 18;
+  if (haystack.includes("sped") || haystack.includes("efd") || haystack.includes("nota fiscal") || haystack.includes("nf-e")) score += 14;
+  if (item.sourceType === "oficial") score += 8;
+  score += dateWeight(item.data);
+  return score;
+}
+
+function mergeUpdates(primary: Noticia[], fallback: Noticia[]) {
+  const seen = new Set<string>();
+  const merged: Noticia[] = [];
+
+  for (const item of [...primary, ...fallback]) {
+    const key = `${item.tipo || "noticia"}:${item.url.replace(/[#?].*$/, "")}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+  }
+
+  return merged;
+}
+
+function sortByDateDesc(a: Noticia, b: Noticia) {
+  return new Date(`${b.data || "1900-01-01"}T00:00:00`).getTime() - new Date(`${a.data || "1900-01-01"}T00:00:00`).getTime();
+}
+
+function dateWeight(value: string) {
+  const date = new Date(`${value || ""}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return 0;
+  const ageDays = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86400000));
+  return Math.max(0, 14 - ageDays);
 }
 
 function formatLegislationTitle(item: Noticia) {
