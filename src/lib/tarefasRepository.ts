@@ -82,10 +82,43 @@ export function canUserManageTask(task: TaskItem, user?: HubUser | null) {
 
 export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
   const source = getTarefasSource(user);
-  if (source === "supabase") return loadSupabaseTasks();
+  if (source === "supabase") {
+    const tasks = await loadSupabaseTasks();
+    await syncTasksToCalendar(tasks);
+    return tasks;
+  }
   if (source === "calendario") return loadCalendarTasks(user);
 
   return filterVisibleTasks(readStorage<TaskItem[]>(TASKS_STORAGE_KEY, []).map(normalizeTask), user);
+}
+
+export async function saveCalendarEventTask(event: unknown, user: HubUser): Promise<TaskItem[]> {
+  const source = getTarefasSource(user);
+  const calendarEvent = normalizeCalendarEvent(event, user);
+
+  if (source === "supabase") {
+    await putCalendarEvent(calendarEvent);
+    await upsertSupabaseTask(calendarEventToTask(calendarEvent), user, {
+      isExisting: true
+    });
+    notifyTasksChanged();
+    return listAppTasks(user);
+  }
+
+  return listAppTasks(user);
+}
+
+export async function deleteCalendarEventTask(id: string, user: HubUser): Promise<TaskItem[]> {
+  const source = getTarefasSource(user);
+
+  if (source === "supabase" && isUuid(id)) {
+    const client = assertSupabase();
+    const { error } = await client.from("tarefas").delete().eq("id", id);
+    if (error) throw error;
+    notifyTasksChanged();
+  }
+
+  return listAppTasks(user);
 }
 
 export async function saveAppTask({
@@ -169,6 +202,41 @@ async function loadCalendarTasks(user: HubUser) {
   return filterVisibleTasks(events.map(calendarEventToTask), user);
 }
 
+async function syncTasksToCalendar(tasks: TaskItem[]) {
+  if (!canUseCalendarDb()) return;
+
+  const events = await readCalendarEvents();
+  const eventById = new Map(events.map((event) => [event.id, event]));
+
+  for (const task of tasks) {
+    await putCalendarEvent(await taskToCalendarEvent(task, eventById.get(task.id), []));
+  }
+}
+
+function normalizeCalendarEvent(value: unknown, user: HubUser): CalendarEvent {
+  const event = (value && typeof value === "object" ? value : {}) as Partial<CalendarEvent>;
+  const now = new Date().toISOString();
+  const id = isUuid(event.id || "") ? event.id || crypto.randomUUID() : crypto.randomUUID();
+
+  return {
+    id,
+    title: String(event.title || "Tarefa sem titulo").trim(),
+    date: event.date || now,
+    description: event.description || "",
+    category: event.category || "work",
+    attachments: Array.isArray(event.attachments) ? event.attachments : [],
+    hub: {
+      ...(event.hub || {}),
+      createdBy: event.hub?.createdBy || user.id || user.email,
+      responsaveis: Array.isArray(event.hub?.responsaveis) ? event.hub?.responsaveis : [],
+      status: event.hub?.status || "aberta",
+      prioridade: event.hub?.prioridade || categoryToPriority(event.category),
+      createdAt: event.hub?.createdAt || now,
+      updatedAt: now
+    }
+  };
+}
+
 function calendarEventToTask(event: CalendarEvent): TaskItem {
   const hub = event.hub || {};
   const createdAt = hub.createdAt || event.date || new Date().toISOString();
@@ -191,7 +259,7 @@ function calendarEventToTask(event: CalendarEvent): TaskItem {
 async function taskToCalendarEvent(
   task: TaskItem,
   existing: CalendarEvent | undefined,
-  files: File[]
+  files: File[] = []
 ): Promise<CalendarEvent> {
   return {
     ...(existing || {}),
@@ -497,6 +565,10 @@ function filterVisibleTasks(tasks: TaskItem[], user: HubUser) {
 
 function isTaskOwner(task: TaskItem, user: HubUser) {
   return task.createdBy === user.id || task.createdBy === user.email;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function notifyTasksChanged() {
