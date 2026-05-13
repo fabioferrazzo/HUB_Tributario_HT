@@ -37,7 +37,7 @@ Mantenha `EMAIL_DELIVERY_ENABLED=false` no primeiro deploy apos configurar as va
 3. Abra:
 
 ```txt
-https://hub-depto-tributario-ht.netlify.app/.netlify/functions/email-outbox
+https://hub-depto-tributario-ht.netlify.app/.netlify/functions/email-outbox?token=SEU_EMAIL_DISPATCH_TOKEN
 ```
 
 O retorno deve indicar `deliveryEnabled: false` e listar uma previa mascarada dos e-mails pendentes.
