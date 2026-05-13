@@ -59,6 +59,8 @@
 - Patch SQL `supabase/patch_notificacoes_persistentes.sql` criado para registrar notificacoes no banco, preservar leitura e sincronizar avisos ativos por usuario.
 - Base futura de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox` em modo seguro/desativado por padrao.
 - Eventos de e-mail conectados: criacao de lembrete passa a enfileirar e-mails e a rotina diaria de vencimentos fica agendada, mas inativa ate `EMAIL_SCHEDULE_ENABLED=true`.
+- Modulo Tarefas ativado com formulario completo, responsaveis, anexos, filtros, edicao, conclusao/reabertura, exclusao e persistencia Supabase/local.
+- Patch SQL `supabase/patch_tarefas.sql` criado para tabelas `tarefas`, `tarefa_usuarios`, `tarefa_anexos` e RLS por criador/responsavel/admin/gestor.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -112,6 +114,8 @@
 - Executar `supabase/patch_email_outbox_events.sql` no SQL Editor.
 - Configurar futuramente `EMAIL_DELIVERY_ENABLED`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM` e `EMAIL_DISPATCH_TOKEN` antes de ativar disparos reais.
 - Preparar/ativar envio real de e-mail na criacao do lembrete e um dia antes do vencimento.
+- Executar `supabase/patch_tarefas.sql` no SQL Editor.
+- Testar modulo Tarefas: criar tarefa, marcar responsavel, anexar arquivo, editar, concluir/reabrir e excluir com usuario admin/gestor e colaborador.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
 - Implementar reset de senha ou convite por e-mail para usuarios reais.
@@ -141,5 +145,7 @@
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos eventos de e-mail.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos eventos de e-mail.
 - `npm.cmd run build`: OK em 13/05/2026 apos eventos de e-mail.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
+- `npm.cmd run build`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
