@@ -57,6 +57,12 @@ EMAIL_FORCE_TEST_TO=fiscal10.heixeira@gmail.com
 3. Todos os e-mails serao enviados apenas para `EMAIL_FORCE_TEST_TO`, com assunto iniciado por `[TESTE HUB]`.
 4. Confira no Supabase se os registros mudaram de `queued` para `sent`.
 
+Tambem e possivel processar um item pelo navegador durante a homologacao:
+
+```txt
+https://hub-depto-tributario-ht.netlify.app/.netlify/functions/email-outbox?token=SEU_EMAIL_DISPATCH_TOKEN&action=process&limit=1
+```
+
 ## Ativacao final
 
 Quando o envio teste estiver validado:

@@ -150,6 +150,7 @@
 - `npm.cmd run build`: OK em 13/05/2026 apos eventos de e-mail.
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos modo teste de e-mails e Idempotency-Key.
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos suporte a token por URL para teste protegido no navegador.
+- `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos diagnostico de envio e processamento por URL com `action=process`.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run build`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos Tarefas integrar com IndexedDB do calendario original.
