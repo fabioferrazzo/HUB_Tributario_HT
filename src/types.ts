@@ -53,6 +53,24 @@ export type Lembrete = {
   updatedAt: string;
 };
 
+export type TaskPriority = "alta" | "normal" | "baixa";
+
+export type TaskStatus = "aberta" | "concluida";
+
+export type TaskItem = {
+  id: string;
+  titulo: string;
+  descricao: string;
+  prazo: string;
+  prioridade: TaskPriority;
+  status: TaskStatus;
+  responsaveis: string[];
+  anexos: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type FileResourceCategory = "drive" | "modelo" | "guia" | "anexo" | "outro";
 
 export type FileResourceScope = "privado" | "global";

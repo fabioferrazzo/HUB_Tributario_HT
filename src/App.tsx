@@ -47,7 +47,7 @@ import {
 } from "./lib/lembretesRepository";
 import { deleteAppLink, getLinksSource, listAppLinks, saveAppLink } from "./lib/linksRepository";
 import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
-import { readStorage, writeStorage } from "./lib/storage";
+import { canUserManageTask, deleteAppTask, getTarefasSource, listAppTasks, saveAppTask } from "./lib/tarefasRepository";
 import { listAppUpdates } from "./lib/updatesRepository";
 import { getUsersSource, listAppUsers, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
 import type {
@@ -62,19 +62,13 @@ import type {
   Lembrete,
   Noticia,
   Pauta,
+  TaskItem,
   UsefulLink,
   UserRole
 } from "./types";
 
-type TaskItem = {
-  id: string;
-  titulo: string;
-  prazo: string;
-  status: "aberta" | "concluida";
-  anexos: string[];
-};
-
 type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
+type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
 
 const routes = [
   { id: "home", label: "Inicio", icon: Home },
@@ -488,7 +482,7 @@ function TopBar({
 
 function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
   if (route === "home") return <Dashboard hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
-  if (route === "tarefas") return <TasksModule />;
+  if (route === "tarefas") return <TasksModule hubUsers={hubUsers} user={user} />;
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
   if (route === "arquivos") return <ArquivosModule user={user} />;
   if (route === "links") return <LinksModule user={user} />;
@@ -899,55 +893,213 @@ function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind
   );
 }
 
-function TasksModule() {
+function TasksModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
   return (
     <div className="tasks-layout">
       <div className="calendar-shell">
         <iframe src="/apps/calendar.html" title="Calendario de tarefas" />
       </div>
-      <TaskSidebar />
+      <TaskSidebar hubUsers={hubUsers} user={user} />
     </div>
   );
 }
 
-function TaskSidebar() {
-  const [tasks, setTasks] = useState<TaskItem[]>(() => readStorage<TaskItem[]>("hub_tasks", []));
+function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<TaskFilter>("todas");
   const [titulo, setTitulo] = useState("");
+  const [descricao, setDescricao] = useState("");
   const [prazo, setPrazo] = useState("");
+  const [prioridade, setPrioridade] = useState<TaskItem["prioridade"]>("normal");
+  const [responsaveis, setResponsaveis] = useState<string[]>([]);
   const [anexos, setAnexos] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const source = getTarefasSource(user);
 
-  function persist(nextTasks: TaskItem[]) {
-    setTasks(nextTasks);
-    writeStorage("hub_tasks", nextTasks);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError("");
+
+    listAppTasks(user)
+      .then((items) => {
+        if (active) setTasks(items);
+      })
+      .catch((loadError) => {
+        if (active) setError(getErrorMessage(loadError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const filteredTasks = useMemo(() => {
+    const normalizedQuery = normalizeForSearch(query);
+    return tasks
+      .filter((task) => {
+        if (filter === "minhas") return isTaskAssignedToUser(task, user);
+        if (filter === "abertas") return task.status === "aberta";
+        if (filter === "concluidas") return task.status === "concluida";
+        return true;
+      })
+      .filter((task) => {
+        if (!normalizedQuery) return true;
+        return [
+          task.titulo,
+          task.descricao,
+          task.prioridade,
+          task.status,
+          formatResponsaveis(task.responsaveis, hubUsers),
+          task.anexos.join(" ")
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
+      });
+  }, [filter, hubUsers, query, tasks, user]);
+
+  function resetForm() {
+    setEditingId(null);
+    setTitulo("");
+    setDescricao("");
+    setPrazo("");
+    setPrioridade("normal");
+    setResponsaveis([]);
+    setAnexos([]);
+    setSelectedFiles([]);
   }
 
-  function handleSubmit(event: FormEvent) {
+  function startEdit(task: TaskItem) {
+    if (!canUserManageTask(task, user)) {
+      setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+      return;
+    }
+
+    setEditingId(task.id);
+    setTitulo(task.titulo);
+    setDescricao(task.descricao);
+    setPrazo(task.prazo);
+    setPrioridade(task.prioridade);
+    setResponsaveis(task.responsaveis);
+    setAnexos(task.anexos);
+    setSelectedFiles([]);
+  }
+
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!titulo.trim()) return;
 
-    persist([
-      {
-        id: crypto.randomUUID(),
-        titulo: titulo.trim(),
-        prazo,
-        status: "aberta",
-        anexos
-      },
-      ...tasks
-    ]);
-    setTitulo("");
-    setPrazo("");
-    setAnexos([]);
+    const now = new Date().toISOString();
+    const existing = tasks.find((task) => task.id === editingId);
+    const nextTask: TaskItem = {
+      id: existing?.id || crypto.randomUUID(),
+      titulo: titulo.trim(),
+      descricao: descricao.trim(),
+      prazo,
+      prioridade,
+      status: existing?.status || "aberta",
+      responsaveis,
+      anexos,
+      createdBy: existing?.createdBy || user.id || user.email,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now
+    };
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await saveAppTask({
+        current: tasks,
+        files: selectedFiles,
+        task: nextTask,
+        user
+      });
+      setTasks(saved);
+      resetForm();
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function toggleTask(id: string) {
-    persist(tasks.map((task) => (task.id === id ? { ...task, status: task.status === "aberta" ? "concluida" : "aberta" } : task)));
+  async function persistSingle(task: TaskItem) {
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await saveAppTask({ current: tasks, task, user });
+      setTasks(saved);
+    } catch (persistError) {
+      setError(getErrorMessage(persistError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleTask(id: string) {
+    const target = tasks.find((task) => task.id === id);
+    if (!target) return;
+
+    if (!canUserManageTask(target, user)) {
+      setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode conclui-la.");
+      return;
+    }
+
+    await persistSingle({
+      ...target,
+      status: target.status === "aberta" ? "concluida" : "aberta",
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  async function removeTask(task: TaskItem) {
+    if (!canUserManageTask(task, user)) {
+      setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await deleteAppTask({ current: tasks, task, user });
+      setTasks(saved);
+      if (editingId === task.id) resetForm();
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toggleResponsavel(email: string) {
+    setResponsaveis((current) => (current.includes(email) ? current.filter((item) => item !== email) : [...current, email]));
+  }
+
+  function handleFiles(files: FileList | null) {
+    const fileList = Array.from(files || []);
+    setSelectedFiles(fileList);
+    setAnexos(fileList.length ? fileList.map((file) => file.name) : anexos);
   }
 
   return (
     <aside className="task-sidebar">
       <header>
-        <h2>Tarefas</h2>
+        <div>
+          <h2>Tarefas</h2>
+          <small>{loading ? "Carregando..." : `${source} - ${tasks.length} item(ns)`}</small>
+        </div>
         <span>{tasks.filter((task) => task.status === "aberta").length} abertas</span>
       </header>
 
@@ -957,33 +1109,130 @@ function TaskSidebar() {
           <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
         </label>
         <label>
+          Descricao
+          <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
+        </label>
+        <div className="form-row">
+        <label>
           Prazo
           <input value={prazo} onChange={(event) => setPrazo(event.target.value)} type="datetime-local" />
         </label>
+          <label>
+            Prioridade
+            <select value={prioridade} onChange={(event) => setPrioridade(event.target.value as TaskItem["prioridade"])}>
+              <option value="normal">Normal</option>
+              <option value="alta">Alta</option>
+              <option value="baixa">Baixa</option>
+            </select>
+          </label>
+        </div>
+        <fieldset className="member-picker member-picker--compact">
+          <legend>Responsaveis</legend>
+          <div>
+            {getActiveProfiles(hubUsers).map((member) => (
+              <label key={member.email}>
+                <input
+                  checked={responsaveis.includes(member.email)}
+                  onChange={() => toggleResponsavel(member.email)}
+                  type="checkbox"
+                />
+                <span>{member.iniciais || getInitials(member.nome)}</span>
+                {member.nome}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <label>
           Anexos
           <input
             multiple
-            onChange={(event) => setAnexos(Array.from(event.target.files || []).map((file) => file.name))}
+            onChange={(event) => handleFiles(event.target.files)}
             type="file"
           />
         </label>
-        <button className="primary-action" type="submit">
-          Adicionar
-        </button>
+        {anexos.length ? (
+          <div className="attachment-list">
+            {anexos.map((anexo) => (
+              <span key={anexo}>{anexo}</span>
+            ))}
+          </div>
+        ) : null}
+        <div className="form-actions-inline">
+          <button className="primary-action" disabled={saving || loading} type="submit">
+            {saving ? "Salvando..." : editingId ? "Atualizar tarefa" : "Salvar tarefa"}
+          </button>
+          {editingId ? (
+            <button disabled={saving} type="button" onClick={resetForm}>
+              Cancelar
+            </button>
+          ) : null}
+        </div>
       </form>
 
+      <div className="panel-toolbar task-toolbar">
+        <button className={`filter-pill ${filter === "todas" ? "active" : ""}`} onClick={() => setFilter("todas")} type="button">
+          Todas ({tasks.length})
+        </button>
+        <button className={`filter-pill ${filter === "minhas" ? "active" : ""}`} onClick={() => setFilter("minhas")} type="button">
+          Minhas ({tasks.filter((task) => isTaskAssignedToUser(task, user)).length})
+        </button>
+        <button className={`filter-pill ${filter === "abertas" ? "active" : ""}`} onClick={() => setFilter("abertas")} type="button">
+          Abertas ({tasks.filter((task) => task.status === "aberta").length})
+        </button>
+        <label className="panel-search">
+          <Search size={14} />
+          <input aria-label="Buscar tarefas" onChange={(event) => setQuery(event.target.value)} placeholder="Buscar..." value={query} />
+        </label>
+      </div>
+
+      {error ? <p className="module-error module-error--compact">{error}</p> : null}
+
       <div className="task-list">
-        {tasks.map((task) => (
-          <button className={`task-item task-item--${task.status}`} key={task.id} type="button" onClick={() => toggleTask(task.id)}>
-            <CheckCircle2 size={17} />
-            <span>
-              <strong>{task.titulo}</strong>
-              <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"}</small>
-              {task.anexos.length ? <em>{task.anexos.length} anexo(s)</em> : null}
-            </span>
-          </button>
-        ))}
+        {filteredTasks.map((task) => {
+          const canManage = canUserManageTask(task, user);
+
+          return (
+            <article className={`task-item task-item--${task.status}`} key={task.id}>
+              <CheckCircle2 size={17} />
+              <div>
+                <strong>{task.titulo}</strong>
+                <span>{task.descricao || "Sem descricao"}</span>
+                <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
+                <div className="lembrete-tags">
+                  <StatusPill label={task.status} />
+                  <StatusPill label={task.prioridade} />
+                  {task.anexos.length ? (
+                    <span className="attachments">
+                      <Paperclip size={12} />
+                      {task.anexos.length}
+                    </span>
+                  ) : null}
+                </div>
+                {canManage ? (
+                  <div className="record-actions">
+                    <button disabled={saving} type="button" onClick={() => startEdit(task)}>
+                      <Edit3 size={14} />
+                      Editar
+                    </button>
+                    <button disabled={saving} type="button" onClick={() => toggleTask(task.id)}>
+                      <CheckCircle2 size={14} />
+                      {task.status === "concluida" ? "Reabrir" : "Concluir"}
+                    </button>
+                    <button className="danger-action" disabled={saving} type="button" onClick={() => removeTask(task)}>
+                      <Trash2 size={14} />
+                      Excluir
+                    </button>
+                  </div>
+                ) : (
+                  <div className="record-actions record-actions--readonly">
+                    <span className="readonly-note">Somente visualizacao</span>
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })}
+        {!filteredTasks.length ? <div className="empty-state">Nenhuma tarefa encontrada.</div> : null}
       </div>
     </aside>
   );
@@ -2398,6 +2647,14 @@ function isPautaGeneral(pauta: Pauta) {
 
 function canUserViewPauta(pauta: Pauta, user: HubUser) {
   return isPautaGeneral(pauta) || isPautaAssignedToUser(pauta, user);
+}
+
+function isTaskAssignedToUser(task: TaskItem, user: HubUser) {
+  return (
+    task.createdBy === user.id ||
+    task.createdBy === user.email ||
+    task.responsaveis.some((responsavel) => responsavel.toLowerCase() === user.email.toLowerCase())
+  );
 }
 
 function isPautaAlta(pauta: Pauta) {
