@@ -52,6 +52,9 @@
 - Rodape de Noticias desacelerado e com pausa ao passar o mouse.
 - Rodape de Legislacoes ajustado para aceitar apenas normas oficiais especificas, normalizar titulos por nome/data da norma e remover materias gravadas indevidamente como legislacao.
 - Patch SQL `supabase/patch_updates_legislacao_cleanup.sql` criado para limpar legislacoes antigas/incorretas e semear normas oficiais recentes.
+- Noticias refinadas para exibir somente itens com cunho tributario e limitar o rodape/sidebar as 3 noticias tributarias mais relevantes.
+- Legislacoes ajustadas para completar a lista com normas oficiais anteriores quando nao houver publicacao no dia.
+- Velocidade do ticker ajustada dinamicamente pelo tamanho do conteudo, evitando que Legislacoes fique lenta quando houver poucos itens.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -119,5 +122,8 @@
 - `npm.cmd run build`: OK em 13/05/2026 apos filtro de URLs especificas e fallback oficial de legislacoes.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos refinamento de Noticias/Legislacoes.
 - `node --check netlify/functions/refresh-updates.mjs`: OK em 13/05/2026 apos refinamento de Legislacoes.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias e fallback ampliado de Legislacoes.
+- `node --check netlify/functions/refresh-updates.mjs`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias.
+- `npm.cmd run build`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias e ticker dinamico.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
