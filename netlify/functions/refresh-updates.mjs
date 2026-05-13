@@ -20,7 +20,11 @@ const KEYWORDS = [
   "cbs",
   "comite gestor",
   "comitê gestor",
-  "imposto seletivo"
+  "imposto seletivo",
+  "contribuinte",
+  "obrigacao acessoria",
+  "nota fiscal",
+  "sped"
 ];
 
 const LEGISLATION_KEYWORDS = [
@@ -32,7 +36,20 @@ const LEGISLATION_KEYWORDS = [
   "comitê gestor",
   "imposto seletivo",
   "lei complementar 214",
+  "lei complementar 227",
   "lc 214",
+  "lc 227",
+  "lcp214",
+  "lcp227",
+  "lei complementar",
+  "portaria conjunta",
+  "resolucao cgibs",
+  "instrucao normativa",
+  "ato declaratorio",
+  "decreto",
+  "norma",
+  "regulamento",
+  "tributacao do consumo",
   "regulamentacao da reforma",
   "regulamentação da reforma"
 ];
@@ -105,8 +122,24 @@ const SOURCES = [
   {
     tipo: "legislacao",
     sourceType: "oficial",
-    fonte: "Planalto Legislacao",
-    url: "http://www4.planalto.gov.br/legislacao",
+    fonte: "Planalto - Leis Complementares",
+    url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/quadro_lcp.htm",
+    parser: "html",
+    keywords: LEGISLATION_KEYWORDS
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Receita Federal - Normas",
+    url: "https://normas.receita.fazenda.gov.br/sijut2consulta/consulta.action?tipoData=2&optOrdem=Publicacao_DESC&termoBusca=CBS+IBS",
+    parser: "html",
+    keywords: LEGISLATION_KEYWORDS
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Comite Gestor do IBS",
+    url: "https://www.cgibs.gov.br/regulamentos",
     parser: "html",
     keywords: LEGISLATION_KEYWORDS
   },
@@ -125,6 +158,65 @@ const SOURCES = [
     url: "https://www12.senado.leg.br/noticias",
     parser: "html",
     keywords: LEGISLATION_KEYWORDS
+  }
+];
+
+const FALLBACK_UPDATES = [
+  {
+    tipo: "noticia",
+    sourceType: "oficial",
+    fonte: "Receita Federal",
+    title: "Receita Federal e CFC iniciam capacitacao sobre a Reforma Tributaria do Consumo",
+    url: "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/maio/receita-federal-e-conselho-federal-de-contabilidade-iniciam-capacitacao-inedita-sobre-a-reforma-tributaria-do-consumo",
+    publishedAt: "2026-05-12"
+  },
+  {
+    tipo: "noticia",
+    sourceType: "oficial",
+    fonte: "Receita Federal",
+    title: "Programacao do Curso Reforma Tributaria do Consumo",
+    url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/curso/programacao",
+    publishedAt: "2026-05-06"
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Planalto",
+    title: "Decreto 12.955/2026 - Regulamento da Contribuicao Social sobre Bens e Servicos (CBS)",
+    url: "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/decreto/d12955.htm",
+    publishedAt: "2026-04-29"
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Comite Gestor do IBS",
+    title: "Resolucao CGIBS 6/2026 - Regulamento do IBS",
+    url: "https://www.cgibs.gov.br/upload/arquivos/202604/30084927-res-cgibs-n-6-30-abr-2026-regulamenta-o-ibs.pdf",
+    publishedAt: "2026-04-30"
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Diario Oficial da Uniao",
+    title: "Portaria Conjunta MF/CGIBS 7/2026 - disposicoes comuns a CBS e ao IBS",
+    url: "https://www.in.gov.br/web/dou/-/portaria-conjunta-mf/cgibs-n-7-de-30-de-abril-de-2026-702822417",
+    publishedAt: "2026-04-30"
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Planalto",
+    title: "Lei Complementar 227/2026 - Comite Gestor do IBS e processo administrativo tributario do IBS",
+    url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp227.htm",
+    publishedAt: "2026-01-13"
+  },
+  {
+    tipo: "legislacao",
+    sourceType: "oficial",
+    fonte: "Planalto",
+    title: "Lei Complementar 214/2025 - institui IBS, CBS e Imposto Seletivo",
+    url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/Lcp214compilado.htm",
+    publishedAt: "2025-01-16"
   }
 ];
 
@@ -148,7 +240,9 @@ export default async function handler() {
     }
   }
 
-  const uniqueItems = uniqueByUrl(collected).slice(0, 80);
+  const uniqueItems = uniqueByUrl([...collected, ...fallbackItems()])
+    .filter(isSpecificUpdateUrl)
+    .slice(0, 80);
   const saved = uniqueItems.length ? await upsertUpdates(supabaseUrl, serviceRoleKey, uniqueItems) : [];
   await removeExpiredUpdates(supabaseUrl, serviceRoleKey);
 
@@ -167,9 +261,29 @@ async function fetchSource(source) {
   const text = await fetchText(source.url);
   const parsed = looksLikeXml(text) ? parseRss(text, source) : parseHtmlLinks(text, source);
   return parsed
+    .filter((item) => item.titulo.length > 12 && item.url.startsWith("http"))
+    .filter((item) => !isBadTitle(item.titulo))
+    .filter(isSpecificUpdateUrl)
     .filter((item) => isRelevant(item, source.keywords))
-    .filter((item) => isRecent(item.publishedAt))
+    .filter((item) => source.tipo === "legislacao" || isRecent(item.published_at))
     .slice(0, 12);
+}
+
+function fallbackItems() {
+  return FALLBACK_UPDATES.map((item) =>
+    buildUpdate({
+      source: {
+        tipo: item.tipo,
+        sourceType: item.sourceType,
+        fonte: item.fonte,
+        url: item.url
+      },
+      title: item.title,
+      url: item.url,
+      description: "",
+      publishedAt: item.publishedAt
+    })
+  );
 }
 
 async function fetchText(url) {
@@ -187,12 +301,17 @@ async function fetchText(url) {
 }
 
 function parseRss(xml, source) {
-  const blocks = [...xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)].map((match) => match[0]);
+  const blocks = [
+    ...[...xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)].map((match) => match[0]),
+    ...[...xml.matchAll(/<entry\b[\s\S]*?<\/entry>/gi)].map((match) => match[0])
+  ];
   return blocks.map((block) => {
     const title = decodeXml(readTag(block, "title"));
-    const link = decodeXml(readTag(block, "link") || readTag(block, "guid"));
-    const description = decodeXml(readTag(block, "description"));
-    const publishedAt = normalizeDate(readTag(block, "pubDate") || readTag(block, "dc:date") || readTag(block, "date"));
+    const link = decodeXml(readTag(block, "link") || readTagAttribute(block, "link", "href") || readTag(block, "guid"));
+    const description = decodeXml(readTag(block, "description") || readTag(block, "summary") || readTag(block, "content"));
+    const publishedAt = normalizeDate(
+      readTag(block, "pubDate") || readTag(block, "published") || readTag(block, "updated") || readTag(block, "dc:date") || readTag(block, "date")
+    );
 
     return buildUpdate({
       source,
@@ -208,8 +327,9 @@ function parseHtmlLinks(html, source) {
   const links = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
   return links
     .map((match) => {
+      const anchor = match[0];
       const url = toAbsoluteUrl(decodeHtml(match[1]), source.url);
-      const title = cleanText(decodeHtml(stripTags(match[2])));
+      const title = cleanText(decodeHtml(stripTags(match[2]))) || decodeHtml(readTagAttribute(anchor, "a", "title")) || decodeHtml(readTagAttribute(anchor, "a", "aria-label"));
       return buildUpdate({
         source,
         title,
@@ -262,7 +382,7 @@ async function upsertUpdates(supabaseUrl, serviceRoleKey, items) {
 
 async function removeExpiredUpdates(supabaseUrl, serviceRoleKey) {
   const cutoff = addDaysIsoDate(todayIsoDate(), -7);
-  return supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/noticias?published_at=lt.${cutoff}`, {
+  return supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/noticias?tipo=eq.noticia&published_at=lt.${cutoff}`, {
     method: "DELETE",
     headers: serviceHeaders(serviceRoleKey)
   });
@@ -281,7 +401,7 @@ async function supabaseRequest(url, options) {
 }
 
 function isRelevant(item, keywords) {
-  const haystack = normalize(`${item.titulo} ${item.description || ""} ${item.fonte}`);
+  const haystack = normalize(`${item.titulo} ${item.description || ""} ${item.fonte} ${item.url} ${item.source_url || ""}`);
   return keywords.some((keyword) => haystack.includes(normalize(keyword)));
 }
 
@@ -305,10 +425,90 @@ function uniqueByUrl(items) {
   });
 }
 
+function isSpecificUpdateUrl(item) {
+  try {
+    const parsed = new URL(item.url);
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname.replace(/\/+$/, "").toLowerCase();
+    const segments = path.split("/").filter(Boolean);
+
+    if (!path || path === "/") return false;
+    if (host.includes("www4.planalto.gov.br") && path === "/legislacao") return false;
+
+    if (host.includes("planalto.gov.br")) {
+      return /\/ccivil_03\/leis\/lcp\/lcp\d/.test(path) || /\/ccivil_03\/_ato\d{4}-\d{4}\/\d{4}\//.test(path);
+    }
+
+    if (host.includes("normas.receita.fazenda.gov.br")) {
+      return true;
+    }
+
+    if (host.includes("cgibs.gov.br")) {
+      return path.includes("/upload/arquivos/") || path === "/regulamentos";
+    }
+
+    if (host.includes("in.gov.br")) {
+      return path.includes("/web/dou/-/");
+    }
+
+    if (host.includes("gov.br")) {
+      if (path.endsWith("/pt-br") || path.endsWith("/assuntos/noticias")) return false;
+      return path.includes("/assuntos/noticias/") || path.includes("/reforma-tributaria-do-consumo/");
+    }
+
+    if (host.includes("sefaz.rs.gov.br")) {
+      return segments.length >= 1 && !["home", "inicial"].includes(segments.at(-1) || "");
+    }
+
+    if (host.includes("senado.leg.br") || host.includes("camara.leg.br")) {
+      return segments.length >= 2 && segments.at(-1) !== "noticias";
+    }
+
+    if (host.includes("jota.info") || host.includes("contabeis.com.br")) {
+      return segments.length >= 2;
+    }
+
+    return segments.length >= 2;
+  } catch {
+    return false;
+  }
+}
+
+function isBadTitle(title) {
+  const normalized = normalize(title);
+  const blockedExact = new Set([
+    "noticias",
+    "legislacao",
+    "receita federal",
+    "ministerio da fazenda",
+    "camara dos deputados",
+    "senado federal",
+    "acesse",
+    "leia mais",
+    "saiba mais",
+    "compartilhe",
+    "pagina inicial"
+  ]);
+
+  return (
+    blockedExact.has(normalized) ||
+    normalized.includes("compartilhe") ||
+    normalized.includes("copiar para area de transferencia") ||
+    normalized.includes("seu navegador") ||
+    normalized.includes("menu")
+  );
+}
+
 function readTag(block, tag) {
   const escapedTag = tag.replace(":", "\\:");
   const match = block.match(new RegExp(`<${escapedTag}[^>]*>([\\s\\S]*?)<\\/${escapedTag}>`, "i"));
   return match?.[1]?.replace(/^<!\[CDATA\[|\]\]>$/g, "").trim() || "";
+}
+
+function readTagAttribute(block, tag, attribute) {
+  const escapedTag = tag.replace(":", "\\:");
+  const match = block.match(new RegExp(`<${escapedTag}\\b[^>]*\\s${attribute}=["']([^"']+)["'][^>]*>`, "i"));
+  return match?.[1]?.trim() || "";
 }
 
 function findNearbyDate(html, index) {
