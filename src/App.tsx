@@ -392,7 +392,7 @@ function TopBar({
       </div>
       <div className="topbar-brand-strip">
         <img src="/assets/logo-h-teixeira.jpeg" alt="H. Teixeira" />
-        <span>Depto TributÃ¡rio</span>
+        <span>{"Depto Tribut\u00e1rio"}</span>
       </div>
       <div className="topbar-actions">
         <div className="top-chip">
@@ -894,10 +894,32 @@ function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind
 }
 
 function TasksModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
+  const [calendarVersion, setCalendarVersion] = useState(0);
+
+  useEffect(() => {
+    function refreshCalendarFrame() {
+      setCalendarVersion((version) => version + 1);
+    }
+
+    function handleMessage(event: MessageEvent) {
+      if (event.origin === window.location.origin && event.data?.type === "hub:tasks") {
+        refreshCalendarFrame();
+      }
+    }
+
+    window.addEventListener("hub:tasks", refreshCalendarFrame);
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("hub:tasks", refreshCalendarFrame);
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
   return (
     <div className="tasks-layout">
       <div className="calendar-shell">
-        <iframe src="/apps/calendar.html" title="Calendario de tarefas" />
+        <iframe key={calendarVersion} src="/apps/calendar.html" title="Calendario de tarefas" />
       </div>
       <TaskSidebar hubUsers={hubUsers} user={user} />
     </div>
@@ -923,22 +945,41 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError("");
 
-    listAppTasks(user)
-      .then((items) => {
+    async function refresh(options: { silent?: boolean } = {}) {
+      if (!options.silent) setLoading(true);
+      setError("");
+
+      try {
+        const items = await listAppTasks(user);
         if (active) setTasks(items);
-      })
-      .catch((loadError) => {
+      } catch (loadError) {
         if (active) setError(getErrorMessage(loadError));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      } finally {
+        if (active && !options.silent) setLoading(false);
+      }
+    }
+
+    function handleMessage(event: MessageEvent) {
+      if (event.origin === window.location.origin && event.data?.type === "hub:tasks") {
+        refresh({ silent: true });
+      }
+    }
+
+    function handleHubTasks() {
+      refresh({ silent: true });
+    }
+
+    refresh();
+    const interval = window.setInterval(() => refresh({ silent: true }), 3000);
+    window.addEventListener("hub:tasks", handleHubTasks);
+    window.addEventListener("message", handleMessage);
 
     return () => {
       active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("hub:tasks", handleHubTasks);
+      window.removeEventListener("message", handleMessage);
     };
   }, [user]);
 
@@ -996,7 +1037,14 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!titulo.trim()) return;
+    if (!titulo.trim()) {
+      setError("Informe o titulo da tarefa.");
+      return;
+    }
+    if (!prazo) {
+      setError("Informe o prazo da tarefa para sincronizar com o calendario.");
+      return;
+    }
 
     const now = new Date().toISOString();
     const existing = tasks.find((task) => task.id === editingId);
