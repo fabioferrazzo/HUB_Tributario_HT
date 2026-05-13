@@ -92,3 +92,24 @@ set
   active = true,
   source_type = excluded.source_type,
   source_url = excluded.source_url;
+
+delete from public.noticias
+where tipo = 'noticia'
+  and (
+    lower(titulo) in (
+      'arrecadação e cobrança',
+      'arrecadacao e cobranca',
+      'cidadania fiscal',
+      'combate ao contrabando',
+      'combate à corrupção',
+      'combate a corrupcao',
+      'aduana e comércio exterior',
+      'aduana e comercio exterior',
+      'atendimento',
+      'institucional'
+    )
+    or url ilike '%/assuntos/noticias/arrecadacao-e-cobranca%'
+    or url ilike '%/assuntos/noticias/cidadania%'
+    or url ilike '%/assuntos/noticias/contrabando%'
+    or url ilike '%/assuntos/noticias/corrupcao%'
+  );
