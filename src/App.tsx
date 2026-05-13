@@ -26,7 +26,7 @@
   UserRound,
   X
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
 import { loadPautas, sheetsHubUrl, teamMembers } from "./data/hubData";
 import {
   deleteAppFileFolder,
@@ -788,8 +788,9 @@ function FooterUpdates() {
       {openDrawer ? (
         <UpdatesDrawer
           items={drawerItems}
+          kind={openDrawer}
           onClose={() => setOpenDrawer(null)}
-          title={openDrawer === "legislacao" ? "Legislacoes da semana" : "Noticias da semana"}
+          title={openDrawer === "legislacao" ? "Legislacoes recentes" : "Noticias da semana"}
         />
       ) : null}
     </footer>
@@ -798,6 +799,11 @@ function FooterUpdates() {
 
 function UpdateTicker({ icon, items, onOpen, title }: { icon: React.ReactNode; items: Noticia[]; onOpen: () => void; title: string }) {
   const tickerItems = items.length ? items : [{ id: `${title}-empty`, titulo: "Aguardando atualizacoes automaticas", fonte: "HUB", url: "#", data: "" }];
+  const repeatCount = Math.max(2, Math.ceil(6 / tickerItems.length));
+  const loopItems = Array.from({ length: repeatCount }, () => tickerItems).flat();
+  const textSize = tickerItems.reduce((total, item) => total + item.fonte.length + item.titulo.length, 0);
+  const tickerDuration = Math.max(52, Math.min(132, textSize * 0.62));
+  const tickerStyle = { "--ticker-duration": `${tickerDuration}s` } as CSSProperties;
 
   return (
     <section
@@ -815,8 +821,8 @@ function UpdateTicker({ icon, items, onOpen, title }: { icon: React.ReactNode; i
         <strong>{title}</strong>
       </div>
       <div className="ticker-window">
-        <div className="ticker-track">
-          {[...tickerItems, ...tickerItems].map((item, index) => (
+        <div className="ticker-track" style={tickerStyle}>
+          {loopItems.map((item, index) => (
             <span className="ticker-item" key={`${item.id}-${index}`}>
               <strong>{item.fonte}</strong>
               <span>{item.titulo}</span>
@@ -828,14 +834,14 @@ function UpdateTicker({ icon, items, onOpen, title }: { icon: React.ReactNode; i
   );
 }
 
-function UpdatesDrawer({ items, onClose, title }: { items: Noticia[]; onClose: () => void; title: string }) {
+function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind: "noticia" | "legislacao"; onClose: () => void; title: string }) {
   return (
     <div className="updates-sidebar-backdrop" role="presentation" onClick={onClose}>
       <aside className="updates-sidebar" aria-label={title} role="dialog" onClick={(event) => event.stopPropagation()}>
         <header>
           <div>
             <strong>{title}</strong>
-            <small>Ultimos 7 dias - {items.length} item(ns)</small>
+            <small>{kind === "legislacao" ? "Normas oficiais monitoradas" : "Ultimos 7 dias"} - {items.length} item(ns)</small>
           </div>
           <button aria-label="Fechar atualizacoes" type="button" onClick={onClose}>
             <X size={18} />
