@@ -58,6 +58,7 @@
 - Notificacoes persistentes implementadas para o sino, com origem Supabase/local, lido individual, marcar todas, eventos de lembretes e alertas de pautas.
 - Patch SQL `supabase/patch_notificacoes_persistentes.sql` criado para registrar notificacoes no banco, preservar leitura e sincronizar avisos ativos por usuario.
 - Base futura de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox` em modo seguro/desativado por padrao.
+- Eventos de e-mail conectados: criacao de lembrete passa a enfileirar e-mails e a rotina diaria de vencimentos fica agendada, mas inativa ate `EMAIL_SCHEDULE_ENABLED=true`.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -108,6 +109,7 @@
 - Executar `supabase/patch_notificacoes_persistentes.sql` no SQL Editor.
 - Testar sino: ver avisos, marcar uma notificacao como lida, marcar todas como lidas e validar lembrete marcado para outro usuario.
 - Executar `supabase/patch_email_outbox.sql` no SQL Editor.
+- Executar `supabase/patch_email_outbox_events.sql` no SQL Editor.
 - Configurar futuramente `EMAIL_DELIVERY_ENABLED`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM` e `EMAIL_DISPATCH_TOKEN` antes de ativar disparos reais.
 - Preparar/ativar envio real de e-mail na criacao do lembrete e um dia antes do vencimento.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
@@ -136,5 +138,8 @@
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos base futura de e-mails.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos base futura de e-mails.
 - `npm.cmd run build`: OK em 13/05/2026 apos base futura de e-mails.
+- `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos eventos de e-mail.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos eventos de e-mail.
+- `npm.cmd run build`: OK em 13/05/2026 apos eventos de e-mail.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
