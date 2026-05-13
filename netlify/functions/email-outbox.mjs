@@ -11,11 +11,17 @@ export default async function handler(request) {
     return json(405, { error: "Metodo nao permitido." });
   }
 
+  const payload = request.method === "POST" ? await parseJsonBody(request) : {};
+  const scheduled = Boolean(payload.next_run);
   const dispatchToken = getEnv("EMAIL_DISPATCH_TOKEN");
   const requestToken = readToken(request);
 
-  if (!dispatchToken || requestToken !== dispatchToken) {
+  if (!scheduled && (!dispatchToken || requestToken !== dispatchToken)) {
     return json(401, { error: "Token de despacho de e-mail ausente ou invalido." });
+  }
+
+  if (scheduled && getEnv("EMAIL_SCHEDULE_ENABLED").toLowerCase() !== "true") {
+    return json(200, { scheduled: true, skipped: true, reason: "EMAIL_SCHEDULE_ENABLED desativado." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -35,28 +41,45 @@ export default async function handler(request) {
     });
   }
 
-  const payload = await parseJsonBody(request);
-  const action = payload.action || "process";
+  const action = payload.action || (scheduled ? "daily" : "process");
 
   if (action === "queue-deadlines") {
     const queued = await callSupabaseRpc(supabaseUrl, serviceRoleKey, "queue_lembrete_deadline_emails", {});
     return json(200, { queued: Number(queued || 0) });
   }
 
+  if (action === "daily") {
+    const queued = await callSupabaseRpc(supabaseUrl, serviceRoleKey, "queue_lembrete_deadline_emails", {});
+    const processed = await processDueEmails(supabaseUrl, serviceRoleKey, Number(payload.limit || 20));
+    return json(200, {
+      scheduled: true,
+      queued: Number(queued || 0),
+      ...processed
+    });
+  }
+
   if (action !== "process") {
     return json(400, { error: "Acao invalida." });
   }
 
-  const limit = clamp(Number(payload.limit || 20), 1, 50);
+  return json(200, await processDueEmails(supabaseUrl, serviceRoleKey, Number(payload.limit || 20)));
+}
+
+export const config = {
+  schedule: "0 12 * * *"
+};
+
+async function processDueEmails(supabaseUrl, serviceRoleKey, requestedLimit) {
+  const limit = clamp(requestedLimit, 1, 50);
   const dueEmails = await readDueEmails(supabaseUrl, serviceRoleKey, limit);
 
   if (!isDeliveryEnabled()) {
-    return json(200, {
+    return {
       deliveryEnabled: false,
       dryRun: true,
       queued: dueEmails.length,
       items: dueEmails.map(toSafePreview)
-    });
+    };
   }
 
   assertDeliveryConfig();
@@ -89,11 +112,11 @@ export default async function handler(request) {
     }
   }
 
-  return json(200, {
+  return {
     deliveryEnabled: true,
     processed: results.length,
     results
-  });
+  };
 }
 
 async function readDueEmails(supabaseUrl, serviceRoleKey, limit) {
