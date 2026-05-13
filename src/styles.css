@@ -637,7 +637,12 @@ textarea:focus {
 .ticker-track {
   display: flex;
   width: max-content;
-  animation: ticker 36s linear infinite;
+  animation: ticker 132s linear infinite;
+}
+
+.news-band:hover .ticker-track,
+.news-band:focus-within .ticker-track {
+  animation-play-state: paused;
 }
 
 .ticker-item {
