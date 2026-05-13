@@ -11,7 +11,7 @@ export default async function handler(request) {
     return json(405, { error: "Metodo nao permitido." });
   }
 
-  const payload = request.method === "POST" ? await parseJsonBody(request) : {};
+  const payload = request.method === "POST" ? await parseJsonBody(request) : readQueryPayload(request);
   const scheduled = Boolean(payload.next_run);
   const dispatchToken = getEnv("EMAIL_DISPATCH_TOKEN");
   const requestToken = readToken(request);
@@ -31,7 +31,7 @@ export default async function handler(request) {
     return json(500, { error: "Variaveis Supabase ausentes no servidor." });
   }
 
-  if (request.method === "GET") {
+  if (request.method === "GET" && !payload.action) {
     const preview = await readDueEmails(supabaseUrl, serviceRoleKey, 10);
     return json(200, {
       deliveryEnabled: isDeliveryEnabled(),
@@ -42,15 +42,23 @@ export default async function handler(request) {
   }
 
   const action = payload.action || (scheduled ? "daily" : "process");
+  console.log("email-outbox action", {
+    action,
+    deliveryEnabled: isDeliveryEnabled(),
+    scheduled,
+    provider: getEmailProvider()
+  });
 
   if (action === "queue-deadlines") {
     const queued = await callSupabaseRpc(supabaseUrl, serviceRoleKey, "queue_lembrete_deadline_emails", {});
+    console.log("email-outbox queue-deadlines", { queued: Number(queued || 0) });
     return json(200, { queued: Number(queued || 0) });
   }
 
   if (action === "daily") {
     const queued = await callSupabaseRpc(supabaseUrl, serviceRoleKey, "queue_lembrete_deadline_emails", {});
     const processed = await processDueEmails(supabaseUrl, serviceRoleKey, Number(payload.limit || 20));
+    console.log("email-outbox daily result", { queued: Number(queued || 0), ...processed });
     return json(200, {
       scheduled: true,
       queued: Number(queued || 0),
@@ -62,7 +70,9 @@ export default async function handler(request) {
     return json(400, { error: "Acao invalida." });
   }
 
-  return json(200, await processDueEmails(supabaseUrl, serviceRoleKey, Number(payload.limit || 20)));
+  const processed = await processDueEmails(supabaseUrl, serviceRoleKey, Number(payload.limit || 20));
+  console.log("email-outbox process result", processed);
+  return json(200, processed);
 }
 
 export const config = {
@@ -72,6 +82,7 @@ export const config = {
 async function processDueEmails(supabaseUrl, serviceRoleKey, requestedLimit) {
   const limit = clamp(requestedLimit, 1, 50);
   const dueEmails = await readDueEmails(supabaseUrl, serviceRoleKey, limit);
+  console.log("email-outbox due emails", { limit, count: dueEmails.length });
 
   if (!isDeliveryEnabled()) {
     return {
@@ -102,12 +113,14 @@ async function processDueEmails(supabaseUrl, serviceRoleKey, requestedLimit) {
         sent_at: new Date().toISOString(),
         last_error: null
       });
+      console.log("email-outbox sent", { id: email.id, provider: sent.provider, providerMessageId: sent.id });
       results.push({ id: email.id, status: "sent" });
     } catch (error) {
       await updateEmail(supabaseUrl, serviceRoleKey, email.id, {
         status: "failed",
         last_error: getErrorMessage(error)
       });
+      console.error("email-outbox failed", { id: email.id, error: getErrorMessage(error) });
       results.push({ id: email.id, status: "failed", error: getErrorMessage(error) });
     }
   }
@@ -257,6 +270,15 @@ async function parseJsonBody(request) {
   } catch {
     return {};
   }
+}
+
+function readQueryPayload(request) {
+  const params = new URL(request.url).searchParams;
+  return {
+    action: params.get("action") || "",
+    limit: params.get("limit") || "",
+    next_run: params.get("next_run") || ""
+  };
 }
 
 function json(status, body) {
