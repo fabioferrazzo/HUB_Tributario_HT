@@ -55,6 +55,8 @@
 - Noticias refinadas para exibir somente itens com cunho tributario e limitar o rodape/sidebar as 3 noticias tributarias mais relevantes.
 - Legislacoes ajustadas para completar a lista com normas oficiais anteriores quando nao houver publicacao no dia.
 - Velocidade do ticker ajustada dinamicamente pelo tamanho do conteudo, evitando que Legislacoes fique lenta quando houver poucos itens.
+- Notificacoes persistentes implementadas para o sino, com origem Supabase/local, lido individual, marcar todas, eventos de lembretes e alertas de pautas.
+- Patch SQL `supabase/patch_notificacoes_persistentes.sql` criado para registrar notificacoes no banco, preservar leitura e sincronizar avisos ativos por usuario.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -102,7 +104,8 @@
 - Testar modulo Links uteis: admin/gestor com links globais; colaborador com links pessoais e visualizacao de globais.
 - Executar `supabase/patch_updates_automaticos.sql` no SQL Editor.
 - Subir funcao `netlify/functions/refresh-updates.mjs` e testar rodapes apos deploy.
-- Criar notificacoes persistentes no banco para eventos alem dos lembretes calculados em tela.
+- Executar `supabase/patch_notificacoes_persistentes.sql` no SQL Editor.
+- Testar sino: ver avisos, marcar uma notificacao como lida, marcar todas como lidas e validar lembrete marcado para outro usuario.
 - Preparar envio de e-mail um dia antes do vencimento.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
@@ -125,5 +128,7 @@
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias e fallback ampliado de Legislacoes.
 - `node --check netlify/functions/refresh-updates.mjs`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias.
 - `npm.cmd run build`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias e ticker dinamico.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos notificacoes persistentes.
+- `npm.cmd run build`: OK em 13/05/2026 apos notificacoes persistentes.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
