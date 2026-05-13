@@ -247,7 +247,8 @@ function toSafePreview(email) {
 function readToken(request) {
   const auth = request.headers.get("authorization") || "";
   const match = auth.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || request.headers.get("x-email-dispatch-token") || "";
+  const urlToken = new URL(request.url).searchParams.get("token") || "";
+  return match?.[1]?.trim() || request.headers.get("x-email-dispatch-token") || urlToken;
 }
 
 async function parseJsonBody(request) {
