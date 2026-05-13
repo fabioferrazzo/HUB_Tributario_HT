@@ -21,11 +21,11 @@ Em Netlify > Project configuration > Environment variables, cadastre:
 EMAIL_PROVIDER=resend
 EMAIL_PROVIDER_API_KEY=sua_api_key_resend
 EMAIL_FROM=HUB Depto Tributario <hub@seudominio.com.br>
-EMAIL_REPLY_TO=fiscal10.heixeira@gmail.com
+EMAIL_REPLY_TO=fiscal10.hteixeira@gmail.com
 EMAIL_DISPATCH_TOKEN=crie_um_token_longo_e_aleatorio
 EMAIL_DELIVERY_ENABLED=false
 EMAIL_SCHEDULE_ENABLED=false
-EMAIL_FORCE_TEST_TO=fiscal10.heixeira@gmail.com
+EMAIL_FORCE_TEST_TO=fiscal10.hteixeira@gmail.com
 ```
 
 Mantenha `EMAIL_DELIVERY_ENABLED=false` no primeiro deploy apos configurar as variaveis. Assim a funcao continua em modo dry-run e mostra quais e-mails seriam enviados sem disparar nada.
@@ -50,7 +50,7 @@ Depois do dry-run:
 
 ```txt
 EMAIL_DELIVERY_ENABLED=true
-EMAIL_FORCE_TEST_TO=fiscal10.heixeira@gmail.com
+EMAIL_FORCE_TEST_TO=fiscal10.hteixeira@gmail.com
 ```
 
 2. Rode a funcao manualmente pelo painel do Netlify ou por uma chamada POST autenticada.

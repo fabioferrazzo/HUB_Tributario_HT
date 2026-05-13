@@ -57,8 +57,8 @@
 - Velocidade do ticker ajustada dinamicamente pelo tamanho do conteudo, evitando que Legislacoes fique lenta quando houver poucos itens.
 - Notificacoes persistentes implementadas para o sino, com origem Supabase/local, lido individual, marcar todas, eventos de lembretes e alertas de pautas.
 - Patch SQL `supabase/patch_notificacoes_persistentes.sql` criado para registrar notificacoes no banco, preservar leitura e sincronizar avisos ativos por usuario.
-- Base futura de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox` em modo seguro/desativado por padrao.
-- Eventos de e-mail conectados: criacao de lembrete passa a enfileirar e-mails e a rotina diaria de vencimentos fica agendada, mas inativa ate `EMAIL_SCHEDULE_ENABLED=true`.
+- Base de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox`.
+- Eventos de e-mail homologados em modo teste: criacao de lembrete e rotina diaria de vencimentos enviaram via Resend com `EMAIL_FORCE_TEST_TO`.
 - Modulo Tarefas ativado com formulario completo, responsaveis, anexos, filtros, edicao, conclusao/reabertura, exclusao e persistencia Supabase/local.
 - Patch SQL `supabase/patch_tarefas.sql` criado para tabelas `tarefas`, `tarefa_usuarios`, `tarefa_anexos` e RLS por criador/responsavel/admin/gestor.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
@@ -112,13 +112,13 @@
 - Testar sino: ver avisos, marcar uma notificacao como lida, marcar todas como lidas e validar lembrete marcado para outro usuario.
 - Executar `supabase/patch_email_outbox.sql` no SQL Editor.
 - Executar `supabase/patch_email_outbox_events.sql` no SQL Editor.
-- Configurar futuramente `EMAIL_DELIVERY_ENABLED`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM` e `EMAIL_DISPATCH_TOKEN` antes de ativar disparos reais.
-- Seguir `GUIA_EMAILS_REAIS.md` para configurar Resend, testar dry-run, testar envio controlado com `EMAIL_FORCE_TEST_TO` e ativar schedule.
-- Preparar/ativar envio real de e-mail na criacao do lembrete e um dia antes do vencimento.
+- Manter `EMAIL_FORCE_TEST_TO=fiscal10.hteixeira@gmail.com` ate verificar dominio proprio no Resend.
+- Verificar dominio proprio no Resend antes de liberar e-mails para usuarios reais.
 - Executar `supabase/patch_tarefas.sql` no SQL Editor.
 - Testar modulo Tarefas: criar tarefa, marcar responsavel, anexar arquivo, editar, concluir/reabrir e excluir com usuario admin/gestor e colaborador.
 - Validar modulo Tarefas integrado ao IndexedDB do calendario original: criar pela sidebar, criar pelo app original, editar, excluir e confirmar sincronizacao visual entre calendario e painel lateral.
 - Integracao Supabase de Tarefas fica preparada, mas opt-in por variavel futura `VITE_TAREFAS_SUPABASE=true`.
+- Seguir `GUIA_TAREFAS_SUPABASE.md` quando for ativar sincronizacao multiusuario real de Tarefas.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
 - Implementar reset de senha ou convite por e-mail para usuarios reais.
@@ -151,9 +151,13 @@
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos modo teste de e-mails e Idempotency-Key.
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos suporte a token por URL para teste protegido no navegador.
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos diagnostico de envio e processamento por URL com `action=process`.
+- E-mail real: OK em 13/05/2026, envio Resend testado com `EMAIL_FORCE_TEST_TO` para criacao de lembrete.
+- E-mail real: OK em 13/05/2026, rotina `action=daily` enfileirou vencimento e enviou com sucesso em modo teste.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run build`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos Tarefas integrar com IndexedDB do calendario original.
 - `npm.cmd run build`: OK em 13/05/2026 apos Tarefas integrar com IndexedDB do calendario original.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos ponte de Tarefas calendario/Supabase e guia de ativacao futura.
+- `npm.cmd run build`: OK em 13/05/2026 apos ponte de Tarefas calendario/Supabase e guia de ativacao futura.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
