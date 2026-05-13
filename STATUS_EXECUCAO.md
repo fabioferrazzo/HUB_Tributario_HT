@@ -116,6 +116,8 @@
 - Preparar/ativar envio real de e-mail na criacao do lembrete e um dia antes do vencimento.
 - Executar `supabase/patch_tarefas.sql` no SQL Editor.
 - Testar modulo Tarefas: criar tarefa, marcar responsavel, anexar arquivo, editar, concluir/reabrir e excluir com usuario admin/gestor e colaborador.
+- Validar modulo Tarefas integrado ao IndexedDB do calendario original: criar pela sidebar, criar pelo app original, editar, excluir e confirmar sincronizacao visual entre calendario e painel lateral.
+- Integracao Supabase de Tarefas fica preparada, mas opt-in por variavel futura `VITE_TAREFAS_SUPABASE=true`.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
 - Implementar reset de senha ou convite por e-mail para usuarios reais.
@@ -147,5 +149,7 @@
 - `npm.cmd run build`: OK em 13/05/2026 apos eventos de e-mail.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run build`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos Tarefas integrar com IndexedDB do calendario original.
+- `npm.cmd run build`: OK em 13/05/2026 apos Tarefas integrar com IndexedDB do calendario original.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
