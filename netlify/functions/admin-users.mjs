@@ -29,6 +29,7 @@ export default async function handler(request) {
   const body = payload.value;
   const profile = normalizeProfile(body);
   const password = String(body.password || "").trim();
+  const action = String(body.action || "upsert-user");
 
   if (!profile.email || !profile.nome) {
     return json(400, { error: "Nome e e-mail sao obrigatorios." });
@@ -38,13 +39,23 @@ export default async function handler(request) {
     return json(400, { error: "Perfil invalido." });
   }
 
-  if (body.createAuthUser !== false && password.length < 8) {
+  if ((action === "reset-password" || body.createAuthUser !== false) && password.length < 8) {
     return json(400, { error: "Informe uma senha inicial com pelo menos 8 caracteres." });
   }
 
   try {
     const authUser = await verifySession(supabaseUrl, supabaseAnonKey, token);
     await assertAdminCaller(supabaseUrl, serviceRoleKey, authUser.id);
+
+    if (action === "reset-password") {
+      if (!profile.id) {
+        return json(400, { error: "ID Auth Supabase nao informado para redefinir senha." });
+      }
+
+      await resetAuthUserPassword(supabaseUrl, serviceRoleKey, profile.id, password);
+      const emailQueued = await queuePasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, authUser.id);
+      return json(200, { ok: true, emailQueued });
+    }
 
     let userId = profile.id;
 
@@ -119,6 +130,56 @@ async function createAuthUser(supabaseUrl, serviceRoleKey, profile, password) {
       }
     })
   });
+}
+
+async function resetAuthUserPassword(supabaseUrl, serviceRoleKey, userId, password) {
+  return supabaseRequest(`${trimUrl(supabaseUrl)}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    headers: {
+      ...serviceHeaders(serviceRoleKey),
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      password
+    })
+  });
+}
+
+async function queuePasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy) {
+  try {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/rpc/queue_email`, {
+      method: "POST",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        p_to_email: profile.email,
+        p_to_name: profile.nome,
+        p_subject: "Senha provisoria do HUB Depto Tributario",
+        p_html_body:
+          "<p>Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.</p>" +
+          `<p><strong>E-mail:</strong> ${escapeHtml(profile.email)}</p>` +
+          `<p><strong>Senha provisoria:</strong> ${escapeHtml(password)}</p>` +
+          `<p>Acesse: <a href="${escapeHtml(getAppBaseUrl())}">${escapeHtml(getAppBaseUrl())}</a></p>`,
+        p_text_body:
+          "Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.\n" +
+          `E-mail: ${profile.email}\n` +
+          `Senha provisoria: ${password}\n` +
+          `Acesse: ${getAppBaseUrl()}`,
+        p_category: "usuario_senha",
+        p_target_type: "profile",
+        p_target_ref: profile.id,
+        p_scheduled_for: new Date().toISOString(),
+        p_dedupe_key: `password_reset:${profile.id}:${Date.now()}`,
+        p_created_by: createdBy
+      })
+    });
+    return true;
+  } catch (error) {
+    console.warn("Nao foi possivel enfileirar e-mail de senha provisoria.", error?.message || error);
+    return false;
+  }
 }
 
 async function upsertProfile(supabaseUrl, serviceRoleKey, profile) {
@@ -204,6 +265,19 @@ function normalizeProfile(body) {
 
 function trimUrl(value) {
   return value.replace(/\/+$/, "");
+}
+
+function getAppBaseUrl() {
+  return getEnv("APP_BASE_URL") || getEnv("URL") || "https://hub-depto-tributario-ht.netlify.app";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function extractSupabaseMessage(data, text, fallback) {
