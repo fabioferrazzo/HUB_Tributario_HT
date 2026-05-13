@@ -164,16 +164,21 @@ async function sendEmail(email) {
     throw new Error(`Provedor de e-mail nao suportado: ${provider}`);
   }
 
+  const forcedRecipient = getEnv("EMAIL_FORCE_TEST_TO");
+  const toEmail = forcedRecipient || email.to_email;
+  const subject = forcedRecipient ? `[TESTE HUB] ${email.subject}` : email.subject;
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       authorization: `Bearer ${getEnv("EMAIL_PROVIDER_API_KEY")}`,
+      "idempotency-key": email.dedupe_key,
       "content-type": "application/json"
     },
     body: JSON.stringify({
       from: getEnv("EMAIL_FROM"),
-      to: [email.to_email],
-      subject: email.subject,
+      to: [toEmail],
+      subject,
       html: email.html_body,
       text: email.text_body || stripHtml(email.html_body),
       reply_to: getEnv("EMAIL_REPLY_TO") || undefined
