@@ -47,7 +47,15 @@ import {
 } from "./lib/lembretesRepository";
 import { deleteAppLink, getLinksSource, listAppLinks, saveAppLink } from "./lib/linksRepository";
 import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
-import { canUserManageTask, deleteAppTask, getTarefasSource, listAppTasks, saveAppTask } from "./lib/tarefasRepository";
+import {
+  canUserManageTask,
+  deleteAppTask,
+  deleteCalendarEventTask,
+  getTarefasSource,
+  listAppTasks,
+  saveAppTask,
+  saveCalendarEventTask
+} from "./lib/tarefasRepository";
 import { listAppUpdates } from "./lib/updatesRepository";
 import { getUsersSource, listAppUsers, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
 import type {
@@ -962,12 +970,32 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
 
     function handleMessage(event: MessageEvent) {
       if (event.origin === window.location.origin && event.data?.type === "hub:tasks") {
-        refresh({ silent: true });
+        syncCalendarMessage(event.data);
       }
     }
 
     function handleHubTasks() {
       refresh({ silent: true });
+    }
+
+    async function syncCalendarMessage(data: { action?: string; event?: unknown; id?: string }) {
+      try {
+        if (data.action === "saved" && data.event) {
+          const items = await saveCalendarEventTask(data.event, user);
+          if (active) setTasks(items);
+          return;
+        }
+
+        if (data.action === "deleted" && data.id) {
+          const items = await deleteCalendarEventTask(data.id, user);
+          if (active) setTasks(items);
+          return;
+        }
+
+        refresh({ silent: true });
+      } catch (syncError) {
+        if (active) setError(getErrorMessage(syncError));
+      }
     }
 
     refresh();
