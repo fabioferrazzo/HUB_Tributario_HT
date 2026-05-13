@@ -626,6 +626,7 @@ textarea:focus {
   border-radius: 8px;
   background: #fff;
   padding: 0 16px;
+  cursor: pointer;
 }
 
 .ticker-window {
@@ -639,7 +640,7 @@ textarea:focus {
   animation: ticker 36s linear infinite;
 }
 
-.ticker-track a {
+.ticker-item {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2201,8 +2202,101 @@ body {
   font-size: 12px;
 }
 
-.news-band .ticker-track a {
+.news-band .ticker-item {
   padding-right: 32px;
+}
+
+.updates-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(8, 17, 31, 0.42);
+}
+
+.updates-sidebar {
+  width: min(520px, calc(100vw - 28px));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: -14px 0 34px rgba(21, 38, 65, 0.2);
+}
+
+.updates-sidebar header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.updates-sidebar header strong,
+.updates-sidebar header small {
+  display: block;
+}
+
+.updates-sidebar header strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.updates-sidebar header small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.updates-sidebar header button {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 8px;
+}
+
+.updates-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  overflow: auto;
+  padding: 14px;
+}
+
+.updates-list a {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.updates-list a span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.updates-list a strong {
+  color: var(--ink);
+  line-height: 1.28;
+}
+
+.updates-list a em,
+.updates-list a small {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 1120px) {

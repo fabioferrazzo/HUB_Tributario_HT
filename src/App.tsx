@@ -27,7 +27,7 @@
   X
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { loadPautas, mockLegislacoes, mockNoticias, sheetsHubUrl, teamMembers } from "./data/hubData";
+import { loadPautas, sheetsHubUrl, teamMembers } from "./data/hubData";
 import {
   deleteAppFileFolder,
   deleteAppFileResource,
@@ -47,6 +47,7 @@ import {
 } from "./lib/lembretesRepository";
 import { deleteAppLink, getLinksSource, listAppLinks, saveAppLink } from "./lib/linksRepository";
 import { readStorage, writeStorage } from "./lib/storage";
+import { listAppUpdates } from "./lib/updatesRepository";
 import { getUsersSource, listAppUsers, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
 import type {
   FileFolder,
@@ -664,7 +665,7 @@ function Dashboard({
         </div>
       </section>
 
-      <FooterUpdates legislacoes={mockLegislacoes} noticias={mockNoticias} />
+      <FooterUpdates />
     </div>
   );
 }
@@ -743,41 +744,117 @@ function DueSignal({ prazo }: { prazo: string }) {
   return <span className={`due-signal due-signal--${tone}`} aria-label={`Prazo ${tone}`} />;
 }
 
-function FooterUpdates({ legislacoes, noticias }: { legislacoes: Noticia[]; noticias: Noticia[] }) {
+function FooterUpdates() {
+  const [noticias, setNoticias] = useState<Noticia[]>([]);
+  const [legislacoes, setLegislacoes] = useState<Noticia[]>([]);
+  const [openDrawer, setOpenDrawer] = useState<"noticia" | "legislacao" | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([listAppUpdates("noticia"), listAppUpdates("legislacao")])
+      .then(([loadedNoticias, loadedLegislacoes]) => {
+        if (!active) return;
+        setNoticias(loadedNoticias);
+        setLegislacoes(loadedLegislacoes);
+      })
+      .catch(() => {
+        if (!active) return;
+        setNoticias([]);
+        setLegislacoes([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const drawerItems = openDrawer === "legislacao" ? legislacoes : noticias;
+
   return (
     <footer className="footer-updates">
       <UpdateTicker
         icon={<Newspaper size={18} />}
         items={noticias}
+        onOpen={() => setOpenDrawer("noticia")}
         title="Noticias Tributarias"
       />
       <UpdateTicker
         icon={<ShieldCheck size={18} />}
         items={legislacoes}
+        onOpen={() => setOpenDrawer("legislacao")}
         title="Legislacoes Reforma Tributaria"
       />
+      {openDrawer ? (
+        <UpdatesDrawer
+          items={drawerItems}
+          onClose={() => setOpenDrawer(null)}
+          title={openDrawer === "legislacao" ? "Legislacoes da semana" : "Noticias da semana"}
+        />
+      ) : null}
     </footer>
   );
 }
 
-function UpdateTicker({ icon, items, title }: { icon: React.ReactNode; items: Noticia[]; title: string }) {
+function UpdateTicker({ icon, items, onOpen, title }: { icon: React.ReactNode; items: Noticia[]; onOpen: () => void; title: string }) {
+  const tickerItems = items.length ? items : [{ id: `${title}-empty`, titulo: "Aguardando atualizacoes automaticas", fonte: "HUB", url: "#", data: "" }];
+
   return (
-    <section className="news-band" aria-label={title}>
+    <section
+      className="news-band"
+      aria-label={title}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen();
+      }}
+    >
       <div className="news-label">
         {icon}
         <strong>{title}</strong>
       </div>
       <div className="ticker-window">
         <div className="ticker-track">
-          {[...items, ...items].map((item, index) => (
-            <a href={item.url} key={`${item.id}-${index}`} rel="noreferrer" target="_blank">
+          {[...tickerItems, ...tickerItems].map((item, index) => (
+            <span className="ticker-item" key={`${item.id}-${index}`}>
               <strong>{item.fonte}</strong>
               <span>{item.titulo}</span>
-            </a>
+            </span>
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function UpdatesDrawer({ items, onClose, title }: { items: Noticia[]; onClose: () => void; title: string }) {
+  return (
+    <div className="updates-sidebar-backdrop" role="presentation" onClick={onClose}>
+      <aside className="updates-sidebar" aria-label={title} role="dialog" onClick={(event) => event.stopPropagation()}>
+        <header>
+          <div>
+            <strong>{title}</strong>
+            <small>Ultimos 7 dias - {items.length} item(ns)</small>
+          </div>
+          <button aria-label="Fechar atualizacoes" type="button" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="updates-list">
+          {items.map((item) => (
+            <a href={item.url} key={item.id} rel="noreferrer" target="_blank">
+              <span>{formatDate(item.data)}</span>
+              <strong>{item.titulo}</strong>
+              <em>{item.fonte}</em>
+              <small>{item.url}</small>
+            </a>
+          ))}
+          {!items.length ? <div className="empty-state">Nenhuma atualizacao registrada para a ultima semana.</div> : null}
+        </div>
+      </aside>
+    </div>
   );
 }
 

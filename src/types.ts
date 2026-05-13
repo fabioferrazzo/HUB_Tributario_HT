@@ -103,6 +103,9 @@ export type Noticia = {
   fonte: string;
   url: string;
   data: string;
+  tipo?: "noticia" | "legislacao";
+  sourceType?: "oficial" | "especializada";
+  sourceUrl?: string;
 };
 
 export type HubRoute =
