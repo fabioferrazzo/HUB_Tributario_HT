@@ -176,7 +176,7 @@ button,input,textarea,select{font-family:inherit}
 const CATS={work:{label:"Trabalho",col:"#378ADD"},personal:{label:"Pessoal",col:"#7F77DD"},health:{label:"Saúde",col:"#1D9E75"},important:{label:"Urgente",col:"#D85A30"},other:{label:"Outro",col:"#BA7517"}};
 const MONTHS=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const FILE_ICONS={pdf:"📄",doc:"📝",docx:"📝",xls:"📊",xlsx:"📊",ppt:"📊",pptx:"📊",png:"🖼",jpg:"🖼",jpeg:"🖼",gif:"🖼",webp:"🖼",zip:"🗜",default:"📎"};
-const uid=()=>Math.random().toString(36).slice(2,10);
+const uid=()=>window.crypto&&crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2,10);
 const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
 const fTime=iso=>{if(!iso)return"";const d=new Date(iso);return isNaN(d)?"":d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});};
 const fDateShort=iso=>{if(!iso)return"";const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"});};
@@ -204,7 +204,7 @@ function openDB(){
 function dbGetAll(){return new Promise((res,rej)=>{const req=db.transaction("events","readonly").objectStore("events").getAll();req.onsuccess=e=>res(e.target.result);req.onerror=e=>rej(e);});}
 function dbPut(ev){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").put(ev);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function dbDelete(id){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").delete(id);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
-function notifyParentTasksChanged(){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"hub:tasks"},window.location.origin);}catch(e){}}
+function notifyParentTasksChanged(detail){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"hub:tasks",...(detail||{})},window.location.origin);}catch(e){}}
 
 // ---- Init ----
 openDB().then(()=>dbGetAll()).then(evs=>{
@@ -408,11 +408,11 @@ async function saveEv(){
   const ev={...(previous||{}),id:editingEvId||uid(),title,date,description:desc,category:window._formCat||"personal",attachments:pendingFiles};
   await dbPut(ev);
   if(editingEvId)events=events.map(e=>e.id===editingEvId?ev:e);else events.push(ev);
-  closePanel();notifyParentTasksChanged();refresh();
+  closePanel();notifyParentTasksChanged({action:"saved",event:ev});refresh();
 }
 async function deleteEv(id){
   if(!confirm("Excluir este evento?"))return;
-  await dbDelete(id);events=events.filter(e=>e.id!==id);notifyParentTasksChanged();refresh();
+  await dbDelete(id);events=events.filter(e=>e.id!==id);notifyParentTasksChanged({action:"deleted",id});refresh();
 }
 
 // ---- Reminder ----
