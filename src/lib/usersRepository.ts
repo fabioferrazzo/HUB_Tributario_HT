@@ -6,7 +6,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 export const LOCAL_DEMO_PASSWORD = "hub-demo-2026";
 
 const USERS_STORAGE_KEY = "hub_users";
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.heixeira@gmail.com";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com";
 
 type UsersSource = "local" | "supabase";
 
@@ -156,6 +156,53 @@ export async function setAppUserActive(profile: HubProfile, active: boolean): Pr
 
   saveLocalUsers(users);
   return sortUsers(users);
+}
+
+export async function resetAppUserPassword(profile: HubProfile, password: string): Promise<{ emailQueued: boolean }> {
+  if (getUsersSource() !== "supabase") {
+    throw new Error("Reset de senha real exige Supabase.");
+  }
+
+  if (!profile.id) {
+    throw new Error("Perfil Supabase sem ID Auth.");
+  }
+
+  if (password.trim().length < 8) {
+    throw new Error("Informe uma senha provisoria com pelo menos 8 caracteres.");
+  }
+
+  const client = assertSupabase();
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    throw new Error("Sessao Supabase expirada. Entre novamente.");
+  }
+
+  const response = await fetch("/.netlify/functions/admin-users", {
+    method: "POST",
+    headers: {
+      "authorization": `Bearer ${token}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "reset-password",
+      id: profile.id,
+      email: profile.email,
+      nome: profile.nome,
+      role: profile.role,
+      active: profile.active,
+      password: password.trim()
+    })
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as { error?: string; emailQueued?: boolean };
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Nao foi possivel redefinir a senha do usuario.");
+  }
+
+  return { emailQueued: Boolean(payload.emailQueued) };
 }
 
 function assertSupabase() {
