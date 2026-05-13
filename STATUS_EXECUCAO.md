@@ -113,6 +113,7 @@
 - Executar `supabase/patch_email_outbox.sql` no SQL Editor.
 - Executar `supabase/patch_email_outbox_events.sql` no SQL Editor.
 - Configurar futuramente `EMAIL_DELIVERY_ENABLED`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM` e `EMAIL_DISPATCH_TOKEN` antes de ativar disparos reais.
+- Seguir `GUIA_EMAILS_REAIS.md` para configurar Resend, testar dry-run, testar envio controlado com `EMAIL_FORCE_TEST_TO` e ativar schedule.
 - Preparar/ativar envio real de e-mail na criacao do lembrete e um dia antes do vencimento.
 - Executar `supabase/patch_tarefas.sql` no SQL Editor.
 - Testar modulo Tarefas: criar tarefa, marcar responsavel, anexar arquivo, editar, concluir/reabrir e excluir com usuario admin/gestor e colaborador.
@@ -147,6 +148,7 @@
 - `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos eventos de e-mail.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos eventos de e-mail.
 - `npm.cmd run build`: OK em 13/05/2026 apos eventos de e-mail.
+- `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos modo teste de e-mails e Idempotency-Key.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run build`: OK em 13/05/2026 apos modulo Tarefas Supabase/local.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos Tarefas integrar com IndexedDB do calendario original.
