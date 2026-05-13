@@ -59,7 +59,7 @@ export async function listAppUpdates(kind: UpdateKind): Promise<Noticia[]> {
 }
 
 function mapUpdateRow(row: UpdateRow): Noticia {
-  return {
+  const item: Noticia = {
     id: row.id,
     titulo: row.titulo,
     fonte: row.fonte || "Fonte",
@@ -69,13 +69,28 @@ function mapUpdateRow(row: UpdateRow): Noticia {
     sourceType: row.source_type || "oficial",
     sourceUrl: row.source_url || ""
   };
+
+  if (item.tipo === "legislacao") {
+    return {
+      ...item,
+      titulo: formatLegislationTitle(item)
+    };
+  }
+
+  return item;
 }
 
 function isSpecificUpdateUrl(item: Noticia) {
+  if (item.tipo === "legislacao" && !isNormativeLegislation(item)) return false;
+
   try {
     const parsed = new URL(item.url);
     const path = parsed.pathname.replace(/\/+$/, "").toLowerCase();
     const host = parsed.hostname.toLowerCase();
+
+    if (item.tipo === "legislacao" && (host.includes("senado.leg.br") || host.includes("camara.leg.br"))) {
+      return false;
+    }
 
     if (host.includes("planalto.gov.br")) {
       return /\/leis\/lcp\/lcp\d|\/leis\/lcp\/lcp\d+compilado|\/_ato\d{4}-\d{4}\/\d{4}\//.test(path);
@@ -86,7 +101,7 @@ function isSpecificUpdateUrl(item: Noticia) {
     }
 
     if (host.includes("cgibs.gov.br")) {
-      return path.includes("/upload/arquivos/") || path === "/regulamentos";
+      return path.includes("/upload/arquivos/");
     }
 
     if (host.includes("in.gov.br")) {
@@ -113,4 +128,52 @@ function isSpecificUpdateUrl(item: Noticia) {
   } catch {
     return false;
   }
+}
+
+function isNormativeLegislation(item: Noticia) {
+  const title = normalizeText(item.titulo);
+  const url = item.url.toLowerCase();
+
+  if (!title || title.startsWith("-->") || title.includes("conteudo do") || title === "reforma tributaria") return false;
+  if (title.includes("cigarro") || title.includes("especialista") || title.includes("pode reduzir consumo")) return false;
+  if (title.includes("csibs n 1") || title.includes("csibs nº 1")) return false;
+  if (url.includes("camara.leg.br/noticias") || url.includes("senado.leg.br/noticias")) return false;
+  if (url.includes("cgibs.gov.br/regulamentos")) return false;
+
+  return /\b(lei complementar|decreto|portaria conjunta|portaria|resolucao|instrucao normativa|ato declaratorio|convenio icms|ajuste sinief|protocolo icms)\b/.test(title);
+}
+
+function formatLegislationTitle(item: Noticia) {
+  const url = item.url.toLowerCase();
+  const title = item.titulo.trim();
+  const normalizedTitle = normalizeText(title);
+
+  if (url.includes("res-cgibs-n-6") || normalizedTitle.includes("res cgibs n 6") || normalizedTitle.includes("resolucao cgibs n 6")) {
+    return "Resolucao CGIBS nº 6, de 30 de abril de 2026";
+  }
+
+  if (url.includes("portaria-conjunta") || normalizedTitle.includes("portaria conjunta")) {
+    return "Portaria Conjunta MF/CGIBS nº 7, de 30 de abril de 2026";
+  }
+
+  if (url.includes("d12955") || normalizedTitle.includes("decreto n 12.955") || normalizedTitle.includes("decreto nº 12.955")) {
+    return "Decreto nº 12.955, de 29 de abril de 2026";
+  }
+
+  if (url.includes("lcp227") || normalizedTitle.includes("lei complementar 227")) {
+    return "Lei Complementar nº 227, de 13 de janeiro de 2026";
+  }
+
+  if (url.includes("lcp214") || normalizedTitle.includes("lei complementar 214")) {
+    return "Lei Complementar nº 214, de 16 de janeiro de 2025";
+  }
+
+  return title;
+}
+
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
