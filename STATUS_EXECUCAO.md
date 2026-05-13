@@ -57,6 +57,7 @@
 - Velocidade do ticker ajustada dinamicamente pelo tamanho do conteudo, evitando que Legislacoes fique lenta quando houver poucos itens.
 - Notificacoes persistentes implementadas para o sino, com origem Supabase/local, lido individual, marcar todas, eventos de lembretes e alertas de pautas.
 - Patch SQL `supabase/patch_notificacoes_persistentes.sql` criado para registrar notificacoes no banco, preservar leitura e sincronizar avisos ativos por usuario.
+- Base futura de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox` em modo seguro/desativado por padrao.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -106,7 +107,9 @@
 - Subir funcao `netlify/functions/refresh-updates.mjs` e testar rodapes apos deploy.
 - Executar `supabase/patch_notificacoes_persistentes.sql` no SQL Editor.
 - Testar sino: ver avisos, marcar uma notificacao como lida, marcar todas como lidas e validar lembrete marcado para outro usuario.
-- Preparar envio de e-mail um dia antes do vencimento.
+- Executar `supabase/patch_email_outbox.sql` no SQL Editor.
+- Configurar futuramente `EMAIL_DELIVERY_ENABLED`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM` e `EMAIL_DISPATCH_TOKEN` antes de ativar disparos reais.
+- Preparar/ativar envio real de e-mail na criacao do lembrete e um dia antes do vencimento.
 - Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
 - Implementar reset de senha ou convite por e-mail para usuarios reais.
@@ -130,5 +133,8 @@
 - `npm.cmd run build`: OK em 13/05/2026 apos filtro estrito de Noticias tributarias e ticker dinamico.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos notificacoes persistentes.
 - `npm.cmd run build`: OK em 13/05/2026 apos notificacoes persistentes.
+- `node --check netlify/functions/email-outbox.mjs`: OK em 13/05/2026 apos base futura de e-mails.
+- `npm.cmd run typecheck`: OK em 13/05/2026 apos base futura de e-mails.
+- `npm.cmd run build`: OK em 13/05/2026 apos base futura de e-mails.
 - `npm.cmd audit --omit=dev`: 0 vulnerabilidades.
 - App local `http://127.0.0.1:5173`: HTTP 200.
