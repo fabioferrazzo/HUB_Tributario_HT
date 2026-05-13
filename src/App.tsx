@@ -57,7 +57,7 @@ import {
   saveCalendarEventTask
 } from "./lib/tarefasRepository";
 import { listAppUpdates } from "./lib/updatesRepository";
-import { getUsersSource, listAppUsers, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
+import { getUsersSource, listAppUsers, resetAppUserPassword, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
 import type {
   FileFolder,
   FileResource,
@@ -2405,11 +2405,13 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [authId, setAuthId] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
+  const [temporaryPassword, setTemporaryPassword] = useState("");
   const [role, setRole] = useState<UserRole>("colaborador");
   const [active, setActive] = useState(true);
   const source = getUsersSource();
@@ -2455,16 +2457,19 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
     setNome("");
     setEmail("");
     setInitialPassword("");
+    setTemporaryPassword("");
     setRole("colaborador");
     setActive(true);
   }
 
   function startEdit(profile: HubProfile) {
+    setNotice("");
     setEditingKey(getProfileKey(profile));
     setAuthId(profile.id || "");
     setNome(profile.nome);
     setEmail(profile.email);
     setInitialPassword("");
+    setTemporaryPassword("");
     setRole(profile.role);
     setActive(profile.active);
   }
@@ -2476,9 +2481,14 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
       setError("Informe uma senha inicial com pelo menos 8 caracteres.");
       return;
     }
+    if (source === "supabase" && editingKey && temporaryPassword.trim() && temporaryPassword.trim().length < 8) {
+      setError("Informe uma senha provisoria com pelo menos 8 caracteres.");
+      return;
+    }
 
     setSaving(true);
     setError("");
+    setNotice("");
 
     try {
       const saved = await saveAppUserWithOptions(
@@ -2496,6 +2506,29 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         }
       );
       setUsers(saved);
+
+      if (source === "supabase" && editingKey && temporaryPassword.trim()) {
+        const resetResult = await resetAppUserPassword(
+          {
+            id: authId || editingKey || undefined,
+            nome: nome.trim(),
+            email: email.trim(),
+            iniciais: getInitials(nome),
+            role,
+            active
+          },
+          temporaryPassword
+        );
+
+        setNotice(
+          resetResult.emailQueued
+            ? "Usuario atualizado. Senha provisoria redefinida e e-mail enfileirado."
+            : "Usuario atualizado. Senha provisoria redefinida, mas o e-mail nao foi enfileirado."
+        );
+      } else {
+        setNotice(editingKey ? "Usuario atualizado." : "Usuario salvo.");
+      }
+
       resetForm();
     } catch (saveError) {
       setError(getErrorMessage(saveError));
@@ -2512,6 +2545,7 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
 
     setSaving(true);
     setError("");
+    setNotice("");
 
     try {
       const saved = await setAppUserActive(profile, !profile.active);
@@ -2534,6 +2568,7 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         />
 
         {error ? <p className="module-error">{error}</p> : null}
+        {notice ? <p className="module-notice">{notice}</p> : null}
 
         <div className="admin-summary">
           <article>
@@ -2617,6 +2652,20 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
                 value={initialPassword}
                 required
               />
+            </label>
+          ) : null}
+          {source === "supabase" && editingKey ? (
+            <label>
+              Nova senha provisoria
+              <input
+                autoComplete="new-password"
+                minLength={8}
+                onChange={(event) => setTemporaryPassword(event.target.value)}
+                placeholder="Opcional"
+                type="password"
+                value={temporaryPassword}
+              />
+              <small className="form-hint">Preencha somente se quiser redefinir a senha deste usuario.</small>
             </label>
           ) : null}
           <label className="toggle-row">
