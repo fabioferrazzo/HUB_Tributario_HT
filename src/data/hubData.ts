@@ -183,7 +183,7 @@ export const mockNoticias: Noticia[] = [
 export const mockLegislacoes: Noticia[] = [
   {
     id: "leg-portaria-mf-cgibs-7-2026",
-    titulo: "Portaria Conjunta MF/CGIBS 7/2026 - disposicoes comuns a CBS e ao IBS",
+    titulo: "Portaria Conjunta MF/CGIBS nº 7, de 30 de abril de 2026",
     fonte: "Diario Oficial da Uniao",
     url: "https://www.in.gov.br/web/dou/-/portaria-conjunta-mf/cgibs-n-7-de-30-de-abril-de-2026-702822417",
     data: "2026-04-30",
@@ -192,7 +192,7 @@ export const mockLegislacoes: Noticia[] = [
   },
   {
     id: "leg-resolucao-cgibs-6-2026",
-    titulo: "Resolucao CGIBS 6/2026 - Regulamento do IBS",
+    titulo: "Resolucao CGIBS nº 6, de 30 de abril de 2026",
     fonte: "Comite Gestor do IBS",
     url: "https://www.cgibs.gov.br/upload/arquivos/202604/30084927-res-cgibs-n-6-30-abr-2026-regulamenta-o-ibs.pdf",
     data: "2026-04-30",
@@ -201,7 +201,7 @@ export const mockLegislacoes: Noticia[] = [
   },
   {
     id: "leg-decreto-12955-2026",
-    titulo: "Decreto 12.955/2026 - Regulamento da Contribuicao Social sobre Bens e Servicos (CBS)",
+    titulo: "Decreto nº 12.955, de 29 de abril de 2026",
     fonte: "Planalto",
     url: "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/decreto/d12955.htm",
     data: "2026-04-29",
@@ -210,7 +210,7 @@ export const mockLegislacoes: Noticia[] = [
   },
   {
     id: "leg-lcp-227-2026",
-    titulo: "Lei Complementar 227/2026 - Comite Gestor do IBS e processo administrativo tributario do IBS",
+    titulo: "Lei Complementar nº 227, de 13 de janeiro de 2026",
     fonte: "Planalto",
     url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp227.htm",
     data: "2026-01-13",
@@ -219,7 +219,7 @@ export const mockLegislacoes: Noticia[] = [
   },
   {
     id: "leg-lcp-214-2025",
-    titulo: "Lei Complementar 214/2025 - institui IBS, CBS e Imposto Seletivo",
+    titulo: "Lei Complementar nº 214, de 16 de janeiro de 2025",
     fonte: "Planalto",
     url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/Lcp214compilado.htm",
     data: "2025-01-16",
