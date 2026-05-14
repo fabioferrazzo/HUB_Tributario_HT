@@ -82,6 +82,14 @@ import type {
 
 type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
 type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
+type HealthStatusTone = "ok" | "warning" | "info";
+
+type HealthCheck = {
+  area: string;
+  status: string;
+  detail: string;
+  tone: HealthStatusTone;
+};
 
 const routes = [
   { id: "home", label: "Inicio", icon: Home },
@@ -2682,6 +2690,7 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
     }),
     [users]
   );
+  const healthChecks = useMemo(() => buildOperationalHealthChecks(currentUser, users), [currentUser, users]);
 
   function resetForm() {
     setEditingKey(null);
@@ -2844,6 +2853,30 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
             </article>
           ))}
         </div>
+
+        <section className="operational-health">
+          <div className="section-title-row">
+            <div>
+              <span className="panel-chip">Pre-deploy</span>
+              <h3>Saude operacional do HUB</h3>
+            </div>
+            <small>{formatDateTime(new Date().toISOString())}</small>
+          </div>
+          <div className="health-grid">
+            {healthChecks.map((check) => (
+              <article className={`health-card health-card--${check.tone}`} key={check.area}>
+                <div>
+                  <strong>{check.area}</strong>
+                  <span>{check.status}</span>
+                </div>
+                <p>{check.detail}</p>
+              </article>
+            ))}
+          </div>
+          <p className="health-footnote">
+            Use este painel como checklist antes de liberar novo deploy. Ele nao dispara builds nem consome creditos do Netlify.
+          </p>
+        </section>
       </section>
 
       <section className="panel narrow-panel">
@@ -2956,6 +2989,71 @@ function getProfileKey(profile: HubProfile) {
 
 function formatRole(role: UserRole) {
   return roleOptions.find((option) => option.value === role)?.label || role;
+}
+
+function buildOperationalHealthChecks(user: HubUser, users: HubProfile[]): HealthCheck[] {
+  const usersSource = getUsersSource();
+  const lembretesSource = getLembretesSource(user);
+  const arquivosSource = getArquivosSource();
+  const linksSource = getLinksSource();
+  const tarefasSource = getTarefasSource();
+  const hasAdmin = users.some((profile) => profile.active && profile.role === "admin");
+  const hasCurrentUser = users.some((profile) => profile.active && profile.email.toLowerCase() === user.email.toLowerCase());
+  const supabaseReady = [usersSource, lembretesSource, arquivosSource, linksSource].every((source) => source === "supabase");
+
+  return [
+    {
+      area: "Usuarios e perfis",
+      status: usersSource === "supabase" ? "Supabase ativo" : "Modo local",
+      detail: hasAdmin && hasCurrentUser ? "Admin ativo e usuario logado presente na lista." : "Revise se ha admin ativo e se o usuario logado esta em profiles.",
+      tone: usersSource === "supabase" && hasAdmin && hasCurrentUser ? "ok" : "warning"
+    },
+    {
+      area: "Lembretes",
+      status: lembretesSource === "supabase" ? "Persistencia real" : "Fallback local",
+      detail: "Criacao, visibilidade, anexos, confidencialidade e e-mails usam esta origem.",
+      tone: lembretesSource === "supabase" ? "ok" : "warning"
+    },
+    {
+      area: "Arquivos",
+      status: arquivosSource === "supabase" ? "Biblioteca multiusuario" : "Fallback local",
+      detail: "Pastas, uploads e anotacoes do visualizador devem usar Supabase no ambiente publicado.",
+      tone: arquivosSource === "supabase" ? "ok" : "warning"
+    },
+    {
+      area: "Links uteis",
+      status: linksSource === "supabase" ? "Links sincronizados" : "Fallback local",
+      detail: "Links globais e pessoais respeitam permissoes de admin, gestor e colaborador.",
+      tone: linksSource === "supabase" ? "ok" : "warning"
+    },
+    {
+      area: "Tarefas",
+      status: tarefasSource,
+      detail:
+        tarefasSource === "calendario"
+          ? "Operando integrado ao calendario original; Supabase fica preparado para ativacao futura."
+          : "Modo Supabase/local ativo conforme configuracao atual.",
+      tone: "info"
+    },
+    {
+      area: "E-mails",
+      status: "Fila preparada",
+      detail: "Validar email_outbox, Resend e botoes da Coordenacao somente no proximo deploy de marco.",
+      tone: supabaseReady ? "ok" : "info"
+    },
+    {
+      area: "Rodapes",
+      status: "Automacao preparada",
+      detail: "Noticias e legislacoes dependem da funcao refresh-updates no Netlify publicado.",
+      tone: "info"
+    },
+    {
+      area: "Netlify",
+      status: "Builds pausados",
+      detail: "Manter builds parados durante desenvolvimento e liberar apenas para deploy de marco.",
+      tone: "info"
+    }
+  ];
 }
 
 function formatFileCategory(category: FileResourceCategory) {
