@@ -65,6 +65,8 @@ Apps previstos:
 - [ ] Definir quem pode visualizar.
 - [ ] Definir quem pode fazer upload.
 - [ ] Definir se anexos de lembretes ficam nessa pasta ou no storage do app.
+- [ ] Definir formatos prioritarios para o visualizador de documentos: PDF, DOCX, XLSX e imagens.
+- [ ] Confirmar se grifos e comentarios serao privados por usuario ou compartilhados por equipe.
 
 ## 7. E-mail e notificações
 
@@ -72,6 +74,8 @@ Apps previstos:
 - [ ] Confirmar se será usado Gmail/Google Workspace.
 - [ ] Confirmar se pode usar provedor transacional externo.
 - [ ] Aprovar texto-padrão do e-mail de vencimento.
+- [ ] Aprovar texto-padrao do e-mail de envio manual de pautas.
+- [ ] Aprovar texto-padrao do e-mail de envio manual de avaliacoes.
 - [ ] Definir horário do job diário de lembretes.
 
 ## 8. Notícias tributárias

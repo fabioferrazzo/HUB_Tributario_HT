@@ -243,6 +243,10 @@ Comportamento:
 - abrir arquivo em nova aba;
 - permitir upload somente para perfis autorizados;
 - opcionalmente anexar arquivos do Drive aos lembretes/tarefas.
+- abrir painel grande de visualizacao e estudo de documentos anexados;
+- permitir zoom, rolagem, troca de paginas e pesquisa dentro do documento;
+- permitir grifo amarelo de conteudo e comentarios vinculados ao documento;
+- registrar grifos/comentarios por usuario, respeitando as permissoes do arquivo.
 
 Decisão de MVP:
 
@@ -402,6 +406,8 @@ Estratégia:
 Uso:
 
 - avisos de vencimento de lembrete;
+- envio manual de pautas pela aba Coordenacao Tributaria;
+- envio manual de avaliacoes de colaboradores pela aba Coordenacao Tributaria;
 - recuperação de senha pelo provedor de autenticação;
 - avisos administrativos, se necessário.
 
@@ -819,4 +825,3 @@ Fora do MVP, para evolução:
 - Google Drive uploads: https://developers.google.com/drive/api/v3/manage-uploads
 - Gmail API sending: https://developers.google.com/workspace/gmail/api/guides/sending
 - Microsoft identity platform: https://learn.microsoft.com/en-us/entra/identity-platform/
-

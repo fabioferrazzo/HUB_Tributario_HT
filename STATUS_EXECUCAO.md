@@ -123,6 +123,8 @@
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
 - Reset de senha provisoria para usuarios reais implementado no Admin: atualiza Supabase Auth pelo servidor e enfileira e-mail pela `email_outbox`.
 - Testar reset de senha provisoria em producao no proximo deploy de marco.
+- Planejar visualizador avancado no modulo Arquivos: abrir documentos anexados em painel grande, com zoom, rolagem, troca de paginas, pesquisa, grifo amarelo e comentarios.
+- Planejar envio manual de e-mails na Coordenacao Tributaria: botoes para enviar pautas por e-mail e enviar avaliacoes por e-mail, reaproveitando a fila `email_outbox`.
 
 ## Validacoes da rodada
 
