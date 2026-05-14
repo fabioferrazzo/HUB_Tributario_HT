@@ -1,4 +1,4 @@
-import type { FileFolder, FileResource, FileResourceCategory, FileResourceScope, HubUser } from "../types";
+import type { FileFolder, FileResource, FileResourceCategory, FileResourceScope, FileViewerNote, FileViewerNoteKind, HubUser } from "../types";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
@@ -32,8 +32,20 @@ type ResourceRow = {
   updated_at: string;
 };
 
+type FileViewerNoteRow = {
+  id: string;
+  resource_id: string;
+  created_by: string;
+  kind: FileViewerNoteKind;
+  text: string;
+  page: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 const FOLDERS_STORAGE_KEY = "hub_file_folders";
 const RESOURCES_STORAGE_KEY = "hub_file_resources";
+const NOTES_STORAGE_KEY = "hub_file_viewer_notes";
 const STORAGE_BUCKET = "hub-arquivos";
 
 export function getArquivosSource(): ArquivosSource {
@@ -201,6 +213,65 @@ export async function deleteAppFileResource(resource: FileResource, user: HubUse
   return filterVisibleResources(next, user);
 }
 
+export async function listAppFileAnnotations(resourceId: string, user: HubUser): Promise<FileViewerNote[]> {
+  if (getArquivosSource() === "supabase") {
+    const client = assertSupabase();
+    const { data, error } = await client
+      .from("arquivo_anotacoes")
+      .select("id,resource_id,created_by,kind,text,page,created_at,updated_at")
+      .eq("resource_id", resourceId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map((row) => mapViewerNoteRow(row as FileViewerNoteRow, user));
+  }
+
+  return readStorage<FileViewerNote[]>(NOTES_STORAGE_KEY, [])
+    .map((note) => normalizeViewerNote(note, user))
+    .filter((note) => note.resourceId === resourceId)
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
+export async function saveAppFileAnnotation(note: FileViewerNote, user: HubUser): Promise<FileViewerNote[]> {
+  const normalized = normalizeViewerNote(note, user);
+
+  if (getArquivosSource() === "supabase") {
+    const client = assertSupabase();
+    const authUserId = await getCurrentAuthUserId();
+    const { error } = await client.from("arquivo_anotacoes").insert({
+      id: normalized.id,
+      resource_id: normalized.resourceId,
+      created_by: authUserId,
+      kind: normalized.kind,
+      text: normalized.text,
+      page: normalized.page
+    });
+
+    if (error) throw error;
+    return listAppFileAnnotations(normalized.resourceId, user);
+  }
+
+  const notes = readStorage<FileViewerNote[]>(NOTES_STORAGE_KEY, []).map((item) => normalizeViewerNote(item, user));
+  const next = [normalized, ...notes.filter((item) => item.id !== normalized.id)];
+  writeStorage(NOTES_STORAGE_KEY, next);
+  return listAppFileAnnotations(normalized.resourceId, user);
+}
+
+export async function deleteAppFileAnnotation(note: FileViewerNote, user: HubUser): Promise<FileViewerNote[]> {
+  if (getArquivosSource() === "supabase") {
+    const client = assertSupabase();
+    const { error } = await client.from("arquivo_anotacoes").delete().eq("id", note.id);
+    if (error) throw error;
+    return listAppFileAnnotations(note.resourceId, user);
+  }
+
+  const next = readStorage<FileViewerNote[]>(NOTES_STORAGE_KEY, [])
+    .map((item) => normalizeViewerNote(item, user))
+    .filter((item) => item.id !== note.id);
+  writeStorage(NOTES_STORAGE_KEY, next);
+  return listAppFileAnnotations(note.resourceId, user);
+}
+
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error("Supabase nao configurado.");
@@ -278,6 +349,23 @@ async function mapResourceRow(row: ResourceRow): Promise<FileResource> {
   });
 }
 
+function mapViewerNoteRow(row: FileViewerNoteRow, user: HubUser): FileViewerNote {
+  return normalizeViewerNote(
+    {
+      id: row.id,
+      resourceId: row.resource_id,
+      createdBy: row.created_by,
+      userEmail: row.created_by === user.id ? user.email : row.created_by,
+      kind: row.kind,
+      text: row.text,
+      page: row.page || 1,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    },
+    user
+  );
+}
+
 function normalizeFolder(value: Partial<FileFolder>): FileFolder {
   const now = new Date().toISOString();
   return {
@@ -309,6 +397,21 @@ function normalizeResource(value: Partial<FileResource>): FileResource {
     createdBy: value.createdBy || "",
     createdAt: value.createdAt || now,
     updatedAt: value.updatedAt || now
+  };
+}
+
+function normalizeViewerNote(value: Partial<FileViewerNote>, user: HubUser): FileViewerNote {
+  const now = new Date().toISOString();
+  return {
+    id: value.id || crypto.randomUUID(),
+    resourceId: value.resourceId || "",
+    createdBy: value.createdBy || user.id || user.email,
+    userEmail: value.userEmail || user.email,
+    kind: value.kind || "comment",
+    text: value.text || "",
+    page: Math.max(1, Number(value.page) || 1),
+    createdAt: value.createdAt || now,
+    updatedAt: value.updatedAt || value.createdAt || now
   };
 }
 
