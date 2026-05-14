@@ -41,6 +41,7 @@
 - Visibilidade de Lembretes sem usuarios marcados ajustada: apenas criador e admin visualizam, mesmo quando nao confidencial.
 - Modulo Arquivos convertido de placeholder para area operacional com cadastro de links/documentos, categorias, busca, escopo global/pessoal e exclusao controlada.
 - Modulo Arquivos ampliado com edicao de registros, upload por arrastar e soltar, bucket `hub-arquivos` e pastas para organizar biblioteca.
+- Modulo Arquivos recebeu visualizador interno de documentos com painel grande, zoom, pagina, busca, abertura em nova aba, grifos amarelos e comentarios locais por arquivo.
 - Patch SQL `supabase/patch_arquivos_biblioteca.sql` criado para tabelas `arquivo_pastas`, `arquivo_recursos`, policies RLS e Storage.
 - Modulo Links uteis migrado para repositorio Supabase/local com busca, escopo global/pessoal, edicao e exclusao controlada.
 - Patch SQL `supabase/patch_links_uteis.sql` criado para garantir tabela, trigger e policies RLS de Links uteis.
@@ -124,7 +125,7 @@
 - Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
 - Reset de senha provisoria para usuarios reais implementado no Admin: atualiza Supabase Auth pelo servidor e enfileira e-mail pela `email_outbox`.
 - Testar reset de senha provisoria em producao no proximo deploy de marco.
-- Planejar visualizador avancado no modulo Arquivos: abrir documentos anexados em painel grande, com zoom, rolagem, troca de paginas, pesquisa, grifo amarelo e comentarios.
+- Evoluir visualizador de Arquivos: persistir grifos/comentarios no Supabase e avaliar PDF.js para grifo direto sobre paginas de PDF.
 - Testar em producao, no proximo deploy de marco, os botoes de e-mail da Coordenacao Tributaria: enviar pautas por e-mail, enviar resumo de avaliacoes e enviar avaliacao/orientacao individual.
 
 ## Validacoes da rodada
@@ -173,3 +174,5 @@
 - Parse do script `public/apps/coord-tributaria.html`: OK em 14/05/2026 apos endpoint interno de e-mail.
 - `npm.cmd run typecheck`: OK em 14/05/2026 apos integracao de e-mails manuais da Coordenacao Tributaria.
 - `npm.cmd run build`: OK em 14/05/2026 apos integracao de e-mails manuais da Coordenacao Tributaria.
+- `npm.cmd run typecheck`: OK em 14/05/2026 apos visualizador interno de Arquivos.
+- `npm.cmd run build`: OK em 14/05/2026 apos visualizador interno de Arquivos.
