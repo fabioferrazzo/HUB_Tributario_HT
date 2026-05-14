@@ -105,6 +105,20 @@ export type FileResource = {
   updatedAt: string;
 };
 
+export type FileViewerNoteKind = "highlight" | "comment";
+
+export type FileViewerNote = {
+  id: string;
+  resourceId: string;
+  createdBy: string;
+  userEmail: string;
+  kind: FileViewerNoteKind;
+  text: string;
+  page: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UsefulLink = {
   id: string;
   titulo: string;

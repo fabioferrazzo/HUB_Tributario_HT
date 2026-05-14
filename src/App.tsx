@@ -29,11 +29,14 @@
 import { CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
 import { loadPautas, sheetsHubUrl, teamMembers } from "./data/hubData";
 import {
+  deleteAppFileAnnotation,
   deleteAppFileFolder,
   deleteAppFileResource,
   getArquivosSource,
+  listAppFileAnnotations,
   listAppFileFolders,
   listAppFileResources,
+  saveAppFileAnnotation,
   saveAppFileFolder,
   saveAppFileResource
 } from "./lib/arquivosRepository";
@@ -63,6 +66,8 @@ import type {
   FileResource,
   FileResourceCategory,
   FileResourceScope,
+  FileViewerNote,
+  FileViewerNoteKind,
   HubProfile,
   HubNotification,
   HubRoute,
@@ -77,19 +82,6 @@ import type {
 
 type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
 type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
-type ViewerNoteKind = "highlight" | "comment";
-
-type ViewerNote = {
-  id: string;
-  resourceId: string;
-  userEmail: string;
-  kind: ViewerNoteKind;
-  text: string;
-  page: number;
-  createdAt: string;
-};
-
-const FILE_VIEWER_NOTES_KEY = "hub_file_viewer_notes";
 
 const routes = [
   { id: "home", label: "Inicio", icon: Home },
@@ -1723,7 +1715,10 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerQuery, setViewerQuery] = useState("");
   const [viewerHighlight, setViewerHighlight] = useState("");
   const [viewerComment, setViewerComment] = useState("");
-  const [viewerNotes, setViewerNotes] = useState<ViewerNote[]>([]);
+  const [viewerNotes, setViewerNotes] = useState<FileViewerNote[]>([]);
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerSaving, setViewerSaving] = useState(false);
+  const [viewerError, setViewerError] = useState("");
   const source = getArquivosSource();
 
   useEffect(() => {
@@ -1753,7 +1748,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setResources(await listAppFileResources(user));
   }
 
-  function openViewer(resource: FileResource) {
+  async function openViewer(resource: FileResource) {
     if (!resource.url) return;
     setViewerResource(resource);
     setViewerZoom(100);
@@ -1761,46 +1756,77 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerQuery("");
     setViewerHighlight("");
     setViewerComment("");
-    setViewerNotes(loadViewerNotes(resource.id));
+    setViewerError("");
+    setViewerNotes([]);
+    setViewerLoading(true);
+
+    try {
+      setViewerNotes(await listAppFileAnnotations(resource.id, user));
+    } catch (loadError) {
+      setViewerError(getErrorMessage(loadError));
+    } finally {
+      setViewerLoading(false);
+    }
   }
 
   function closeViewer() {
     setViewerResource(null);
     setViewerHighlight("");
     setViewerComment("");
+    setViewerError("");
   }
 
-  function addViewerNote(kind: ViewerNoteKind) {
+  async function addViewerNote(kind: FileViewerNoteKind) {
     if (!viewerResource) return;
     const text = (kind === "highlight" ? viewerHighlight || viewerQuery : viewerComment).trim();
     if (!text) return;
 
-    const note: ViewerNote = {
+    const now = new Date().toISOString();
+    const note: FileViewerNote = {
       id: crypto.randomUUID(),
       resourceId: viewerResource.id,
+      createdBy: user.id || user.email,
       userEmail: user.email,
       kind,
       text,
       page: viewerPage,
-      createdAt: new Date().toISOString()
+      createdAt: now,
+      updatedAt: now
     };
-    const next = [note, ...viewerNotes];
-    setViewerNotes(next);
-    saveViewerNotes(viewerResource.id, next);
 
-    if (kind === "highlight") setViewerHighlight("");
-    if (kind === "comment") setViewerComment("");
+    setViewerSaving(true);
+    setViewerError("");
+    try {
+      setViewerNotes(await saveAppFileAnnotation(note, user));
+      if (kind === "highlight") setViewerHighlight("");
+      if (kind === "comment") setViewerComment("");
+    } catch (saveError) {
+      setViewerError(getErrorMessage(saveError));
+    } finally {
+      setViewerSaving(false);
+    }
   }
 
-  function removeViewerNote(noteId: string) {
+  async function removeViewerNote(note: FileViewerNote) {
     if (!viewerResource) return;
-    const next = viewerNotes.filter((note) => note.id !== noteId || note.userEmail !== user.email);
-    setViewerNotes(next);
-    saveViewerNotes(viewerResource.id, next);
+    if (!canManageViewerNote(note)) return;
+    setViewerSaving(true);
+    setViewerError("");
+    try {
+      setViewerNotes(await deleteAppFileAnnotation(note, user));
+    } catch (deleteError) {
+      setViewerError(getErrorMessage(deleteError));
+    } finally {
+      setViewerSaving(false);
+    }
   }
 
   function canManageResource(resource: FileResource) {
     return user.role === "admin" || resource.createdBy === user.email || resource.createdBy === user.id;
+  }
+
+  function canManageViewerNote(note: FileViewerNote) {
+    return user.role === "admin" || note.createdBy === user.id || note.createdBy === user.email || note.userEmail === user.email;
   }
 
   function canManageFolder(folder: FileFolder) {
@@ -2330,6 +2356,9 @@ function ArquivosModule({ user }: { user: HubUser }) {
                   <h3>Grifos e comentarios</h3>
                 </div>
 
+                {viewerError ? <div className="form-error">{viewerError}</div> : null}
+                {viewerLoading ? <p className="muted-note">Carregando anotacoes...</p> : null}
+
                 <label>
                   Grifo amarelo
                   <textarea
@@ -2338,8 +2367,8 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     placeholder="Cole o trecho ou use 'Grifar busca'."
                   />
                 </label>
-                <button type="button" onClick={() => addViewerNote("highlight")}>
-                  Salvar grifo
+                <button disabled={viewerSaving} type="button" onClick={() => addViewerNote("highlight")}>
+                  {viewerSaving ? "Salvando..." : "Salvar grifo"}
                 </button>
 
                 <label>
@@ -2350,19 +2379,19 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     placeholder="Registre observacoes, riscos ou pontos de estudo."
                   />
                 </label>
-                <button type="button" onClick={() => addViewerNote("comment")}>
-                  Adicionar comentario
+                <button disabled={viewerSaving} type="button" onClick={() => addViewerNote("comment")}>
+                  {viewerSaving ? "Salvando..." : "Adicionar comentario"}
                 </button>
 
                 <div className="viewer-note-list">
                   {viewerNotes.map((note) => (
                     <article className={`viewer-note viewer-note--${note.kind}`} key={note.id}>
                       <small>
-                        Pag. {note.page} - {formatDate(note.createdAt)}
+                        Pag. {note.page} - {formatDate(note.createdAt)} - {note.userEmail}
                       </small>
                       <p>{note.text}</p>
-                      {note.userEmail === user.email ? (
-                        <button type="button" onClick={() => removeViewerNote(note.id)}>
+                      {canManageViewerNote(note) ? (
+                        <button disabled={viewerSaving} type="button" onClick={() => removeViewerNote(note)}>
                           Remover
                         </button>
                       ) : null}
@@ -2377,27 +2406,6 @@ function ArquivosModule({ user }: { user: HubUser }) {
       ) : null}
     </div>
   );
-}
-
-function loadViewerNotes(resourceId: string): ViewerNote[] {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(FILE_VIEWER_NOTES_KEY) || "[]") as ViewerNote[];
-    return parsed
-      .filter((note) => note.resourceId === resourceId)
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-  } catch {
-    return [];
-  }
-}
-
-function saveViewerNotes(resourceId: string, notes: ViewerNote[]) {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(FILE_VIEWER_NOTES_KEY) || "[]") as ViewerNote[];
-    const next = [...notes, ...parsed.filter((note) => note.resourceId !== resourceId)];
-    window.localStorage.setItem(FILE_VIEWER_NOTES_KEY, JSON.stringify(next));
-  } catch {
-    // O estudo do documento continua funcionando na tela mesmo se o navegador bloquear o armazenamento local.
-  }
 }
 
 function isImageResource(resource: FileResource) {
