@@ -20,7 +20,7 @@ http://127.0.0.1:5173
 Enquanto Supabase/SSO nao estiver configurado, o app usa sessao local apenas para desenvolvimento.
 
 ```text
-Admin: fiscal10.heixeira@gmail.com
+Admin: fiscal10.hteixeira@gmail.com
 Gestor: gestor.tributario@hteixeira.local
 Colaborador: colaborador@hteixeira.local
 Senha: hub-demo-2026

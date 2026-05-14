@@ -45,6 +45,7 @@
 - Visualizador de Arquivos evoluido para persistir grifos e comentarios no Supabase pela tabela `arquivo_anotacoes`, mantendo fallback local.
 - Patch SQL `supabase/patch_arquivos_biblioteca.sql` criado para tabelas `arquivo_pastas`, `arquivo_recursos`, policies RLS e Storage.
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
+- Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
 - Modulo Links uteis migrado para repositorio Supabase/local com busca, escopo global/pessoal, edicao e exclusao controlada.
 - Patch SQL `supabase/patch_links_uteis.sql` criado para garantir tabela, trigger e policies RLS de Links uteis.
 - Rodapes de Noticias Tributarias e Legislacoes Reforma Tributaria migrados para leitura dinamica no Supabase.
@@ -182,3 +183,5 @@
 - `npm.cmd run build`: OK em 14/05/2026 apos visualizador interno de Arquivos.
 - `npm.cmd run typecheck`: OK em 14/05/2026 apos persistencia Supabase de grifos/comentarios em Arquivos.
 - `npm.cmd run build`: OK em 14/05/2026 apos persistencia Supabase de grifos/comentarios em Arquivos.
+- `npm.cmd run typecheck`: OK em 14/05/2026 apos limpeza de mojibake e correcao do e-mail admin padrao.
+- `npm.cmd run build`: OK em 14/05/2026 apos limpeza de mojibake e correcao do e-mail admin padrao.
