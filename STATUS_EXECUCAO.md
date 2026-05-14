@@ -43,6 +43,7 @@
 - Modulo Arquivos ampliado com edicao de registros, upload por arrastar e soltar, bucket `hub-arquivos` e pastas para organizar biblioteca.
 - Modulo Arquivos recebeu visualizador interno de documentos com painel grande, zoom, pagina, busca, abertura em nova aba, grifos amarelos e comentarios locais por arquivo.
 - Visualizador de Arquivos evoluido para persistir grifos e comentarios no Supabase pela tabela `arquivo_anotacoes`, mantendo fallback local.
+- Visualizador de Arquivos ampliado com exportacao de grifos e comentarios em Markdown para estudo/auditoria interna.
 - Patch SQL `supabase/patch_arquivos_biblioteca.sql` criado para tabelas `arquivo_pastas`, `arquivo_recursos`, policies RLS e Storage.
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
 - Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
@@ -133,6 +134,7 @@
 - Testar reset de senha provisoria em producao no proximo deploy de marco.
 - Executar `supabase/patch_arquivo_anotacoes.sql` no SQL Editor.
 - Testar visualizador de Arquivos com Supabase: abrir arquivo, salvar grifo, salvar comentario, remover anotacao propria e validar leitura por outro usuario com acesso ao arquivo.
+- Testar visualizador de Arquivos: exportar notas e conferir arquivo `.md` gerado com grifos/comentarios.
 - Evoluir visualizador de Arquivos: avaliar PDF.js para grifo direto sobre paginas de PDF.
 - Testar em producao, no proximo deploy de marco, os botoes de e-mail da Coordenacao Tributaria: enviar pautas por e-mail, enviar resumo de avaliacoes e enviar avaliacao/orientacao individual.
 - Usar o painel `Saude operacional do HUB` em Configuracoes antes do proximo deploy de marco.
@@ -196,3 +198,5 @@
 - `npm.cmd run preflight`: OK em 14/05/2026 apos script local de pre-deploy.
 - `npm.cmd run preflight:build`: OK em 14/05/2026 apos script local de pre-deploy com build Vite.
 - `npm.cmd run preflight`: OK em 14/05/2026 apos guia de deploy de marco e consulta Supabase de conferencia.
+- `npm.cmd run typecheck`: OK em 14/05/2026 apos exportacao Markdown das anotacoes do visualizador de Arquivos.
+- `npm.cmd run preflight`: OK em 14/05/2026 apos exportacao Markdown das anotacoes do visualizador de Arquivos.

@@ -13,6 +13,7 @@ Ao clicar, o HUB abre um painel grande com:
 - botao `Grifar busca`;
 - grifos amarelos salvos em painel lateral;
 - comentarios salvos em painel lateral;
+- exportacao dos grifos/comentarios em arquivo Markdown (`.md`);
 - abertura do arquivo em nova aba.
 
 ## Persistencia atual
@@ -33,6 +34,18 @@ As anotacoes seguem a permissao do arquivo:
 - cada usuario remove suas proprias anotacoes;
 - administradores podem remover qualquer anotacao.
 
+## Exportacao para estudo
+
+No painel lateral do visualizador, o botao `Exportar notas` gera um arquivo `.md` com:
+
+- titulo do documento;
+- nome do arquivo, categoria e URL;
+- data/hora da exportacao;
+- grifos e comentarios ordenados por pagina e data de criacao;
+- autor e data de cada anotacao.
+
+Use esse arquivo para estudo, revisao interna ou compartilhamento fora do HUB quando necessario.
+
 ## Limites tecnicos desta primeira versao
 
 - PDF: usa o visualizador nativo do navegador; busca, pagina e zoom dependem do suporte do Chrome/Edge.
@@ -44,4 +57,4 @@ As anotacoes seguem a permissao do arquivo:
 
 1. Avaliar uso de PDF.js para grifo direto sobre PDFs e navegacao de paginas 100% controlada pelo HUB.
 2. Definir comportamento para DOCX/XLSX: conversao previa, preview via Google/Office viewer ou download/abertura externa.
-3. Avaliar exportacao futura das anotacoes por arquivo, para estudo ou auditoria interna.
+3. Avaliar exportacao consolidada por pasta, reunindo anotacoes de varios documentos em um unico relatorio.
