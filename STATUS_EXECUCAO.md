@@ -206,3 +206,4 @@
 - `npm.cmd run preflight`: OK em 14/05/2026 apos exportacao Markdown das anotacoes do visualizador de Arquivos.
 - `npm.cmd run preflight`: OK em 14/05/2026 apos checklist final de homologacao pre-Netlify.
 - `supabase/check_hub_status.sql`: OK em 14/05/2026, validado no Supabase SQL Editor sem itens pendentes.
+- `npm.cmd run preflight:build`: OK em 14/05/2026 antes do deploy de marco para homologacao funcional em producao.
