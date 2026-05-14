@@ -77,6 +77,19 @@ import type {
 
 type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
 type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
+type ViewerNoteKind = "highlight" | "comment";
+
+type ViewerNote = {
+  id: string;
+  resourceId: string;
+  userEmail: string;
+  kind: ViewerNoteKind;
+  text: string;
+  page: number;
+  createdAt: string;
+};
+
+const FILE_VIEWER_NOTES_KEY = "hub_file_viewer_notes";
 
 const routes = [
   { id: "home", label: "Inicio", icon: Home },
@@ -1678,6 +1691,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
           </div>
         </form>
       </section>
+
     </div>
   );
 }
@@ -1703,6 +1717,13 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [folderName, setFolderName] = useState("");
   const [folderDescription, setFolderDescription] = useState("");
   const [folderScope, setFolderScope] = useState<FileResourceScope>(user.role === "admin" ? "global" : "privado");
+  const [viewerResource, setViewerResource] = useState<FileResource | null>(null);
+  const [viewerZoom, setViewerZoom] = useState(100);
+  const [viewerPage, setViewerPage] = useState(1);
+  const [viewerQuery, setViewerQuery] = useState("");
+  const [viewerHighlight, setViewerHighlight] = useState("");
+  const [viewerComment, setViewerComment] = useState("");
+  const [viewerNotes, setViewerNotes] = useState<ViewerNote[]>([]);
   const source = getArquivosSource();
 
   useEffect(() => {
@@ -1730,6 +1751,52 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
   async function refreshResources() {
     setResources(await listAppFileResources(user));
+  }
+
+  function openViewer(resource: FileResource) {
+    if (!resource.url) return;
+    setViewerResource(resource);
+    setViewerZoom(100);
+    setViewerPage(1);
+    setViewerQuery("");
+    setViewerHighlight("");
+    setViewerComment("");
+    setViewerNotes(loadViewerNotes(resource.id));
+  }
+
+  function closeViewer() {
+    setViewerResource(null);
+    setViewerHighlight("");
+    setViewerComment("");
+  }
+
+  function addViewerNote(kind: ViewerNoteKind) {
+    if (!viewerResource) return;
+    const text = (kind === "highlight" ? viewerHighlight || viewerQuery : viewerComment).trim();
+    if (!text) return;
+
+    const note: ViewerNote = {
+      id: crypto.randomUUID(),
+      resourceId: viewerResource.id,
+      userEmail: user.email,
+      kind,
+      text,
+      page: viewerPage,
+      createdAt: new Date().toISOString()
+    };
+    const next = [note, ...viewerNotes];
+    setViewerNotes(next);
+    saveViewerNotes(viewerResource.id, next);
+
+    if (kind === "highlight") setViewerHighlight("");
+    if (kind === "comment") setViewerComment("");
+  }
+
+  function removeViewerNote(noteId: string) {
+    if (!viewerResource) return;
+    const next = viewerNotes.filter((note) => note.id !== noteId || note.userEmail !== user.email);
+    setViewerNotes(next);
+    saveViewerNotes(viewerResource.id, next);
   }
 
   function canManageResource(resource: FileResource) {
@@ -2030,6 +2097,17 @@ function ArquivosModule({ user }: { user: HubUser }) {
               <small>{resource.scope === "global" ? "Global" : "Pessoal"} Â· {formatDate(resource.createdAt)}</small>
               <div className="record-actions">
                 {resource.url ? (
+                  <button type="button" onClick={() => openViewer(resource)}>
+                    <Search size={14} />
+                    Visualizar
+                  </button>
+                ) : (
+                  <button disabled type="button">
+                    <Search size={14} />
+                    Visualizar
+                  </button>
+                )}
+                {resource.url ? (
                   <a href={resource.url} rel="noreferrer" target="_blank">
                     <Link2 size={14} />
                     Abrir
@@ -2193,8 +2271,153 @@ function ArquivosModule({ user }: { user: HubUser }) {
           ) : null}
         </form>
       </section>
+
+      {viewerResource ? (
+        <div className="document-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Visualizador de ${viewerResource.titulo}`}>
+          <section className="document-viewer-panel">
+            <header className="document-viewer-header">
+              <div>
+                <span>{viewerResource.fileName || formatFileCategory(viewerResource.categoria)}</span>
+                <h2>{viewerResource.titulo}</h2>
+              </div>
+              <button aria-label="Fechar visualizador" className="icon-button" type="button" onClick={closeViewer}>
+                <X size={19} />
+              </button>
+            </header>
+
+            <div className="document-viewer-toolbar">
+              <button type="button" onClick={() => setViewerZoom((current) => Math.max(50, current - 10))}>
+                -
+              </button>
+              <strong>{viewerZoom}%</strong>
+              <button type="button" onClick={() => setViewerZoom((current) => Math.min(200, current + 10))}>
+                +
+              </button>
+              <label>
+                Pagina
+                <input min={1} type="number" value={viewerPage} onChange={(event) => setViewerPage(Math.max(1, Number(event.target.value) || 1))} />
+              </label>
+              <label className="document-viewer-search">
+                <Search size={14} />
+                <input value={viewerQuery} onChange={(event) => setViewerQuery(event.target.value)} placeholder="Pesquisar no documento..." />
+              </label>
+              <button type="button" onClick={() => setViewerHighlight(viewerQuery)}>
+                Grifar busca
+              </button>
+              <a href={viewerResource.url} rel="noreferrer" target="_blank">
+                Abrir em nova aba
+              </a>
+            </div>
+
+            <div className="document-viewer-body">
+              <div className="document-preview">
+                {isImageResource(viewerResource) ? (
+                  <div className="document-preview__image-scroll">
+                    <img
+                      alt={viewerResource.titulo}
+                      src={viewerResource.url}
+                      style={{ width: `${viewerZoom}%`, maxWidth: viewerZoom > 100 ? "none" : "100%" }}
+                    />
+                  </div>
+                ) : (
+                  <iframe src={buildViewerUrl(viewerResource, viewerPage, viewerZoom, viewerQuery)} title={viewerResource.titulo} />
+                )}
+              </div>
+
+              <aside className="document-study-panel">
+                <div>
+                  <span className="panel-chip">Estudo do documento</span>
+                  <h3>Grifos e comentarios</h3>
+                </div>
+
+                <label>
+                  Grifo amarelo
+                  <textarea
+                    value={viewerHighlight}
+                    onChange={(event) => setViewerHighlight(event.target.value)}
+                    placeholder="Cole o trecho ou use 'Grifar busca'."
+                  />
+                </label>
+                <button type="button" onClick={() => addViewerNote("highlight")}>
+                  Salvar grifo
+                </button>
+
+                <label>
+                  Comentario
+                  <textarea
+                    value={viewerComment}
+                    onChange={(event) => setViewerComment(event.target.value)}
+                    placeholder="Registre observacoes, riscos ou pontos de estudo."
+                  />
+                </label>
+                <button type="button" onClick={() => addViewerNote("comment")}>
+                  Adicionar comentario
+                </button>
+
+                <div className="viewer-note-list">
+                  {viewerNotes.map((note) => (
+                    <article className={`viewer-note viewer-note--${note.kind}`} key={note.id}>
+                      <small>
+                        Pag. {note.page} - {formatDate(note.createdAt)}
+                      </small>
+                      <p>{note.text}</p>
+                      {note.userEmail === user.email ? (
+                        <button type="button" onClick={() => removeViewerNote(note.id)}>
+                          Remover
+                        </button>
+                      ) : null}
+                    </article>
+                  ))}
+                  {!viewerNotes.length ? <p className="muted-note">Nenhum grifo ou comentario salvo para este arquivo.</p> : null}
+                </div>
+              </aside>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function loadViewerNotes(resourceId: string): ViewerNote[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(FILE_VIEWER_NOTES_KEY) || "[]") as ViewerNote[];
+    return parsed
+      .filter((note) => note.resourceId === resourceId)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  } catch {
+    return [];
+  }
+}
+
+function saveViewerNotes(resourceId: string, notes: ViewerNote[]) {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(FILE_VIEWER_NOTES_KEY) || "[]") as ViewerNote[];
+    const next = [...notes, ...parsed.filter((note) => note.resourceId !== resourceId)];
+    window.localStorage.setItem(FILE_VIEWER_NOTES_KEY, JSON.stringify(next));
+  } catch {
+    // O estudo do documento continua funcionando na tela mesmo se o navegador bloquear o armazenamento local.
+  }
+}
+
+function isImageResource(resource: FileResource) {
+  return resource.mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(resource.fileName || resource.url);
+}
+
+function buildViewerUrl(resource: FileResource, page: number, zoom: number, query: string) {
+  if (!resource.url) return "";
+  if (!isPdfResource(resource)) return resource.url;
+
+  const cleanUrl = resource.url.split("#")[0];
+  const hash = new URLSearchParams();
+  hash.set("page", String(Math.max(1, page)));
+  hash.set("zoom", String(Math.max(50, Math.min(200, zoom))));
+  if (query.trim()) hash.set("search", query.trim());
+  return `${cleanUrl}#${hash.toString()}`;
+}
+
+function isPdfResource(resource: FileResource) {
+  return resource.mimeType === "application/pdf" || /\.pdf(\?|#|$)/i.test(resource.fileName || resource.url);
 }
 
 function LinksModule({ user }: { user: HubUser }) {
@@ -2396,6 +2619,7 @@ function LinksModule({ user }: { user: HubUser }) {
           </div>
         </form>
       </section>
+
     </div>
   );
 }
