@@ -3,7 +3,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 import { findLocalUserByEmail, LOCAL_DEMO_PASSWORD } from "./usersRepository";
 
 const SESSION_KEY = "hub_tributario_session";
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.heixeira@gmail.com";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com";
 
 export function getStoredSession(): HubUser | null {
   const raw = localStorage.getItem(SESSION_KEY);
