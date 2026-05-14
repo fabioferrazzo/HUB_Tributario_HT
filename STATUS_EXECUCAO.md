@@ -59,6 +59,7 @@
 - Patch SQL `supabase/patch_notificacoes_persistentes.sql` criado para registrar notificacoes no banco, preservar leitura e sincronizar avisos ativos por usuario.
 - Base de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox`.
 - Eventos de e-mail homologados em modo teste: criacao de lembrete e rotina diaria de vencimentos enviaram via Resend com `EMAIL_FORCE_TEST_TO`.
+- E-mails manuais da Coordenacao Tributaria conectados ao endpoint interno `coord-email`, com envio de pautas e avaliacoes pela fila `email_outbox`.
 - Modulo Tarefas ativado com formulario completo, responsaveis, anexos, filtros, edicao, conclusao/reabertura, exclusao e persistencia Supabase/local.
 - Patch SQL `supabase/patch_tarefas.sql` criado para tabelas `tarefas`, `tarefa_usuarios`, `tarefa_anexos` e RLS por criador/responsavel/admin/gestor.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
@@ -124,7 +125,7 @@
 - Reset de senha provisoria para usuarios reais implementado no Admin: atualiza Supabase Auth pelo servidor e enfileira e-mail pela `email_outbox`.
 - Testar reset de senha provisoria em producao no proximo deploy de marco.
 - Planejar visualizador avancado no modulo Arquivos: abrir documentos anexados em painel grande, com zoom, rolagem, troca de paginas, pesquisa, grifo amarelo e comentarios.
-- Planejar envio manual de e-mails na Coordenacao Tributaria: botoes para enviar pautas por e-mail e enviar avaliacoes por e-mail, reaproveitando a fila `email_outbox`.
+- Testar em producao, no proximo deploy de marco, os botoes de e-mail da Coordenacao Tributaria: enviar pautas por e-mail, enviar resumo de avaliacoes e enviar avaliacao/orientacao individual.
 
 ## Validacoes da rodada
 
@@ -167,3 +168,8 @@
 - `node --check netlify/functions/admin-users.mjs`: OK em 13/05/2026 apos reset de senha provisoria.
 - `npm.cmd run typecheck`: OK em 13/05/2026 apos reset de senha provisoria.
 - `npm.cmd run build`: OK em 13/05/2026 apos reset de senha provisoria.
+- `node --check netlify/functions/coord-email.mjs`: OK em 14/05/2026 apos integracao de e-mails manuais da Coordenacao Tributaria.
+- `node --check netlify/functions/email-outbox.mjs`: OK em 14/05/2026 apos exportar processamento reutilizavel pela Coordenacao Tributaria.
+- Parse do script `public/apps/coord-tributaria.html`: OK em 14/05/2026 apos endpoint interno de e-mail.
+- `npm.cmd run typecheck`: OK em 14/05/2026 apos integracao de e-mails manuais da Coordenacao Tributaria.
+- `npm.cmd run build`: OK em 14/05/2026 apos integracao de e-mails manuais da Coordenacao Tributaria.
