@@ -14,10 +14,13 @@ const requiredFiles = [
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
   "netlify/functions/sheets-pautas.mjs",
+  "GUIA_DEPLOY_MARCO.md",
+  "GUIA_PREFLIGHT_LOCAL.md",
   "supabase/patch_arquivo_anotacoes.sql",
   "supabase/patch_arquivos_biblioteca.sql",
   "supabase/patch_email_outbox.sql",
-  "supabase/patch_tarefas.sql"
+  "supabase/patch_tarefas.sql",
+  "supabase/check_hub_status.sql"
 ];
 
 const commandChecks = [
