@@ -310,7 +310,7 @@ export function App() {
 }
 
 function LoginScreen({ onLogin }: { onLogin: (user: HubUser) => void }) {
-  const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.heixeira@gmail.com");
+  const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -586,7 +586,7 @@ function Dashboard({
   const todayLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "warning").length;
   const pautaStatusLabel = loading
     ? "Sincronizando"
-    : `${canSeeAllPautas ? "CSV HUB" : "minhas pautas"} Â· ${visiblePautas.length} itens`;
+    : `${canSeeAllPautas ? "CSV HUB" : "minhas pautas"} - ${visiblePautas.length} itens`;
 
   return (
     <div className="dashboard-grid">
@@ -642,7 +642,7 @@ function Dashboard({
                 <strong>{pauta.tema}</strong>
                 <span>{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
                 {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
-                <em>{pauta.responsavel || "Sem responsavel definido"}{pauta.email ? ` Â· ${pauta.email}` : ""}</em>
+                <em>{pauta.responsavel || "Sem responsavel definido"}{pauta.email ? ` - ${pauta.email}` : ""}</em>
               </div>
               <div className="pauta-row-badges">
                 <StatusPill label={pauta.status || "Sem status"} />
@@ -650,7 +650,7 @@ function Dashboard({
               </div>
               <small className={`pauta-date pauta-date--${getPautaTone(pauta)}`}>
                 <CalendarDays size={12} />
-                {formatDate(pauta.prazo)} Â· {pauta.origem}
+                {formatDate(pauta.prazo)} - {pauta.origem}
               </small>
             </article>
           ))}
@@ -669,7 +669,7 @@ function Dashboard({
           onAction={() => onNavigate("lembretes")}
           secondaryIcon={<Bell size={14} />}
           secondaryLabel="Avisos"
-          status={lembretesLoading ? "Carregando" : `${getLembretesSource(user)} Â· ${lembretes.length} itens`}
+          status={lembretesLoading ? "Carregando" : `${getLembretesSource(user)} - ${lembretes.length} itens`}
           title="Lembretes"
         />
         <div className="panel-toolbar">
@@ -701,7 +701,7 @@ function Dashboard({
                 <em>{formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
               </div>
               <DueSignal prazo={lembrete.prazo} />
-              <small>{formatDateTime(lembrete.prazo)} Â· {lembrete.anexos.length} anexo(s)</small>
+              <small>{formatDateTime(lembrete.prazo)} - {lembrete.anexos.length} anexo(s)</small>
             </article>
           ))}
         </div>
@@ -1555,7 +1555,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
                 <div>
                   <strong>{lembrete.titulo}</strong>
                   <span>{lembrete.descricao || "Sem descricao"}</span>
-                  <em>{formatDateTime(lembrete.prazo)} Â· {formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
+                  <em>{formatDateTime(lembrete.prazo)} - {formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
                 </div>
               </div>
 
@@ -2120,7 +2120,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
                 {formatDate(resource.createdAt)}
               </small>
               {resource.fileName ? <small>{resource.fileName}</small> : null}
-              <small>{resource.scope === "global" ? "Global" : "Pessoal"} Â· {formatDate(resource.createdAt)}</small>
+              <small>{resource.scope === "global" ? "Global" : "Pessoal"} - {formatDate(resource.createdAt)}</small>
               <div className="record-actions">
                 {resource.url ? (
                   <button type="button" onClick={() => openViewer(resource)}>
@@ -2796,7 +2796,7 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         <PanelHeader
           title="Usuarios e perfis"
           icon={<UserRoundCog size={18} />}
-          action={loading ? "Carregando" : `${source} Â· ${users.length} usuarios`}
+          action={loading ? "Carregando" : `${source} - ${users.length} usuarios`}
         />
 
         {error ? <p className="module-error">{error}</p> : null}
