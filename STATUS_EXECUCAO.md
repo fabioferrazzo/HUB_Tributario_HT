@@ -51,6 +51,7 @@
 - Script local `npm.cmd run preflight` criado para validar arquivos essenciais, TypeScript e Netlify Functions antes de qualquer deploy de marco.
 - Guia `GUIA_DEPLOY_MARCO.md` e consulta `supabase/check_hub_status.sql` criados para conferencia final antes de reativar builds no Netlify.
 - Checklist `CHECKLIST_HOMOLOGACAO_FINAL.md` criado para homologacao final sem consumir creditos Netlify.
+- Roteiro `ROTEIRO_HOMOLOGACAO_FUNCIONAL.md` criado para executar e registrar a rodada funcional final antes do deploy de marco.
 - Modulo Links uteis migrado para repositorio Supabase/local com busca, escopo global/pessoal, edicao e exclusao controlada.
 - Patch SQL `supabase/patch_links_uteis.sql` criado para garantir tabela, trigger e policies RLS de Links uteis.
 - Rodapes de Noticias Tributarias e Legislacoes Reforma Tributaria migrados para leitura dinamica no Supabase.
@@ -142,6 +143,7 @@
 - Rodar `npm.cmd run preflight` antes de qualquer reativacao de build/deploy no Netlify.
 - Rodar `supabase/check_hub_status.sql` no SQL Editor antes do proximo deploy de marco.
 - Percorrer `CHECKLIST_HOMOLOGACAO_FINAL.md` antes do proximo deploy de marco.
+- Executar `ROTEIRO_HOMOLOGACAO_FUNCIONAL.md` e registrar itens `OK`, `Ajustar` ou `Falhou`.
 
 ## Validacoes da rodada
 
