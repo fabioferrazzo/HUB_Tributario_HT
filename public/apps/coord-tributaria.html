@@ -2212,6 +2212,7 @@ const STATE_STORE = "appState";
 const ATTACHMENT_STORE = "attachments";
 const STATE_KEY = "main";
 const DEFAULT_ATTACHMENT_ACCEPT = ".doc,.docx,.pdf,.xlsx,.xls,.txt,.png,.jpg,.jpeg";
+const HUB_EMAIL_ENDPOINT = "/.netlify/functions/coord-email";
 
 const STATUS_META = {
   pending: { label: "Aberto", tone: "pending" },
@@ -2276,6 +2277,41 @@ function escapeHtml(value = "") {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function getSupabaseAccessTokenFromLocalStorage() {
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index) || "";
+      if (!key.startsWith("sb-") || !key.endsWith("-auth-token")) {
+        continue;
+      }
+
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        continue;
+      }
+
+      const parsed = JSON.parse(raw);
+      const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+      if (accessToken) {
+        return accessToken;
+      }
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function isHubEmailEndpoint(endpointUrl) {
+  try {
+    const url = new URL(endpointUrl, window.location.href);
+    return url.origin === window.location.origin && url.pathname === HUB_EMAIL_ENDPOINT;
+  } catch {
+    return false;
+  }
 }
 
 function renderMultiline(value = "") {
@@ -2628,7 +2664,7 @@ function createDefaultState() {
     settings: {
       activePeriod,
       sidebarCollapsed: false,
-      emailIntegrationUrl: "",
+      emailIntegrationUrl: HUB_EMAIL_ENDPOINT,
       emailIntegrationToken: "",
       periodSummaryRecipient: "",
       agendaEmailRecipient: "",
@@ -2988,6 +3024,7 @@ class TributaryCoordinatorApp {
     this.db = await openDatabase();
     const persisted = await loadPersistedState(this.db);
     this.state = normalizeState(persisted);
+    this.ensureHubEmailDefaults();
     this.ensurePeriodStructures(this.state.settings.activePeriod);
     if (!this.state.periods[this.state.settings.activePeriod].preparedAt) {
       await this.preparePeriod(this.state.settings.activePeriod, { silent: true });
@@ -2995,6 +3032,12 @@ class TributaryCoordinatorApp {
     this.ui.reportFilters.periodId = this.state.settings.activePeriod;
     this.bindRootEvents();
     this.render();
+  }
+
+  ensureHubEmailDefaults() {
+    if (!this.state.settings.emailIntegrationUrl) {
+      this.state.settings.emailIntegrationUrl = HUB_EMAIL_ENDPOINT;
+    }
   }
 
   bindRootEvents() {
@@ -3395,7 +3438,39 @@ class TributaryCoordinatorApp {
 
     const endpointUrl = this.state.settings.emailIntegrationUrl?.toString().trim() || "";
     if (!endpointUrl) {
-      throw new Error("Configure a URL do Google Apps Script na lateral do app antes de enviar.");
+      throw new Error("Configure a URL de envio na lateral do app antes de enviar.");
+    }
+
+    const fields = {
+      token: this.state.settings.emailIntegrationToken?.toString().trim() || "",
+      authToken: getSupabaseAccessTokenFromLocalStorage(),
+      to: payload.to,
+      subject: payload.subject,
+      body: payload.body,
+      htmlBody: payload.htmlBody,
+      attachmentsJson: payload.attachments?.length ? JSON.stringify(payload.attachments) : "",
+      collaboratorName: payload.collaboratorName,
+      periodId: payload.periodId,
+      periodLabel: payload.periodLabel,
+      sourceApp: "coord-tributaria-local",
+    };
+
+    if (isHubEmailEndpoint(endpointUrl)) {
+      const response = await fetch(endpointUrl, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams(Object.entries(fields).map(([name, value]) => [name, value || ""]))
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || result?.ok === false) {
+        throw new Error(result?.error || "Nao foi possivel enviar o e-mail pelo HUB.");
+      }
+
+      return result;
     }
 
     await new Promise((resolve, reject) => {
@@ -3411,19 +3486,6 @@ class TributaryCoordinatorApp {
         form.action = endpointUrl;
         form.target = frameName;
         form.style.display = "none";
-
-        const fields = {
-          token: this.state.settings.emailIntegrationToken?.toString().trim() || "",
-          to: payload.to,
-          subject: payload.subject,
-          body: payload.body,
-          htmlBody: payload.htmlBody,
-          attachmentsJson: payload.attachments?.length ? JSON.stringify(payload.attachments) : "",
-          collaboratorName: payload.collaboratorName,
-          periodId: payload.periodId,
-          periodLabel: payload.periodLabel,
-          sourceApp: "coord-tributaria-local",
-        };
 
         Object.entries(fields).forEach(([name, value]) => {
           const input = document.createElement("input");
@@ -4322,7 +4384,7 @@ class TributaryCoordinatorApp {
       await this.persistState();
       const payload = this.buildCollaboratorReminderPayload(id);
       await this.dispatchReminderThroughAppsScript(payload);
-      this.pushToast("Solicitacao de envio encaminhada ao Google Apps Script.");
+      this.pushToast("Avaliacao encaminhada para envio pelo HUB.");
       return;
     }
 
@@ -4568,7 +4630,7 @@ class TributaryCoordinatorApp {
     const payload = this.buildPeriodSummaryEmailPayload(recipientEmail, mode);
     await this.dispatchReminderThroughAppsScript(payload);
     this.ui.periodSummaryEmailModal.open = false;
-    this.pushToast("Resumo do periodo encaminhado ao Google Apps Script.");
+    this.pushToast("Resumo do periodo encaminhado para envio pelo HUB.");
     this.render();
   }
 
@@ -4584,7 +4646,7 @@ class TributaryCoordinatorApp {
     const payload = await this.buildAgendaEmailPayload(recipientEmail, { scope, weekDate });
     await this.dispatchReminderThroughAppsScript(payload);
     this.ui.agendaEmailModal.open = false;
-    this.pushToast("Pautas encaminhadas ao Google Apps Script.");
+    this.pushToast("Pautas encaminhadas para envio pelo HUB.");
     this.render();
   }
 
@@ -5259,11 +5321,11 @@ class TributaryCoordinatorApp {
         </div>
         <form id="email-settings-form" class="stack-form sidebar-form">
           <label class="field">
-            <span>URL do Apps Script</span>
+            <span>URL de envio</span>
             <input
               name="emailIntegrationUrl"
               value="${escapeHtml(this.state.settings.emailIntegrationUrl || "")}"
-              placeholder="Cole aqui a URL do Web App"
+              placeholder="/.netlify/functions/coord-email"
             >
           </label>
           <label class="field">
@@ -5278,7 +5340,7 @@ class TributaryCoordinatorApp {
             <button type="submit">Salvar integracao</button>
           </div>
         </form>
-        <p class="quick-actions__hint">Depois de publicar o Google Apps Script como Web App, cole a URL aqui. O app enviara as observacoes e orientacoes do colaborador para o e-mail cadastrado.</p>
+        <p class="quick-actions__hint">No HUB, use o endpoint interno acima. O token e opcional quando voce esta logado como admin/gestor, mas pode ser usado como alternativa controlada.</p>
       </section>
 
       <section class="sidebar-section">
