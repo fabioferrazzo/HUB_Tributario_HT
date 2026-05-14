@@ -17,9 +17,21 @@ Ao clicar, o HUB abre um painel grande com:
 
 ## Persistencia atual
 
-Os grifos e comentarios desta primeira versao ficam no armazenamento local do navegador (`localStorage`) por arquivo.
+Os grifos e comentarios agora usam a mesma origem ativa do modulo `Arquivos`:
 
-Isso permite homologar a experiencia sem mexer no banco nem consumir deploys extras.
+- com Supabase configurado, ficam salvos na tabela `arquivo_anotacoes`;
+- sem Supabase configurado, continuam no armazenamento local do navegador (`localStorage`), para homologacao local.
+
+Antes de testar a persistencia multiusuario, execute no Supabase SQL Editor:
+
+1. `supabase/patch_arquivos_biblioteca.sql`, caso ainda nao tenha sido executado.
+2. `supabase/patch_arquivo_anotacoes.sql`.
+
+As anotacoes seguem a permissao do arquivo:
+
+- quem consegue ver o arquivo consegue ver os grifos/comentarios daquele arquivo;
+- cada usuario remove suas proprias anotacoes;
+- administradores podem remover qualquer anotacao.
 
 ## Limites tecnicos desta primeira versao
 
@@ -30,7 +42,6 @@ Isso permite homologar a experiencia sem mexer no banco nem consumir deploys ext
 
 ## Proxima evolucao
 
-1. Persistir grifos e comentarios em Supabase para sincronizar entre usuarios.
-2. Criar tabelas `arquivo_anotacoes` ou equivalente com RLS por usuario/permissao.
-3. Avaliar uso de PDF.js para grifo direto sobre PDFs e navegacao de paginas 100% controlada pelo HUB.
-4. Definir comportamento para DOCX/XLSX: conversao previa, preview via Google/Office viewer ou download/abertura externa.
+1. Avaliar uso de PDF.js para grifo direto sobre PDFs e navegacao de paginas 100% controlada pelo HUB.
+2. Definir comportamento para DOCX/XLSX: conversao previa, preview via Google/Office viewer ou download/abertura externa.
+3. Avaliar exportacao futura das anotacoes por arquivo, para estudo ou auditoria interna.
