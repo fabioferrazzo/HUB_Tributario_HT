@@ -79,7 +79,7 @@ export const config = {
   schedule: "0 12 * * *"
 };
 
-async function processDueEmails(supabaseUrl, serviceRoleKey, requestedLimit) {
+export async function processDueEmails(supabaseUrl, serviceRoleKey, requestedLimit) {
   const limit = clamp(requestedLimit, 1, 50);
   const dueEmails = await readDueEmails(supabaseUrl, serviceRoleKey, limit);
   console.log("email-outbox due emails", { limit, count: dueEmails.length });
