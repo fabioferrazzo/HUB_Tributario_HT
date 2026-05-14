@@ -47,6 +47,8 @@
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
 - Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
 - Painel `Saude operacional do HUB` adicionado em Configuracoes para checklist pre-deploy sem acionar builds Netlify.
+- Script local `npm.cmd run preflight` criado para validar arquivos essenciais, TypeScript e Netlify Functions antes de qualquer deploy de marco.
+- Guia `GUIA_DEPLOY_MARCO.md` e consulta `supabase/check_hub_status.sql` criados para conferencia final antes de reativar builds no Netlify.
 - Modulo Links uteis migrado para repositorio Supabase/local com busca, escopo global/pessoal, edicao e exclusao controlada.
 - Patch SQL `supabase/patch_links_uteis.sql` criado para garantir tabela, trigger e policies RLS de Links uteis.
 - Rodapes de Noticias Tributarias e Legislacoes Reforma Tributaria migrados para leitura dinamica no Supabase.
@@ -134,6 +136,8 @@
 - Evoluir visualizador de Arquivos: avaliar PDF.js para grifo direto sobre paginas de PDF.
 - Testar em producao, no proximo deploy de marco, os botoes de e-mail da Coordenacao Tributaria: enviar pautas por e-mail, enviar resumo de avaliacoes e enviar avaliacao/orientacao individual.
 - Usar o painel `Saude operacional do HUB` em Configuracoes antes do proximo deploy de marco.
+- Rodar `npm.cmd run preflight` antes de qualquer reativacao de build/deploy no Netlify.
+- Rodar `supabase/check_hub_status.sql` no SQL Editor antes do proximo deploy de marco.
 
 ## Validacoes da rodada
 
@@ -189,3 +193,6 @@
 - `npm.cmd run build`: OK em 14/05/2026 apos limpeza de mojibake e correcao do e-mail admin padrao.
 - `npm.cmd run typecheck`: OK em 14/05/2026 apos painel Saude operacional do HUB.
 - `npm.cmd run build`: OK em 14/05/2026 apos painel Saude operacional do HUB.
+- `npm.cmd run preflight`: OK em 14/05/2026 apos script local de pre-deploy.
+- `npm.cmd run preflight:build`: OK em 14/05/2026 apos script local de pre-deploy com build Vite.
+- `npm.cmd run preflight`: OK em 14/05/2026 apos guia de deploy de marco e consulta Supabase de conferencia.

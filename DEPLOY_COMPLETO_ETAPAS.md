@@ -109,3 +109,14 @@ Checklist:
 - confirmar upload no bucket `hub-anexos`;
 - abrir notificacoes;
 - validar rotas dos apps integrados.
+
+## Etapa 3.7 - Deploy de marco com economia de creditos
+
+Antes de reativar builds no Netlify:
+
+1. Rodar `npm.cmd run preflight`.
+2. Rodar `npm.cmd run preflight:build` quando a rodada tiver mudancas de interface ou funcoes.
+3. Rodar `supabase/check_hub_status.sql` no SQL Editor.
+4. Usar o roteiro `GUIA_DEPLOY_MARCO.md`.
+
+Status: roteiro de deploy de marco preparado.

@@ -19,6 +19,27 @@ Functions directory: netlify/functions
 
 O arquivo `netlify.toml` ja esta pronto na raiz do projeto com essas configuracoes.
 
+## Antes de gastar build minutes
+
+Com os builds automaticos pausados, valide localmente:
+
+```powershell
+npm.cmd run preflight
+npm.cmd run preflight:build
+```
+
+No Supabase, valide a estrutura com:
+
+```text
+supabase/check_hub_status.sql
+```
+
+Depois siga o roteiro:
+
+```text
+GUIA_DEPLOY_MARCO.md
+```
+
 ## Variaveis no Netlify
 
 Cadastre no painel do Netlify:
