@@ -39,13 +39,13 @@ Nesta versao, o grifo amarelo fica registrado como anotacao vinculada ao documen
 
 Para PDF e DOCX, o HUB tambem tenta aplicar o grifo visual diretamente no conteudo renderizado:
 
-- PDF: o grifo aparece na camada de texto quando o PDF possui texto pesquisavel;
+- PDF: o grifo aparece na camada oficial de texto do PDF.js quando o PDF possui texto pesquisavel;
 - DOCX: o grifo aparece no HTML convertido internamente;
 - PPTX/XLSX/Google/links externos: o grifo permanece como anotacao lateral, pois esses previews rodam em `iframe` externo e sao isolados por seguranca.
 
 Os resultados de busca aparecem em verde e nao sao salvos como anotacao. O grifo manual salvo pelo usuario aparece em amarelo. Para remover um grifo amarelo, selecione ou cole o mesmo trecho no campo `Grifo amarelo` e acione `Remover grifo selecionado`.
 
-Para PPTX, o caminho recomendado para estudo com grifos precisos e converter o arquivo para PDF pesquisavel antes do upload, ou implementar uma etapa futura de conversao/OCR.
+Para PPTX, o caminho recomendado para estudo com busca e grifos precisos e converter o arquivo para PDF pesquisavel antes do upload, ou implementar uma etapa futura de conversao/OCR. O HUB nao consegue selecionar texto dentro do visualizador online do Office por restricao de seguranca do navegador.
 
 ## Persistencia atual
 

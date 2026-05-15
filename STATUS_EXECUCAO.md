@@ -224,3 +224,6 @@
 - `npm.cmd run typecheck`: OK em 15/05/2026 apos busca verde navegavel e remocao de grifo amarelo no visualizador de Arquivos.
 - `npm.cmd run build`: OK em 15/05/2026 apos busca verde navegavel e remocao de grifo amarelo no visualizador de Arquivos.
 - `npm.cmd run preflight`: OK em 15/05/2026 apos busca verde navegavel e remocao de grifo amarelo no visualizador de Arquivos.
+- `npm.cmd run typecheck`: OK em 15/05/2026 apos trocar PDF para camada oficial de texto do PDF.js.
+- `npm.cmd run build`: OK em 15/05/2026 apos trocar PDF para camada oficial de texto do PDF.js.
+- `npm.cmd run preflight`: OK em 15/05/2026 apos trocar PDF para camada oficial de texto do PDF.js.
