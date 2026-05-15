@@ -25,7 +25,7 @@ Ao clicar, o HUB abre um painel grande com:
 O visualizador trata os tipos assim:
 
 - imagens: exibicao direta no painel;
-- PDF: renderizacao interna com PDF.js, camada de texto, selecao de trechos e grifos visuais quando o PDF possuir texto pesquisavel;
+- PDF: renderizacao interna com PDF.js, camada de texto oficial e fallback manual de texto invisivel para selecao, busca e grifos quando o PDF possuir texto pesquisavel;
 - DOCX: conversao interna para HTML com Mammoth, selecao de trechos e grifos visuais no conteudo convertido;
 - Excel e PowerPoint: tentativa de exibicao pelo visualizador online do Office;
 - Google Docs, Sheets, Slides e arquivos do Drive: tentativa de exibicao em modo preview;
@@ -39,7 +39,7 @@ Nesta versao, o grifo amarelo fica registrado como anotacao vinculada ao documen
 
 Para PDF e DOCX, o HUB tambem tenta aplicar o grifo visual diretamente no conteudo renderizado:
 
-- PDF: o grifo aparece na camada oficial de texto do PDF.js quando o PDF possui texto pesquisavel;
+- PDF: o grifo aparece na camada de texto do PDF.js; se a camada oficial falhar, o HUB cria uma camada manual por cima do canvas do PDF;
 - DOCX: o grifo aparece no HTML convertido internamente;
 - PPTX/XLSX/Google/links externos: o grifo permanece como anotacao lateral, pois esses previews rodam em `iframe` externo e sao isolados por seguranca.
 
