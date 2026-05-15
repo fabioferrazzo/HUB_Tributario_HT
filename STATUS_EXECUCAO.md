@@ -207,3 +207,5 @@
 - `npm.cmd run preflight`: OK em 14/05/2026 apos checklist final de homologacao pre-Netlify.
 - `supabase/check_hub_status.sql`: OK em 14/05/2026, validado no Supabase SQL Editor sem itens pendentes.
 - `npm.cmd run preflight:build`: OK em 14/05/2026 antes do deploy de marco para homologacao funcional em producao.
+- Deploy de marco em 14/05/2026 falhou no Netlify por arquivo duplicado/incorreto `src/lib/App.tsx` existente no GitHub; correcao indicada: remover o duplicado e manter apenas `src/App.tsx`.
+- `npm.cmd run preflight`: OK em 14/05/2026 apos incluir alerta contra arquivos React principais em pastas incorretas.
