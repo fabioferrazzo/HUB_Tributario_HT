@@ -2,6 +2,8 @@
   Bell,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Edit3,
   FileArchive,
@@ -27,7 +29,7 @@
   X
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { CSSProperties, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadPautas, sheetsHubUrl, teamMembers } from "./data/hubData";
 import {
   deleteAppFileAnnotation,
@@ -1742,6 +1744,8 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerPage, setViewerPage] = useState(1);
   const [viewerQuery, setViewerQuery] = useState("");
   const [viewerSearchTerm, setViewerSearchTerm] = useState("");
+  const [viewerSearchIndex, setViewerSearchIndex] = useState(0);
+  const [viewerSearchTotal, setViewerSearchTotal] = useState(0);
   const [viewerHighlight, setViewerHighlight] = useState("");
   const [viewerComment, setViewerComment] = useState("");
   const [viewerNotes, setViewerNotes] = useState<FileViewerNote[]>([]);
@@ -1789,6 +1793,8 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerPage(1);
     setViewerQuery("");
     setViewerSearchTerm("");
+    setViewerSearchIndex(0);
+    setViewerSearchTotal(0);
     setViewerHighlight("");
     setViewerComment("");
     setViewerError("");
@@ -1822,19 +1828,45 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerComment("");
     setViewerQuery("");
     setViewerSearchTerm("");
+    setViewerSearchIndex(0);
+    setViewerSearchTotal(0);
     setViewerError("");
     setViewerFullscreen(false);
   }
 
   function runViewerSearch() {
     const term = viewerQuery.trim();
+    setViewerSearchIndex(0);
+    setViewerSearchTotal(0);
+    setViewerError("");
+
+    if (!term) {
+      setViewerSearchTerm("");
+      return;
+    }
+
+    if (viewerResource && !isPdfResource(viewerResource) && !isDocxResource(viewerResource)) {
+      setViewerSearchTerm("");
+      setViewerError("Busca interna com navegacao esta disponivel para PDF pesquisavel e DOCX convertido. Para PPTX, Excel, imagens ou links externos, abra em nova aba ou converta para PDF pesquisavel.");
+      return;
+    }
+
     setViewerSearchTerm(term);
-    if (term) setViewerHighlight(term);
+  }
+
+  const handleViewerSearchStats = useCallback((total: number) => {
+    setViewerSearchTotal(total);
+    setViewerSearchIndex((current) => (total ? Math.min(current, total - 1) : 0));
+  }, []);
+
+  function moveViewerSearch(delta: number) {
+    if (!viewerSearchTotal) return;
+    setViewerSearchIndex((current) => (current + delta + viewerSearchTotal) % viewerSearchTotal);
   }
 
   async function addViewerNote(kind: FileViewerNoteKind) {
     if (!viewerResource) return;
-    const text = (kind === "highlight" ? viewerHighlight || viewerQuery : viewerComment).trim();
+    const text = (kind === "highlight" ? viewerHighlight : viewerComment).trim();
     if (!text) return;
 
     const now = new Date().toISOString();
@@ -1875,6 +1907,29 @@ function ArquivosModule({ user }: { user: HubUser }) {
     } finally {
       setViewerSaving(false);
     }
+  }
+
+  async function removeSelectedHighlight() {
+    const selectedText = viewerHighlight.trim();
+    if (!selectedText) {
+      setViewerError("Selecione no documento ou cole o trecho do grifo amarelo que deseja remover.");
+      return;
+    }
+
+    const selected = normalizeForSearch(selectedText);
+    const matchingNote = viewerNotes.find((note) => {
+      if (note.kind !== "highlight" || !canManageViewerNote(note)) return false;
+      const noteText = normalizeForSearch(note.text);
+      return noteText === selected || noteText.includes(selected) || selected.includes(noteText);
+    });
+
+    if (!matchingNote) {
+      setViewerError("Nenhum grifo amarelo salvo corresponde ao trecho selecionado.");
+      return;
+    }
+
+    await removeViewerNote(matchingNote);
+    setViewerHighlight("");
   }
 
   function canManageResource(resource: FileResource) {
@@ -2420,8 +2475,12 @@ function ArquivosModule({ user }: { user: HubUser }) {
               <button type="button" onClick={runViewerSearch}>
                 Pesquisar
               </button>
-              <button type="button" onClick={() => setViewerHighlight(viewerSearchTerm || viewerQuery)}>
-                Usar busca como nota
+              <button aria-label="Resultado anterior da busca" disabled={!viewerSearchTotal} type="button" onClick={() => moveViewerSearch(-1)}>
+                <ChevronLeft size={14} />
+              </button>
+              <span className="document-search-count">{viewerSearchTerm ? `${viewerSearchTotal ? viewerSearchIndex + 1 : 0}/${viewerSearchTotal}` : "0/0"}</span>
+              <button aria-label="Proximo resultado da busca" disabled={!viewerSearchTotal} type="button" onClick={() => moveViewerSearch(1)}>
+                <ChevronRight size={14} />
               </button>
               <button type="button" onClick={() => setViewerFullscreen((current) => !current)}>
                 {viewerFullscreen ? "Sair da tela cheia" : "Tela cheia HUB"}
@@ -2439,15 +2498,19 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     highlightNotes={viewerNotes.filter((note) => note.kind === "highlight")}
                     page={viewerPage}
                     resource={viewerResource}
+                    searchIndex={viewerSearchIndex}
                     searchTerm={viewerSearchTerm}
                     zoom={viewerZoom}
+                    onSearchStats={handleViewerSearchStats}
                     onSelectText={setViewerHighlight}
                   />
                 ) : isDocxResource(viewerResource) ? (
                   <InternalDocxViewer
                     highlightNotes={viewerNotes.filter((note) => note.kind === "highlight")}
                     resource={viewerResource}
+                    searchIndex={viewerSearchIndex}
                     searchTerm={viewerSearchTerm}
+                    onSearchStats={handleViewerSearchStats}
                     onSelectText={setViewerHighlight}
                   />
                 ) : viewerPreview?.mode === "image" ? (
@@ -2492,15 +2555,20 @@ function ArquivosModule({ user }: { user: HubUser }) {
                   <textarea
                     value={viewerHighlight}
                     onChange={(event) => setViewerHighlight(event.target.value)}
-                    placeholder="Cole o trecho ou use 'Usar busca como nota'."
+                    placeholder="Selecione um trecho no documento ou cole o texto a grifar."
                   />
                   <small className="field-note">
-                    Nesta versao, o grifo fica como anotacao amarela no painel. Grifo direto sobre o texto original exige renderizacao interna do documento.
+                    O grifo manual fica amarelo no texto renderizado internamente. A busca usa verde e nao cria anotacao salva.
                   </small>
                 </label>
-                <button disabled={viewerSaving} type="button" onClick={() => addViewerNote("highlight")}>
-                  {viewerSaving ? "Salvando..." : "Salvar grifo"}
-                </button>
+                <div className="viewer-note-actions">
+                  <button disabled={viewerSaving} type="button" onClick={() => addViewerNote("highlight")}>
+                    {viewerSaving ? "Salvando..." : "Salvar grifo"}
+                  </button>
+                  <button className="button-danger-soft" disabled={viewerSaving || !viewerHighlight.trim()} type="button" onClick={removeSelectedHighlight}>
+                    Remover grifo selecionado
+                  </button>
+                </div>
 
                 <label>
                   Comentario
@@ -2541,16 +2609,20 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
 function InternalPdfViewer({
   highlightNotes,
+  onSearchStats,
   onSelectText,
   page,
   resource,
+  searchIndex,
   searchTerm,
   zoom
 }: {
   highlightNotes: FileViewerNote[];
+  onSearchStats: (total: number) => void;
   onSelectText: (text: string) => void;
   page: number;
   resource: FileResource;
+  searchIndex: number;
   searchTerm: string;
   zoom: number;
 }) {
@@ -2560,7 +2632,23 @@ function InternalPdfViewer({
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const terms = useMemo(() => getViewerHighlightTerms(highlightNotes, searchTerm), [highlightNotes, searchTerm]);
+  const highlightTerms = useMemo(() => getViewerManualHighlightTerms(highlightNotes), [highlightNotes]);
+  const normalizedSearchTerm = normalizeForSearch(searchTerm);
+  const searchMatches = useMemo(
+    () => (normalizedSearchTerm ? spans.filter((span) => normalizeForSearch(span.text).includes(normalizedSearchTerm)) : []),
+    [normalizedSearchTerm, spans]
+  );
+  const searchMatchIndexes = useMemo(() => new Map(searchMatches.map((span, index) => [span.id, index])), [searchMatches]);
+
+  useEffect(() => {
+    onSearchStats(searchMatches.length);
+  }, [onSearchStats, searchMatches.length]);
+
+  useEffect(() => {
+    if (!searchMatches.length) return;
+    const target = containerRef.current?.querySelector(`[data-search-index="${searchIndex}"]`);
+    target?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  }, [searchIndex, searchMatches.length]);
 
   useEffect(() => {
     let active = true;
@@ -2656,21 +2744,34 @@ function InternalPdfViewer({
         <div className="pdf-page-shell">
           <canvas ref={canvasRef} />
           <div className="pdf-text-layer" style={{ width: pageSize.width, height: pageSize.height }}>
-            {spans.map((span) => (
-              <span
-                className={isTextHighlightedByTerms(span.text, terms) ? "pdf-text-span pdf-text-span--highlighted" : "pdf-text-span"}
-                key={span.id}
-                style={{
-                  left: span.left,
-                  top: span.top,
-                  width: span.width,
-                  height: span.height,
-                  fontSize: span.fontSize
-                }}
-              >
-                {span.text}
-              </span>
-            ))}
+            {spans.map((span) => {
+              const matchIndex = searchMatchIndexes.get(span.id);
+              const className = [
+                "pdf-text-span",
+                isTextHighlightedByTerms(span.text, highlightTerms) ? "pdf-text-span--highlighted" : "",
+                matchIndex !== undefined ? "pdf-text-span--search" : "",
+                matchIndex === searchIndex ? "pdf-text-span--search-active" : ""
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <span
+                  className={className}
+                  data-search-index={matchIndex}
+                  key={span.id}
+                  style={{
+                    left: span.left,
+                    top: span.top,
+                    width: span.width,
+                    height: span.height,
+                    fontSize: span.fontSize
+                  }}
+                >
+                  {span.text}
+                </span>
+              );
+            })}
           </div>
           {!loading && !spans.length ? (
             <div className="document-preview-banner document-preview-banner--floating">
@@ -2685,21 +2786,39 @@ function InternalPdfViewer({
 
 function InternalDocxViewer({
   highlightNotes,
+  onSearchStats,
   onSelectText,
   resource,
+  searchIndex,
   searchTerm
 }: {
   highlightNotes: FileViewerNote[];
+  onSearchStats: (total: number) => void;
   onSelectText: (text: string) => void;
   resource: FileResource;
+  searchIndex: number;
   searchTerm: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const terms = useMemo(() => getViewerHighlightTerms(highlightNotes, searchTerm), [highlightNotes, searchTerm]);
-  const markedHtml = useMemo(() => markHtmlWithTerms(html, terms), [html, terms]);
+  const highlightTerms = useMemo(() => getViewerManualHighlightTerms(highlightNotes), [highlightNotes]);
+  const markedContent = useMemo(() => markHtmlWithTerms(html, highlightTerms, searchTerm), [highlightTerms, html, searchTerm]);
+
+  useEffect(() => {
+    onSearchStats(markedContent.searchCount);
+  }, [markedContent.searchCount, onSearchStats]);
+
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root || !markedContent.searchCount) return;
+
+    root.querySelectorAll(".doc-search-highlight--active").forEach((element) => element.classList.remove("doc-search-highlight--active"));
+    const target = root.querySelector(`[data-search-index="${searchIndex}"]`);
+    target?.classList.add("doc-search-highlight--active");
+    target?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+  }, [markedContent.html, markedContent.searchCount, searchIndex]);
 
   useEffect(() => {
     let active = true;
@@ -2763,7 +2882,7 @@ function InternalDocxViewer({
   return (
     <div className="internal-doc-viewer internal-doc-viewer--docx" onMouseUp={handleSelection} ref={containerRef}>
       {loading ? <div className="document-preview-banner">Convertendo DOCX para estudo interno...</div> : null}
-      <article className="docx-rendered" dangerouslySetInnerHTML={{ __html: markedHtml }} />
+      <article className="docx-rendered" dangerouslySetInnerHTML={{ __html: markedContent.html }} />
     </div>
   );
 }
@@ -2937,8 +3056,9 @@ function extractGoogleFileId(value: string) {
   return "";
 }
 
-function getViewerHighlightTerms(notes: FileViewerNote[], searchTerm: string) {
-  const terms = [...notes.map((note) => note.text), searchTerm]
+function getViewerManualHighlightTerms(notes: FileViewerNote[]) {
+  const terms = notes
+    .map((note) => note.text)
     .map((term) => term.trim())
     .filter((term) => term.length > 1);
   return Array.from(new Set(terms));
@@ -2955,16 +3075,40 @@ function isTextHighlightedByTerms(text: string, terms: string[]) {
   });
 }
 
-function markHtmlWithTerms(html: string, terms: string[]) {
-  if (!html || !terms.length || typeof DOMParser === "undefined") return html;
+function markHtmlWithTerms(html: string, highlightTerms: string[], searchTerm: string) {
+  if (!html || typeof DOMParser === "undefined") return { html, searchCount: 0 };
 
-  const escapedTerms = terms.map((term) => term.trim()).filter(Boolean).sort((left, right) => right.length - left.length).map(escapeRegExp);
-  if (!escapedTerms.length) return html;
-
-  const matcher = new RegExp(`(${escapedTerms.join("|")})`, "gi");
   const document = new DOMParser().parseFromString(`<main>${html}</main>`, "text/html");
   const root = document.body.firstElementChild;
-  if (!root) return html;
+  if (!root) return { html, searchCount: 0 };
+
+  let searchCount = 0;
+  const normalizedSearchTerm = searchTerm.trim();
+  if (normalizedSearchTerm.length > 1) {
+    searchCount = markTermsInHtml(document, root, [normalizedSearchTerm], (mark, index) => {
+      mark.className = "doc-search-highlight";
+      mark.dataset.searchIndex = String(index);
+    });
+  }
+
+  markTermsInHtml(document, root, highlightTerms, (mark) => {
+    mark.className = "doc-highlight";
+  });
+
+  return { html: root.innerHTML, searchCount };
+}
+
+function markTermsInHtml(
+  document: Document,
+  root: Element,
+  terms: string[],
+  decorate: (mark: HTMLElement, index: number, text: string) => void
+) {
+  const escapedTerms = terms.map((term) => term.trim()).filter(Boolean).sort((left, right) => right.length - left.length).map(escapeRegExp);
+  if (!escapedTerms.length) return 0;
+
+  const matcher = new RegExp(`(${escapedTerms.join("|")})`, "gi");
+  let markCount = 0;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
@@ -2993,16 +3137,17 @@ function markHtmlWithTerms(html: string, terms: string[]) {
       const index = match.index || 0;
       if (index > lastIndex) fragment.append(document.createTextNode(value.slice(lastIndex, index)));
       const mark = document.createElement("mark");
-      mark.className = "doc-highlight";
+      decorate(mark, markCount, match[0]);
       mark.textContent = match[0];
       fragment.append(mark);
+      markCount += 1;
       lastIndex = index + match[0].length;
     }
     if (lastIndex < value.length) fragment.append(document.createTextNode(value.slice(lastIndex)));
     textNode.replaceWith(fragment);
   }
 
-  return root.innerHTML;
+  return markCount;
 }
 
 function escapeRegExp(value: string) {

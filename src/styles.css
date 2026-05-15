@@ -1452,6 +1452,19 @@ select {
   font-weight: 850;
 }
 
+.document-viewer-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.document-search-count {
+  min-width: 48px;
+  color: #65748b;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .document-viewer-toolbar label {
   display: inline-flex;
   align-items: center;
@@ -1626,6 +1639,17 @@ select {
   background: rgba(255, 226, 75, 0.55);
 }
 
+.pdf-text-span--search {
+  border-radius: 2px;
+  background: rgba(35, 168, 110, 0.42);
+}
+
+.pdf-text-span--search-active {
+  outline: 2px solid rgba(8, 116, 78, 0.72);
+  outline-offset: 1px;
+  background: rgba(35, 168, 110, 0.62);
+}
+
 .document-preview-banner--floating {
   position: absolute;
   left: 44px;
@@ -1686,6 +1710,17 @@ select {
   border-radius: 3px;
   background: #ffe76a;
   box-shadow: 0 0 0 2px rgba(255, 231, 106, 0.42);
+}
+
+.doc-search-highlight {
+  border-radius: 3px;
+  background: rgba(35, 168, 110, 0.34);
+  box-shadow: 0 0 0 2px rgba(35, 168, 110, 0.18);
+}
+
+.doc-search-highlight--active {
+  background: rgba(35, 168, 110, 0.58);
+  box-shadow: 0 0 0 2px rgba(8, 116, 78, 0.65);
 }
 
 .document-study-panel {
@@ -1756,6 +1791,11 @@ select {
 .viewer-note-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.document-study-panel .button-danger-soft {
+  border-color: #f0b8b8;
+  color: var(--danger);
 }
 
 .viewer-note-list {
