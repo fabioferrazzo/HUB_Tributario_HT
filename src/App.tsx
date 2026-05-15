@@ -83,6 +83,15 @@ import type {
 type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
 type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
 type HealthStatusTone = "ok" | "warning" | "info";
+type ViewerPreviewMode = "image" | "iframe" | "unsupported";
+
+type ViewerPreview = {
+  mode: ViewerPreviewMode;
+  src: string;
+  title: string;
+  detail?: string;
+  notice?: string;
+};
 
 type HealthCheck = {
   area: string;
@@ -1728,6 +1737,10 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerSaving, setViewerSaving] = useState(false);
   const [viewerError, setViewerError] = useState("");
   const source = getArquivosSource();
+  const viewerPreview = useMemo(
+    () => (viewerResource ? buildViewerPreview(viewerResource, viewerPage, viewerZoom, viewerQuery) : null),
+    [viewerPage, viewerQuery, viewerResource, viewerZoom]
+  );
 
   useEffect(() => {
     let active = true;
@@ -1776,6 +1789,17 @@ function ArquivosModule({ user }: { user: HubUser }) {
       setViewerLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!viewerResource) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeViewer();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewerResource]);
 
   function closeViewer() {
     setViewerResource(null);
@@ -1835,6 +1859,21 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
   function canManageViewerNote(note: FileViewerNote) {
     return user.role === "admin" || note.createdBy === user.id || note.createdBy === user.email || note.userEmail === user.email;
+  }
+
+  function exportViewerNotes() {
+    if (!viewerResource || !viewerNotes.length) return;
+
+    const markdown = buildViewerNotesMarkdown(viewerResource, viewerNotes);
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${toSafeDownloadFileName(viewerResource.titulo || viewerResource.fileName || "arquivo")}-anotacoes.md`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function canManageFolder(folder: FileFolder) {
@@ -2307,15 +2346,24 @@ function ArquivosModule({ user }: { user: HubUser }) {
       </section>
 
       {viewerResource ? (
-        <div className="document-viewer-backdrop" role="dialog" aria-modal="true" aria-label={`Visualizador de ${viewerResource.titulo}`}>
+        <div
+          className="document-viewer-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Visualizador de ${viewerResource.titulo}`}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeViewer();
+          }}
+        >
           <section className="document-viewer-panel">
             <header className="document-viewer-header">
               <div>
                 <span>{viewerResource.fileName || formatFileCategory(viewerResource.categoria)}</span>
                 <h2>{viewerResource.titulo}</h2>
               </div>
-              <button aria-label="Fechar visualizador" className="icon-button" type="button" onClick={closeViewer}>
+              <button aria-label="Fechar visualizador" className="document-viewer-close" type="button" onClick={closeViewer}>
                 <X size={19} />
+                Fechar
               </button>
             </header>
 
@@ -2344,17 +2392,28 @@ function ArquivosModule({ user }: { user: HubUser }) {
             </div>
 
             <div className="document-viewer-body">
-              <div className="document-preview">
-                {isImageResource(viewerResource) ? (
+              <div className={`document-preview ${viewerPreview?.notice ? "document-preview--with-banner" : ""}`}>
+                {viewerPreview?.notice ? <div className="document-preview-banner">{viewerPreview.notice}</div> : null}
+                {viewerPreview?.mode === "image" ? (
                   <div className="document-preview__image-scroll">
                     <img
                       alt={viewerResource.titulo}
-                      src={viewerResource.url}
+                      src={viewerPreview.src}
                       style={{ width: `${viewerZoom}%`, maxWidth: viewerZoom > 100 ? "none" : "100%" }}
                     />
                   </div>
+                ) : viewerPreview?.mode === "iframe" ? (
+                  <iframe src={viewerPreview.src} title={viewerPreview.title} />
                 ) : (
-                  <iframe src={buildViewerUrl(viewerResource, viewerPage, viewerZoom, viewerQuery)} title={viewerResource.titulo} />
+                  <div className="document-preview-fallback">
+                    <FileArchive size={38} />
+                    <h3>Previa interna indisponivel</h3>
+                    <p>{viewerPreview?.detail || "Este arquivo ou link nao permite visualizacao embutida no painel."}</p>
+                    <a href={viewerResource.url} rel="noreferrer" target="_blank">
+                      <Link2 size={15} />
+                      Abrir em nova aba
+                    </a>
+                  </div>
                 )}
               </div>
 
@@ -2362,6 +2421,11 @@ function ArquivosModule({ user }: { user: HubUser }) {
                 <div>
                   <span className="panel-chip">Estudo do documento</span>
                   <h3>Grifos e comentarios</h3>
+                </div>
+                <div className="viewer-note-actions">
+                  <button disabled={!viewerNotes.length} type="button" onClick={exportViewerNotes}>
+                    Exportar notas
+                  </button>
                 </div>
 
                 {viewerError ? <div className="form-error">{viewerError}</div> : null}
@@ -2420,9 +2484,79 @@ function isImageResource(resource: FileResource) {
   return resource.mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(resource.fileName || resource.url);
 }
 
-function buildViewerUrl(resource: FileResource, page: number, zoom: number, query: string) {
+function buildViewerPreview(resource: FileResource, page: number, zoom: number, query: string): ViewerPreview {
+  if (!resource.url) {
+    return {
+      mode: "unsupported",
+      src: "",
+      title: resource.titulo,
+      detail: "O registro nao possui URL ou arquivo anexado disponivel para visualizacao."
+    };
+  }
+
+  if (isImageResource(resource)) {
+    return {
+      mode: "image",
+      src: resource.url,
+      title: resource.titulo
+    };
+  }
+
+  if (isPdfResource(resource)) {
+    return {
+      mode: "iframe",
+      src: buildPdfViewerUrl(resource, page, zoom, query),
+      title: resource.titulo
+    };
+  }
+
+  const googleDrivePreview = buildGoogleDrivePreviewUrl(resource.url);
+  if (googleDrivePreview) {
+    return {
+      mode: "iframe",
+      src: googleDrivePreview,
+      title: resource.titulo,
+      notice: "Google Drive pode exigir permissao de acesso. Se a previa nao carregar, use Abrir em nova aba."
+    };
+  }
+
+  if (isGoogleDriveFolderUrl(resource.url)) {
+    return {
+      mode: "unsupported",
+      src: "",
+      title: resource.titulo,
+      detail: "Pastas do Google Drive normalmente bloqueiam visualizacao embutida. Abra em nova aba para acessar com sua conta Google."
+    };
+  }
+
+  if (isOfficeResource(resource)) {
+    return {
+      mode: "iframe",
+      src: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resource.url)}`,
+      title: resource.titulo,
+      notice: "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Se o painel ficar em branco, abra em nova aba."
+    };
+  }
+
+  if (isTextLikeResource(resource) || isEmbeddableWebUrl(resource.url)) {
+    return {
+      mode: "iframe",
+      src: resource.url,
+      title: resource.titulo,
+      notice: "Alguns sites bloqueiam visualizacao embutida por seguranca. Se isso ocorrer, use Abrir em nova aba."
+    };
+  }
+
+  return {
+    mode: "unsupported",
+    src: "",
+    title: resource.titulo,
+    detail: "Tipo de arquivo sem pre-visualizacao interna. Use Abrir em nova aba para consultar o documento."
+  };
+}
+
+function buildPdfViewerUrl(resource: FileResource, page: number, zoom: number, query: string) {
   if (!resource.url) return "";
-  if (!isPdfResource(resource)) return resource.url;
 
   const cleanUrl = resource.url.split("#")[0];
   const hash = new URLSearchParams();
@@ -2434,6 +2568,118 @@ function buildViewerUrl(resource: FileResource, page: number, zoom: number, quer
 
 function isPdfResource(resource: FileResource) {
   return resource.mimeType === "application/pdf" || /\.pdf(\?|#|$)/i.test(resource.fileName || resource.url);
+}
+
+function isOfficeResource(resource: FileResource) {
+  const target = `${resource.mimeType} ${resource.fileName} ${resource.url}`.toLowerCase();
+  return (
+    target.includes("officedocument") ||
+    target.includes("msword") ||
+    target.includes("ms-excel") ||
+    target.includes("ms-powerpoint") ||
+    /\.(docx?|xlsx?|pptx?)(\?|#|$)/i.test(resource.fileName || resource.url)
+  );
+}
+
+function isTextLikeResource(resource: FileResource) {
+  const target = `${resource.mimeType} ${resource.fileName} ${resource.url}`.toLowerCase();
+  return target.includes("text/") || /\.(txt|csv|md|html?|json|xml)(\?|#|$)/i.test(target);
+}
+
+function isEmbeddableWebUrl(value: string) {
+  return /^https?:\/\//i.test(value) && !isGoogleDriveFolderUrl(value);
+}
+
+function isGoogleDriveFolderUrl(value: string) {
+  return /drive\.google\.com\/drive\/folders\//i.test(value) || /drive\.google\.com\/folders\//i.test(value);
+}
+
+function buildGoogleDrivePreviewUrl(value: string) {
+  if (!/drive\.google\.com|docs\.google\.com/i.test(value)) return "";
+  if (isGoogleDriveFolderUrl(value)) return "";
+
+  if (/docs\.google\.com/i.test(value)) {
+    return value
+      .replace(/\/edit(\?.*)?$/i, "/preview")
+      .replace(/\/view(\?.*)?$/i, "/preview")
+      .replace(/\/pub(\?.*)?$/i, "/preview");
+  }
+
+  const fileId = extractGoogleFileId(value);
+  if (fileId) return `https://drive.google.com/file/d/${fileId}/preview`;
+
+  return value
+    .replace(/\/edit(\?.*)?$/i, "/preview")
+    .replace(/\/view(\?.*)?$/i, "/preview");
+}
+
+function extractGoogleFileId(value: string) {
+  const patterns = [
+    /\/file\/d\/([^/]+)/i,
+    /[?&]id=([^&]+)/i,
+    /\/document\/d\/([^/]+)/i,
+    /\/spreadsheets\/d\/([^/]+)/i,
+    /\/presentation\/d\/([^/]+)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  }
+
+  return "";
+}
+
+function buildViewerNotesMarkdown(resource: FileResource, notes: FileViewerNote[]) {
+  const sortedNotes = [...notes].sort((a, b) => {
+    const pageDiff = a.page - b.page;
+    if (pageDiff !== 0) return pageDiff;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+
+  const lines = [
+    `# Anotacoes - ${resource.titulo}`,
+    "",
+    `- Arquivo: ${resource.fileName || resource.titulo}`,
+    `- Categoria: ${formatFileCategory(resource.categoria)}`,
+    `- URL: ${resource.url || "Sem URL"}`,
+    `- Exportado em: ${formatDateTime(new Date().toISOString())}`,
+    "",
+    "## Registros",
+    ""
+  ];
+
+  if (!sortedNotes.length) {
+    lines.push("Nenhuma anotacao registrada.");
+  }
+
+  sortedNotes.forEach((note) => {
+    lines.push(`### ${formatViewerNoteKind(note.kind)} - pagina ${note.page}`);
+    lines.push("");
+    lines.push(`- Autor: ${note.userEmail || note.createdBy}`);
+    lines.push(`- Criado em: ${formatDateTime(note.createdAt)}`);
+    lines.push("");
+    lines.push(note.text);
+    lines.push("");
+  });
+
+  return `${lines.join("\n")}\n`;
+}
+
+function formatViewerNoteKind(kind: FileViewerNoteKind) {
+  return kind === "highlight" ? "Grifo" : "Comentario";
+}
+
+function toSafeDownloadFileName(value: string) {
+  return (
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^[-.]+|[-.]+$/g, "")
+      .toLowerCase() || "arquivo"
+  );
 }
 
 function LinksModule({ user }: { user: HubUser }) {

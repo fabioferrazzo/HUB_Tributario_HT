@@ -1399,6 +1399,27 @@ select {
   font-weight: 850;
 }
 
+.document-viewer-close {
+  min-width: 92px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--accent);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.document-viewer-close:hover {
+  border-color: rgba(163, 61, 50, 0.38);
+  color: var(--danger);
+}
+
 .document-viewer-toolbar {
   flex-wrap: wrap;
   background: #fbfaf6;
@@ -1463,6 +1484,20 @@ select {
   background: #dfe3e8;
 }
 
+.document-preview--with-banner {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.document-preview-banner {
+  border-bottom: 1px solid #d6c9a8;
+  background: #fff8de;
+  color: #5f501e;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .document-preview iframe {
   width: 100%;
   height: 100%;
@@ -1485,6 +1520,49 @@ select {
   border-radius: 6px;
   background: #fff;
   box-shadow: 0 16px 42px rgba(10, 18, 31, 0.16);
+}
+
+.document-preview-fallback {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  background: #fff;
+  color: var(--muted);
+  padding: 28px;
+  text-align: center;
+}
+
+.document-preview-fallback svg {
+  color: var(--accent);
+}
+
+.document-preview-fallback h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 19px;
+}
+
+.document-preview-fallback p {
+  max-width: 520px;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.document-preview-fallback a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 12px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .document-study-panel {
@@ -1537,6 +1615,17 @@ select {
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 850;
+}
+
+.viewer-note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.viewer-note-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .viewer-note-list {
