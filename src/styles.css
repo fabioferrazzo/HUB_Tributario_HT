@@ -1623,6 +1623,7 @@ select {
   text-align: initial;
   text-size-adjust: none;
   transform-origin: 0 0;
+  user-select: text;
   z-index: 1;
 }
 

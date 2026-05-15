@@ -101,6 +101,33 @@ type PdfTextSpan = {
   text: string;
 };
 
+type PdfSearchPlan = {
+  total: number;
+  indexesBySpanId: Map<string, number>;
+};
+
+type PdfTextRawItem = {
+  dir?: string;
+  hasEOL?: boolean;
+  height?: number;
+  str?: string;
+  transform?: number[];
+  width?: number;
+};
+
+type PdfViewportLike = {
+  height: number;
+  scale: number;
+  transform: number[];
+  width: number;
+};
+
+type PdfJsLike = {
+  Util: {
+    transform: (left: number[], right: number[]) => number[];
+  };
+};
+
 type HealthCheck = {
   area: string;
   status: string;
@@ -2630,21 +2657,17 @@ function InternalPdfViewer({
   const [error, setError] = useState("");
   const highlightTerms = useMemo(() => getViewerManualHighlightTerms(highlightNotes), [highlightNotes]);
   const normalizedSearchTerm = normalizeForSearch(searchTerm);
-  const searchMatches = useMemo(
-    () => (normalizedSearchTerm ? spans.filter((span) => normalizeForSearch(span.text).includes(normalizedSearchTerm)) : []),
-    [normalizedSearchTerm, spans]
-  );
-  const searchMatchIndexes = useMemo(() => new Map(searchMatches.map((span, index) => [span.id, index])), [searchMatches]);
+  const searchPlan = useMemo(() => buildPdfSearchPlan(spans, normalizedSearchTerm), [normalizedSearchTerm, spans]);
 
   useEffect(() => {
-    onSearchStats(searchMatches.length);
-  }, [onSearchStats, searchMatches.length]);
+    onSearchStats(searchPlan.total);
+  }, [onSearchStats, searchPlan.total]);
 
   useEffect(() => {
-    if (!searchMatches.length) return;
+    if (!searchPlan.total) return;
     const target = containerRef.current?.querySelector(`[data-search-index="${searchIndex}"]`);
     target?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-  }, [searchIndex, searchMatches.length]);
+  }, [searchIndex, searchPlan.total]);
 
   useEffect(() => {
     let active = true;
@@ -2685,21 +2708,37 @@ function InternalPdfViewer({
           textLayerElement.innerHTML = "";
           textLayerElement.style.width = `${Math.floor(viewport.width)}px`;
           textLayerElement.style.height = `${Math.floor(viewport.height)}px`;
-          const textLayer = new pdfjs.TextLayer({
-            container: textLayerElement,
-            textContentSource: textContent,
-            viewport
-          });
-          await textLayer.render();
+          textLayerElement.style.setProperty("--scale-factor", String(scale));
+          let nextSpans: PdfTextSpan[] = [];
+          try {
+            const textLayer = new pdfjs.TextLayer({
+              container: textLayerElement,
+              textContentSource: textContent,
+              viewport
+            });
+            await textLayer.render();
 
-          const nextSpans = textLayer.textDivs
-            .map((element: HTMLElement, index: number) => {
-              const text = textLayer.textContentItemsStr[index] || element.textContent || "";
-              const id = `${safePage}-${index}`;
-              element.dataset.pdfTextIndex = id;
-              return { id, text };
-            })
-            .filter((span: PdfTextSpan) => span.text.trim());
+            nextSpans = textLayer.textDivs
+              .map((element: HTMLElement, index: number) => {
+                const text = textLayer.textContentItemsStr[index] || element.textContent || "";
+                const id = `${safePage}-${index}`;
+                element.dataset.pdfTextIndex = id;
+                return { id, text };
+              })
+              .filter((span: PdfTextSpan) => span.text.trim());
+          } catch {
+            nextSpans = [];
+          }
+
+          if (!nextSpans.length) {
+            nextSpans = renderManualPdfTextLayer(
+              pdfjs as PdfJsLike,
+              textLayerElement,
+              textContent.items as PdfTextRawItem[],
+              viewport as PdfViewportLike,
+              safePage
+            );
+          }
 
           if (active) setSpans(nextSpans);
         }
@@ -2729,7 +2768,7 @@ function InternalPdfViewer({
       const element = layer.querySelector<HTMLElement>(`[data-pdf-text-index="${span.id}"]`);
       if (!element) continue;
 
-      const matchIndex = searchMatchIndexes.get(span.id);
+      const matchIndex = searchPlan.indexesBySpanId.get(span.id);
       if (isTextHighlightedByTerms(span.text, highlightTerms)) element.classList.add("pdf-text-span--highlighted");
       if (matchIndex !== undefined) {
         element.classList.add("pdf-text-span--search");
@@ -2739,7 +2778,7 @@ function InternalPdfViewer({
       }
       if (matchIndex === searchIndex) element.classList.add("pdf-text-span--search-active");
     }
-  }, [highlightTerms, searchIndex, searchMatchIndexes, spans]);
+  }, [highlightTerms, searchIndex, searchPlan, spans]);
 
   function handleSelection() {
     const selection = window.getSelection();
@@ -2778,6 +2817,114 @@ function InternalPdfViewer({
       )}
     </div>
   );
+}
+
+function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string): PdfSearchPlan {
+  const indexesBySpanId = new Map<string, number>();
+  if (!normalizedSearchTerm) return { total: 0, indexesBySpanId };
+
+  let total = 0;
+  for (const span of spans) {
+    const normalizedText = normalizeForSearch(span.text);
+    if (!normalizedText) continue;
+
+    let index = normalizedText.indexOf(normalizedSearchTerm);
+    while (index >= 0) {
+      if (!indexesBySpanId.has(span.id)) indexesBySpanId.set(span.id, total);
+      total += 1;
+      index = normalizedText.indexOf(normalizedSearchTerm, index + Math.max(1, normalizedSearchTerm.length));
+    }
+  }
+
+  if (total) return { total, indexesBySpanId };
+
+  return buildPdfCombinedSearchPlan(spans, normalizedSearchTerm);
+}
+
+function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string): PdfSearchPlan {
+  const indexesBySpanId = new Map<string, number>();
+  let text = "";
+  const ranges: Array<{ end: number; id: string; start: number }> = [];
+
+  for (const span of spans) {
+    const normalizedText = normalizeForSearch(span.text);
+    if (!normalizedText) continue;
+
+    const start = text.length;
+    text += normalizedText;
+    ranges.push({ id: span.id, start, end: text.length });
+  }
+
+  let total = 0;
+  let index = text.indexOf(normalizedSearchTerm);
+  while (index >= 0) {
+    const end = index + normalizedSearchTerm.length;
+    for (const range of ranges) {
+      if (range.end <= index || range.start >= end) continue;
+      if (!indexesBySpanId.has(range.id)) indexesBySpanId.set(range.id, total);
+    }
+    total += 1;
+    index = text.indexOf(normalizedSearchTerm, index + Math.max(1, normalizedSearchTerm.length));
+  }
+
+  return { total, indexesBySpanId };
+}
+
+function renderManualPdfTextLayer(
+  pdfjs: PdfJsLike,
+  textLayerElement: HTMLDivElement,
+  items: PdfTextRawItem[],
+  viewport: PdfViewportLike,
+  page: number
+) {
+  const spans: PdfTextSpan[] = [];
+  const measureCanvas = document.createElement("canvas");
+  const measureContext = measureCanvas.getContext("2d");
+
+  textLayerElement.innerHTML = "";
+
+  items.forEach((item, index) => {
+    const text = item.str || "";
+    if (!text.trim() || !Array.isArray(item.transform)) return;
+
+    const transform = pdfjs.Util.transform(viewport.transform, item.transform);
+    const angle = Math.atan2(transform[1], transform[0]);
+    const fontHeight = Math.max(6, Math.hypot(transform[2], transform[3]));
+    const left = transform[4];
+    const top = transform[5] - fontHeight * 0.82;
+    const span = document.createElement("span");
+    const id = `${page}-${index}`;
+
+    span.dataset.pdfTextIndex = id;
+    span.setAttribute("role", "presentation");
+    span.textContent = text;
+    span.dir = item.dir || "ltr";
+    span.style.left = `${left}px`;
+    span.style.top = `${top}px`;
+    span.style.fontSize = `${fontHeight}px`;
+    span.style.fontFamily = "Arial, Helvetica, sans-serif";
+
+    const expectedWidth = typeof item.width === "number" ? item.width * viewport.scale : 0;
+    if (measureContext && expectedWidth > 0) {
+      measureContext.font = `${fontHeight}px Arial, Helvetica, sans-serif`;
+      const measuredWidth = measureContext.measureText(text).width;
+      const scaleX = measuredWidth ? expectedWidth / measuredWidth : 1;
+      span.style.transform = `${Math.abs(angle) > 0.001 ? `rotate(${angle}rad) ` : ""}scaleX(${Math.max(0.2, scaleX)})`;
+    } else if (Math.abs(angle) > 0.001) {
+      span.style.transform = `rotate(${angle}rad)`;
+    }
+
+    textLayerElement.append(span);
+    spans.push({ id, text });
+
+    if (item.hasEOL) {
+      const lineBreak = document.createElement("br");
+      lineBreak.setAttribute("role", "presentation");
+      textLayerElement.append(lineBreak);
+    }
+  });
+
+  return spans;
 }
 
 function InternalDocxViewer({
