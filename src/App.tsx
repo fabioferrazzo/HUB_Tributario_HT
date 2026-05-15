@@ -26,7 +26,8 @@
   UserRound,
   X
 } from "lucide-react";
-import { CSSProperties, FormEvent, useEffect, useMemo, useState } from "react";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { CSSProperties, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { loadPautas, sheetsHubUrl, teamMembers } from "./data/hubData";
 import {
   deleteAppFileAnnotation,
@@ -91,6 +92,16 @@ type ViewerPreview = {
   title: string;
   detail?: string;
   notice?: string;
+};
+
+type PdfTextSpan = {
+  id: string;
+  text: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  fontSize: number;
 };
 
 type HealthCheck = {
@@ -1730,16 +1741,18 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerZoom, setViewerZoom] = useState(100);
   const [viewerPage, setViewerPage] = useState(1);
   const [viewerQuery, setViewerQuery] = useState("");
+  const [viewerSearchTerm, setViewerSearchTerm] = useState("");
   const [viewerHighlight, setViewerHighlight] = useState("");
   const [viewerComment, setViewerComment] = useState("");
   const [viewerNotes, setViewerNotes] = useState<FileViewerNote[]>([]);
   const [viewerLoading, setViewerLoading] = useState(false);
   const [viewerSaving, setViewerSaving] = useState(false);
   const [viewerError, setViewerError] = useState("");
+  const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const source = getArquivosSource();
   const viewerPreview = useMemo(
-    () => (viewerResource ? buildViewerPreview(viewerResource, viewerPage, viewerZoom, viewerQuery) : null),
-    [viewerPage, viewerQuery, viewerResource, viewerZoom]
+    () => (viewerResource ? buildViewerPreview(viewerResource, viewerPage, viewerZoom, viewerSearchTerm) : null),
+    [viewerPage, viewerResource, viewerSearchTerm, viewerZoom]
   );
 
   useEffect(() => {
@@ -1775,9 +1788,11 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerZoom(100);
     setViewerPage(1);
     setViewerQuery("");
+    setViewerSearchTerm("");
     setViewerHighlight("");
     setViewerComment("");
     setViewerError("");
+    setViewerFullscreen(false);
     setViewerNotes([]);
     setViewerLoading(true);
 
@@ -1805,7 +1820,16 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerResource(null);
     setViewerHighlight("");
     setViewerComment("");
+    setViewerQuery("");
+    setViewerSearchTerm("");
     setViewerError("");
+    setViewerFullscreen(false);
+  }
+
+  function runViewerSearch() {
+    const term = viewerQuery.trim();
+    setViewerSearchTerm(term);
+    if (term) setViewerHighlight(term);
   }
 
   async function addViewerNote(kind: FileViewerNoteKind) {
@@ -2347,7 +2371,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
       {viewerResource ? (
         <div
-          className="document-viewer-backdrop"
+          className={`document-viewer-backdrop ${viewerFullscreen ? "document-viewer-backdrop--fullscreen" : ""}`}
           role="dialog"
           aria-modal="true"
           aria-label={`Visualizador de ${viewerResource.titulo}`}
@@ -2355,7 +2379,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
             if (event.target === event.currentTarget) closeViewer();
           }}
         >
-          <section className="document-viewer-panel">
+          <section className={`document-viewer-panel ${viewerFullscreen ? "document-viewer-panel--fullscreen" : ""}`}>
             <header className="document-viewer-header">
               <div>
                 <span>{viewerResource.fileName || formatFileCategory(viewerResource.categoria)}</span>
@@ -2381,10 +2405,26 @@ function ArquivosModule({ user }: { user: HubUser }) {
               </label>
               <label className="document-viewer-search">
                 <Search size={14} />
-                <input value={viewerQuery} onChange={(event) => setViewerQuery(event.target.value)} placeholder="Pesquisar no documento..." />
+                <input
+                  value={viewerQuery}
+                  onChange={(event) => setViewerQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      runViewerSearch();
+                    }
+                  }}
+                  placeholder="Pesquisar no documento..."
+                />
               </label>
-              <button type="button" onClick={() => setViewerHighlight(viewerQuery)}>
-                Grifar busca
+              <button type="button" onClick={runViewerSearch}>
+                Pesquisar
+              </button>
+              <button type="button" onClick={() => setViewerHighlight(viewerSearchTerm || viewerQuery)}>
+                Usar busca como nota
+              </button>
+              <button type="button" onClick={() => setViewerFullscreen((current) => !current)}>
+                {viewerFullscreen ? "Sair da tela cheia" : "Tela cheia HUB"}
               </button>
               <a href={viewerResource.url} rel="noreferrer" target="_blank">
                 Abrir em nova aba
@@ -2394,7 +2434,23 @@ function ArquivosModule({ user }: { user: HubUser }) {
             <div className="document-viewer-body">
               <div className={`document-preview ${viewerPreview?.notice ? "document-preview--with-banner" : ""}`}>
                 {viewerPreview?.notice ? <div className="document-preview-banner">{viewerPreview.notice}</div> : null}
-                {viewerPreview?.mode === "image" ? (
+                {isPdfResource(viewerResource) ? (
+                  <InternalPdfViewer
+                    highlightNotes={viewerNotes.filter((note) => note.kind === "highlight")}
+                    page={viewerPage}
+                    resource={viewerResource}
+                    searchTerm={viewerSearchTerm}
+                    zoom={viewerZoom}
+                    onSelectText={setViewerHighlight}
+                  />
+                ) : isDocxResource(viewerResource) ? (
+                  <InternalDocxViewer
+                    highlightNotes={viewerNotes.filter((note) => note.kind === "highlight")}
+                    resource={viewerResource}
+                    searchTerm={viewerSearchTerm}
+                    onSelectText={setViewerHighlight}
+                  />
+                ) : viewerPreview?.mode === "image" ? (
                   <div className="document-preview__image-scroll">
                     <img
                       alt={viewerResource.titulo}
@@ -2436,8 +2492,11 @@ function ArquivosModule({ user }: { user: HubUser }) {
                   <textarea
                     value={viewerHighlight}
                     onChange={(event) => setViewerHighlight(event.target.value)}
-                    placeholder="Cole o trecho ou use 'Grifar busca'."
+                    placeholder="Cole o trecho ou use 'Usar busca como nota'."
                   />
+                  <small className="field-note">
+                    Nesta versao, o grifo fica como anotacao amarela no painel. Grifo direto sobre o texto original exige renderizacao interna do documento.
+                  </small>
                 </label>
                 <button disabled={viewerSaving} type="button" onClick={() => addViewerNote("highlight")}>
                   {viewerSaving ? "Salvando..." : "Salvar grifo"}
@@ -2480,6 +2539,235 @@ function ArquivosModule({ user }: { user: HubUser }) {
   );
 }
 
+function InternalPdfViewer({
+  highlightNotes,
+  onSelectText,
+  page,
+  resource,
+  searchTerm,
+  zoom
+}: {
+  highlightNotes: FileViewerNote[];
+  onSelectText: (text: string) => void;
+  page: number;
+  resource: FileResource;
+  searchTerm: string;
+  zoom: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [spans, setSpans] = useState<PdfTextSpan[]>([]);
+  const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const terms = useMemo(() => getViewerHighlightTerms(highlightNotes, searchTerm), [highlightNotes, searchTerm]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function renderPdf() {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      setLoading(true);
+      setError("");
+      setSpans([]);
+      setPageSize({ width: 0, height: 0 });
+
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+        const response = await fetch(resource.url);
+        if (!response.ok) throw new Error("Nao foi possivel carregar o PDF para estudo interno.");
+        const bytes = await response.arrayBuffer();
+        const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        const safePage = Math.min(Math.max(1, page), document.numPages);
+        const pdfPage = await document.getPage(safePage);
+        const scale = Math.max(0.6, Math.min(2.4, zoom / 100)) * 1.35;
+        const viewport = pdfPage.getViewport({ scale });
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Canvas indisponivel para renderizar PDF.");
+
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.style.width = `${Math.floor(viewport.width)}px`;
+        canvas.style.height = `${Math.floor(viewport.height)}px`;
+        if (active) setPageSize({ width: Math.floor(viewport.width), height: Math.floor(viewport.height) });
+
+        await pdfPage.render({ canvasContext: context, viewport }).promise;
+        const textContent = await pdfPage.getTextContent();
+        const textItems = textContent.items as Array<{ str?: string; transform?: number[]; width?: number; height?: number }>;
+        const nextSpans = textItems
+          .map((item, index) => {
+            const text = item.str || "";
+            const transform = item.transform || [1, 0, 0, 1, 0, 0];
+            const tx = pdfjs.Util.transform(viewport.transform, transform);
+            const fontSize = Math.max(8, Math.hypot(tx[2], tx[3]));
+            return {
+              id: `${safePage}-${index}`,
+              text,
+              left: tx[4],
+              top: tx[5] - fontSize,
+              width: Math.max(12, (item.width || text.length * 5) * scale),
+              height: Math.max(10, fontSize * 1.18),
+              fontSize
+            };
+          })
+          .filter((span) => span.text.trim());
+
+        if (active) setSpans(nextSpans);
+      } catch (renderError) {
+        if (active) setError(getErrorMessage(renderError));
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    renderPdf();
+
+    return () => {
+      active = false;
+    };
+  }, [page, resource.url, zoom]);
+
+  function handleSelection() {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || "";
+    const anchorNode = selection?.anchorNode;
+    if (selectedText && anchorNode && containerRef.current?.contains(anchorNode)) {
+      onSelectText(selectedText);
+    }
+  }
+
+  return (
+    <div className="internal-doc-viewer" onMouseUp={handleSelection} ref={containerRef}>
+      {loading ? <div className="document-preview-banner">Renderizando PDF para estudo interno...</div> : null}
+      {error ? (
+        <div className="document-preview-fallback">
+          <FileArchive size={38} />
+          <h3>PDF nao renderizado internamente</h3>
+          <p>{error}</p>
+          <a href={resource.url} rel="noreferrer" target="_blank">
+            <Link2 size={15} />
+            Abrir em nova aba
+          </a>
+        </div>
+      ) : (
+        <div className="pdf-page-shell">
+          <canvas ref={canvasRef} />
+          <div className="pdf-text-layer" style={{ width: pageSize.width, height: pageSize.height }}>
+            {spans.map((span) => (
+              <span
+                className={isTextHighlightedByTerms(span.text, terms) ? "pdf-text-span pdf-text-span--highlighted" : "pdf-text-span"}
+                key={span.id}
+                style={{
+                  left: span.left,
+                  top: span.top,
+                  width: span.width,
+                  height: span.height,
+                  fontSize: span.fontSize
+                }}
+              >
+                {span.text}
+              </span>
+            ))}
+          </div>
+          {!loading && !spans.length ? (
+            <div className="document-preview-banner document-preview-banner--floating">
+              Nao foi encontrada camada de texto neste PDF. Para grifar trechos, use OCR ou uma versao pesquisavel do arquivo.
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InternalDocxViewer({
+  highlightNotes,
+  onSelectText,
+  resource,
+  searchTerm
+}: {
+  highlightNotes: FileViewerNote[];
+  onSelectText: (text: string) => void;
+  resource: FileResource;
+  searchTerm: string;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [html, setHtml] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const terms = useMemo(() => getViewerHighlightTerms(highlightNotes, searchTerm), [highlightNotes, searchTerm]);
+  const markedHtml = useMemo(() => markHtmlWithTerms(html, terms), [html, terms]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function renderDocx() {
+      setLoading(true);
+      setError("");
+      setHtml("");
+
+      try {
+        const mammothModule = await import("mammoth");
+        const mammothLib = mammothModule.default;
+        const response = await fetch(resource.url);
+        if (!response.ok) throw new Error("Nao foi possivel carregar o DOCX para estudo interno.");
+        const arrayBuffer = await response.arrayBuffer();
+        const result = await mammothLib.convertToHtml(
+          { arrayBuffer },
+          {
+            convertImage: mammothLib.images.dataUri,
+            ignoreEmptyParagraphs: false
+          }
+        );
+        if (active) setHtml(result.value || "<p>Documento sem texto convertido.</p>");
+      } catch (renderError) {
+        if (active) setError(getErrorMessage(renderError));
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    renderDocx();
+
+    return () => {
+      active = false;
+    };
+  }, [resource.url]);
+
+  function handleSelection() {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || "";
+    const anchorNode = selection?.anchorNode;
+    if (selectedText && anchorNode && containerRef.current?.contains(anchorNode)) {
+      onSelectText(selectedText);
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="document-preview-fallback">
+        <FileArchive size={38} />
+        <h3>DOCX nao convertido internamente</h3>
+        <p>{error}</p>
+        <a href={resource.url} rel="noreferrer" target="_blank">
+          <Link2 size={15} />
+          Abrir em nova aba
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="internal-doc-viewer internal-doc-viewer--docx" onMouseUp={handleSelection} ref={containerRef}>
+      {loading ? <div className="document-preview-banner">Convertendo DOCX para estudo interno...</div> : null}
+      <article className="docx-rendered" dangerouslySetInnerHTML={{ __html: markedHtml }} />
+    </div>
+  );
+}
+
 function isImageResource(resource: FileResource) {
   return resource.mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(resource.fileName || resource.url);
 }
@@ -2506,7 +2794,21 @@ function buildViewerPreview(resource: FileResource, page: number, zoom: number, 
     return {
       mode: "iframe",
       src: buildPdfViewerUrl(resource, page, zoom, query),
-      title: resource.titulo
+      title: resource.titulo,
+      notice: query
+        ? "Pesquisa aplicada a camada de texto do PDF. Se o arquivo for escaneado ou imagem, use OCR para permitir busca/grifo."
+        : "PDF renderizado internamente com PDF.js para permitir selecao de texto e grifo visual quando houver camada de texto."
+    };
+  }
+
+  if (isDocxResource(resource)) {
+    return {
+      mode: "iframe",
+      src: "",
+      title: resource.titulo,
+      notice: query
+        ? "Pesquisa aplicada ao DOCX convertido internamente. Selecione um trecho do texto para salvar como grifo."
+        : "DOCX convertido internamente para permitir selecao de texto e grifo visual no conteudo renderizado."
     };
   }
 
@@ -2516,7 +2818,7 @@ function buildViewerPreview(resource: FileResource, page: number, zoom: number, 
       mode: "iframe",
       src: googleDrivePreview,
       title: resource.titulo,
-      notice: "Google Drive pode exigir permissao de acesso. Se a previa nao carregar, use Abrir em nova aba."
+      notice: "Google Drive pode exigir permissao de acesso. Busca e selecao de texto dependem do preview do Google."
     };
   }
 
@@ -2534,7 +2836,7 @@ function buildViewerPreview(resource: FileResource, page: number, zoom: number, 
       mode: "iframe",
       src: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resource.url)}`,
       title: resource.titulo,
-      notice: "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Se o painel ficar em branco, abra em nova aba."
+      notice: "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Busca, selecao e grifo direto dependem desse preview externo."
     };
   }
 
@@ -2543,7 +2845,7 @@ function buildViewerPreview(resource: FileResource, page: number, zoom: number, 
       mode: "iframe",
       src: resource.url,
       title: resource.titulo,
-      notice: "Alguns sites bloqueiam visualizacao embutida por seguranca. Se isso ocorrer, use Abrir em nova aba."
+      notice: "Alguns sites bloqueiam visualizacao embutida por seguranca. Busca e selecao podem nao funcionar dentro do painel."
     };
   }
 
@@ -2568,6 +2870,11 @@ function buildPdfViewerUrl(resource: FileResource, page: number, zoom: number, q
 
 function isPdfResource(resource: FileResource) {
   return resource.mimeType === "application/pdf" || /\.pdf(\?|#|$)/i.test(resource.fileName || resource.url);
+}
+
+function isDocxResource(resource: FileResource) {
+  const target = `${resource.mimeType} ${resource.fileName} ${resource.url}`.toLowerCase();
+  return target.includes("wordprocessingml.document") || /\.docx(\?|#|$)/i.test(target);
 }
 
 function isOfficeResource(resource: FileResource) {
@@ -2628,6 +2935,78 @@ function extractGoogleFileId(value: string) {
   }
 
   return "";
+}
+
+function getViewerHighlightTerms(notes: FileViewerNote[], searchTerm: string) {
+  const terms = [...notes.map((note) => note.text), searchTerm]
+    .map((term) => term.trim())
+    .filter((term) => term.length > 1);
+  return Array.from(new Set(terms));
+}
+
+function isTextHighlightedByTerms(text: string, terms: string[]) {
+  const normalizedText = normalizeForSearch(text);
+  if (!normalizedText) return false;
+
+  return terms.some((term) => {
+    const normalizedTerm = normalizeForSearch(term);
+    if (!normalizedTerm) return false;
+    return normalizedTerm.includes(normalizedText) || normalizedText.includes(normalizedTerm);
+  });
+}
+
+function markHtmlWithTerms(html: string, terms: string[]) {
+  if (!html || !terms.length || typeof DOMParser === "undefined") return html;
+
+  const escapedTerms = terms.map((term) => term.trim()).filter(Boolean).sort((left, right) => right.length - left.length).map(escapeRegExp);
+  if (!escapedTerms.length) return html;
+
+  const matcher = new RegExp(`(${escapedTerms.join("|")})`, "gi");
+  const document = new DOMParser().parseFromString(`<main>${html}</main>`, "text/html");
+  const root = document.body.firstElementChild;
+  if (!root) return html;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || parent.closest("mark")) return NodeFilter.FILTER_REJECT;
+      return node.textContent?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+
+  const textNodes: Text[] = [];
+  let current = walker.nextNode();
+  while (current) {
+    textNodes.push(current as Text);
+    current = walker.nextNode();
+  }
+
+  for (const textNode of textNodes) {
+    const value = textNode.textContent || "";
+    matcher.lastIndex = 0;
+    if (!matcher.test(value)) continue;
+    matcher.lastIndex = 0;
+
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    for (const match of value.matchAll(matcher)) {
+      const index = match.index || 0;
+      if (index > lastIndex) fragment.append(document.createTextNode(value.slice(lastIndex, index)));
+      const mark = document.createElement("mark");
+      mark.className = "doc-highlight";
+      mark.textContent = match[0];
+      fragment.append(mark);
+      lastIndex = index + match[0].length;
+    }
+    if (lastIndex < value.length) fragment.append(document.createTextNode(value.slice(lastIndex)));
+    textNode.replaceWith(fragment);
+  }
+
+  return root.innerHTML;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function buildViewerNotesMarkdown(resource: FileResource, notes: FileViewerNote[]) {
