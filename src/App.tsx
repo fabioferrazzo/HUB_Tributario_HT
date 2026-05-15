@@ -99,11 +99,6 @@ type ViewerPreview = {
 type PdfTextSpan = {
   id: string;
   text: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  fontSize: number;
 };
 
 type HealthCheck = {
@@ -2628,6 +2623,7 @@ function InternalPdfViewer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const textLayerRef = useRef<HTMLDivElement | null>(null);
   const [spans, setSpans] = useState<PdfTextSpan[]>([]);
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [loading, setLoading] = useState(false);
@@ -2674,6 +2670,7 @@ function InternalPdfViewer({
         const scale = Math.max(0.6, Math.min(2.4, zoom / 100)) * 1.35;
         const viewport = pdfPage.getViewport({ scale });
         const context = canvas.getContext("2d");
+        const textLayerElement = textLayerRef.current;
         if (!context) throw new Error("Canvas indisponivel para renderizar PDF.");
 
         canvas.width = Math.floor(viewport.width);
@@ -2684,26 +2681,28 @@ function InternalPdfViewer({
 
         await pdfPage.render({ canvasContext: context, viewport }).promise;
         const textContent = await pdfPage.getTextContent();
-        const textItems = textContent.items as Array<{ str?: string; transform?: number[]; width?: number; height?: number }>;
-        const nextSpans = textItems
-          .map((item, index) => {
-            const text = item.str || "";
-            const transform = item.transform || [1, 0, 0, 1, 0, 0];
-            const tx = pdfjs.Util.transform(viewport.transform, transform);
-            const fontSize = Math.max(8, Math.hypot(tx[2], tx[3]));
-            return {
-              id: `${safePage}-${index}`,
-              text,
-              left: tx[4],
-              top: tx[5] - fontSize,
-              width: Math.max(12, (item.width || text.length * 5) * scale),
-              height: Math.max(10, fontSize * 1.18),
-              fontSize
-            };
-          })
-          .filter((span) => span.text.trim());
+        if (textLayerElement) {
+          textLayerElement.innerHTML = "";
+          textLayerElement.style.width = `${Math.floor(viewport.width)}px`;
+          textLayerElement.style.height = `${Math.floor(viewport.height)}px`;
+          const textLayer = new pdfjs.TextLayer({
+            container: textLayerElement,
+            textContentSource: textContent,
+            viewport
+          });
+          await textLayer.render();
 
-        if (active) setSpans(nextSpans);
+          const nextSpans = textLayer.textDivs
+            .map((element: HTMLElement, index: number) => {
+              const text = textLayer.textContentItemsStr[index] || element.textContent || "";
+              const id = `${safePage}-${index}`;
+              element.dataset.pdfTextIndex = id;
+              return { id, text };
+            })
+            .filter((span: PdfTextSpan) => span.text.trim());
+
+          if (active) setSpans(nextSpans);
+        }
       } catch (renderError) {
         if (active) setError(getErrorMessage(renderError));
       } finally {
@@ -2717,6 +2716,30 @@ function InternalPdfViewer({
       active = false;
     };
   }, [page, resource.url, zoom]);
+
+  useEffect(() => {
+    const layer = textLayerRef.current;
+    if (!layer) return;
+
+    for (const element of Array.from(layer.querySelectorAll<HTMLElement>("[data-pdf-text-index]"))) {
+      element.classList.remove("pdf-text-span--highlighted", "pdf-text-span--search", "pdf-text-span--search-active");
+    }
+
+    for (const span of spans) {
+      const element = layer.querySelector<HTMLElement>(`[data-pdf-text-index="${span.id}"]`);
+      if (!element) continue;
+
+      const matchIndex = searchMatchIndexes.get(span.id);
+      if (isTextHighlightedByTerms(span.text, highlightTerms)) element.classList.add("pdf-text-span--highlighted");
+      if (matchIndex !== undefined) {
+        element.classList.add("pdf-text-span--search");
+        element.dataset.searchIndex = String(matchIndex);
+      } else {
+        delete element.dataset.searchIndex;
+      }
+      if (matchIndex === searchIndex) element.classList.add("pdf-text-span--search-active");
+    }
+  }, [highlightTerms, searchIndex, searchMatchIndexes, spans]);
 
   function handleSelection() {
     const selection = window.getSelection();
@@ -2742,36 +2765,9 @@ function InternalPdfViewer({
         </div>
       ) : (
         <div className="pdf-page-shell">
-          <canvas ref={canvasRef} />
-          <div className="pdf-text-layer" style={{ width: pageSize.width, height: pageSize.height }}>
-            {spans.map((span) => {
-              const matchIndex = searchMatchIndexes.get(span.id);
-              const className = [
-                "pdf-text-span",
-                isTextHighlightedByTerms(span.text, highlightTerms) ? "pdf-text-span--highlighted" : "",
-                matchIndex !== undefined ? "pdf-text-span--search" : "",
-                matchIndex === searchIndex ? "pdf-text-span--search-active" : ""
-              ]
-                .filter(Boolean)
-                .join(" ");
-
-              return (
-                <span
-                  className={className}
-                  data-search-index={matchIndex}
-                  key={span.id}
-                  style={{
-                    left: span.left,
-                    top: span.top,
-                    width: span.width,
-                    height: span.height,
-                    fontSize: span.fontSize
-                  }}
-                >
-                  {span.text}
-                </span>
-              );
-            })}
+          <div className="pdf-page-content" style={{ width: pageSize.width || undefined, height: pageSize.height || undefined }}>
+            <canvas ref={canvasRef} />
+            <div className="pdf-text-layer textLayer" ref={textLayerRef} />
           </div>
           {!loading && !spans.length ? (
             <div className="document-preview-banner document-preview-banner--floating">

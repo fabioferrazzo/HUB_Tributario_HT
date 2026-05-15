@@ -1605,7 +1605,11 @@ select {
   padding: 24px;
 }
 
-.pdf-page-shell canvas {
+.pdf-page-content {
+  position: relative;
+}
+
+.pdf-page-content canvas {
   display: block;
   background: #fff;
   box-shadow: 0 16px 42px rgba(10, 18, 31, 0.18);
@@ -1613,23 +1617,26 @@ select {
 
 .pdf-text-layer {
   position: absolute;
-  inset: 24px auto auto 50%;
-  transform: translateX(-50%);
-  transform-origin: top left;
+  inset: 0;
+  overflow: clip;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  transform-origin: 0 0;
+  z-index: 1;
 }
 
-.pdf-text-span {
+.pdf-text-layer :is(span, br) {
   position: absolute;
-  display: block;
-  overflow: hidden;
   color: transparent;
   white-space: pre;
+  transform-origin: 0% 0%;
   line-height: 1;
   cursor: text;
   user-select: text;
 }
 
-.pdf-text-span::selection {
+.pdf-text-layer ::selection {
   background: rgba(41, 119, 214, 0.32);
   color: transparent;
 }
