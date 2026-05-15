@@ -44,7 +44,9 @@
 - Modulo Arquivos recebeu visualizador interno de documentos com painel grande, zoom, pagina, busca, abertura em nova aba, grifos amarelos e comentarios locais por arquivo.
 - Visualizador de Arquivos evoluido para persistir grifos e comentarios no Supabase pela tabela `arquivo_anotacoes`, mantendo fallback local.
 - Visualizador de Arquivos ampliado com exportacao de grifos e comentarios em Markdown para estudo/auditoria interna.
-- Visualizador de Arquivos ajustado com botao visivel de fechar, fechamento por `Esc`, fallback para links bloqueados e tentativa de preview interno para arquivos Office/Google.
+- Visualizador de Arquivos ajustado com botao visivel de fechar, fechamento por `Esc`, tela cheia propria do HUB, pesquisa com botao/Enter, fallback para links bloqueados e tentativa de preview interno para arquivos Office/Google.
+- Visualizador de Arquivos evoluido com PDF.js para renderizar PDFs internamente com camada de texto, selecao de trechos e grifo visual quando o PDF possui texto pesquisavel.
+- Visualizador de Arquivos evoluido com Mammoth para converter DOCX internamente para HTML, permitindo selecao de trechos e grifo visual no conteudo convertido.
 - Patch SQL `supabase/patch_arquivos_biblioteca.sql` criado para tabelas `arquivo_pastas`, `arquivo_recursos`, policies RLS e Storage.
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
 - Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
@@ -214,3 +216,8 @@
 - `npm.cmd run typecheck`: OK em 15/05/2026 apos ajustes no visualizador de Arquivos.
 - `npm.cmd run build`: OK em 15/05/2026 apos ajustes no visualizador de Arquivos.
 - `npm.cmd run preflight`: OK em 15/05/2026 apos ajustes no visualizador de Arquivos.
+- Limitacao tecnica registrada em 15/05/2026: PPTX/XLSX/Google/links externos continuam dependendo de preview externo; para grifo preciso em PPTX, recomenda-se converter para PDF pesquisavel ou implementar conversao/OCR futura.
+- `npm.cmd run preflight`: OK em 15/05/2026 apos tela cheia HUB e pesquisa explicita no visualizador.
+- `npm.cmd run typecheck`: OK em 15/05/2026 apos integrar PDF.js e Mammoth ao visualizador de Arquivos.
+- `npm.cmd run build`: OK em 15/05/2026 apos integrar PDF.js e Mammoth ao visualizador de Arquivos.
+- `npm.cmd run preflight`: OK em 15/05/2026 apos integrar PDF.js e Mammoth ao visualizador de Arquivos.
