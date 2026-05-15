@@ -221,3 +221,6 @@
 - `npm.cmd run typecheck`: OK em 15/05/2026 apos integrar PDF.js e Mammoth ao visualizador de Arquivos.
 - `npm.cmd run build`: OK em 15/05/2026 apos integrar PDF.js e Mammoth ao visualizador de Arquivos.
 - `npm.cmd run preflight`: OK em 15/05/2026 apos integrar PDF.js e Mammoth ao visualizador de Arquivos.
+- `npm.cmd run typecheck`: OK em 15/05/2026 apos busca verde navegavel e remocao de grifo amarelo no visualizador de Arquivos.
+- `npm.cmd run build`: OK em 15/05/2026 apos busca verde navegavel e remocao de grifo amarelo no visualizador de Arquivos.
+- `npm.cmd run preflight`: OK em 15/05/2026 apos busca verde navegavel e remocao de grifo amarelo no visualizador de Arquivos.
