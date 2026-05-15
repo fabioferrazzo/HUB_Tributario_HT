@@ -23,6 +23,14 @@ const requiredFiles = [
   "supabase/check_hub_status.sql"
 ];
 
+const forbiddenFiles = [
+  "src/lib/App.tsx",
+  "src/lib/main.tsx",
+  "src/lib/styles.css",
+  "src/lib/types.ts",
+  "src/App/App.tsx"
+];
+
 const commandChecks = [
   npmCheck("TypeScript", ["run", "typecheck"]),
   {
@@ -63,6 +71,13 @@ for (const file of requiredFiles) {
   const found = existsSync(resolve(root, file));
   printResult(found, file);
   if (!found) failures.push(`Arquivo ausente: ${file}`);
+}
+
+printHeader("Arquivos que nao devem existir");
+for (const file of forbiddenFiles) {
+  const found = existsSync(resolve(root, file));
+  printResult(!found, file);
+  if (found) failures.push(`Arquivo em local incorreto: ${file}`);
 }
 
 printHeader("Checagens locais");
