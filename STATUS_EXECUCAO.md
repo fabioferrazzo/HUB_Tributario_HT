@@ -44,6 +44,7 @@
 - Modulo Arquivos recebeu visualizador interno de documentos com painel grande, zoom, pagina, busca, abertura em nova aba, grifos amarelos e comentarios locais por arquivo.
 - Visualizador de Arquivos evoluido para persistir grifos e comentarios no Supabase pela tabela `arquivo_anotacoes`, mantendo fallback local.
 - Visualizador de Arquivos ampliado com exportacao de grifos e comentarios em Markdown para estudo/auditoria interna.
+- Visualizador de Arquivos ajustado com botao visivel de fechar, fechamento por `Esc`, fallback para links bloqueados e tentativa de preview interno para arquivos Office/Google.
 - Patch SQL `supabase/patch_arquivos_biblioteca.sql` criado para tabelas `arquivo_pastas`, `arquivo_recursos`, policies RLS e Storage.
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
 - Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
@@ -210,3 +211,6 @@
 - Deploy de marco em 14/05/2026 falhou no Netlify por arquivo duplicado/incorreto `src/lib/App.tsx` existente no GitHub; correcao indicada: remover o duplicado e manter apenas `src/App.tsx`.
 - `npm.cmd run preflight`: OK em 14/05/2026 apos incluir alerta contra arquivos React principais em pastas incorretas.
 - Deploy de marco no Netlify: OK em 15/05/2026 apos remover arquivos duplicados/incorretos do GitHub.
+- `npm.cmd run typecheck`: OK em 15/05/2026 apos ajustes no visualizador de Arquivos.
+- `npm.cmd run build`: OK em 15/05/2026 apos ajustes no visualizador de Arquivos.
+- `npm.cmd run preflight`: OK em 15/05/2026 apos ajustes no visualizador de Arquivos.
