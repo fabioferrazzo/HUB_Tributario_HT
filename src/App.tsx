@@ -1777,6 +1777,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const source = getArquivosSource();
   const viewerStudyResource = useMemo(() => (viewerResource ? getStudyResource(viewerResource) : null), [viewerResource]);
+  const activeViewerResource = viewerStudyResource || viewerResource;
   const viewerPreview = useMemo(
     () => (viewerStudyResource ? buildViewerPreview(viewerStudyResource, viewerPage, viewerZoom, viewerSearchTerm) : null),
     [viewerPage, viewerSearchTerm, viewerStudyResource, viewerZoom]
@@ -2492,9 +2493,8 @@ function ArquivosModule({ user }: { user: HubUser }) {
             <header className="document-viewer-header">
               <div>
                 <span>
-                  {viewerResource.processingStatus === "ready" && viewerResource.processedFileName
-                    ? `${viewerResource.processedFileName} - versao para estudo`
-                    : viewerResource.fileName || formatFileCategory(viewerResource.categoria)}
+                  {activeViewerResource?.fileName || formatFileCategory(viewerResource.categoria)}
+                  {viewerResource.processingStatus === "ready" && viewerResource.processedFileName ? " - versao para estudo" : ""}
                 </span>
                 <h2>{viewerResource.titulo}</h2>
               </div>
@@ -2543,7 +2543,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
               <button type="button" onClick={() => setViewerFullscreen((current) => !current)}>
                 {viewerFullscreen ? "Sair da tela cheia" : "Tela cheia HUB"}
               </button>
-              <a href={viewerResource.url} rel="noreferrer" target="_blank">
+              <a href={activeViewerResource?.url || viewerResource.url} rel="noreferrer" target="_blank">
                 Abrir em nova aba
               </a>
             </div>
@@ -2551,21 +2551,21 @@ function ArquivosModule({ user }: { user: HubUser }) {
             <div className="document-viewer-body">
               <div className={`document-preview ${viewerPreview?.notice ? "document-preview--with-banner" : ""}`}>
                 {viewerPreview?.notice ? <div className="document-preview-banner">{viewerPreview.notice}</div> : null}
-                {isPdfResource(viewerResource) ? (
+                {activeViewerResource && isPdfResource(activeViewerResource) ? (
                   <InternalPdfViewer
                     highlightNotes={viewerNotes.filter((note) => note.kind === "highlight")}
                     page={viewerPage}
-                    resource={viewerResource}
+                    resource={activeViewerResource}
                     searchIndex={viewerSearchIndex}
                     searchTerm={viewerSearchTerm}
                     zoom={viewerZoom}
                     onSearchStats={handleViewerSearchStats}
                     onSelectText={setViewerHighlight}
                   />
-                ) : isDocxResource(viewerResource) ? (
+                ) : activeViewerResource && isDocxResource(activeViewerResource) ? (
                   <InternalDocxViewer
                     highlightNotes={viewerNotes.filter((note) => note.kind === "highlight")}
-                    resource={viewerResource}
+                    resource={activeViewerResource}
                     searchIndex={viewerSearchIndex}
                     searchTerm={viewerSearchTerm}
                     onSearchStats={handleViewerSearchStats}
@@ -2574,7 +2574,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
                 ) : viewerPreview?.mode === "image" ? (
                   <div className="document-preview__image-scroll">
                     <img
-                      alt={viewerResource.titulo}
+                      alt={activeViewerResource?.titulo || viewerResource.titulo}
                       src={viewerPreview.src}
                       style={{ width: `${viewerZoom}%`, maxWidth: viewerZoom > 100 ? "none" : "100%" }}
                     />
@@ -2586,7 +2586,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     <FileArchive size={38} />
                     <h3>Previa interna indisponivel</h3>
                     <p>{viewerPreview?.detail || "Este arquivo ou link nao permite visualizacao embutida no painel."}</p>
-                    <a href={viewerResource.url} rel="noreferrer" target="_blank">
+                    <a href={activeViewerResource?.url || viewerResource.url} rel="noreferrer" target="_blank">
                       <Link2 size={15} />
                       Abrir em nova aba
                     </a>
