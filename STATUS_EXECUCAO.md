@@ -243,3 +243,7 @@
 - `npm.cmd run arquivos:diagnose`: OK em 19/05/2026; apontou pendencias esperadas de `.env.local` e ferramentas locais de OCR/conversao.
 - `npm.cmd run typecheck`: OK em 19/05/2026 apos incluir diagnostico do processador de arquivos.
 - `npm.cmd run preflight`: OK em 19/05/2026 apos incluir diagnostico do processador de arquivos.
+- Processador local de Arquivos: OK em 19/05/2026 apos instalar LibreOffice, OCRmyPDF, Tesseract e idioma `por`; dois arquivos processados como `ready`.
+- `npm.cmd run typecheck`: OK em 19/05/2026 apos corrigir visualizador para usar a versao OCR/processada no painel interno.
+- `npm.cmd run build`: OK em 19/05/2026 apos corrigir visualizador para usar a versao OCR/processada no painel interno.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos corrigir visualizador para usar a versao OCR/processada no painel interno.
