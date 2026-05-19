@@ -15,7 +15,11 @@ const requiredFiles = [
   "netlify/functions/refresh-updates.mjs",
   "netlify/functions/sheets-pautas.mjs",
   "scripts/diagnose-arquivos-processador.mjs",
+  "scripts/ocr-local-agent.mjs",
   "scripts/process-arquivos.mjs",
+  "scripts/registrar-agente-ocr-login.ps1",
+  "INICIAR_OCR_HUB.cmd",
+  "GUIA_OCR_LOCAL.md",
   "GUIA_DEPLOY_MARCO.md",
   "GUIA_PREFLIGHT_LOCAL.md",
   "GUIA_PROCESSAMENTO_DOCUMENTOS.md",
@@ -66,6 +70,16 @@ const commandChecks = [
     label: "Processador de arquivos",
     command: process.execPath,
     args: ["--check", "scripts/process-arquivos.mjs"]
+  },
+  {
+    label: "Agente local OCR",
+    command: process.execPath,
+    args: ["--check", "scripts/ocr-local-agent.mjs"]
+  },
+  {
+    label: "Script agendamento OCR",
+    command: "powershell.exe",
+    args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/registrar-agente-ocr-login.ps1", "-ValidateOnly"]
   },
   {
     label: "Diagnostico do processador de arquivos",
