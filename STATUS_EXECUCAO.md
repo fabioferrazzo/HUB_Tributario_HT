@@ -235,3 +235,8 @@
 - `npm.cmd run build`: OK em 19/05/2026 apos preparar campos de OCR/conversao de Arquivos.
 - `npm.cmd run preflight`: OK em 19/05/2026 apos preparar campos de OCR/conversao de Arquivos.
 - Arquivos: preparada a estrutura para versao pesquisavel/OCR com status de processamento, URL processada e guia tecnico; worker de OCR/conversao fica como proxima etapa.
+- `node --check scripts/process-arquivos.mjs`: OK em 19/05/2026 apos criar processador local de documentos.
+- `npm.cmd run typecheck`: OK em 19/05/2026 apos criar processador local de documentos.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos incluir processador local de documentos.
+- `npm.cmd run build`: OK em 19/05/2026 apos incluir processador local de documentos.
+- Arquivos: criada rotina local `npm run arquivos:process` para processar pendentes no Supabase, usando LibreOffice/OCRmyPDF/Tesseract quando instalados.

@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -p tsconfig.app.json && vite build",
+    "arquivos:process": "node scripts/process-arquivos.mjs",
+    "arquivos:process:dry": "node scripts/process-arquivos.mjs --dry-run",
     "preflight": "node scripts/preflight.mjs",
     "preflight:build": "node scripts/preflight.mjs --build",
     "preview": "vite preview --host 127.0.0.1",

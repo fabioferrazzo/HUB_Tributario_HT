@@ -59,6 +59,63 @@ O worker pode ser:
 
 Recomendacao inicial para a empresa: worker local/servidor com Supabase Service Role, pois permite converter PPTX/DOCX com LibreOffice e aplicar OCR com ferramentas nativas.
 
+## Worker local inicial
+
+Foi criado o script:
+
+- `scripts/process-arquivos.mjs`
+
+Ele consulta `arquivo_recursos` com `processing_status = pending`, baixa o arquivo original do bucket `hub-arquivos`, tenta gerar uma versao de estudo e atualiza o registro.
+
+Comandos:
+
+```bash
+npm run arquivos:process:dry
+npm run arquivos:process
+```
+
+Parametros uteis:
+
+```bash
+npm run arquivos:process -- --limit 10
+npm run arquivos:process -- --id UUID_DO_ARQUIVO
+npm run arquivos:process -- --force
+npm run arquivos:process -- --keep-temp
+```
+
+Configure antes um arquivo local `.env.local` na raiz do projeto. Nao suba esse arquivo ao GitHub.
+
+```env
+VITE_SUPABASE_URL="https://SEU-PROJETO.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="SUA_SERVICE_ROLE_KEY"
+ARQUIVOS_PROCESS_LIMIT="5"
+ARQUIVOS_PROCESS_LANGUAGE="por+eng"
+```
+
+Ferramentas usadas quando existirem na maquina:
+
+- LibreOffice (`soffice`): converte PPTX, DOCX e XLSX para PDF;
+- OCRmyPDF (`ocrmypdf`): aplica OCR em PDFs sem camada de texto;
+- Tesseract (`tesseract`): converte imagens em PDF pesquisavel.
+
+No Windows, se as ferramentas estiverem fora do PATH, informe o caminho:
+
+```env
+LIBREOFFICE_BIN="C:\Program Files\LibreOffice\program\soffice.exe"
+OCRMYPDF_BIN="C:\caminho\para\ocrmypdf.exe"
+TESSERACT_BIN="C:\Program Files\Tesseract-OCR\tesseract.exe"
+```
+
+Comportamento por tipo de arquivo:
+
+- PDF com texto: marcado como pronto, usando o proprio PDF original;
+- PDF sem texto: precisa de OCRmyPDF;
+- PPTX/DOCX/XLSX: precisa de LibreOffice para converter a PDF;
+- imagem: precisa de Tesseract;
+- DOCX sem LibreOffice: fica pronto para o visualizador interno do HUB, pois o app ja converte DOCX no navegador.
+
+Se faltar uma ferramenta, o registro fica com `processing_status = error` e a mensagem explica o que instalar.
+
 ## Teste apos patch
 
 Depois de rodar o SQL:
@@ -68,4 +125,3 @@ Depois de rodar o SQL:
 3. O arquivo ainda abre pelo visualizador atual.
 4. Quando o worker preencher a versao processada, o selo muda para `PDF pesquisavel pronto`.
 5. O botao `Visualizar` abre automaticamente a versao processada.
-
