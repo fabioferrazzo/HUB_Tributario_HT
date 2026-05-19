@@ -3105,7 +3105,7 @@ function getProcessingBadge(resource: FileResource) {
     none: "",
     pending: "OCR/conversao pendente",
     processing: "Processando OCR",
-    ready: "PDF pesquisavel pronto",
+    ready: "Versao pesquisavel pronta",
     error: "Falha no OCR"
   };
 
