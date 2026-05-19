@@ -1,4 +1,13 @@
-import type { FileFolder, FileResource, FileResourceCategory, FileResourceScope, FileViewerNote, FileViewerNoteKind, HubUser } from "../types";
+import type {
+  FileFolder,
+  FileProcessingStatus,
+  FileResource,
+  FileResourceCategory,
+  FileResourceScope,
+  FileViewerNote,
+  FileViewerNoteKind,
+  HubUser
+} from "../types";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
@@ -27,6 +36,13 @@ type ResourceRow = {
   storage_path: string | null;
   mime_type: string | null;
   size_bytes: number | null;
+  processing_status: FileProcessingStatus | null;
+  processing_message: string | null;
+  processed_file_name: string | null;
+  processed_storage_path: string | null;
+  processed_mime_type: string | null;
+  processed_size_bytes: number | null;
+  processed_at: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -47,6 +63,10 @@ const FOLDERS_STORAGE_KEY = "hub_file_folders";
 const RESOURCES_STORAGE_KEY = "hub_file_resources";
 const NOTES_STORAGE_KEY = "hub_file_viewer_notes";
 const STORAGE_BUCKET = "hub-arquivos";
+const RESOURCE_SELECT_WITH_PROCESSING =
+  "id,titulo,descricao,url,categoria,scope,folder_id,kind,file_name,storage_path,mime_type,size_bytes,processing_status,processing_message,processed_file_name,processed_storage_path,processed_mime_type,processed_size_bytes,processed_at,created_by,created_at,updated_at";
+const RESOURCE_SELECT_LEGACY =
+  "id,titulo,descricao,url,categoria,scope,folder_id,kind,file_name,storage_path,mime_type,size_bytes,created_by,created_at,updated_at";
 
 export function getArquivosSource(): ArquivosSource {
   return isSupabaseConfigured ? "supabase" : "local";
@@ -120,10 +140,15 @@ export async function deleteAppFileFolder(id: string, user: HubUser): Promise<Fi
 export async function listAppFileResources(user: HubUser): Promise<FileResource[]> {
   if (getArquivosSource() === "supabase") {
     const client = assertSupabase();
-    const { data, error } = await client
-      .from("arquivo_recursos")
-      .select("id,titulo,descricao,url,categoria,scope,folder_id,kind,file_name,storage_path,mime_type,size_bytes,created_by,created_at,updated_at")
-      .order("updated_at", { ascending: false });
+    const result = await client.from("arquivo_recursos").select(RESOURCE_SELECT_WITH_PROCESSING).order("updated_at", { ascending: false });
+    let data: unknown[] | null = result.data;
+    let error = result.error;
+
+    if (error && isMissingProcessingColumnsError(error)) {
+      const legacy = await client.from("arquivo_recursos").select(RESOURCE_SELECT_LEGACY).order("updated_at", { ascending: false });
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) throw error;
     return Promise.all((data || []).map((row) => mapResourceRow(row as ResourceRow)));
@@ -148,9 +173,11 @@ export async function saveAppFileResource(resource: FileResource, user: HubUser,
     const fileName = uploadData?.fileName || normalized.fileName || null;
     const mimeType = uploadData?.mimeType || normalized.mimeType || null;
     const sizeBytes = uploadData?.sizeBytes || normalized.sizeBytes || null;
+    const processingStatus = uploadData
+      ? getInitialProcessingStatus(uploadData.fileName, uploadData.mimeType)
+      : normalized.processingStatus;
 
-    const { error } = await client.from("arquivo_recursos").upsert(
-      {
+    const payload = {
         id: normalized.id,
         titulo: normalized.titulo,
         descricao: normalized.descricao,
@@ -163,15 +190,46 @@ export async function saveAppFileResource(resource: FileResource, user: HubUser,
         storage_path: storagePath,
         mime_type: mimeType,
         size_bytes: sizeBytes,
+        processing_status: processingStatus,
+        processing_message: uploadData && processingStatus === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : normalized.processingMessage,
+        processed_file_name: uploadData ? null : normalized.processedFileName || null,
+        processed_storage_path: uploadData ? null : normalized.processedStoragePath || null,
+        processed_mime_type: uploadData ? null : normalized.processedMimeType || null,
+        processed_size_bytes: uploadData ? null : normalized.processedSizeBytes || null,
+        processed_at: uploadData ? null : normalized.processedAt || null,
         created_by: normalized.createdBy.includes("-") ? normalized.createdBy : authUserId
-      },
-      { onConflict: "id" }
-    );
+      };
+    let { error } = await client.from("arquivo_recursos").upsert(payload, { onConflict: "id" });
+
+    if (error && isMissingProcessingColumnsError(error)) {
+      const {
+        processing_status,
+        processing_message,
+        processed_file_name,
+        processed_storage_path,
+        processed_mime_type,
+        processed_size_bytes,
+        processed_at,
+        ...legacyPayload
+      } = payload;
+      void processing_status;
+      void processing_message;
+      void processed_file_name;
+      void processed_storage_path;
+      void processed_mime_type;
+      void processed_size_bytes;
+      void processed_at;
+      const legacy = await client.from("arquivo_recursos").upsert(legacyPayload, { onConflict: "id" });
+      error = legacy.error;
+    }
 
     if (error) throw error;
 
     if (uploadData?.storagePath && normalized.storagePath && normalized.storagePath !== uploadData.storagePath) {
       await client.storage.from(STORAGE_BUCKET).remove([normalized.storagePath]);
+    }
+    if (uploadData?.storagePath && normalized.processedStoragePath) {
+      await client.storage.from(STORAGE_BUCKET).remove([normalized.processedStoragePath]);
     }
 
     return listAppFileResources(user);
@@ -185,6 +243,8 @@ export async function saveAppFileResource(resource: FileResource, user: HubUser,
     fileName: file?.name || normalized.fileName,
     mimeType: file?.type || normalized.mimeType,
     sizeBytes: file?.size || normalized.sizeBytes,
+    processingStatus: file ? getInitialProcessingStatus(file.name, file.type || "") : normalized.processingStatus,
+    processingMessage: file && getInitialProcessingStatus(file.name, file.type || "") === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : normalized.processingMessage,
     updatedAt: new Date().toISOString()
   });
   const resources = readStorage<FileResource[]>(RESOURCES_STORAGE_KEY, []).map(normalizeResource);
@@ -201,6 +261,9 @@ export async function deleteAppFileResource(resource: FileResource, user: HubUse
 
     if (resource.storagePath) {
       await client.storage.from(STORAGE_BUCKET).remove([resource.storagePath]);
+    }
+    if (resource.processedStoragePath) {
+      await client.storage.from(STORAGE_BUCKET).remove([resource.processedStoragePath]);
     }
 
     return listAppFileResources(user);
@@ -330,6 +393,7 @@ function mapFolderRow(row: FolderRow): FileFolder {
 
 async function mapResourceRow(row: ResourceRow): Promise<FileResource> {
   const signedUrl = row.storage_path ? await createSignedResourceUrl(row.storage_path) : "";
+  const processedSignedUrl = row.processed_storage_path ? await createSignedResourceUrl(row.processed_storage_path) : "";
   return normalizeResource({
     id: row.id,
     titulo: row.titulo,
@@ -343,6 +407,14 @@ async function mapResourceRow(row: ResourceRow): Promise<FileResource> {
     storagePath: row.storage_path || "",
     mimeType: row.mime_type || "",
     sizeBytes: row.size_bytes || 0,
+    processingStatus: row.processing_status || "none",
+    processingMessage: row.processing_message || "",
+    processedUrl: processedSignedUrl,
+    processedFileName: row.processed_file_name || "",
+    processedStoragePath: row.processed_storage_path || "",
+    processedMimeType: row.processed_mime_type || "",
+    processedSizeBytes: row.processed_size_bytes || 0,
+    processedAt: row.processed_at || "",
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -394,6 +466,14 @@ function normalizeResource(value: Partial<FileResource>): FileResource {
     storagePath: value.storagePath || "",
     mimeType: value.mimeType || "",
     sizeBytes: value.sizeBytes || 0,
+    processingStatus: value.processingStatus || "none",
+    processingMessage: value.processingMessage || "",
+    processedUrl: value.processedUrl || "",
+    processedFileName: value.processedFileName || "",
+    processedStoragePath: value.processedStoragePath || "",
+    processedMimeType: value.processedMimeType || "",
+    processedSizeBytes: value.processedSizeBytes || 0,
+    processedAt: value.processedAt || "",
     createdBy: value.createdBy || "",
     createdAt: value.createdAt || now,
     updatedAt: value.updatedAt || now
@@ -434,4 +514,25 @@ function toSafeStorageFileName(fileName: string) {
     .replace(/^[-.]+|[-.]+$/g, "");
 
   return normalized || "arquivo";
+}
+
+function getInitialProcessingStatus(fileName: string, mimeType: string): FileProcessingStatus {
+  const target = `${mimeType} ${fileName}`.toLowerCase();
+  const needsStudyVersion =
+    target.includes("pdf") ||
+    target.includes("presentation") ||
+    target.includes("powerpoint") ||
+    target.includes("wordprocessingml.document") ||
+    target.includes("spreadsheetml.sheet") ||
+    target.includes("image/") ||
+    /\.(pdf|pptx?|docx?|xlsx?|png|jpe?g|webp|tiff?|bmp)(\?|#|$)?$/i.test(fileName);
+
+  return needsStudyVersion ? "pending" : "none";
+}
+
+function isMissingProcessingColumnsError(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message || error || "");
+  return /processing_status|processing_message|processed_file_name|processed_storage_path|processed_mime_type|processed_size_bytes|processed_at/i.test(
+    message
+  );
 }
