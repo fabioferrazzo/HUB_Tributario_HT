@@ -14,6 +14,7 @@ const requiredFiles = [
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
   "netlify/functions/sheets-pautas.mjs",
+  "scripts/diagnose-arquivos-processador.mjs",
   "scripts/process-arquivos.mjs",
   "GUIA_DEPLOY_MARCO.md",
   "GUIA_PREFLIGHT_LOCAL.md",
@@ -65,6 +66,11 @@ const commandChecks = [
     label: "Processador de arquivos",
     command: process.execPath,
     args: ["--check", "scripts/process-arquivos.mjs"]
+  },
+  {
+    label: "Diagnostico do processador de arquivos",
+    command: process.execPath,
+    args: ["--check", "scripts/diagnose-arquivos-processador.mjs"]
   }
 ];
 
