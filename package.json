@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -p tsconfig.app.json && vite build",
+    "arquivos:agent": "node scripts/ocr-local-agent.mjs",
     "arquivos:diagnose": "node scripts/diagnose-arquivos-processador.mjs",
     "arquivos:process": "node scripts/process-arquivos.mjs",
     "arquivos:process:dry": "node scripts/process-arquivos.mjs --dry-run",
