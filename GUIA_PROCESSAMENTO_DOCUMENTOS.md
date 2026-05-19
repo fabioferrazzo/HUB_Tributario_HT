@@ -70,6 +70,7 @@ Ele consulta `arquivo_recursos` com `processing_status = pending`, baixa o arqui
 Comandos:
 
 ```bash
+npm run arquivos:agent
 npm run arquivos:diagnose
 npm run arquivos:process:dry
 npm run arquivos:process
@@ -91,6 +92,7 @@ VITE_SUPABASE_URL="https://SEU-PROJETO.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="SUA_SERVICE_ROLE_KEY"
 ARQUIVOS_PROCESS_LIMIT="5"
 ARQUIVOS_PROCESS_LANGUAGE="por+eng"
+ARQUIVOS_AGENT_PORT="8787"
 ```
 
 Ferramentas usadas quando existirem na maquina:
@@ -116,6 +118,45 @@ Comportamento por tipo de arquivo:
 - DOCX sem LibreOffice: fica pronto para o visualizador interno do HUB, pois o app ja converte DOCX no navegador.
 
 Se faltar uma ferramenta, o registro fica com `processing_status = error` e a mensagem explica o que instalar.
+
+## Botao `Rodar OCR` no HUB
+
+O HUB publicado no Netlify nao consegue executar programas do Windows diretamente. Para o botao funcionar, uma janela do CMD/PowerShell precisa ficar aberta no computador responsavel pelo OCR.
+
+1. No computador onde estao LibreOffice, OCRmyPDF e Tesseract, abra o CMD.
+2. Entre na pasta do projeto:
+
+```bash
+cd "C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário"
+```
+
+3. Inicie o agente local:
+
+```bash
+npm run arquivos:agent
+```
+
+4. Deixe essa janela aberta.
+5. No HUB, abra o menu `Arquivos` e clique em `Rodar OCR`.
+
+Alternativa mais simples: de duplo clique no arquivo abaixo e deixe a janela aberta:
+
+```text
+C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário\INICIAR_OCR_HUB.cmd
+```
+
+Guia operacional completo:
+
+- `GUIA_OCR_LOCAL.md`
+
+O botao processa ate 5 arquivos pendentes por rodada, respeitando `ARQUIVOS_PROCESS_LIMIT`/`--limit` do processador. Depois de concluir, a lista do HUB e atualizada e os arquivos processados passam a exibir `Versao pesquisavel pronta`.
+
+Se aparecer erro de agente local, confirme:
+
+- a janela do comando `npm run arquivos:agent` esta aberta;
+- o endereco exibido e `http://127.0.0.1:8787`;
+- o arquivo `.env.local` existe com Supabase URL e Service Role;
+- o HUB esta acessando uma origem permitida em `ARQUIVOS_AGENT_ALLOWED_ORIGINS`.
 
 ## Ativacao local passo a passo
 

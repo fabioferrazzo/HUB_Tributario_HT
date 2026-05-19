@@ -250,3 +250,11 @@
 - `npm.cmd run typecheck`: OK em 19/05/2026 apos corrigir navegacao de paginas e cancelamento de renderizacao no visualizador PDF.
 - `npm.cmd run build`: OK em 19/05/2026 apos corrigir navegacao de paginas e cancelamento de renderizacao no visualizador PDF.
 - `npm.cmd run preflight`: OK em 19/05/2026 apos corrigir navegacao de paginas e cancelamento de renderizacao no visualizador PDF.
+- Arquivos: em 19/05/2026, preparado botao `Rodar OCR` para chamar agente local em `http://127.0.0.1:8787`, permitindo processar a fila de documentos pelo proprio menu Arquivos.
+- `node --check scripts/ocr-local-agent.mjs`: OK em 19/05/2026 apos criar agente local para botao `Rodar OCR`.
+- `npm.cmd run typecheck`: OK em 19/05/2026 apos criar agente local para botao `Rodar OCR`.
+- `npm.cmd run build`: OK em 19/05/2026 apos criar agente local para botao `Rodar OCR`.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos criar agente local para botao `Rodar OCR`.
+- OCR local: criado `INICIAR_OCR_HUB.cmd` para abrir o agente por duplo clique e `scripts/registrar-agente-ocr-login.ps1` para agendamento opcional ao login do Windows.
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/registrar-agente-ocr-login.ps1 -ValidateOnly`: OK em 19/05/2026.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos incluir iniciador/agendamento opcional do agente OCR local.
