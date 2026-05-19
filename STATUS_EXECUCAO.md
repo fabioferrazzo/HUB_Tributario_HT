@@ -247,3 +247,6 @@
 - `npm.cmd run typecheck`: OK em 19/05/2026 apos corrigir visualizador para usar a versao OCR/processada no painel interno.
 - `npm.cmd run build`: OK em 19/05/2026 apos corrigir visualizador para usar a versao OCR/processada no painel interno.
 - `npm.cmd run preflight`: OK em 19/05/2026 apos corrigir visualizador para usar a versao OCR/processada no painel interno.
+- `npm.cmd run typecheck`: OK em 19/05/2026 apos corrigir navegacao de paginas e cancelamento de renderizacao no visualizador PDF.
+- `npm.cmd run build`: OK em 19/05/2026 apos corrigir navegacao de paginas e cancelamento de renderizacao no visualizador PDF.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos corrigir navegacao de paginas e cancelamento de renderizacao no visualizador PDF.
