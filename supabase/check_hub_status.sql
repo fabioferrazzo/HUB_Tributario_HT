@@ -19,6 +19,9 @@ with required_objects as (
       ('table', 'tarefas', 'Tabela public.tarefas'),
       ('table', 'tarefa_usuarios', 'Tabela public.tarefa_usuarios'),
       ('table', 'tarefa_anexos', 'Tabela public.tarefa_anexos'),
+      ('column', 'arquivo_recursos.processing_status', 'Coluna public.arquivo_recursos.processing_status'),
+      ('column', 'arquivo_recursos.processed_storage_path', 'Coluna public.arquivo_recursos.processed_storage_path'),
+      ('column', 'arquivo_recursos.processed_mime_type', 'Coluna public.arquivo_recursos.processed_mime_type'),
       ('function', 'is_admin', 'Funcao public.is_admin'),
       ('function', 'is_manager', 'Funcao public.is_manager'),
       ('function', 'is_active_user', 'Funcao public.is_active_user'),
@@ -56,6 +59,13 @@ status as (
         where n.nspname = 'public'
           and p.proname = name
       )
+      when kind = 'column' then exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = split_part(name, '.', 1)
+          and column_name = split_part(name, '.', 2)
+      )
       when kind = 'bucket' then exists (
         select 1
         from storage.buckets b
@@ -68,6 +78,7 @@ status as (
 select
   case kind
     when 'table' then 'Tabela'
+    when 'column' then 'Coluna'
     when 'function' then 'Funcao'
     when 'bucket' then 'Bucket'
     else kind
@@ -76,5 +87,5 @@ select
   case when ok then 'OK' else 'PENDENTE' end as status
 from status
 order by
-  case kind when 'table' then 1 when 'function' then 2 when 'bucket' then 3 else 4 end,
+  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 else 5 end,
   label;
