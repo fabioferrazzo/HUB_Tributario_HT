@@ -14,6 +14,7 @@ const requiredFiles = [
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
   "netlify/functions/sheets-pautas.mjs",
+  "scripts/process-arquivos.mjs",
   "GUIA_DEPLOY_MARCO.md",
   "GUIA_PREFLIGHT_LOCAL.md",
   "GUIA_PROCESSAMENTO_DOCUMENTOS.md",
@@ -59,6 +60,11 @@ const commandChecks = [
     label: "Function sheets-pautas",
     command: process.execPath,
     args: ["--check", "netlify/functions/sheets-pautas.mjs"]
+  },
+  {
+    label: "Processador de arquivos",
+    command: process.execPath,
+    args: ["--check", "scripts/process-arquivos.mjs"]
   }
 ];
 
