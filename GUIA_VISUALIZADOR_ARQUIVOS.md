@@ -86,8 +86,18 @@ Use esse arquivo para estudo, revisao interna ou compartilhamento fora do HUB qu
 - Pastas do Google Drive: devem ser abertas em nova aba quando o Google bloquear a visualizacao embutida.
 - Grifos continuam registrados no painel de estudo para auditoria/exportacao, mesmo quando tambem aparecem sobre o conteudo.
 
+## Preparacao para OCR/conversao
+
+O HUB foi preparado para abrir uma versao processada do arquivo quando ela existir. Para ativar a estrutura no Supabase, execute:
+
+- `supabase/patch_arquivo_processamento.sql`
+
+Depois disso, uploads de PDF/PPTX/imagens passam a receber status de processamento. Quando um worker externo converter/OCRizar o arquivo e preencher `processed_storage_path`, o botao `Visualizar` abre automaticamente a versao pesquisavel.
+
+Detalhes do fluxo estao em `GUIA_PROCESSAMENTO_DOCUMENTOS.md`.
+
 ## Proxima evolucao
 
-1. Melhorar a persistencia de grifos por coordenada em PDF, alem da correspondencia textual.
-2. Avaliar conversao previa de XLSX/PPTX para PDF/HTML quando a empresa quiser preview 100% interno, sem dependencia do Office/Google.
+1. Implementar o worker de OCR/conversao.
+2. Melhorar a persistencia de grifos por coordenada em PDF, alem da correspondencia textual.
 3. Avaliar exportacao consolidada por pasta, reunindo anotacoes de varios documentos em um unico relatorio.

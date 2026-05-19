@@ -227,3 +227,11 @@
 - `npm.cmd run typecheck`: OK em 15/05/2026 apos trocar PDF para camada oficial de texto do PDF.js.
 - `npm.cmd run build`: OK em 15/05/2026 apos trocar PDF para camada oficial de texto do PDF.js.
 - `npm.cmd run preflight`: OK em 15/05/2026 apos trocar PDF para camada oficial de texto do PDF.js.
+- Teste em Chrome real em 15/05/2026: producao ainda nao apresentava spans de texto no PDF antes deste ajuste, confirmando necessidade do novo upload/deploy.
+- `npm.cmd run typecheck`: OK em 15/05/2026 apos fallback manual de camada de texto para PDF.
+- `npm.cmd run build`: OK em 15/05/2026 apos fallback manual de camada de texto para PDF.
+- `npm.cmd run preflight`: OK em 15/05/2026 apos fallback manual de camada de texto para PDF.
+- `npm.cmd run typecheck`: OK em 19/05/2026 apos preparar campos de OCR/conversao de Arquivos.
+- `npm.cmd run build`: OK em 19/05/2026 apos preparar campos de OCR/conversao de Arquivos.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos preparar campos de OCR/conversao de Arquivos.
+- Arquivos: preparada a estrutura para versao pesquisavel/OCR com status de processamento, URL processada e guia tecnico; worker de OCR/conversao fica como proxima etapa.
