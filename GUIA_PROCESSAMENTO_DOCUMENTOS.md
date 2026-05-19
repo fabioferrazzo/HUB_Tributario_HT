@@ -70,6 +70,7 @@ Ele consulta `arquivo_recursos` com `processing_status = pending`, baixa o arqui
 Comandos:
 
 ```bash
+npm run arquivos:diagnose
 npm run arquivos:process:dry
 npm run arquivos:process
 ```
@@ -115,6 +116,47 @@ Comportamento por tipo de arquivo:
 - DOCX sem LibreOffice: fica pronto para o visualizador interno do HUB, pois o app ja converte DOCX no navegador.
 
 Se faltar uma ferramenta, o registro fica com `processing_status = error` e a mensagem explica o que instalar.
+
+## Ativacao local passo a passo
+
+1. Crie o arquivo local abaixo, sem subir ao GitHub:
+
+```text
+C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário\.env.local
+```
+
+2. Preencha com:
+
+```env
+VITE_SUPABASE_URL="https://SEU-PROJETO.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="SUA_SERVICE_ROLE_KEY"
+ARQUIVOS_PROCESS_LIMIT="5"
+ARQUIVOS_PROCESS_LANGUAGE="por+eng"
+```
+
+3. Rode o diagnostico:
+
+```bash
+npm run arquivos:diagnose
+```
+
+4. Se houver pendencias de ferramentas, instale/configure:
+
+- LibreOffice para converter PPTX/DOCX/XLSX;
+- OCRmyPDF para OCR de PDFs escaneados;
+- Tesseract OCR para OCR de imagens.
+
+5. Depois rode uma simulacao:
+
+```bash
+npm run arquivos:process:dry
+```
+
+6. Se a simulacao listar os arquivos esperados, processe:
+
+```bash
+npm run arquivos:process
+```
 
 ## Teste apos patch
 

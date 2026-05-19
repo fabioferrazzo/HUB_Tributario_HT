@@ -240,3 +240,6 @@
 - `npm.cmd run preflight`: OK em 19/05/2026 apos incluir processador local de documentos.
 - `npm.cmd run build`: OK em 19/05/2026 apos incluir processador local de documentos.
 - Arquivos: criada rotina local `npm run arquivos:process` para processar pendentes no Supabase, usando LibreOffice/OCRmyPDF/Tesseract quando instalados.
+- `npm.cmd run arquivos:diagnose`: OK em 19/05/2026; apontou pendencias esperadas de `.env.local` e ferramentas locais de OCR/conversao.
+- `npm.cmd run typecheck`: OK em 19/05/2026 apos incluir diagnostico do processador de arquivos.
+- `npm.cmd run preflight`: OK em 19/05/2026 apos incluir diagnostico do processador de arquivos.
