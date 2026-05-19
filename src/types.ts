@@ -87,6 +87,8 @@ export type FileFolder = {
 
 export type FileResourceKind = "link" | "upload";
 
+export type FileProcessingStatus = "none" | "pending" | "processing" | "ready" | "error";
+
 export type FileResource = {
   id: string;
   titulo: string;
@@ -100,6 +102,14 @@ export type FileResource = {
   storagePath: string;
   mimeType: string;
   sizeBytes: number;
+  processingStatus: FileProcessingStatus;
+  processingMessage: string;
+  processedUrl: string;
+  processedFileName: string;
+  processedStoragePath: string;
+  processedMimeType: string;
+  processedSizeBytes: number;
+  processedAt: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

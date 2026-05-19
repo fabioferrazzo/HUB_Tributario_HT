@@ -1776,9 +1776,10 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerError, setViewerError] = useState("");
   const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const source = getArquivosSource();
+  const viewerStudyResource = useMemo(() => (viewerResource ? getStudyResource(viewerResource) : null), [viewerResource]);
   const viewerPreview = useMemo(
-    () => (viewerResource ? buildViewerPreview(viewerResource, viewerPage, viewerZoom, viewerSearchTerm) : null),
-    [viewerPage, viewerResource, viewerSearchTerm, viewerZoom]
+    () => (viewerStudyResource ? buildViewerPreview(viewerStudyResource, viewerPage, viewerZoom, viewerSearchTerm) : null),
+    [viewerPage, viewerSearchTerm, viewerStudyResource, viewerZoom]
   );
 
   useEffect(() => {
@@ -1809,7 +1810,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   }
 
   async function openViewer(resource: FileResource) {
-    if (!resource.url) return;
+    if (!resource.url && !resource.processedUrl) return;
     setViewerResource(resource);
     setViewerZoom(100);
     setViewerPage(1);
@@ -1867,7 +1868,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
       return;
     }
 
-    if (viewerResource && !isPdfResource(viewerResource) && !isDocxResource(viewerResource)) {
+    if (viewerStudyResource && !isPdfResource(viewerStudyResource) && !isDocxResource(viewerStudyResource)) {
       setViewerSearchTerm("");
       setViewerError("Busca interna com navegacao esta disponivel para PDF pesquisavel e DOCX convertido. Para PPTX, Excel, imagens ou links externos, abra em nova aba ou converta para PDF pesquisavel.");
       return;
@@ -2060,6 +2061,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   function buildResource(file?: File): FileResource {
     const now = new Date().toISOString();
     const shouldUseFileName = Boolean(file && (!titulo.trim() || selectedFiles.length > 1));
+    const processingStatus = file ? getInitialFileProcessingStatus(file.name, file.type || "") : "none";
     return {
       id: crypto.randomUUID(),
       titulo: (shouldUseFileName ? file?.name.replace(/\.[^.]+$/, "") : titulo.trim()) || "Arquivo sem titulo",
@@ -2073,6 +2075,14 @@ function ArquivosModule({ user }: { user: HubUser }) {
       storagePath: "",
       mimeType: file?.type || "",
       sizeBytes: file?.size || 0,
+      processingStatus,
+      processingMessage: processingStatus === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : "",
+      processedUrl: "",
+      processedFileName: "",
+      processedStoragePath: "",
+      processedMimeType: "",
+      processedSizeBytes: 0,
+      processedAt: "",
       createdBy: user.email,
       createdAt: now,
       updatedAt: now
@@ -2099,6 +2109,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
     try {
       if (editingResource) {
         const file = selectedFiles[0] || null;
+        const processingStatus = file ? getInitialFileProcessingStatus(file.name, file.type || "") : editingResource.processingStatus;
         const updated: FileResource = {
           ...editingResource,
           titulo: titulo.trim() || editingResource.titulo,
@@ -2111,6 +2122,14 @@ function ArquivosModule({ user }: { user: HubUser }) {
           fileName: file?.name || editingResource.fileName,
           mimeType: file?.type || editingResource.mimeType,
           sizeBytes: file?.size || editingResource.sizeBytes,
+          processingStatus,
+          processingMessage: file && processingStatus === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : editingResource.processingMessage,
+          processedUrl: file ? "" : editingResource.processedUrl,
+          processedFileName: file ? "" : editingResource.processedFileName,
+          processedStoragePath: file ? "" : editingResource.processedStoragePath,
+          processedMimeType: file ? "" : editingResource.processedMimeType,
+          processedSizeBytes: file ? 0 : editingResource.processedSizeBytes,
+          processedAt: file ? "" : editingResource.processedAt,
           updatedAt: new Date().toISOString()
         };
         setResources(await saveAppFileResource(updated, user, file));
@@ -2255,60 +2274,73 @@ function ArquivosModule({ user }: { user: HubUser }) {
         {error ? <div className="form-error">{error}</div> : null}
 
         <div className="file-resource-list">
-          {visibleResources.map((resource) => (
-            <article className="file-resource" key={resource.id}>
-              <div>
-                <FileArchive size={17} />
-                <span>{resource.kind === "upload" ? "Upload" : formatFileCategory(resource.categoria)}</span>
-              </div>
-              <strong>{resource.titulo}</strong>
-              <p>{resource.descricao || "Sem descricao"}</p>
-              <small>
-                {resource.scope === "global" ? "Global" : "Pessoal"} - {folderNames.get(resource.folderId) || "Sem pasta"} -{" "}
-                {formatDate(resource.createdAt)}
-              </small>
-              {resource.fileName ? <small>{resource.fileName}</small> : null}
-              <small>{resource.scope === "global" ? "Global" : "Pessoal"} - {formatDate(resource.createdAt)}</small>
-              <div className="record-actions">
-                {resource.url ? (
-                  <button type="button" onClick={() => openViewer(resource)}>
-                    <Search size={14} />
-                    Visualizar
-                  </button>
-                ) : (
-                  <button disabled type="button">
-                    <Search size={14} />
-                    Visualizar
-                  </button>
-                )}
+          {visibleResources.map((resource) => {
+            const processingBadge = getProcessingBadge(resource);
+            return (
+              <article className="file-resource" key={resource.id}>
+                <div>
+                  <FileArchive size={17} />
+                  <span>{resource.kind === "upload" ? "Upload" : formatFileCategory(resource.categoria)}</span>
+                </div>
+                <strong>{resource.titulo}</strong>
+                <p>{resource.descricao || "Sem descricao"}</p>
+                <small>
+                  {resource.scope === "global" ? "Global" : "Pessoal"} - {folderNames.get(resource.folderId) || "Sem pasta"} -{" "}
+                  {formatDate(resource.createdAt)}
+                </small>
+                {resource.fileName ? <small>{resource.fileName}</small> : null}
+                {processingBadge ? (
+                  <span className={`processing-badge processing-badge--${processingBadge.tone}`}>{processingBadge.label}</span>
+                ) : null}
+                {resource.processingMessage ? <small>{resource.processingMessage}</small> : null}
+                <small>{resource.scope === "global" ? "Global" : "Pessoal"} - {formatDate(resource.createdAt)}</small>
+                <div className="record-actions">
+                  {resource.url || resource.processedUrl ? (
+                    <button type="button" onClick={() => openViewer(resource)}>
+                      <Search size={14} />
+                      Visualizar
+                    </button>
+                  ) : (
+                    <button disabled type="button">
+                      <Search size={14} />
+                      Visualizar
+                    </button>
+                  )}
                 {resource.url ? (
                   <a href={resource.url} rel="noreferrer" target="_blank">
                     <Link2 size={14} />
                     Abrir
                   </a>
-                ) : (
-                  <button disabled type="button">
-                    <Link2 size={14} />
+                  ) : (
+                    <button disabled type="button">
+                      <Link2 size={14} />
                     Abrir
                   </button>
                 )}
+                {resource.processedUrl ? (
+                  <a href={resource.processedUrl} rel="noreferrer" target="_blank">
+                    <Search size={14} />
+                    Abrir estudo
+                  </a>
+                ) : null}
                 {canManageResource(resource) ? (
                   <>
-                    <button type="button" onClick={() => startEditResource(resource)}>
-                      <Edit3 size={14} />
-                      Editar
-                    </button>
-                    <button className="danger-action" disabled={saving} type="button" onClick={() => removeResource(resource)}>
-                      <Trash2 size={14} />
-                      Excluir
-                    </button>
-                  </>
-                ) : (
-                  <span className="record-actions--readonly">Somente leitura</span>
-                )}
-              </div>
-            </article>
-          ))}
+                      <button type="button" onClick={() => startEditResource(resource)}>
+                        <Edit3 size={14} />
+                        Editar
+                      </button>
+                      <button className="danger-action" disabled={saving} type="button" onClick={() => removeResource(resource)}>
+                        <Trash2 size={14} />
+                        Excluir
+                      </button>
+                    </>
+                  ) : (
+                    <span className="record-actions--readonly">Somente leitura</span>
+                  )}
+                </div>
+              </article>
+            );
+          })}
           {!visibleResources.length ? (
             <div className="empty-state">
               Nenhum arquivo ou atalho cadastrado para o filtro atual.
@@ -2459,7 +2491,11 @@ function ArquivosModule({ user }: { user: HubUser }) {
           <section className={`document-viewer-panel ${viewerFullscreen ? "document-viewer-panel--fullscreen" : ""}`}>
             <header className="document-viewer-header">
               <div>
-                <span>{viewerResource.fileName || formatFileCategory(viewerResource.categoria)}</span>
+                <span>
+                  {viewerResource.processingStatus === "ready" && viewerResource.processedFileName
+                    ? `${viewerResource.processedFileName} - versao para estudo`
+                    : viewerResource.fileName || formatFileCategory(viewerResource.categoria)}
+                </span>
                 <h2>{viewerResource.titulo}</h2>
               </div>
               <button aria-label="Fechar visualizador" className="document-viewer-close" type="button" onClick={closeViewer}>
@@ -3034,6 +3070,51 @@ function isImageResource(resource: FileResource) {
   return resource.mimeType.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(resource.fileName || resource.url);
 }
 
+function getStudyResource(resource: FileResource): FileResource {
+  if (resource.processingStatus !== "ready" || !resource.processedUrl) return resource;
+
+  return {
+    ...resource,
+    url: resource.processedUrl,
+    fileName: resource.processedFileName || resource.fileName,
+    storagePath: resource.processedStoragePath || resource.storagePath,
+    mimeType: resource.processedMimeType || "application/pdf",
+    sizeBytes: resource.processedSizeBytes || resource.sizeBytes
+  };
+}
+
+function getInitialFileProcessingStatus(fileName: string, mimeType: string): FileResource["processingStatus"] {
+  const target = `${mimeType} ${fileName}`.toLowerCase();
+  const needsStudyVersion =
+    target.includes("pdf") ||
+    target.includes("presentation") ||
+    target.includes("powerpoint") ||
+    target.includes("wordprocessingml.document") ||
+    target.includes("spreadsheetml.sheet") ||
+    target.includes("image/") ||
+    /\.(pdf|pptx?|docx?|xlsx?|png|jpe?g|webp|tiff?|bmp)(\?|#|$)?$/i.test(fileName);
+
+  return needsStudyVersion ? "pending" : "none";
+}
+
+function getProcessingBadge(resource: FileResource) {
+  const status = resource.processingStatus || "none";
+  if (status === "none") return null;
+
+  const labels: Record<FileResource["processingStatus"], string> = {
+    none: "",
+    pending: "OCR/conversao pendente",
+    processing: "Processando OCR",
+    ready: "PDF pesquisavel pronto",
+    error: "Falha no OCR"
+  };
+
+  return {
+    label: labels[status],
+    tone: status
+  };
+}
+
 function buildViewerPreview(resource: FileResource, page: number, zoom: number, query: string): ViewerPreview {
   if (!resource.url) {
     return {
@@ -3057,9 +3138,12 @@ function buildViewerPreview(resource: FileResource, page: number, zoom: number, 
       mode: "iframe",
       src: buildPdfViewerUrl(resource, page, zoom, query),
       title: resource.titulo,
-      notice: query
-        ? "Pesquisa aplicada a camada de texto do PDF. Se o arquivo for escaneado ou imagem, use OCR para permitir busca/grifo."
-        : "PDF renderizado internamente com PDF.js para permitir selecao de texto e grifo visual quando houver camada de texto."
+      notice:
+        resource.processingStatus === "ready"
+          ? "Abrindo a versao processada para estudo, com PDF pesquisavel quando o OCR/conversao estiver completo."
+          : query
+            ? "Pesquisa aplicada a camada de texto do PDF. Se o arquivo for escaneado ou imagem, use OCR para permitir busca/grifo."
+            : "PDF renderizado internamente com PDF.js para permitir selecao de texto e grifo visual quando houver camada de texto."
     };
   }
 
@@ -3098,7 +3182,10 @@ function buildViewerPreview(resource: FileResource, page: number, zoom: number, 
       mode: "iframe",
       src: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resource.url)}`,
       title: resource.titulo,
-      notice: "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Busca, selecao e grifo direto dependem desse preview externo."
+      notice:
+        resource.processingStatus === "pending" || resource.processingStatus === "processing"
+          ? "Arquivo aguardando conversao/OCR para PDF pesquisavel. Enquanto isso, o preview usa Office externo e nao permite busca/grifo interno."
+          : "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Busca, selecao e grifo direto dependem desse preview externo."
     };
   }
 

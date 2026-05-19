@@ -1233,6 +1233,37 @@ select {
   font-weight: 700;
 }
 
+.processing-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.processing-badge--pending,
+.processing-badge--processing {
+  border-color: rgba(199, 141, 35, 0.32);
+  background: #fff4d9;
+  color: #936716;
+}
+
+.processing-badge--ready {
+  border-color: rgba(42, 145, 87, 0.28);
+  background: #eaf7ef;
+  color: #227246;
+}
+
+.processing-badge--error {
+  border-color: rgba(190, 61, 56, 0.28);
+  background: #fdecec;
+  color: #b23a35;
+}
+
 .folder-strip {
   display: flex;
   gap: 8px;
