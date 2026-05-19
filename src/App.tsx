@@ -1764,6 +1764,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerResource, setViewerResource] = useState<FileResource | null>(null);
   const [viewerZoom, setViewerZoom] = useState(100);
   const [viewerPage, setViewerPage] = useState(1);
+  const [viewerPageTotal, setViewerPageTotal] = useState(0);
   const [viewerQuery, setViewerQuery] = useState("");
   const [viewerSearchTerm, setViewerSearchTerm] = useState("");
   const [viewerSearchIndex, setViewerSearchIndex] = useState(0);
@@ -1815,6 +1816,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerResource(resource);
     setViewerZoom(100);
     setViewerPage(1);
+    setViewerPageTotal(0);
     setViewerQuery("");
     setViewerSearchTerm("");
     setViewerSearchIndex(0);
@@ -1854,6 +1856,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setViewerSearchTerm("");
     setViewerSearchIndex(0);
     setViewerSearchTotal(0);
+    setViewerPageTotal(0);
     setViewerError("");
     setViewerFullscreen(false);
   }
@@ -1881,6 +1884,11 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const handleViewerSearchStats = useCallback((total: number) => {
     setViewerSearchTotal(total);
     setViewerSearchIndex((current) => (total ? Math.min(current, total - 1) : 0));
+  }, []);
+
+  const handleViewerPageCount = useCallback((total: number) => {
+    setViewerPageTotal(total);
+    setViewerPage((current) => (total ? Math.min(Math.max(1, current), total) : current));
   }, []);
 
   function moveViewerSearch(delta: number) {
@@ -2512,10 +2520,31 @@ function ArquivosModule({ user }: { user: HubUser }) {
               <button type="button" onClick={() => setViewerZoom((current) => Math.min(200, current + 10))}>
                 +
               </button>
+              <button aria-label="Pagina anterior" disabled={viewerPage <= 1} type="button" onClick={() => setViewerPage((current) => Math.max(1, current - 1))}>
+                <ChevronLeft size={14} />
+              </button>
               <label>
                 Pagina
-                <input min={1} type="number" value={viewerPage} onChange={(event) => setViewerPage(Math.max(1, Number(event.target.value) || 1))} />
+                <input
+                  max={viewerPageTotal || undefined}
+                  min={1}
+                  type="number"
+                  value={viewerPage}
+                  onChange={(event) => {
+                    const nextPage = Math.max(1, Number(event.target.value) || 1);
+                    setViewerPage(viewerPageTotal ? Math.min(nextPage, viewerPageTotal) : nextPage);
+                  }}
+                />
               </label>
+              <span className="document-search-count">{viewerPageTotal ? `de ${viewerPageTotal}` : "de -"}</span>
+              <button
+                aria-label="Proxima pagina"
+                disabled={Boolean(viewerPageTotal && viewerPage >= viewerPageTotal)}
+                type="button"
+                onClick={() => setViewerPage((current) => (viewerPageTotal ? Math.min(viewerPageTotal, current + 1) : current + 1))}
+              >
+                <ChevronRight size={14} />
+              </button>
               <label className="document-viewer-search">
                 <Search size={14} />
                 <input
@@ -2559,6 +2588,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     searchIndex={viewerSearchIndex}
                     searchTerm={viewerSearchTerm}
                     zoom={viewerZoom}
+                    onPageCount={handleViewerPageCount}
                     onSearchStats={handleViewerSearchStats}
                     onSelectText={setViewerHighlight}
                   />
@@ -2667,6 +2697,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
 function InternalPdfViewer({
   highlightNotes,
+  onPageCount,
   onSearchStats,
   onSelectText,
   page,
@@ -2676,6 +2707,7 @@ function InternalPdfViewer({
   zoom
 }: {
   highlightNotes: FileViewerNote[];
+  onPageCount: (total: number) => void;
   onSearchStats: (total: number) => void;
   onSelectText: (text: string) => void;
   page: number;
@@ -2686,6 +2718,7 @@ function InternalPdfViewer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const renderTaskRef = useRef<{ cancel: () => void; promise: Promise<unknown> } | null>(null);
   const textLayerRef = useRef<HTMLDivElement | null>(null);
   const [spans, setSpans] = useState<PdfTextSpan[]>([]);
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
@@ -2707,11 +2740,23 @@ function InternalPdfViewer({
 
   useEffect(() => {
     let active = true;
+    let cancelled = false;
 
     async function renderPdf() {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      const previousRenderTask = renderTaskRef.current;
+      if (previousRenderTask) {
+        previousRenderTask.cancel();
+        renderTaskRef.current = null;
+        try {
+          await previousRenderTask.promise;
+        } catch {
+          // Expected when PDF.js cancels an in-flight render before redrawing zoom/page.
+        }
+        if (!active) return;
+      }
       setLoading(true);
       setError("");
       setSpans([]);
@@ -2724,6 +2769,7 @@ function InternalPdfViewer({
         if (!response.ok) throw new Error("Nao foi possivel carregar o PDF para estudo interno.");
         const bytes = await response.arrayBuffer();
         const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        if (active) onPageCount(document.numPages);
         const safePage = Math.min(Math.max(1, page), document.numPages);
         const pdfPage = await document.getPage(safePage);
         const scale = Math.max(0.6, Math.min(2.4, zoom / 100)) * 1.35;
@@ -2738,7 +2784,10 @@ function InternalPdfViewer({
         canvas.style.height = `${Math.floor(viewport.height)}px`;
         if (active) setPageSize({ width: Math.floor(viewport.width), height: Math.floor(viewport.height) });
 
-        await pdfPage.render({ canvasContext: context, viewport }).promise;
+        const renderTask = pdfPage.render({ canvasContext: context, viewport });
+        renderTaskRef.current = renderTask;
+        await renderTask.promise;
+        if (!active || cancelled) return;
         const textContent = await pdfPage.getTextContent();
         if (textLayerElement) {
           textLayerElement.innerHTML = "";
@@ -2779,7 +2828,7 @@ function InternalPdfViewer({
           if (active) setSpans(nextSpans);
         }
       } catch (renderError) {
-        if (active) setError(getErrorMessage(renderError));
+        if (active && !isPdfRenderCancelled(renderError)) setError(getErrorMessage(renderError));
       } finally {
         if (active) setLoading(false);
       }
@@ -2789,8 +2838,11 @@ function InternalPdfViewer({
 
     return () => {
       active = false;
+      cancelled = true;
+      renderTaskRef.current?.cancel();
+      renderTaskRef.current = null;
     };
-  }, [page, resource.url, zoom]);
+  }, [onPageCount, page, resource.url, zoom]);
 
   useEffect(() => {
     const layer = textLayerRef.current;
@@ -4373,6 +4425,12 @@ function parseBrazilianDate(value: string) {
 
   const [, day, month, year, hour = "00", minute = "00"] = match;
   return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+}
+
+function isPdfRenderCancelled(error: unknown) {
+  const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message || error || "");
+  const name = error && typeof error === "object" && "name" in error ? String((error as { name?: unknown }).name || "") : "";
+  return name === "RenderingCancelledException" || /cancel/i.test(message);
 }
 
 function getErrorMessage(error: unknown) {
