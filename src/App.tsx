@@ -4374,6 +4374,14 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
 }
 
 function ModuleFrame({ title, src }: { title: string; src: string }) {
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+
+  const postAuthToken = useCallback(async () => {
+    const token = await getSupabaseAccessToken();
+    if (!token || !frameRef.current?.contentWindow) return;
+    frameRef.current.contentWindow.postMessage({ type: "hub-auth-token", token }, window.location.origin);
+  }, []);
+
   return (
     <section className="frame-page">
       <header>
@@ -4382,7 +4390,7 @@ function ModuleFrame({ title, src }: { title: string; src: string }) {
           Abrir em nova aba
         </a>
       </header>
-      <iframe src={src} title={title} />
+      <iframe ref={frameRef} src={src} title={title} onLoad={postAuthToken} />
     </section>
   );
 }
