@@ -18,6 +18,7 @@
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
@@ -1776,6 +1777,8 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [viewerSaving, setViewerSaving] = useState(false);
   const [viewerError, setViewerError] = useState("");
   const [viewerFullscreen, setViewerFullscreen] = useState(false);
+  const [ocrRunning, setOcrRunning] = useState(false);
+  const [ocrMessage, setOcrMessage] = useState("");
   const source = getArquivosSource();
   const viewerStudyResource = useMemo(() => (viewerResource ? getStudyResource(viewerResource) : null), [viewerResource]);
   const activeViewerResource = viewerStudyResource || viewerResource;
@@ -1809,6 +1812,39 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
   async function refreshResources() {
     setResources(await listAppFileResources(user));
+  }
+
+  async function runLocalOcr() {
+    setOcrRunning(true);
+    setOcrMessage("");
+    setError("");
+
+    try {
+      const response = await fetch("http://127.0.0.1:8787/process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ limit: 5 })
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        stdout?: string;
+        stderr?: string;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Agente OCR local nao respondeu.");
+      }
+
+      setOcrMessage(summarizeLocalOcrOutput([payload.stdout, payload.stderr].filter(Boolean).join("\n")));
+      await refreshResources();
+    } catch (ocrError) {
+      setError(`${getErrorMessage(ocrError)} Abra o agente local no Windows com: npm run arquivos:agent`);
+    } finally {
+      setOcrRunning(false);
+    }
   }
 
   async function openViewer(resource: FileResource) {
@@ -2243,6 +2279,21 @@ function ArquivosModule({ user }: { user: HubUser }) {
             <span>Pastas</span>
           </article>
         </div>
+
+        {user.role === "admin" ? (
+          <div className="ocr-runner-bar">
+            <div>
+              <strong>OCR local</strong>
+              <span>Converte PDFs, PowerPoint, Word, Excel e imagens pendentes para versao pesquisavel.</span>
+            </div>
+            <button disabled={ocrRunning || loading} onClick={runLocalOcr} type="button">
+              <RefreshCw size={14} />
+              {ocrRunning ? "Rodando..." : "Rodar OCR"}
+            </button>
+          </div>
+        ) : null}
+
+        {ocrMessage ? <div className="module-notice">{ocrMessage}</div> : null}
 
         <div className="folder-strip">
           <button className={`folder-chip ${folderFilter === "todos" ? "active" : ""}`} onClick={() => setFolderFilter("todos")} type="button">
@@ -4431,6 +4482,19 @@ function isPdfRenderCancelled(error: unknown) {
   const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message || error || "");
   const name = error && typeof error === "object" && "name" in error ? String((error as { name?: unknown }).name || "") : "";
   return name === "RenderingCancelledException" || /cancel/i.test(message);
+}
+
+function summarizeLocalOcrOutput(output: string) {
+  const lines = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const foundLine = [...lines].reverse().find((line) => /^Arquivos encontrados:/i.test(line));
+  const statusLines = lines.filter((line) => /^OK:|^ERRO:/i.test(line)).slice(-3);
+
+  if (!lines.length) return "OCR executado. Lista de arquivos atualizada.";
+  if (statusLines.length) return [foundLine, ...statusLines].filter(Boolean).join(" ");
+  return lines.slice(-2).join(" ");
 }
 
 function getErrorMessage(error: unknown) {

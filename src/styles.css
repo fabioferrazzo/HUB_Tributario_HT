@@ -1188,6 +1188,53 @@ select {
   font-weight: 800;
 }
 
+.ocr-runner-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfaf6;
+}
+
+.ocr-runner-bar div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ocr-runner-bar strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.ocr-runner-bar span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ocr-runner-bar button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--accent);
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.ocr-runner-bar button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .file-resource-list {
   min-height: 0;
   display: grid;
