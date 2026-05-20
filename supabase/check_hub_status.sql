@@ -19,6 +19,8 @@ with required_objects as (
       ('table', 'tarefas', 'Tabela public.tarefas'),
       ('table', 'tarefa_usuarios', 'Tabela public.tarefa_usuarios'),
       ('table', 'tarefa_anexos', 'Tabela public.tarefa_anexos'),
+      ('table', 'coord_colaboradores', 'Tabela public.coord_colaboradores'),
+      ('table', 'coord_itens', 'Tabela public.coord_itens'),
       ('column', 'arquivo_recursos.processing_status', 'Coluna public.arquivo_recursos.processing_status'),
       ('column', 'arquivo_recursos.processed_storage_path', 'Coluna public.arquivo_recursos.processed_storage_path'),
       ('column', 'arquivo_recursos.processed_mime_type', 'Coluna public.arquivo_recursos.processed_mime_type'),
