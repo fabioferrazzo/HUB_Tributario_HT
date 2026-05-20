@@ -2,9 +2,9 @@
 
 ## O que foi criado
 
-O HUB agora pode ter um botao `Rodar OCR` no menu `Arquivos`. Esse botao nao executa OCR dentro do Netlify. Ele chama um agente local rodando no Windows, que usa LibreOffice, OCRmyPDF e Tesseract instalados neste computador.
+O HUB tem um botao `Rodar OCR` no menu `Arquivos`. Esse botao nao executa OCR dentro do Netlify. Ele aciona este computador local, que usa LibreOffice, OCRmyPDF e Tesseract para converter documentos em versoes pesquisaveis.
 
-## Uso manual recomendado
+## Modo 1 - Agente local aberto
 
 1. Abra a pasta do projeto:
 
@@ -12,7 +12,7 @@ O HUB agora pode ter um botao `Rodar OCR` no menu `Arquivos`. Esse botao nao exe
 C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário
 ```
 
-2. Dê duplo clique no arquivo:
+2. De duplo clique no arquivo:
 
 ```text
 INICIAR_OCR_HUB.cmd
@@ -23,37 +23,44 @@ INICIAR_OCR_HUB.cmd
 5. Entre no menu `Arquivos`.
 6. Clique em `Rodar OCR`.
 
-Quando o processamento terminar, a lista de arquivos sera atualizada e os documentos processados exibirao `Versao pesquisavel pronta`.
+## Modo 2 - Protocolo hubocr://rodar
 
-## Uso por comando
+Este modo permite clicar em `Rodar OCR` sem abrir PowerShell antes. O Chrome chama o Windows pelo protocolo `hubocr://rodar`, e o Windows abre o processador local.
 
-Se preferir pelo CMD:
+### Registrar uma vez no Windows
 
-```bat
-cd "C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário"
-npm run arquivos:agent
-```
-
-## Agendamento opcional ao entrar no Windows
-
-Se quiser que o agente OCR abra automaticamente ao fazer login no Windows, rode o PowerShell como usuario normal e execute:
+No CMD ou PowerShell, rode:
 
 ```powershell
 cd "C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário"
-powershell -ExecutionPolicy Bypass -File scripts\registrar-agente-ocr-login.ps1
+powershell -ExecutionPolicy Bypass -File scripts\registrar-protocolo-ocr.ps1
 ```
 
-Para remover esse agendamento:
+Depois disso, ao clicar em `Rodar OCR`, se o agente local nao estiver aberto, o HUB tentara abrir `hubocr://rodar`.
+
+Se o Chrome perguntar se pode abrir o aplicativo externo, confirme.
+
+### Remover o protocolo
 
 ```powershell
 cd "C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário"
-powershell -ExecutionPolicy Bypass -File scripts\registrar-agente-ocr-login.ps1 -Remove
+powershell -ExecutionPolicy Bypass -File scripts\registrar-protocolo-ocr.ps1 -Remove
 ```
+
+## Teste rapido
+
+Abra no Chrome:
+
+```text
+hubocr://rodar
+```
+
+Se estiver registrado corretamente, o Windows abrira a janela `HUB Depto Tributario - Rodar OCR`.
 
 ## Observacoes importantes
 
 - O arquivo `.env.local` continua apenas local e nao deve subir ao GitHub.
-- O agente precisa estar aberto para o botao `Rodar OCR` funcionar.
 - O OCR processa a fila de arquivos com `processing_status = pending`.
 - Nao e necessario excluir e reenviar arquivos ja anexados; basta rodar OCR novamente.
-- Se o botao mostrar erro de conexao, abra ou reinicie o `INICIAR_OCR_HUB.cmd`.
+- Se o protocolo ainda nao estiver registrado, o botao pode mostrar erro ou o Chrome pode nao abrir nada.
+- O modo protocolo nao retorna o resultado em tempo real para o HUB. Quando a janela terminar, atualize a lista de Arquivos se necessario.

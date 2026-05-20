@@ -258,3 +258,9 @@
 - OCR local: criado `INICIAR_OCR_HUB.cmd` para abrir o agente por duplo clique e `scripts/registrar-agente-ocr-login.ps1` para agendamento opcional ao login do Windows.
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/registrar-agente-ocr-login.ps1 -ValidateOnly`: OK em 19/05/2026.
 - `npm.cmd run preflight`: OK em 19/05/2026 apos incluir iniciador/agendamento opcional do agente OCR local.
+- `scripts/preflight.mjs`: atualizado em 20/05/2026 para barrar `App.tsx`, `styles.css`, `main.tsx` e `types.ts` soltos na raiz do GitHub, pois esses arquivos devem ficar dentro de `src/`.
+- OCR local: em 20/05/2026, implementado fallback por protocolo Windows `hubocr://rodar` para permitir acionar OCR pelo botao do HUB sem abrir PowerShell manualmente.
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\registrar-protocolo-ocr.ps1 -ValidateOnly`: OK em 20/05/2026.
+- `npm.cmd run typecheck`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
+- `npm.cmd run build`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
