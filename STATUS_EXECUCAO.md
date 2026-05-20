@@ -74,6 +74,7 @@
 - Base de e-mails criada com fila `email_outbox`, funcoes SQL para enfileirar e-mails de lembretes e Netlify Function `email-outbox`.
 - Eventos de e-mail homologados em modo teste: criacao de lembrete e rotina diaria de vencimentos enviaram via Resend com `EMAIL_FORCE_TEST_TO`.
 - E-mails manuais da Coordenacao Tributaria conectados ao endpoint interno `coord-email`, com envio de pautas e avaliacoes pela fila `email_outbox`.
+- App da Coordenacao Tributaria simplificado conforme rascunho: resumo geral, colaboradores, atividades/pautas, relatorios/e-mails, lembretes por prioridade, concluir/editar/excluir, historico e cadastro de colaboradores.
 - Modulo Tarefas ativado com formulario completo, responsaveis, anexos, filtros, edicao, conclusao/reabertura, exclusao e persistencia Supabase/local.
 - Patch SQL `supabase/patch_tarefas.sql` criado para tabelas `tarefas`, `tarefa_usuarios`, `tarefa_anexos` e RLS por criador/responsavel/admin/gestor.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
@@ -236,4 +237,7 @@
 - `npm.cmd run typecheck`: OK em 20/05/2026 apos console operacional de Lembretes e E-mails.
 - `npm.cmd run preflight`: OK em 20/05/2026 apos console operacional de Lembretes e E-mails.
 - `npm.cmd run build`: OK em 20/05/2026 apos console operacional de Lembretes e E-mails.
+- `node --check`: OK em 20/05/2026 para o JavaScript standalone da nova Coordenacao Tributaria.
+- `npm.cmd run build`: OK em 20/05/2026 apos simplificacao da aba Coordenacao Tributaria.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos simplificacao da aba Coordenacao Tributaria.
 - `npm.cmd run build`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
