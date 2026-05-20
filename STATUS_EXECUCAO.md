@@ -51,6 +51,7 @@
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
 - Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
 - Painel `Saude operacional do HUB` adicionado em Configuracoes para checklist pre-deploy sem acionar builds Netlify.
+- Console operacional de Lembretes e E-mails adicionado em Configuracoes para consultar fila, enfileirar avisos de vencimento, processar e-mails pendentes e enviar e-mail manual.
 - Script local `npm.cmd run preflight` criado para validar arquivos essenciais, TypeScript e Netlify Functions antes de qualquer deploy de marco.
 - Guia `GUIA_DEPLOY_MARCO.md` e consulta `supabase/check_hub_status.sql` criados para conferencia final antes de reativar builds no Netlify.
 - Checklist `CHECKLIST_HOMOLOGACAO_FINAL.md` criado para homologacao final sem consumir creditos Netlify.
@@ -108,10 +109,9 @@
 
 ## Em andamento / proxima etapa
 
-- Subir no GitHub os arquivos alterados na etapa `hubocr://rodar` e nesta atualizacao de homologacao.
-- Registrar uma unica vez no Windows o protocolo OCR local com `scripts/registrar-protocolo-ocr.ps1`.
-- Testar no HUB publicado: menu Arquivos -> botao `Rodar OCR` -> confirmar chamada externa do Chrome -> processamento local.
+- Subir no GitHub os arquivos alterados nesta atualizacao de saude operacional e e-mails.
 - Usar o painel `Saude operacional do HUB` em Configuracoes para conferencia rapida do ambiente.
+- Homologar o console operacional: consultar fila, enfileirar vencimentos, processar fila e enviar e-mail manual.
 - Rodar `npm.cmd run preflight` antes de qualquer nova reativacao de build/deploy no Netlify.
 - Rodar `supabase/check_hub_status.sql` no SQL Editor antes do proximo deploy de marco.
 - Percorrer `CHECKLIST_HOMOLOGACAO_FINAL.md` e `ROTEIRO_HOMOLOGACAO_FUNCIONAL.md`, registrando itens `OK`, `Ajustar` ou `Falhou`.
@@ -233,4 +233,7 @@
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\registrar-protocolo-ocr.ps1 -ValidateOnly`: OK em 20/05/2026.
 - `npm.cmd run typecheck`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
 - `npm.cmd run preflight`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
+- `npm.cmd run typecheck`: OK em 20/05/2026 apos console operacional de Lembretes e E-mails.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos console operacional de Lembretes e E-mails.
+- `npm.cmd run build`: OK em 20/05/2026 apos console operacional de Lembretes e E-mails.
 - `npm.cmd run build`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
