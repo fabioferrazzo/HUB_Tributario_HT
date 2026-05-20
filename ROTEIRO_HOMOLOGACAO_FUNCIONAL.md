@@ -148,6 +148,9 @@ Nao acione deploy no Netlify durante esta rodada. O objetivo e testar o HUB ja p
 | Botao enviar pauta por e-mail funciona | Pendente |
 | Botao enviar avaliacoes por e-mail funciona | Pendente |
 | Registros aparecem em `email_outbox` | Pendente |
+| Dados carregam com selo `supabase` quando o SQL/Function estiverem publicados | Pendente |
+| Alteracao feita por admin/gestor aparece para outro admin/gestor apos recarregar | Pendente |
+| Sem token ou sem backend, app continua funcionando em modo `local` | Pendente |
 
 ## Resultado final
 

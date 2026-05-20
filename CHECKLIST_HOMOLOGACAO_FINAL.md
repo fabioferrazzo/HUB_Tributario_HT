@@ -208,6 +208,9 @@ Validar no app integrado:
 - usar botao manual de envio de pauta por e-mail;
 - usar botao manual de envio de avaliacoes por e-mail;
 - conferir registros na `email_outbox`.
+- apos executar `supabase/patch_coord_tributaria.sql` e publicar a Function, confirmar selo `supabase`;
+- confirmar que dados salvos por um admin/gestor continuam apos recarregar e aparecem para outro admin/gestor;
+- confirmar que, se a Function falhar, o app preserva fallback `local` sem bloquear o uso.
 
 ## 13. Criterios para liberar deploy de marco
 

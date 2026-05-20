@@ -248,3 +248,9 @@
 - `npm.cmd run build`: OK em 20/05/2026 apos ajustes de anexos/pautas na Coordenacao.
 - Coordenacao Tributaria: em 20/05/2026, adicionado cache-buster no iframe (`coord-pautas-anexos`) para evitar que o HUB abra HTML antigo apos deploy.
 - Roteiro/checklist de homologacao atualizados em 20/05/2026 com testes especificos de `Criar pauta`, anexos e topo compacto da Coordenacao.
+- Coordenacao Tributaria: em 20/05/2026, preparada persistencia multiusuario Supabase com `coord_colaboradores`, `coord_itens` e Function `coord-data`; o app mantem fallback local quando a sincronizacao nao estiver disponivel.
+- `node --check netlify/functions/coord-data.mjs`: OK em 20/05/2026.
+- `node --check`: OK em 20/05/2026 para o JavaScript standalone da Coordenacao com sincronizacao Supabase.
+- `npm.cmd run typecheck`: OK em 20/05/2026 apos persistencia Supabase da Coordenacao.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos persistencia Supabase da Coordenacao.
+- `npm.cmd run build`: OK em 20/05/2026 apos persistencia Supabase da Coordenacao.
