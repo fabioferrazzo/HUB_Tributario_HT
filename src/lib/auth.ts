@@ -86,3 +86,9 @@ export function signOut() {
   }
   localStorage.removeItem(SESSION_KEY);
 }
+
+export async function getSupabaseAccessToken() {
+  if (!isSupabaseConfigured || !supabase) return "";
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token || "";
+}
