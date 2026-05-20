@@ -179,6 +179,29 @@
       white-space: nowrap;
     }
 
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      margin-left: 6px;
+      background: #eef3ef;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      vertical-align: middle;
+    }
+
+    .sync-pill.supabase {
+      background: #e7f5ed;
+      color: var(--ok);
+    }
+
+    .sync-pill.error {
+      background: #fff1ef;
+      color: var(--danger);
+    }
+
     .toolbar {
       display: none;
     }
@@ -624,7 +647,7 @@
         <div class="title-mark">CT</div>
         <div>
           <h1>Coordenacao Tributaria</h1>
-          <p class="subtitle">Resumo, colaboradores, atividades e pautas do setor.</p>
+          <p class="subtitle">Resumo, colaboradores, atividades e pautas do setor. <span id="syncStatus" class="sync-pill">local</span></p>
         </div>
       </div>
       <div class="top-controls" aria-label="Filtros e acoes">
@@ -827,6 +850,7 @@
       const STORAGE_KEY = "hub_coord_simplificado_v1";
       const EMAIL_TOKEN_KEY = "hub_email_dispatch_token";
       const EMAIL_ENDPOINT = "/.netlify/functions/coord-email";
+      const SYNC_ENDPOINT = "/.netlify/functions/coord-data";
 
       const defaultState = {
         collaborators: [
@@ -871,6 +895,8 @@
       let activeTab = "resumo";
       let drawers = { colaborador: false, coordenacao: false };
       let filters = { query: "", collaboratorId: "todos" };
+      let syncState = { token: "", remoteReady: false, saving: false };
+      let syncSaveTimer = 0;
 
       const refs = {};
       document.querySelectorAll("[id]").forEach((element) => {
@@ -887,8 +913,153 @@
         return structuredClone(defaultState);
       }
 
-      function saveState() {
+      function saveState(options = {}) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (options.remote !== false) queueRemoteSave();
+      }
+
+      function setSyncStatus(text, tone = "local") {
+        if (!refs.syncStatus) return;
+        refs.syncStatus.textContent = text;
+        refs.syncStatus.className = `sync-pill ${tone}`;
+      }
+
+      function readStoredAuthToken() {
+        for (let index = 0; index < localStorage.length; index += 1) {
+          const key = localStorage.key(index);
+          if (!key) continue;
+          const raw = localStorage.getItem(key);
+          const token = findAccessToken(raw);
+          if (token) return token;
+        }
+        return "";
+      }
+
+      function findAccessToken(value) {
+        if (!value) return "";
+
+        try {
+          const parsed = typeof value === "string" ? JSON.parse(value) : value;
+          if (parsed?.access_token) return parsed.access_token;
+          if (parsed?.currentSession?.access_token) return parsed.currentSession.access_token;
+          if (parsed?.session?.access_token) return parsed.session.access_token;
+          if (parsed?.data?.session?.access_token) return parsed.data.session.access_token;
+        } catch {
+          return "";
+        }
+
+        return "";
+      }
+
+      async function bootstrapSync() {
+        syncState.token = syncState.token || readStoredAuthToken();
+        if (!syncState.token) {
+          setSyncStatus("local", "local");
+          return;
+        }
+
+        await loadRemoteState();
+      }
+
+      async function loadRemoteState() {
+        if (!syncState.token) return;
+        setSyncStatus("sincronizando", "local");
+
+        try {
+          const response = await fetch(SYNC_ENDPOINT, {
+            method: "GET",
+            headers: { accept: "application/json", authorization: `Bearer ${syncState.token}` }
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || response.statusText);
+
+          syncState.remoteReady = true;
+          const remoteState = normalizeRemoteState(data.state);
+          const hasRemoteData = remoteState.collaborators.length || remoteState.reminders.length;
+
+          if (hasRemoteData) {
+            state = remoteState;
+            saveState({ remote: false });
+            render();
+          } else {
+            queueRemoteSave(true);
+          }
+
+          setSyncStatus("supabase", "supabase");
+        } catch (error) {
+          syncState.remoteReady = false;
+          setSyncStatus("local", "error");
+          console.warn("Coordenacao em modo local.", error?.message || error);
+        }
+      }
+
+      function normalizeRemoteState(value) {
+        if (!value || !Array.isArray(value.collaborators) || !Array.isArray(value.reminders)) {
+          return structuredClone(defaultState);
+        }
+
+        return {
+          collaborators: value.collaborators.map((collaborator) => ({
+            id: String(collaborator.id || cryptoId()),
+            name: String(collaborator.name || ""),
+            email: String(collaborator.email || ""),
+            role: String(collaborator.role || ""),
+            active: collaborator.active !== false,
+            createdAt: collaborator.createdAt || new Date().toISOString(),
+            updatedAt: collaborator.updatedAt || new Date().toISOString()
+          })),
+          reminders: value.reminders.map((item) => ({
+            id: String(item.id || cryptoId()),
+            title: String(item.title || ""),
+            description: String(item.description || ""),
+            type: ["colaborador", "coordenacao", "pauta"].includes(item.type) ? item.type : "colaborador",
+            collaboratorId: String(item.collaboratorId || ""),
+            due: String(item.due || ""),
+            priority: ["alta", "media", "baixa"].includes(item.priority) ? item.priority : "media",
+            recurring: ["none", "weekly", "monthly"].includes(item.recurring) ? item.recurring : "none",
+            status: item.status === "concluido" ? "concluido" : "aberto",
+            pinned: item.pinned === "hidden" ? "hidden" : "main",
+            attachments: Array.isArray(item.attachments) ? item.attachments : [],
+            deletedAt: item.deletedAt || "",
+            completedAt: item.completedAt || "",
+            createdAt: item.createdAt || new Date().toISOString(),
+            updatedAt: item.updatedAt || new Date().toISOString()
+          }))
+        };
+      }
+
+      function queueRemoteSave(immediate = false) {
+        if (!syncState.token) return;
+        window.clearTimeout(syncSaveTimer);
+        syncSaveTimer = window.setTimeout(saveRemoteState, immediate ? 0 : 700);
+      }
+
+      async function saveRemoteState() {
+        if (!syncState.token || syncState.saving) return;
+        syncState.saving = true;
+        setSyncStatus("salvando", "local");
+
+        try {
+          const response = await fetch(SYNC_ENDPOINT, {
+            method: "PUT",
+            headers: {
+              "content-type": "application/json",
+              accept: "application/json",
+              authorization: `Bearer ${syncState.token}`
+            },
+            body: JSON.stringify({ state })
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || response.statusText);
+          syncState.remoteReady = true;
+          setSyncStatus("supabase", "supabase");
+        } catch (error) {
+          syncState.remoteReady = false;
+          setSyncStatus("local", "error");
+          console.warn("Nao foi possivel salvar a Coordenacao no Supabase.", error?.message || error);
+        } finally {
+          syncState.saving = false;
+        }
       }
 
       function cryptoId() {
@@ -1437,7 +1608,7 @@
           const response = await fetch(EMAIL_ENDPOINT, {
             method: "POST",
             headers: { "content-type": "application/json", accept: "application/json" },
-            body: JSON.stringify({ to, subject, body, token, collaboratorName: "Coordenacao Tributaria", periodId: `coord-${new Date().toISOString().slice(0, 10)}` })
+            body: JSON.stringify({ to, subject, body, token, authToken: syncState.token, collaboratorName: "Coordenacao Tributaria", periodId: `coord-${new Date().toISOString().slice(0, 10)}` })
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || response.statusText);
@@ -1507,6 +1678,13 @@
       refs.emailToken.value = localStorage.getItem(EMAIL_TOKEN_KEY) || "";
       refs.emailTo.value = activeCollaborators()[0]?.email || "";
       render();
+      window.addEventListener("message", (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data?.type !== "hub-auth-token" || !event.data.token) return;
+        syncState.token = event.data.token;
+        loadRemoteState();
+      });
+      bootstrapSync();
     })();
   </script>
 </body>
