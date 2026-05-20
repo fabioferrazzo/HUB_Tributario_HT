@@ -241,3 +241,8 @@
 - `npm.cmd run build`: OK em 20/05/2026 apos simplificacao da aba Coordenacao Tributaria.
 - `npm.cmd run preflight`: OK em 20/05/2026 apos simplificacao da aba Coordenacao Tributaria.
 - `npm.cmd run build`: OK em 20/05/2026 apos incluir protocolo `hubocr://rodar`.
+- Coordenacao Tributaria: em 20/05/2026, adicionados botao `Criar pauta`, anexos em lembretes/pautas e topo compacto com busca + filtro por colaborador + acoes na mesma linha.
+- `node --check`: OK em 20/05/2026 para o JavaScript standalone da Coordenacao apos anexos/pautas/topo compacto.
+- `npm.cmd run typecheck`: OK em 20/05/2026 apos ajustes de anexos/pautas na Coordenacao.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos ajustes de anexos/pautas na Coordenacao.
+- `npm.cmd run build`: OK em 20/05/2026 apos ajustes de anexos/pautas na Coordenacao.
