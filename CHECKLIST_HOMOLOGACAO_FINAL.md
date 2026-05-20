@@ -198,7 +198,13 @@ Validar:
 Validar no app integrado:
 
 - abrir app sem erro;
-- visualizar pautas/avaliacoes;
+- confirmar topo compacto com busca, filtro por colaborador e botoes de acao;
+- criar pauta;
+- criar lembrete;
+- anexar arquivo em pauta/lembrete;
+- confirmar que anexos aparecem no card;
+- abrir historico dos ultimos 30 dias;
+- gerar relatorio e conferir pautas, lembretes e anexos;
 - usar botao manual de envio de pauta por e-mail;
 - usar botao manual de envio de avaliacoes por e-mail;
 - conferir registros na `email_outbox`.

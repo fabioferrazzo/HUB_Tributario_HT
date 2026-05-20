@@ -138,7 +138,13 @@ Nao acione deploy no Netlify durante esta rodada. O objetivo e testar o HUB ja p
 | Teste | Resultado |
 | --- | --- |
 | App abre sem erro | Pendente |
-| Pautas/avaliacoes aparecem | Pendente |
+| Topo compacto exibe busca, colaborador e acoes na mesma linha | Pendente |
+| Botao `Criar pauta` aparece no topo e nas acoes rapidas | Pendente |
+| Criar pauta registra item na lista de atividades | Pendente |
+| Criar lembrete registra item na lista de atividades | Pendente |
+| Anexo em pauta/lembrete salva e aparece no card | Pendente |
+| Historico dos ultimos 30 dias abre | Pendente |
+| Gerar relatorio inclui pautas, lembretes e anexos | Pendente |
 | Botao enviar pauta por e-mail funciona | Pendente |
 | Botao enviar avaliacoes por e-mail funciona | Pendente |
 | Registros aparecem em `email_outbox` | Pendente |
