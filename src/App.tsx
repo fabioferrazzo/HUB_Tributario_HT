@@ -136,6 +136,12 @@ type HealthCheck = {
   tone: HealthStatusTone;
 };
 
+type CoordSyncHealth = {
+  status: string;
+  detail: string;
+  tone: HealthStatusTone;
+};
+
 type EmailQueuePreviewItem = {
   id: string;
   category?: string;
@@ -3802,6 +3808,11 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
   const [temporaryPassword, setTemporaryPassword] = useState("");
   const [role, setRole] = useState<UserRole>("colaborador");
   const [active, setActive] = useState(true);
+  const [coordHealth, setCoordHealth] = useState<CoordSyncHealth>({
+    status: "Nao consultado",
+    detail: "A sincronizacao da Coordenacao sera conferida neste painel.",
+    tone: "info"
+  });
   const source = getUsersSource();
 
   useEffect(() => {
@@ -3838,7 +3849,62 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
     }),
     [users]
   );
-  const healthChecks = useMemo(() => buildOperationalHealthChecks(currentUser, users), [currentUser, users]);
+  const healthChecks = useMemo(() => buildOperationalHealthChecks(currentUser, users, coordHealth), [currentUser, users, coordHealth]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function checkCoordSync() {
+      if (source !== "supabase") {
+        setCoordHealth({
+          status: "Modo local",
+          detail: "A Coordenacao so sincroniza entre usuarios quando o HUB esta conectado ao Supabase.",
+          tone: "warning"
+        });
+        return;
+      }
+
+      try {
+        const token = await getSupabaseAccessToken();
+        if (!token) {
+          throw new Error("Sessao Supabase nao disponivel para consultar coord-data.");
+        }
+
+        const response = await fetch("/.netlify/functions/coord-data", {
+          headers: { accept: "application/json", authorization: `Bearer ${token}` }
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || response.statusText || "Function coord-data indisponivel.");
+        }
+
+        if (!mounted) return;
+
+        const collaborators = Array.isArray(data.state?.collaborators) ? data.state.collaborators.length : 0;
+        const reminders = Array.isArray(data.state?.reminders) ? data.state.reminders.length : 0;
+
+        setCoordHealth({
+          status: "Supabase pronto",
+          detail: `Function coord-data respondeu. Base atual: ${collaborators} colaborador(es) e ${reminders} item(ns).`,
+          tone: "ok"
+        });
+      } catch (healthError) {
+        if (!mounted) return;
+        setCoordHealth({
+          status: "Aguardando deploy",
+          detail: `${getErrorMessage(healthError)} Execute o proximo deploy de marco para publicar a Function coord-data.`,
+          tone: "info"
+        });
+      }
+    }
+
+    checkCoordSync();
+
+    return () => {
+      mounted = false;
+    };
+  }, [source]);
 
   function resetForm() {
     setEditingKey(null);
@@ -4418,7 +4484,7 @@ function formatRole(role: UserRole) {
   return roleOptions.find((option) => option.value === role)?.label || role;
 }
 
-function buildOperationalHealthChecks(user: HubUser, users: HubProfile[]): HealthCheck[] {
+function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordHealth: CoordSyncHealth): HealthCheck[] {
   const usersSource = getUsersSource();
   const lembretesSource = getLembretesSource(user);
   const arquivosSource = getArquivosSource();
@@ -4461,6 +4527,12 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[]): Healt
           ? "Operando integrado ao calendario original; Supabase fica preparado para ativacao futura."
           : "Modo Supabase/local ativo conforme configuracao atual.",
       tone: "info"
+    },
+    {
+      area: "Coordenacao Tributaria",
+      status: coordHealth.status,
+      detail: coordHealth.detail,
+      tone: coordHealth.tone
     },
     {
       area: "E-mails",
