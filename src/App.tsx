@@ -44,7 +44,7 @@ import {
   saveAppFileFolder,
   saveAppFileResource
 } from "./lib/arquivosRepository";
-import { getStoredSession, signIn, signOut } from "./lib/auth";
+import { getStoredSession, getSupabaseAccessToken, signIn, signOut } from "./lib/auth";
 import {
   canUserManageLembrete,
   deleteAppLembrete,
@@ -134,6 +134,36 @@ type HealthCheck = {
   status: string;
   detail: string;
   tone: HealthStatusTone;
+};
+
+type EmailQueuePreviewItem = {
+  id: string;
+  category?: string;
+  targetType?: string;
+  targetRef?: string;
+  toEmail?: string;
+  subject?: string;
+  scheduledFor?: string;
+};
+
+type EmailOperationResult = {
+  id?: string;
+  status?: string;
+  error?: string;
+};
+
+type EmailOperationResponse = {
+  deliveryEnabled?: boolean;
+  provider?: string;
+  queuedPreview?: number;
+  items?: EmailQueuePreviewItem[];
+  queued?: number | string;
+  processed?: number;
+  results?: EmailOperationResult[];
+  dryRun?: boolean;
+  error?: string;
+  ok?: boolean;
+  category?: string;
 };
 
 const routes = [
@@ -3993,6 +4023,8 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
             Use este painel como checklist antes de liberar novo deploy. Ele nao dispara builds nem consome creditos do Netlify.
           </p>
         </section>
+
+        <OperationalEmailConsole currentUser={currentUser} users={users} />
       </section>
 
       <section className="panel narrow-panel">
@@ -4067,6 +4099,275 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         </form>
       </section>
     </div>
+  );
+}
+
+function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser; users: HubProfile[] }) {
+  const [dispatchToken, setDispatchToken] = useState(() => localStorage.getItem("hub_email_dispatch_token") || "");
+  const [limit, setLimit] = useState(20);
+  const [runningAction, setRunningAction] = useState("");
+  const [operationError, setOperationError] = useState("");
+  const [operationNotice, setOperationNotice] = useState("");
+  const [queuePreview, setQueuePreview] = useState<EmailQueuePreviewItem[]>([]);
+  const [manualTo, setManualTo] = useState(currentUser.email);
+  const [manualSubject, setManualSubject] = useState("Teste manual - HUB Depto Tributario");
+  const [manualBody, setManualBody] = useState("Mensagem enviada manualmente pelo HUB Depto Tributario.");
+
+  const activeUsers = useMemo(() => getActiveProfiles(users), [users]);
+
+  useEffect(() => {
+    const token = dispatchToken.trim();
+    if (token) {
+      localStorage.setItem("hub_email_dispatch_token", token);
+    } else {
+      localStorage.removeItem("hub_email_dispatch_token");
+    }
+  }, [dispatchToken]);
+
+  async function parseEmailResponse(response: Response) {
+    const text = await response.text();
+    let data: EmailOperationResponse = {};
+
+    try {
+      data = text ? (JSON.parse(text) as EmailOperationResponse) : {};
+    } catch {
+      data = { error: text };
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || response.statusText || "Nao foi possivel executar a operacao.");
+    }
+
+    return data;
+  }
+
+  function requireDispatchToken() {
+    const token = dispatchToken.trim();
+    if (!token) throw new Error("Informe o EMAIL_DISPATCH_TOKEN para operar a fila de e-mails.");
+    return token;
+  }
+
+  async function previewEmailQueue() {
+    setRunningAction("preview");
+    setOperationError("");
+    setOperationNotice("");
+
+    try {
+      const token = requireDispatchToken();
+      const response = await fetch(`/.netlify/functions/email-outbox?token=${encodeURIComponent(token)}`, {
+        headers: { accept: "application/json" }
+      });
+      const data = await parseEmailResponse(response);
+      setQueuePreview(data.items || []);
+      setOperationNotice(
+        `Fila consultada: ${data.queuedPreview || 0} e-mail(s) prontos para envio. Entrega ${
+          data.deliveryEnabled ? "ativa" : "em teste"
+        }.`
+      );
+    } catch (error) {
+      setOperationError(getErrorMessage(error));
+    } finally {
+      setRunningAction("");
+    }
+  }
+
+  async function runEmailQueueAction(action: "queue-deadlines" | "process" | "daily") {
+    setRunningAction(action);
+    setOperationError("");
+    setOperationNotice("");
+
+    try {
+      const token = requireDispatchToken();
+      const response = await fetch("/.netlify/functions/email-outbox", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "x-email-dispatch-token": token
+        },
+        body: JSON.stringify({ action, limit })
+      });
+      const data = await parseEmailResponse(response);
+      const queued = data.queued || data.items?.length || 0;
+      const processed = data.processed || data.results?.length || 0;
+      setQueuePreview(data.items || []);
+
+      if (action === "queue-deadlines") {
+        setOperationNotice(`${queued} aviso(s) de vencimento enfileirado(s).`);
+      } else if (action === "daily") {
+        setOperationNotice(`Rotina diaria executada: ${queued} aviso(s) enfileirado(s) e ${processed} e-mail(s) processado(s).`);
+      } else {
+        setOperationNotice(`${processed} e-mail(s) processado(s).`);
+      }
+    } catch (error) {
+      setOperationError(getErrorMessage(error));
+    } finally {
+      setRunningAction("");
+    }
+  }
+
+  async function sendManualEmail(event: FormEvent) {
+    event.preventDefault();
+    if (!manualTo.trim() || !manualSubject.trim() || !manualBody.trim()) {
+      setOperationError("Destinatario, assunto e mensagem sao obrigatorios.");
+      return;
+    }
+
+    setRunningAction("manual");
+    setOperationError("");
+    setOperationNotice("");
+
+    try {
+      const authToken = await getSupabaseAccessToken();
+      const token = dispatchToken.trim();
+
+      if (!authToken && !token) {
+        throw new Error("Informe o token de despacho ou faca login novamente como admin/gestor.");
+      }
+
+      const recipient = activeUsers.find((profile) => profile.email.toLowerCase() === manualTo.trim().toLowerCase());
+      const response = await fetch("/.netlify/functions/coord-email", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          to: manualTo.trim(),
+          subject: manualSubject.trim(),
+          body: manualBody.trim(),
+          collaboratorName: recipient?.nome || manualTo.trim(),
+          periodId: `manual-${new Date().toISOString().slice(0, 10)}`,
+          token,
+          authToken
+        })
+      });
+      const data = await parseEmailResponse(response);
+      const processed = data.processed || data.results?.length || 0;
+      setOperationNotice(`E-mail manual enfileirado${processed ? " e processado" : ""}. Categoria: ${data.category || "coord_email"}.`);
+    } catch (error) {
+      setOperationError(getErrorMessage(error));
+    } finally {
+      setRunningAction("");
+    }
+  }
+
+  const isRunning = Boolean(runningAction);
+
+  return (
+    <section className="operational-console">
+      <div className="section-title-row">
+        <div>
+          <span className="panel-chip">Operacao</span>
+          <h3>Lembretes e e-mails</h3>
+        </div>
+        <small>Manual + fila</small>
+      </div>
+
+      {operationError ? <p className="module-error">{operationError}</p> : null}
+      {operationNotice ? <p className="module-notice">{operationNotice}</p> : null}
+
+      <div className="operation-grid">
+        <article className="operation-card">
+          <strong>Fila de e-mails</strong>
+          <p>
+            Consulte e processe a fila <code>email_outbox</code>. A rotina diaria enfileira avisos de vencimento e envia o que estiver
+            pronto.
+          </p>
+          <label>
+            EMAIL_DISPATCH_TOKEN
+            <input
+              autoComplete="off"
+              onChange={(event) => setDispatchToken(event.target.value)}
+              placeholder="Cole o token usado no Netlify"
+              type="password"
+              value={dispatchToken}
+            />
+          </label>
+          <label>
+            Limite por processamento
+            <input
+              max={50}
+              min={1}
+              onChange={(event) => setLimit(Number(event.target.value) || 1)}
+              type="number"
+              value={limit}
+            />
+          </label>
+          <div className="operation-actions">
+            <button disabled={isRunning} onClick={previewEmailQueue} type="button">
+              Consultar fila
+            </button>
+            <button disabled={isRunning} onClick={() => runEmailQueueAction("queue-deadlines")} type="button">
+              Enfileirar vencimentos
+            </button>
+            <button disabled={isRunning} onClick={() => runEmailQueueAction("process")} type="button">
+              Processar fila agora
+            </button>
+            <button className="primary-action" disabled={isRunning} onClick={() => runEmailQueueAction("daily")} type="button">
+              Rodar rotina diaria
+            </button>
+          </div>
+        </article>
+
+        <article className="operation-card">
+          <strong>Envio manual</strong>
+          <p>Use para testar entrega ou disparar um aviso operacional pontual sem criar lembrete.</p>
+          <form className="manual-email-form" onSubmit={sendManualEmail}>
+            <label>
+              Destinatario
+              <input
+                list="manual-email-users"
+                onChange={(event) => setManualTo(event.target.value)}
+                type="email"
+                value={manualTo}
+                required
+              />
+              <datalist id="manual-email-users">
+                {activeUsers.map((profile) => (
+                  <option key={getProfileKey(profile)} value={profile.email}>
+                    {profile.nome}
+                  </option>
+                ))}
+              </datalist>
+            </label>
+            <label>
+              Assunto
+              <input onChange={(event) => setManualSubject(event.target.value)} value={manualSubject} required />
+            </label>
+            <label>
+              Mensagem
+              <textarea onChange={(event) => setManualBody(event.target.value)} rows={4} value={manualBody} required />
+            </label>
+            <button className="primary-action" disabled={isRunning} type="submit">
+              {runningAction === "manual" ? "Enviando..." : "Enviar e-mail manual"}
+            </button>
+          </form>
+        </article>
+      </div>
+
+      <div className="queue-preview">
+        <div className="queue-preview-title">
+          <strong>Previa da fila</strong>
+          <span>{queuePreview.length} item(ns)</span>
+        </div>
+        {queuePreview.length ? (
+          <div className="queue-preview-list">
+            {queuePreview.map((item) => (
+              <article key={item.id}>
+                <strong>{item.subject || "Sem assunto"}</strong>
+                <span>
+                  {item.toEmail || "destinatario oculto"} - {formatDateTime(item.scheduledFor || "")}
+                </span>
+                <small>{item.category || "email"} / {item.targetType || "geral"}</small>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p>Nenhum item carregado. Clique em Consultar fila para ver os e-mails prontos para envio.</p>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -4161,12 +4462,6 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[]): Healt
       area: "Rodapes",
       status: "Automacao ativa",
       detail: "Noticias tributarias e legislacoes oficiais sao atualizadas pela funcao refresh-updates e exibidas nos rodapes/sidebars.",
-      tone: "info"
-    },
-    {
-      area: "OCR local",
-      status: "Manual pelo HUB",
-      detail: "Botao Rodar OCR aciona o agente local ou o protocolo Windows hubocr://rodar para processar arquivos pendentes.",
       tone: "info"
     },
     {
