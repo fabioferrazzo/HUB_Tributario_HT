@@ -10,6 +10,7 @@ const requiredFiles = [
   "src/styles.css",
   "src/types.ts",
   "netlify/functions/admin-users.mjs",
+  "netlify/functions/coord-data.mjs",
   "netlify/functions/email-outbox.mjs",
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
@@ -28,6 +29,7 @@ const requiredFiles = [
   "supabase/patch_arquivo_anotacoes.sql",
   "supabase/patch_arquivo_processamento.sql",
   "supabase/patch_arquivos_biblioteca.sql",
+  "supabase/patch_coord_tributaria.sql",
   "supabase/patch_email_outbox.sql",
   "supabase/patch_tarefas.sql",
   "supabase/check_hub_status.sql"
@@ -51,6 +53,11 @@ const commandChecks = [
     label: "Function admin-users",
     command: process.execPath,
     args: ["--check", "netlify/functions/admin-users.mjs"]
+  },
+  {
+    label: "Function coord-data",
+    command: process.execPath,
+    args: ["--check", "netlify/functions/coord-data.mjs"]
   },
   {
     label: "Function email-outbox",
