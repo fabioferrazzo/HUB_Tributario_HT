@@ -1841,7 +1841,20 @@ function ArquivosModule({ user }: { user: HubUser }) {
       setOcrMessage(summarizeLocalOcrOutput([payload.stdout, payload.stderr].filter(Boolean).join("\n")));
       await refreshResources();
     } catch (ocrError) {
-      setError(`${getErrorMessage(ocrError)} Abra o agente local no Windows com: npm run arquivos:agent`);
+      const protocolTriggered = triggerOcrProtocol();
+
+      if (protocolTriggered) {
+        setOcrMessage(
+          "OCR enviado ao Windows pelo protocolo hubocr://rodar. Se o Chrome pedir permissao, confirme para abrir o HUB OCR. Ao terminar, volte aqui e atualize a lista se necessario."
+        );
+        window.setTimeout(() => {
+          void refreshResources();
+        }, 15000);
+      } else {
+        setError(
+          `${getErrorMessage(ocrError)} Registre o protocolo local com scripts\\registrar-protocolo-ocr.ps1 ou abra o agente local com INICIAR_OCR_HUB.cmd.`
+        );
+      }
     } finally {
       setOcrRunning(false);
     }
@@ -4482,6 +4495,17 @@ function isPdfRenderCancelled(error: unknown) {
   const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message || error || "");
   const name = error && typeof error === "object" && "name" in error ? String((error as { name?: unknown }).name || "") : "";
   return name === "RenderingCancelledException" || /cancel/i.test(message);
+}
+
+function triggerOcrProtocol() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.location.href = "hubocr://rodar";
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function summarizeLocalOcrOutput(output: string) {
