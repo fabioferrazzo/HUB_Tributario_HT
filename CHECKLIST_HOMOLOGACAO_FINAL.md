@@ -124,6 +124,8 @@ Como administrador:
 - salvar comentario;
 - excluir anotacao propria;
 - exportar notas em Markdown;
+- clicar em `Rodar OCR` e confirmar que o Windows abre/processa via `hubocr://rodar`, quando houver arquivo pendente;
+- confirmar que arquivo processado exibe selo `Versao pesquisavel pronta`;
 - excluir arquivo/pasta permitida.
 
 Como colaborador:
@@ -211,6 +213,7 @@ Liberar Netlify somente se:
 - lembretes passaram;
 - tarefas passaram;
 - arquivos e visualizador passaram;
+- OCR manual pelo HUB passou, quando houver arquivo pendente para processar;
 - noticias/legislacoes passaram;
 - e-mails pelo menos enfileiram e, em modo teste, enviam para `fiscal10`;
 - nao ha erro vermelho em fluxo principal.
@@ -221,5 +224,5 @@ Estas pendencias nao bloqueiam o deploy de marco, salvo decisao em contrario:
 
 - integrar definitivamente com Sheets ou com o app substituto da planilha HUB;
 - verificar dominio proprio no Resend para envio real a todos os colaboradores;
-- avaliar PDF.js para grifo visual direto sobre paginas PDF;
+- evoluir precisao de OCR/grifo quando o documento original tiver baixa qualidade ou layout complexo;
 - ativar sincronizacao multiusuario Supabase de Tarefas quando o fluxo local estiver totalmente aprovado.

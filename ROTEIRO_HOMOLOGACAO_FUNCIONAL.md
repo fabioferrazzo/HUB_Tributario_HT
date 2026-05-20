@@ -84,6 +84,8 @@ Nao acione deploy no Netlify durante esta rodada. O objetivo e testar o HUB ja p
 | Salvar comentario | Pendente |
 | Excluir anotacao propria | Pendente |
 | Exportar notas em Markdown | Pendente |
+| Rodar OCR pelo botao do HUB/protocolo hubocr://rodar | Pendente |
+| Arquivo processado mostra `Versao pesquisavel pronta` | Pendente |
 | Colaborador nao exclui global de terceiro | Pendente |
 
 ## Bloco 6 - Links uteis

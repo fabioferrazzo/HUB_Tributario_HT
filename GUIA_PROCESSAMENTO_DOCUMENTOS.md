@@ -121,7 +121,14 @@ Se faltar uma ferramenta, o registro fica com `processing_status = error` e a me
 
 ## Botao `Rodar OCR` no HUB
 
-O HUB publicado no Netlify nao consegue executar programas do Windows diretamente. Para o botao funcionar, uma janela do CMD/PowerShell precisa ficar aberta no computador responsavel pelo OCR.
+O HUB publicado no Netlify nao consegue executar programas do Windows diretamente. Por isso, o botao `Rodar OCR` usa uma ponte local no computador responsavel pelo OCR.
+
+Existem dois modos:
+
+- agente local aberto em `http://127.0.0.1:8787`;
+- protocolo Windows `hubocr://rodar`, que abre o processador quando o botao for clicado.
+
+### Modo agente local
 
 1. No computador onde estao LibreOffice, OCRmyPDF e Tesseract, abra o CMD.
 2. Entre na pasta do projeto:
@@ -143,6 +150,21 @@ Alternativa mais simples: de duplo clique no arquivo abaixo e deixe a janela abe
 
 ```text
 C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário\INICIAR_OCR_HUB.cmd
+```
+
+### Modo protocolo `hubocr://rodar`
+
+Registre uma unica vez no Windows:
+
+```powershell
+cd "C:\Users\PC\Desktop\-\GPT codex\HUB Depto Tributário"
+powershell -ExecutionPolicy Bypass -File scripts\registrar-protocolo-ocr.ps1
+```
+
+Depois disso, quando o agente local nao estiver aberto, o botao `Rodar OCR` tentara abrir:
+
+```text
+hubocr://rodar
 ```
 
 Guia operacional completo:

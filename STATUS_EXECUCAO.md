@@ -108,45 +108,15 @@
 
 ## Em andamento / proxima etapa
 
-- Executar `supabase/patch_profiles_read_active.sql` no SQL Editor.
-- Executar `supabase/patch_lembretes_rls.sql` no SQL Editor.
-- Executar `supabase/patch_lembretes_insert_owner.sql` no SQL Editor.
-- Executar `supabase/patch_create_lembrete_rpc.sql` no SQL Editor.
-- Testar fluxo Supabase real: editar lembrete, concluir/reabrir, anexar arquivo e excluir.
-- Testar quadro de Pautas por perfil: admin/gestor com visao completa e colaborador com visao restrita.
-- Executar `supabase/patch_lembretes_confidencial.sql` no SQL Editor.
-- Testar Lembretes por perfil: admin gerencia todos; colaborador apenas visualiza lembretes de terceiros; lembrete sem marcados aparece somente para criador/admin; confidencial aparece somente para criador/admin/marcados.
-- Executar `supabase/patch_arquivos_biblioteca.sql` no SQL Editor.
-- Testar modulo Arquivos: criar pasta global/admin, pasta pessoal/usuario, editar link, arrastar arquivo, abrir upload e excluir somente registros permitidos.
-- Executar `supabase/patch_links_uteis.sql` no SQL Editor.
-- Testar modulo Links uteis: admin/gestor com links globais; colaborador com links pessoais e visualizacao de globais.
-- Executar `supabase/patch_updates_automaticos.sql` no SQL Editor.
-- Subir funcao `netlify/functions/refresh-updates.mjs` e testar rodapes apos deploy.
-- Executar `supabase/patch_notificacoes_persistentes.sql` no SQL Editor.
-- Testar sino: ver avisos, marcar uma notificacao como lida, marcar todas como lidas e validar lembrete marcado para outro usuario.
-- Executar `supabase/patch_email_outbox.sql` no SQL Editor.
-- Executar `supabase/patch_email_outbox_events.sql` no SQL Editor.
-- Manter `EMAIL_FORCE_TEST_TO=fiscal10.hteixeira@gmail.com` ate verificar dominio proprio no Resend.
-- Verificar dominio proprio no Resend antes de liberar e-mails para usuarios reais.
-- Executar `supabase/patch_tarefas.sql` no SQL Editor.
-- Testar modulo Tarefas: criar tarefa, marcar responsavel, anexar arquivo, editar, concluir/reabrir e excluir com usuario admin/gestor e colaborador.
-- Validar modulo Tarefas integrado ao IndexedDB do calendario original: criar pela sidebar, criar pelo app original, editar, excluir e confirmar sincronizacao visual entre calendario e painel lateral.
-- Integracao Supabase de Tarefas fica preparada, mas opt-in por variavel futura `VITE_TAREFAS_SUPABASE=true`.
-- Seguir `GUIA_TAREFAS_SUPABASE.md` quando for ativar sincronizacao multiusuario real de Tarefas.
-- Criar repositorio GitHub e conectar ao Netlify usando `GUIA_GITHUB_NETLIFY.md`.
-- Testar criacao real de usuario Auth no ambiente Supabase/Netlify.
-- Reset de senha provisoria para usuarios reais implementado no Admin: atualiza Supabase Auth pelo servidor e enfileira e-mail pela `email_outbox`.
-- Testar reset de senha provisoria em producao no proximo deploy de marco.
-- Executar `supabase/patch_arquivo_anotacoes.sql` no SQL Editor.
-- Testar visualizador de Arquivos com Supabase: abrir arquivo, salvar grifo, salvar comentario, remover anotacao propria e validar leitura por outro usuario com acesso ao arquivo.
-- Testar visualizador de Arquivos: exportar notas e conferir arquivo `.md` gerado com grifos/comentarios.
-- Evoluir visualizador de Arquivos: avaliar PDF.js para grifo direto sobre paginas de PDF.
-- Testar em producao, no proximo deploy de marco, os botoes de e-mail da Coordenacao Tributaria: enviar pautas por e-mail, enviar resumo de avaliacoes e enviar avaliacao/orientacao individual.
-- Usar o painel `Saude operacional do HUB` em Configuracoes antes do proximo deploy de marco.
-- Rodar `npm.cmd run preflight` antes de qualquer reativacao de build/deploy no Netlify.
+- Subir no GitHub os arquivos alterados na etapa `hubocr://rodar` e nesta atualizacao de homologacao.
+- Registrar uma unica vez no Windows o protocolo OCR local com `scripts/registrar-protocolo-ocr.ps1`.
+- Testar no HUB publicado: menu Arquivos -> botao `Rodar OCR` -> confirmar chamada externa do Chrome -> processamento local.
+- Usar o painel `Saude operacional do HUB` em Configuracoes para conferencia rapida do ambiente.
+- Rodar `npm.cmd run preflight` antes de qualquer nova reativacao de build/deploy no Netlify.
 - Rodar `supabase/check_hub_status.sql` no SQL Editor antes do proximo deploy de marco.
-- Percorrer `CHECKLIST_HOMOLOGACAO_FINAL.md` antes do proximo deploy de marco.
-- Executar `ROTEIRO_HOMOLOGACAO_FUNCIONAL.md` e registrar itens `OK`, `Ajustar` ou `Falhou`.
+- Percorrer `CHECKLIST_HOMOLOGACAO_FINAL.md` e `ROTEIRO_HOMOLOGACAO_FUNCIONAL.md`, registrando itens `OK`, `Ajustar` ou `Falhou`.
+- Manter `EMAIL_FORCE_TEST_TO=fiscal10.hteixeira@gmail.com` ate verificar dominio proprio no Resend.
+- Integrar definitivamente Pautas com Sheets ou com o app substituto da planilha HUB quando a decisao tecnica estiver fechada.
 
 ## Validacoes da rodada
 
