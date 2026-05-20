@@ -18,7 +18,9 @@ const requiredFiles = [
   "scripts/ocr-local-agent.mjs",
   "scripts/process-arquivos.mjs",
   "scripts/registrar-agente-ocr-login.ps1",
+  "scripts/registrar-protocolo-ocr.ps1",
   "INICIAR_OCR_HUB.cmd",
+  "INICIAR_OCR_HUB_PROCESSAR.cmd",
   "GUIA_OCR_LOCAL.md",
   "GUIA_DEPLOY_MARCO.md",
   "GUIA_PREFLIGHT_LOCAL.md",
@@ -32,6 +34,10 @@ const requiredFiles = [
 ];
 
 const forbiddenFiles = [
+  "App.tsx",
+  "main.tsx",
+  "styles.css",
+  "types.ts",
   "src/lib/App.tsx",
   "src/lib/main.tsx",
   "src/lib/styles.css",
@@ -80,6 +86,11 @@ const commandChecks = [
     label: "Script agendamento OCR",
     command: "powershell.exe",
     args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/registrar-agente-ocr-login.ps1", "-ValidateOnly"]
+  },
+  {
+    label: "Script protocolo OCR",
+    command: "powershell.exe",
+    args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/registrar-protocolo-ocr.ps1", "-ValidateOnly"]
   },
   {
     label: "Diagnostico do processador de arquivos",
