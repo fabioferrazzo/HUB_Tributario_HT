@@ -4153,14 +4153,20 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[]): Healt
     },
     {
       area: "E-mails",
-      status: "Fila preparada",
-      detail: "Validar email_outbox, Resend e botoes da Coordenacao somente no proximo deploy de marco.",
+      status: "Fila ativa",
+      detail: "Lembretes, vencimentos, reset de senha e Coordenacao usam email_outbox; envio real segue em modo teste ate validar dominio proprio.",
       tone: supabaseReady ? "ok" : "info"
     },
     {
       area: "Rodapes",
-      status: "Automacao preparada",
-      detail: "Noticias e legislacoes dependem da funcao refresh-updates no Netlify publicado.",
+      status: "Automacao ativa",
+      detail: "Noticias tributarias e legislacoes oficiais sao atualizadas pela funcao refresh-updates e exibidas nos rodapes/sidebars.",
+      tone: "info"
+    },
+    {
+      area: "OCR local",
+      status: "Manual pelo HUB",
+      detail: "Botao Rodar OCR aciona o agente local ou o protocolo Windows hubocr://rodar para processar arquivos pendentes.",
       tone: "info"
     },
     {
