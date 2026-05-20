@@ -254,3 +254,8 @@
 - `npm.cmd run typecheck`: OK em 20/05/2026 apos persistencia Supabase da Coordenacao.
 - `npm.cmd run preflight`: OK em 20/05/2026 apos persistencia Supabase da Coordenacao.
 - `npm.cmd run build`: OK em 20/05/2026 apos persistencia Supabase da Coordenacao.
+- Supabase: em 20/05/2026, usuario validou `supabase/check_hub_status.sql` com todas as tabelas, funcoes e buckets em `OK`, incluindo `coord_colaboradores` e `coord_itens`.
+- Saude operacional: em 20/05/2026, adicionada checagem da Function `coord-data` no painel de Configuracoes para sinalizar sincronizacao Supabase da Coordenacao apos o proximo deploy.
+- `npm.cmd run typecheck`: OK em 20/05/2026 apos checagem de Coordenacao na Saude operacional.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos checagem de Coordenacao na Saude operacional.
+- `npm.cmd run build`: OK em 20/05/2026 apos checagem de Coordenacao na Saude operacional.
