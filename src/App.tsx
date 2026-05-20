@@ -184,10 +184,12 @@ const routeGroups = [
   { label: "Sistema", items: ["coord", "admin"] }
 ] satisfies Array<{ label: string; items: HubRoute[] }>;
 
+const coordStandaloneVersion = "2026-05-20-pautas-anexos";
+
 const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: string }> = {
   agenda: { title: "Agenda tributaria", src: "/apps/agenda-tributaria.html" },
   pomodoro: { title: "Pomodoro Timer", src: "/apps/pomodoro.html" },
-  coord: { title: "Coordenacao tributaria", src: "/apps/coord-tributaria.html" }
+  coord: { title: "Coordenacao tributaria", src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}` }
 };
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
