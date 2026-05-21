@@ -98,7 +98,7 @@ function detectPythonModuleCommand(moduleName) {
   for (const command of ["py", "python", "python3"]) {
     const result = spawnSync(command, ["-m", moduleName, "--version"], {
       encoding: "utf8",
-    stdio: "pipe",
+      stdio: "pipe",
       shell: false
     });
     if (result.status === 0) return `${command} -m ${moduleName}`;
@@ -129,11 +129,3 @@ function firstExistingCommand(candidates) {
 
   return "";
 }
-
-
-
-
-
-
-
-      
