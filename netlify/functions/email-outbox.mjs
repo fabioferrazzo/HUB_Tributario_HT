@@ -5,6 +5,7 @@ const JSON_HEADERS = {
 
 const EMAIL_SELECT =
   "id,dedupe_key,to_email,to_name,subject,html_body,text_body,category,target_type,target_ref,attempts,scheduled_for";
+const MANAGER_ROLES = new Set(["admin", "gestor"]);
 
 export default async function handler(request) {
   if (!["GET", "POST"].includes(request.method)) {
@@ -16,22 +17,36 @@ export default async function handler(request) {
   const dispatchToken = getEnv("EMAIL_DISPATCH_TOKEN");
   const requestToken = readToken(request);
 
-  if (!scheduled && (!dispatchToken || requestToken !== dispatchToken)) {
-    return json(401, { error: "Token de despacho de e-mail ausente ou invalido." });
-  }
-
   if (scheduled && getEnv("EMAIL_SCHEDULE_ENABLED").toLowerCase() !== "true") {
     return json(200, { scheduled: true, skipped: true, reason: "EMAIL_SCHEDULE_ENABLED desativado." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
+  const supabaseAnonKey = getEnv("VITE_SUPABASE_ANON_KEY") || getEnv("SUPABASE_ANON_KEY");
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json(500, { error: "Variaveis Supabase ausentes no servidor." });
   }
 
-  if (request.method === "GET" && !payload.action) {
+  if (!scheduled) {
+    const authorized = await authorizeDispatch({
+      authToken: payload.authToken,
+      dispatchToken,
+      requestToken,
+      serviceRoleKey,
+      supabaseAnonKey,
+      supabaseUrl
+    });
+
+    if (!authorized.ok) {
+      return json(401, { error: authorized.error || "Token de despacho de e-mail ausente ou invalido." });
+    }
+  }
+
+  const action = payload.action || (scheduled ? "daily" : "process");
+
+  if (action === "preview" || (request.method === "GET" && !payload.action)) {
     const preview = await readDueEmails(supabaseUrl, serviceRoleKey, 10);
     return json(200, {
       deliveryEnabled: isDeliveryEnabled(),
@@ -41,7 +56,6 @@ export default async function handler(request) {
     });
   }
 
-  const action = payload.action || (scheduled ? "daily" : "process");
   console.log("email-outbox action", {
     action,
     deliveryEnabled: isDeliveryEnabled(),
@@ -225,6 +239,56 @@ function serviceHeaders(serviceRoleKey) {
     apikey: serviceRoleKey,
     authorization: `Bearer ${serviceRoleKey}`
   };
+}
+
+async function authorizeDispatch({ authToken, dispatchToken, requestToken, serviceRoleKey, supabaseAnonKey, supabaseUrl }) {
+  if (dispatchToken && requestToken && requestToken === dispatchToken) {
+    return { ok: true, mode: "dispatch-token" };
+  }
+
+  const bearer = String(authToken || "").trim();
+  if (!bearer) {
+    return { ok: false, error: "Informe o EMAIL_DISPATCH_TOKEN ou acesse como admin/gestor." };
+  }
+
+  if (!supabaseAnonKey) {
+    return { ok: false, error: "VITE_SUPABASE_ANON_KEY ausente para validar sessao do HUB." };
+  }
+
+  const authUser = await verifySession(supabaseUrl, supabaseAnonKey, bearer);
+  const profile = await readProfile(supabaseUrl, serviceRoleKey, authUser.id);
+
+  if (!profile?.active || !MANAGER_ROLES.has(profile.role)) {
+    return { ok: false, error: "Apenas administradores ou gestores podem operar a fila de e-mails." };
+  }
+
+  return { ok: true, mode: "hub-session", userId: authUser.id };
+}
+
+async function verifySession(supabaseUrl, anonKey, token) {
+  const user = await supabaseRequest(`${trimUrl(supabaseUrl)}/auth/v1/user`, {
+    headers: {
+      apikey: anonKey,
+      authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!user?.id) {
+    throw new Error("Sessao Supabase invalida.");
+  }
+
+  return user;
+}
+
+async function readProfile(supabaseUrl, serviceRoleKey, userId) {
+  const rows = await supabaseRequest(
+    `${trimUrl(supabaseUrl)}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role,active&limit=1`,
+    {
+      headers: serviceHeaders(serviceRoleKey)
+    }
+  );
+
+  return Array.isArray(rows) ? rows[0] : null;
 }
 
 function assertDeliveryConfig() {
