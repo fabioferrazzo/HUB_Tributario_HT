@@ -278,3 +278,7 @@
 - `npm.cmd run typecheck`: OK em 21/05/2026 apos guia rapido operacional.
 - `npm.cmd run preflight`: OK em 21/05/2026 apos guia rapido operacional.
 - `npm.cmd run build`: OK em 21/05/2026 apos guia rapido operacional.
+- Homologacao: em 21/05/2026, preparados ajustes solicitados: clique em lembrete do painel inicial abre edicao quando permitido, exportacao de pautas/lembretes em PDF/Excel compativel, sidebar de Tarefas passa a iniciar por `Minhas tarefas` com formulario oculto em `Nova tarefa`, e console de e-mails esclarece token manual versus agendamento Netlify.
+- `npm.cmd run typecheck`: OK em 21/05/2026 apos ajustes de homologacao em Lembretes/Tarefas/exportacao.
+- `npm.cmd run preflight`: OK em 21/05/2026 apos ajustes de homologacao em Lembretes/Tarefas/exportacao.
+- `npm.cmd run build`: OK em 21/05/2026 apos ajustes de homologacao em Lembretes/Tarefas/exportacao.
