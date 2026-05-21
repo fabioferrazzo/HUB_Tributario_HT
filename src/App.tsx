@@ -4489,7 +4489,7 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordH
   const lembretesSource = getLembretesSource(user);
   const arquivosSource = getArquivosSource();
   const linksSource = getLinksSource();
-  const tarefasSource = getTarefasSource();
+  const tarefasSource = getTarefasSource(user);
   const hasAdmin = users.some((profile) => profile.active && profile.role === "admin");
   const hasCurrentUser = users.some((profile) => profile.active && profile.email.toLowerCase() === user.email.toLowerCase());
   const supabaseReady = [usersSource, lembretesSource, arquivosSource, linksSource].every((source) => source === "supabase");
@@ -4523,10 +4523,12 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordH
       area: "Tarefas",
       status: tarefasSource,
       detail:
-        tarefasSource === "calendario"
-          ? "Operando integrado ao calendario original; Supabase fica preparado para ativacao futura."
-          : "Modo Supabase/local ativo conforme configuracao atual.",
-      tone: "info"
+        tarefasSource === "supabase"
+          ? "Persistencia multiusuario ativa; calendario original sincroniza com Supabase."
+          : tarefasSource === "calendario"
+            ? "Calendario local ativo; Supabase preparado para ativacao por VITE_TAREFAS_SUPABASE=true."
+            : "Fallback local ativo porque o calendario do navegador nao esta disponivel.",
+      tone: tarefasSource === "supabase" ? "ok" : "info"
     },
     {
       area: "Coordenacao Tributaria",
