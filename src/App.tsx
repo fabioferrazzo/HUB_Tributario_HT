@@ -4652,10 +4652,11 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
     return data;
   }
 
-  function requireDispatchToken() {
+  async function buildEmailOperationPayload(action: "preview" | "queue-deadlines" | "process" | "daily") {
     const token = dispatchToken.trim();
-    if (!token) throw new Error("Informe o EMAIL_DISPATCH_TOKEN para operar a fila de e-mails.");
-    return token;
+    const authToken = await getSupabaseAccessToken();
+    if (!token && !authToken) throw new Error("Informe o EMAIL_DISPATCH_TOKEN ou faca login novamente como admin/gestor.");
+    return { action, authToken, limit, token };
   }
 
   async function previewEmailQueue() {
@@ -4664,9 +4665,15 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
     setOperationNotice("");
 
     try {
-      const token = requireDispatchToken();
-      const response = await fetch(`/.netlify/functions/email-outbox?token=${encodeURIComponent(token)}`, {
-        headers: { accept: "application/json" }
+      const payload = await buildEmailOperationPayload("preview");
+      const response = await fetch("/.netlify/functions/email-outbox", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          ...(payload.token ? { "x-email-dispatch-token": payload.token } : {})
+        },
+        body: JSON.stringify(payload)
       });
       const data = await parseEmailResponse(response);
       setQueuePreview(data.items || []);
@@ -4688,15 +4695,15 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
     setOperationNotice("");
 
     try {
-      const token = requireDispatchToken();
+      const payload = await buildEmailOperationPayload(action);
       const response = await fetch("/.netlify/functions/email-outbox", {
         method: "POST",
         headers: {
           accept: "application/json",
           "content-type": "application/json",
-          "x-email-dispatch-token": token
+          ...(payload.token ? { "x-email-dispatch-token": payload.token } : {})
         },
-        body: JSON.stringify({ action, limit })
+        body: JSON.stringify(payload)
       });
       const data = await parseEmailResponse(response);
       const queued = data.queued || data.items?.length || 0;
@@ -4784,14 +4791,14 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
           <p>
             Consulte e processe a fila <code>email_outbox</code>. A rotina diaria enfileira avisos de vencimento e envia o que estiver
             pronto. O token abaixo e necessario apenas para comandos manuais no HUB; o agendamento da Netlify usa
-            <code>EMAIL_SCHEDULE_ENABLED=true</code>.
+            <code>EMAIL_SCHEDULE_ENABLED=true</code>. Se voce estiver logado como admin/gestor, os botoes tambem funcionam sem colar o token.
           </p>
           <label>
-            EMAIL_DISPATCH_TOKEN (comandos manuais)
+            EMAIL_DISPATCH_TOKEN (opcional para admin/gestor logado)
             <input
               autoComplete="off"
               onChange={(event) => setDispatchToken(event.target.value)}
-              placeholder="Cole o token usado no Netlify"
+              placeholder="Opcional: cole o token usado no Netlify"
               type="password"
               value={dispatchToken}
             />
