@@ -51,6 +51,7 @@
 - Patch SQL `supabase/patch_arquivo_anotacoes.sql` criado para tabela de anotacoes, trigger e RLS por permissao do arquivo.
 - Textos residuais com mojibake `Â·` removidos da interface React e fallback do e-mail admin corrigido para `fiscal10.hteixeira@gmail.com`.
 - Painel `Saude operacional do HUB` adicionado em Configuracoes para checklist pre-deploy sem acionar builds Netlify.
+- Checklist funcional interativo adicionado em Configuracoes para registrar OK/Ajustar/Falhou/Pendente por bloco de homologacao, com resumo copiavel.
 - Console operacional de Lembretes e E-mails adicionado em Configuracoes para consultar fila, enfileirar avisos de vencimento, processar e-mails pendentes e enviar e-mail manual.
 - Script local `npm.cmd run preflight` criado para validar arquivos essenciais, TypeScript e Netlify Functions antes de qualquer deploy de marco.
 - Guia `GUIA_DEPLOY_MARCO.md` e consulta `supabase/check_hub_status.sql` criados para conferencia final antes de reativar builds no Netlify.
@@ -113,6 +114,7 @@
 
 - Subir no GitHub os arquivos alterados nesta atualizacao de saude operacional e e-mails.
 - Usar o painel `Saude operacional do HUB` em Configuracoes para conferencia rapida do ambiente.
+- Usar o checklist funcional interativo em Configuracoes para registrar a rodada de homologacao sem depender apenas do Markdown.
 - Homologar o console operacional: consultar fila, enfileirar vencimentos, processar fila e enviar e-mail manual.
 - Rodar `npm.cmd run preflight` antes de qualquer nova reativacao de build/deploy no Netlify.
 - Rodar `supabase/check_hub_status.sql` no SQL Editor antes do proximo deploy de marco.
@@ -264,3 +266,11 @@
 - `npm.cmd run typecheck`: OK em 20/05/2026 apos preparo de migracao unica das Tarefas para Supabase.
 - `npm.cmd run preflight`: OK em 20/05/2026 apos preparo de migracao unica das Tarefas para Supabase.
 - `npm.cmd run build`: OK em 20/05/2026 apos preparo de migracao unica das Tarefas para Supabase.
+- Homologacao: em 21/05/2026, criado checklist funcional interativo em Configuracoes com progresso, status por item e resumo copiavel.
+- `npm.cmd run typecheck`: OK em 21/05/2026 apos checklist funcional interativo.
+- `npm.cmd run preflight`: OK em 21/05/2026 apos checklist funcional interativo.
+- `npm.cmd run build`: OK em 21/05/2026 apos checklist funcional interativo.
+- Saude operacional: em 21/05/2026, adicionada etiqueta `2026-05-21-checklist-operacional` para confirmar a versao carregada pelo navegador/Netlify no proximo deploy de marco.
+- `npm.cmd run typecheck`: OK em 21/05/2026 apos etiqueta de versao na Saude operacional.
+- `npm.cmd run preflight`: OK em 21/05/2026 apos etiqueta de versao na Saude operacional.
+- `npm.cmd run build`: OK em 21/05/2026 apos etiqueta de versao na Saude operacional.

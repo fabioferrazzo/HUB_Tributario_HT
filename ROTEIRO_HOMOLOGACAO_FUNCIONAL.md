@@ -10,12 +10,15 @@ Marque cada item como:
 
 Nao acione deploy no Netlify durante esta rodada. O objetivo e testar o HUB ja publicado/ambiente disponivel e registrar o que ainda precisa de ajuste antes do deploy de marco.
 
+Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB para marcar `OK`, `Ajustar`, `Falhou` ou `Pendente` durante a rodada. O painel salva a marcacao no navegador e permite copiar um resumo.
+
 ## Situacao antes da rodada
 
 - GitHub atualizado: `OK`
 - `npm.cmd run preflight`: `OK`
 - `supabase/check_hub_status.sql`: `OK`
 - Netlify builds pausados para economia de creditos: confirmar visualmente no Netlify
+- Apos o proximo deploy de marco, `Configuracoes > Saude operacional` deve exibir `Versao do HUB: 2026-05-21-checklist-operacional`
 
 ## Bloco 1 - Login e perfis
 
