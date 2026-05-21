@@ -4,6 +4,8 @@
 
 Usar este checklist para fechar a homologacao local e funcional antes de reativar builds no Netlify.
 
+O HUB tambem possui um checklist funcional interativo em `Configuracoes`, util para registrar a rodada diretamente na interface e copiar um resumo ao final.
+
 Enquanto estivermos economizando creditos, nao acione deploy no Netlify. Suba arquivos no GitHub apenas para versionamento e deixe o Netlify em `Stopped builds`.
 
 ## Regra de ouro
