@@ -172,6 +172,95 @@ type EmailOperationResponse = {
   category?: string;
 };
 
+type HomologationStatus = "pendente" | "ok" | "ajustar" | "falhou";
+
+type HomologationItem = {
+  id: string;
+  title: string;
+  detail: string;
+};
+
+type HomologationBlock = {
+  id: string;
+  title: string;
+  items: HomologationItem[];
+};
+
+const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
+
+const homologationStatusLabels: Record<HomologationStatus, string> = {
+  pendente: "Pendente",
+  ok: "OK",
+  ajustar: "Ajustar",
+  falhou: "Falhou"
+};
+
+const homologationBlocks: HomologationBlock[] = [
+  {
+    id: "acesso",
+    title: "Login e perfis",
+    items: [
+      { id: "login-admin", title: "Login admin", detail: "Admin entra, ve Configuracoes e Coordenacao." },
+      { id: "login-colaborador", title: "Login colaborador", detail: "Colaborador entra e nao ve areas restritas." },
+      { id: "logout", title: "Logout", detail: "Saida pelo menu lateral encerra a sessao." }
+    ]
+  },
+  {
+    id: "lembretes",
+    title: "Lembretes",
+    items: [
+      { id: "lembrete-crud", title: "Criar/editar/concluir/excluir", detail: "Permissoes corretas para criador, marcado, gestor e admin." },
+      { id: "lembrete-confidencial", title: "Confidencialidade", detail: "Sem marcados fica visivel so para criador/admin; com marcados inclui usuarios selecionados." },
+      { id: "lembrete-anexo", title: "Anexos", detail: "Arquivo anexado salva e permanece acessivel." }
+    ]
+  },
+  {
+    id: "tarefas",
+    title: "Tarefas",
+    items: [
+      { id: "tarefa-sidebar", title: "Sidebar", detail: "Cria tarefa com responsaveis e anexo." },
+      { id: "tarefa-calendario", title: "Calendario original", detail: "Criacao no calendario aparece no painel lateral." },
+      { id: "tarefa-acoes", title: "Acoes", detail: "Editar, concluir/reabrir e excluir respeitam permissao." }
+    ]
+  },
+  {
+    id: "arquivos",
+    title: "Arquivos",
+    items: [
+      { id: "arquivo-biblioteca", title: "Biblioteca", detail: "Pastas, upload, edicao e exclusao controlada." },
+      { id: "arquivo-visualizador", title: "Visualizador", detail: "Busca, zoom, grifo, comentarios e exportacao de notas." },
+      { id: "arquivo-ocr", title: "OCR manual", detail: "Botao Rodar OCR aciona o agente local quando houver pendentes." }
+    ]
+  },
+  {
+    id: "comunicacao",
+    title: "E-mails e notificacoes",
+    items: [
+      { id: "email-fila", title: "Fila email_outbox", detail: "Consultar, enfileirar vencimentos e processar fila." },
+      { id: "email-manual", title: "Envio manual", detail: "Disparo pontual pelo console operacional." },
+      { id: "notificacoes", title: "Sino", detail: "Contador, marcar lida e visibilidade por usuario." }
+    ]
+  },
+  {
+    id: "coordenacao",
+    title: "Coordenacao Tributaria",
+    items: [
+      { id: "coord-layout", title: "Layout simplificado", detail: "Busca, colaborador e acoes na mesma linha." },
+      { id: "coord-pautas", title: "Pautas e lembretes", detail: "Criar pauta/lembrete com anexos e historico." },
+      { id: "coord-email", title: "E-mails da Coordenacao", detail: "Enviar pauta e avaliacoes por comando manual." }
+    ]
+  },
+  {
+    id: "publicacao",
+    title: "Pre-deploy",
+    items: [
+      { id: "supabase-check", title: "Supabase check", detail: "check_hub_status.sql retorna todos os itens como OK." },
+      { id: "preflight", title: "Preflight local", detail: "npm.cmd run preflight aprovado antes do deploy de marco." },
+      { id: "netlify-controlado", title: "Deploy controlado", detail: "Builds Netlify liberados somente para marco final." }
+    ]
+  }
+];
+
 const routes = [
   { id: "home", label: "Inicio", icon: Home },
   { id: "tarefas", label: "Tarefas", icon: CalendarDays },
@@ -4093,6 +4182,8 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         </section>
 
         <OperationalEmailConsole currentUser={currentUser} users={users} />
+
+        <OperationalHomologationPanel />
       </section>
 
       <section className="panel narrow-panel">
@@ -4167,6 +4258,139 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         </form>
       </section>
     </div>
+  );
+}
+
+function OperationalHomologationPanel() {
+  const [statuses, setStatuses] = useState<Record<string, HomologationStatus>>(() => readHomologationStatuses());
+  const [notice, setNotice] = useState("");
+
+  const summary = useMemo(() => {
+    const allItems = homologationBlocks.flatMap((block) => block.items);
+    const counts = allItems.reduce(
+      (acc, item) => {
+        const status = statuses[item.id] || "pendente";
+        acc[status] += 1;
+        return acc;
+      },
+      { pendente: 0, ok: 0, ajustar: 0, falhou: 0 } as Record<HomologationStatus, number>
+    );
+
+    return {
+      counts,
+      total: allItems.length,
+      progress: allItems.length ? Math.round((counts.ok / allItems.length) * 100) : 0
+    };
+  }, [statuses]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HOMOLOGATION_STORAGE_KEY, JSON.stringify(statuses));
+    } catch {
+      // Se o navegador bloquear localStorage, o checklist continua utilizavel na sessao atual.
+    }
+  }, [statuses]);
+
+  function updateStatus(itemId: string, status: HomologationStatus) {
+    setNotice("");
+    setStatuses((current) => ({ ...current, [itemId]: status }));
+  }
+
+  function clearChecklist() {
+    setNotice("");
+    setStatuses({});
+  }
+
+  async function copyChecklistSummary() {
+    const lines = [
+      "# Homologacao funcional - HUB Depto Tributario",
+      "",
+      `Gerado em: ${formatDateTime(new Date().toISOString())}`,
+      `Resumo: ${summary.counts.ok}/${summary.total} OK, ${summary.counts.ajustar} ajustar, ${summary.counts.falhou} falhou, ${summary.counts.pendente} pendente.`,
+      "",
+      ...homologationBlocks.flatMap((block) => [
+        `## ${block.title}`,
+        ...block.items.map((item) => `- [${homologationStatusLabels[statuses[item.id] || "pendente"]}] ${item.title}: ${item.detail}`),
+        ""
+      ])
+    ];
+
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setNotice("Resumo copiado para a area de transferencia.");
+    } catch {
+      setNotice("Nao foi possivel copiar automaticamente. Use o roteiro Markdown como fallback.");
+    }
+  }
+
+  return (
+    <section className="operational-homologation">
+      <div className="section-title-row">
+        <div>
+          <span className="panel-chip">Homologacao</span>
+          <h3>Checklist funcional</h3>
+        </div>
+        <small>{summary.progress}% OK</small>
+      </div>
+
+      <div className="homologation-summary">
+        <article>
+          <strong>{summary.counts.ok}</strong>
+          <span>OK</span>
+        </article>
+        <article>
+          <strong>{summary.counts.ajustar}</strong>
+          <span>Ajustar</span>
+        </article>
+        <article>
+          <strong>{summary.counts.falhou}</strong>
+          <span>Falhou</span>
+        </article>
+        <article>
+          <strong>{summary.counts.pendente}</strong>
+          <span>Pendente</span>
+        </article>
+      </div>
+
+      {notice ? <p className="module-notice">{notice}</p> : null}
+
+      <div className="homologation-actions">
+        <button onClick={copyChecklistSummary} type="button">
+          Copiar resumo
+        </button>
+        <button onClick={clearChecklist} type="button">
+          Limpar marcacoes
+        </button>
+      </div>
+
+      <div className="homologation-blocks">
+        {homologationBlocks.map((block) => (
+          <article className="homologation-block" key={block.id}>
+            <strong>{block.title}</strong>
+            <div>
+              {block.items.map((item) => {
+                const status = statuses[item.id] || "pendente";
+                return (
+                  <label className={`homologation-item homologation-item--${status}`} key={item.id}>
+                    <span>
+                      <b>{item.title}</b>
+                      <small>{item.detail}</small>
+                    </span>
+                    <select value={status} onChange={(event) => updateStatus(item.id, event.target.value as HomologationStatus)}>
+                      {(Object.keys(homologationStatusLabels) as HomologationStatus[]).map((option) => (
+                        <option key={option} value={option}>
+                          {homologationStatusLabels[option]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -4555,6 +4779,18 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordH
       tone: "info"
     }
   ];
+}
+
+function readHomologationStatuses() {
+  try {
+    const raw = localStorage.getItem(HOMOLOGATION_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, HomologationStatus>;
+    const validStatuses = new Set(Object.keys(homologationStatusLabels));
+    return Object.fromEntries(Object.entries(parsed).filter(([, status]) => validStatuses.has(status)));
+  } catch {
+    return {};
+  }
 }
 
 function formatFileCategory(category: FileResourceCategory) {

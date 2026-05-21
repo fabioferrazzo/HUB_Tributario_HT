@@ -2129,6 +2129,121 @@ select {
   padding: 14px;
 }
 
+.operational-homologation {
+  display: grid;
+  gap: 12px;
+  margin: 0 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  padding: 14px;
+}
+
+.homologation-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.homologation-summary article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 10px;
+}
+
+.homologation-summary strong {
+  display: block;
+  color: var(--accent);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.homologation-summary span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.homologation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.homologation-actions button {
+  width: auto;
+}
+
+.homologation-blocks {
+  display: grid;
+  gap: 10px;
+}
+
+.homologation-block {
+  display: grid;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 11px;
+}
+
+.homologation-block > strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.homologation-block > div {
+  display: grid;
+  gap: 8px;
+}
+
+.homologation-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px;
+}
+
+.homologation-item--ok {
+  border-left-color: var(--ok);
+}
+
+.homologation-item--ajustar {
+  border-left-color: var(--warning);
+}
+
+.homologation-item--falhou {
+  border-left-color: var(--danger);
+}
+
+.homologation-item--pendente {
+  border-left-color: var(--accent-gold);
+}
+
+.homologation-item span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.homologation-item b {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.homologation-item small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
 .operation-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -2285,6 +2400,10 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .homologation-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .calendar-shell {
     height: 680px;
   }
@@ -2366,6 +2485,14 @@ select {
   .file-grid,
   .file-summary,
   .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .homologation-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .homologation-item {
     grid-template-columns: 1fr;
   }
 }
