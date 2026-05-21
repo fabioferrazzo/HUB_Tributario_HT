@@ -30,7 +30,7 @@ export function canUserViewLembrete(lembrete: Lembrete, user?: HubUser | null) {
 
 export function canUserManageLembrete(lembrete: Lembrete, user?: HubUser | null) {
   if (!user) return false;
-  return user.role === "admin" || isLembreteOwner(lembrete, user);
+  return user.role === "admin" || user.role === "gestor" || isLembreteOwner(lembrete, user);
 }
 
 function filterVisibleLembretes(lembretes: Lembrete[], user?: HubUser | null) {
