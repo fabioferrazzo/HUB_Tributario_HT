@@ -274,3 +274,7 @@
 - `npm.cmd run typecheck`: OK em 21/05/2026 apos etiqueta de versao na Saude operacional.
 - `npm.cmd run preflight`: OK em 21/05/2026 apos etiqueta de versao na Saude operacional.
 - `npm.cmd run build`: OK em 21/05/2026 apos etiqueta de versao na Saude operacional.
+- Operacao: em 21/05/2026, adicionado painel `Guia rapido do administrador` em Configuracoes e criado `MANUAL_OPERACIONAL_HUB.md` com rotinas diaria/semanal e criterios antes de deploy de marco.
+- `npm.cmd run typecheck`: OK em 21/05/2026 apos guia rapido operacional.
+- `npm.cmd run preflight`: OK em 21/05/2026 apos guia rapido operacional.
+- `npm.cmd run build`: OK em 21/05/2026 apos guia rapido operacional.
