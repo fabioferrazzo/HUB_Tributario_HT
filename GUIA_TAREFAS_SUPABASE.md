@@ -36,8 +36,23 @@ Com `VITE_TAREFAS_SUPABASE=true`:
 - a sidebar passa a listar tarefas do Supabase;
 - tarefas criadas na sidebar sao salvas no Supabase e refletidas no calendario;
 - tarefas criadas no app original do calendario sao comunicadas ao HUB e gravadas no Supabase;
+- no primeiro acesso de cada usuario, tarefas ja existentes no calendario local sao copiadas uma unica vez para o Supabase;
 - admin/gestor veem e gerenciam tarefas permitidas pelas RLS;
 - colaborador gerencia tarefas criadas por ele e visualiza tarefas em que foi marcado.
+
+## Como validar sem deploy imediato
+
+Enquanto os builds do Netlify estiverem pausados para economia de creditos, valide apenas localmente:
+
+```txt
+npm.cmd run typecheck
+npm.cmd run preflight
+```
+
+Depois do proximo deploy de marco, confira em `Configuracoes > Saude operacional do HUB`:
+
+- `Tarefas = calendario`: modo local ainda ativo;
+- `Tarefas = supabase`: modo multiusuario ativo e sincronizando com o calendario original.
 
 ## Cuidado antes de producao
 

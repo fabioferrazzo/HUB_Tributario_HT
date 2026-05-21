@@ -77,6 +77,7 @@
 - App da Coordenacao Tributaria simplificado conforme rascunho: resumo geral, colaboradores, atividades/pautas, relatorios/e-mails, lembretes por prioridade, concluir/editar/excluir, historico e cadastro de colaboradores.
 - Modulo Tarefas ativado com formulario completo, responsaveis, anexos, filtros, edicao, conclusao/reabertura, exclusao e persistencia Supabase/local.
 - Patch SQL `supabase/patch_tarefas.sql` criado para tabelas `tarefas`, `tarefa_usuarios`, `tarefa_anexos` e RLS por criador/responsavel/admin/gestor.
+- Tarefas preparadas para ativacao Supabase com migracao unica do calendario local para o banco quando `VITE_TAREFAS_SUPABASE=true` for habilitada.
 - Funcao server-side `admin-users` criada para o Admin criar usuarios no Supabase Auth com `service_role_key` protegida.
 - Pacote-fonte limpo para GitHub/Netlify preparado.
 - Guia GitHub -> Netlify criado para deploy completo.
@@ -259,3 +260,7 @@
 - `npm.cmd run typecheck`: OK em 20/05/2026 apos checagem de Coordenacao na Saude operacional.
 - `npm.cmd run preflight`: OK em 20/05/2026 apos checagem de Coordenacao na Saude operacional.
 - `npm.cmd run build`: OK em 20/05/2026 apos checagem de Coordenacao na Saude operacional.
+- Saude operacional: em 20/05/2026, painel de Tarefas ajustado para avaliar a origem com o usuario logado e documentada migracao unica calendario -> Supabase.
+- `npm.cmd run typecheck`: OK em 20/05/2026 apos preparo de migracao unica das Tarefas para Supabase.
+- `npm.cmd run preflight`: OK em 20/05/2026 apos preparo de migracao unica das Tarefas para Supabase.
+- `npm.cmd run build`: OK em 20/05/2026 apos preparo de migracao unica das Tarefas para Supabase.
