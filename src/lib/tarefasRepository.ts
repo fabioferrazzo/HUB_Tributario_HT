@@ -56,6 +56,7 @@ const TASKS_STORAGE_KEY = "hub_tasks";
 const CALENDAR_DB_NAME = "CalAppDB";
 const CALENDAR_STORE_NAME = "events";
 const STORAGE_BUCKET = "hub-anexos";
+const SUPABASE_MIGRATION_KEY_PREFIX = "hub_tasks_supabase_migrated";
 
 const useTasksSupabase =
   import.meta.env.VITE_TAREFAS_SUPABASE === "true" ||
@@ -83,6 +84,7 @@ export function canUserManageTask(task: TaskItem, user?: HubUser | null) {
 export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
   const source = getTarefasSource(user);
   if (source === "supabase") {
+    await migrateCalendarTasksToSupabaseOnce(user);
     const tasks = await loadSupabaseTasks();
     await syncTasksToCalendar(tasks);
     return tasks;
@@ -211,6 +213,37 @@ async function syncTasksToCalendar(tasks: TaskItem[]) {
   for (const task of tasks) {
     await putCalendarEvent(await taskToCalendarEvent(task, eventById.get(task.id), []));
   }
+}
+
+async function migrateCalendarTasksToSupabaseOnce(user: HubUser) {
+  if (!canUseCalendarDb()) return;
+
+  const migrationKey = `${SUPABASE_MIGRATION_KEY_PREFIX}:${user.id || user.email}`;
+  if (readBrowserFlag(migrationKey)) return;
+
+  const calendarTasks = (await readCalendarEvents()).map(calendarEventToTask);
+  if (!calendarTasks.length) {
+    writeBrowserFlag(migrationKey);
+    return;
+  }
+
+  const existingTasks = await loadSupabaseTasks();
+  const existingIds = new Set(existingTasks.map((task) => task.id));
+  const tasksToMigrate = calendarTasks.filter((task) => !existingIds.has(task.id));
+
+  for (const task of tasksToMigrate) {
+    await upsertSupabaseTask(
+      {
+        ...task,
+        createdBy: user.id || user.email,
+        updatedAt: new Date().toISOString()
+      },
+      user,
+      { isExisting: false }
+    );
+  }
+
+  writeBrowserFlag(migrationKey);
 }
 
 function normalizeCalendarEvent(value: unknown, user: HubUser): CalendarEvent {
@@ -573,6 +606,22 @@ function isUuid(value: string) {
 
 function notifyTasksChanged() {
   window.dispatchEvent(new CustomEvent("hub:tasks"));
+}
+
+function readBrowserFlag(key: string) {
+  try {
+    return typeof localStorage !== "undefined" && localStorage.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeBrowserFlag(key: string) {
+  try {
+    if (typeof localStorage !== "undefined") localStorage.setItem(key, "true");
+  } catch {
+    // Sem localStorage, apenas pula a marcacao; o app continua funcionando.
+  }
 }
 
 function toSafeStorageFileName(fileName: string) {
