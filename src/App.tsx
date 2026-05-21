@@ -88,6 +88,8 @@ type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
 type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
 type HealthStatusTone = "ok" | "warning" | "info";
 type ViewerPreviewMode = "image" | "iframe" | "unsupported";
+type ReportFormat = "pdf" | "excel";
+type ReportRow = Record<string, string | number>;
 
 type ViewerPreview = {
   mode: ViewerPreviewMode;
@@ -187,7 +189,7 @@ type HomologationBlock = {
 };
 
 const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
-const APP_RELEASE_LABEL = "2026-05-21-checklist-operacional";
+const APP_RELEASE_LABEL = "2026-05-21-ajustes-homologacao";
 const APP_RELEASE_DATE = "21/05/2026";
 
 const dailyOperationalGuide = [
@@ -808,6 +810,27 @@ function Dashboard({
     ? "Sincronizando"
     : `${canSeeAllPautas ? "CSV HUB" : "minhas pautas"} - ${visiblePautas.length} itens`;
 
+  function exportPautas(format: ReportFormat) {
+    exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
+  }
+
+  function exportLembretes(format: ReportFormat) {
+    exportReport(format, "Lembretes - HUB Depto Tributario", filteredLembretes.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)));
+  }
+
+  function openLembreteForEdit(lembrete: Lembrete) {
+    if (!canUserManageLembrete(lembrete, user)) return;
+    sessionStorage.setItem("hub_open_lembrete_id", lembrete.id);
+    onNavigate("lembretes");
+  }
+
+  function handleLembreteKeyDown(event: React.KeyboardEvent<HTMLElement>, lembrete: Lembrete) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openLembreteForEdit(lembrete);
+    }
+  }
+
   return (
     <div className="dashboard-grid">
       <section className="panel panel--pautas">
@@ -854,6 +877,10 @@ function Dashboard({
               value={pautaQuery}
             />
           </label>
+          <div className="panel-export-actions" aria-label="Exportar pautas">
+            <button type="button" onClick={() => exportPautas("pdf")}>PDF</button>
+            <button type="button" onClick={() => exportPautas("excel")}>Excel</button>
+          </div>
         </div>
         <div className="stack-list">
           {filteredPautas.map((pauta) => (
@@ -911,19 +938,35 @@ function Dashboard({
               value={lembreteQuery}
             />
           </label>
+          <div className="panel-export-actions" aria-label="Exportar lembretes">
+            <button type="button" onClick={() => exportLembretes("pdf")}>PDF</button>
+            <button type="button" onClick={() => exportLembretes("excel")}>Excel</button>
+          </div>
         </div>
         <div className="stack-list">
-          {filteredLembretes.map((lembrete) => (
-            <article className="list-row" key={lembrete.id}>
-              <div>
-                <strong>{lembrete.titulo}</strong>
-                <span>{lembrete.descricao || "Sem descricao"}</span>
-                <em>{formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
-              </div>
-              <DueSignal prazo={lembrete.prazo} />
-              <small>{formatDateTime(lembrete.prazo)} - {lembrete.anexos.length} anexo(s)</small>
-            </article>
-          ))}
+          {filteredLembretes.map((lembrete) => {
+            const canOpen = canUserManageLembrete(lembrete, user);
+
+            return (
+              <article
+                className={`list-row ${canOpen ? "list-row--clickable" : ""}`}
+                key={lembrete.id}
+                onClick={canOpen ? () => openLembreteForEdit(lembrete) : undefined}
+                onKeyDown={canOpen ? (event) => handleLembreteKeyDown(event, lembrete) : undefined}
+                role={canOpen ? "button" : undefined}
+                tabIndex={canOpen ? 0 : undefined}
+                title={canOpen ? "Abrir lembrete para edicao" : undefined}
+              >
+                <div>
+                  <strong>{lembrete.titulo}</strong>
+                  <span>{lembrete.descricao || "Sem descricao"}</span>
+                  <em>{formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
+                </div>
+                <DueSignal prazo={lembrete.prazo} />
+                <small>{formatDateTime(lembrete.prazo)} - {lembrete.anexos.length} anexo(s)</small>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -1165,8 +1208,9 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<TaskFilter>("todas");
+  const [filter, setFilter] = useState<TaskFilter>("minhas");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [prazo, setPrazo] = useState("");
@@ -1261,7 +1305,10 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
       });
   }, [filter, hubUsers, query, tasks, user]);
 
-  function resetForm() {
+  const minhasTasks = useMemo(() => tasks.filter((task) => isTaskAssignedToUser(task, user)), [tasks, user]);
+  const abertasCount = tasks.filter((task) => task.status === "aberta").length;
+
+  function clearFormFields() {
     setEditingId(null);
     setTitulo("");
     setDescricao("");
@@ -1270,6 +1317,18 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
     setResponsaveis([]);
     setAnexos([]);
     setSelectedFiles([]);
+  }
+
+  function resetForm() {
+    clearFormFields();
+    setFormOpen(false);
+  }
+
+  function startNewTask() {
+    clearFormFields();
+    setResponsaveis(user.email ? [user.email] : []);
+    setError("");
+    setFormOpen(true);
   }
 
   function startEdit(task: TaskItem) {
@@ -1286,6 +1345,7 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
     setResponsaveis(task.responsaveis);
     setAnexos(task.anexos);
     setSelectedFiles([]);
+    setFormOpen(true);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -1396,89 +1456,104 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
 
   return (
     <aside className="task-sidebar">
-      <header>
-        <div>
-          <h2>Tarefas</h2>
+      <header className="task-sidebar-head">
+        <div className="task-sidebar-title">
+          <h2>Minhas tarefas</h2>
           <small>{loading ? "Carregando..." : `${source} - ${tasks.length} item(ns)`}</small>
         </div>
-        <span>{tasks.filter((task) => task.status === "aberta").length} abertas</span>
+        <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={startNewTask}>
+          <Plus size={14} />
+          Nova tarefa
+        </button>
       </header>
 
-      <form className="task-form" onSubmit={handleSubmit}>
-        <label>
-          Titulo
-          <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
-        </label>
-        <label>
-          Descricao
-          <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
-        </label>
-        <div className="form-row">
-        <label>
-          Prazo
-          <input value={prazo} onChange={(event) => setPrazo(event.target.value)} type="datetime-local" />
-        </label>
+      <div className="task-sidebar-summary">
+        <span>{minhasTasks.length} minhas</span>
+        <span>{abertasCount} abertas</span>
+      </div>
+
+      {formOpen ? (
+        <form className="task-form task-form--open" onSubmit={handleSubmit}>
+          <div className="task-form-head">
+            <strong>{editingId ? "Editar tarefa" : "Nova tarefa"}</strong>
+            <button disabled={saving} type="button" onClick={resetForm}>
+              <X size={14} />
+              Fechar
+            </button>
+          </div>
           <label>
-            Prioridade
-            <select value={prioridade} onChange={(event) => setPrioridade(event.target.value as TaskItem["prioridade"])}>
-              <option value="normal">Normal</option>
-              <option value="alta">Alta</option>
-              <option value="baixa">Baixa</option>
-            </select>
+            Titulo
+            <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
-        </div>
-        <fieldset className="member-picker member-picker--compact">
-          <legend>Responsaveis</legend>
-          <div>
-            {getActiveProfiles(hubUsers).map((member) => (
-              <label key={member.email}>
-                <input
-                  checked={responsaveis.includes(member.email)}
-                  onChange={() => toggleResponsavel(member.email)}
-                  type="checkbox"
-                />
-                <span>{member.iniciais || getInitials(member.nome)}</span>
-                {member.nome}
-              </label>
-            ))}
+          <label>
+            Notas / descricao
+            <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
+          </label>
+          <div className="form-row">
+            <label>
+              Prazo
+              <input value={prazo} onChange={(event) => setPrazo(event.target.value)} type="datetime-local" />
+            </label>
+            <label>
+              Prioridade
+              <select value={prioridade} onChange={(event) => setPrioridade(event.target.value as TaskItem["prioridade"])}>
+                <option value="normal">Normal</option>
+                <option value="alta">Alta</option>
+                <option value="baixa">Baixa</option>
+              </select>
+            </label>
           </div>
-        </fieldset>
-        <label>
-          Anexos
-          <input
-            multiple
-            onChange={(event) => handleFiles(event.target.files)}
-            type="file"
-          />
-        </label>
-        {anexos.length ? (
-          <div className="attachment-list">
-            {anexos.map((anexo) => (
-              <span key={anexo}>{anexo}</span>
-            ))}
-          </div>
-        ) : null}
-        <div className="form-actions-inline">
-          <button className="primary-action" disabled={saving || loading} type="submit">
-            {saving ? "Salvando..." : editingId ? "Atualizar tarefa" : "Salvar tarefa"}
-          </button>
-          {editingId ? (
+          <fieldset className="member-picker member-picker--compact">
+            <legend>Responsaveis</legend>
+            <div>
+              {getActiveProfiles(hubUsers).map((member) => (
+                <label key={member.email}>
+                  <input
+                    checked={responsaveis.includes(member.email)}
+                    onChange={() => toggleResponsavel(member.email)}
+                    type="checkbox"
+                  />
+                  <span>{member.iniciais || getInitials(member.nome)}</span>
+                  {member.nome}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label>
+            Anexos
+            <input
+              multiple
+              onChange={(event) => handleFiles(event.target.files)}
+              type="file"
+            />
+          </label>
+          {anexos.length ? (
+            <div className="attachment-list">
+              {anexos.map((anexo) => (
+                <span key={anexo}>{anexo}</span>
+              ))}
+            </div>
+          ) : null}
+          <div className="form-actions-inline">
+            <button className="primary-action" disabled={saving || loading} type="submit">
+              {saving ? "Salvando..." : editingId ? "Atualizar tarefa" : "Salvar tarefa"}
+            </button>
             <button disabled={saving} type="button" onClick={resetForm}>
               Cancelar
             </button>
-          ) : null}
-        </div>
-      </form>
+          </div>
+        </form>
+      ) : null}
 
       <div className="panel-toolbar task-toolbar">
+        <button className={`filter-pill ${filter === "minhas" ? "active" : ""}`} onClick={() => setFilter("minhas")} type="button">
+          Minhas ({minhasTasks.length})
+        </button>
         <button className={`filter-pill ${filter === "todas" ? "active" : ""}`} onClick={() => setFilter("todas")} type="button">
           Todas ({tasks.length})
         </button>
-        <button className={`filter-pill ${filter === "minhas" ? "active" : ""}`} onClick={() => setFilter("minhas")} type="button">
-          Minhas ({tasks.filter((task) => isTaskAssignedToUser(task, user)).length})
-        </button>
         <button className={`filter-pill ${filter === "abertas" ? "active" : ""}`} onClick={() => setFilter("abertas")} type="button">
-          Abertas ({tasks.filter((task) => task.status === "aberta").length})
+          Abertas ({abertasCount})
         </button>
         <label className="panel-search">
           <Search size={14} />
@@ -1497,7 +1572,7 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
               <CheckCircle2 size={17} />
               <div>
                 <strong>{task.titulo}</strong>
-                <span>{task.descricao || "Sem descricao"}</span>
+                <span className="task-note-preview">{task.descricao || "Sem notas registradas"}</span>
                 <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
                 <div className="lembrete-tags">
                   <StatusPill label={task.status} />
@@ -1513,7 +1588,7 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
                   <div className="record-actions">
                     <button disabled={saving} type="button" onClick={() => startEdit(task)}>
                       <Edit3 size={14} />
-                      Editar
+                      Editar notas
                     </button>
                     <button disabled={saving} type="button" onClick={() => toggleTask(task.id)}>
                       <CheckCircle2 size={14} />
@@ -1580,6 +1655,24 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
       window.removeEventListener("hub:lembretes", refresh);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const pendingId = sessionStorage.getItem("hub_open_lembrete_id");
+    if (!pendingId) return;
+
+    const target = lembretes.find((lembrete) => lembrete.id === pendingId);
+    if (!target) return;
+
+    sessionStorage.removeItem("hub_open_lembrete_id");
+
+    if (canUserManageLembrete(target, user)) {
+      startEdit(target);
+    } else {
+      setError("Voce pode visualizar este lembrete, mas apenas o criador, coordenacao ou administrador pode altera-lo.");
+    }
+  }, [lembretes, loading, user]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -4690,10 +4783,11 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
           <strong>Fila de e-mails</strong>
           <p>
             Consulte e processe a fila <code>email_outbox</code>. A rotina diaria enfileira avisos de vencimento e envia o que estiver
-            pronto.
+            pronto. O token abaixo e necessario apenas para comandos manuais no HUB; o agendamento da Netlify usa
+            <code>EMAIL_SCHEDULE_ENABLED=true</code>.
           </p>
           <label>
-            EMAIL_DISPATCH_TOKEN
+            EMAIL_DISPATCH_TOKEN (comandos manuais)
             <input
               autoComplete="off"
               onChange={(event) => setDispatchToken(event.target.value)}
@@ -4927,6 +5021,112 @@ function readHomologationStatuses() {
 
 function formatFileCategory(category: FileResourceCategory) {
   return fileCategoryOptions.find((option) => option.value === category)?.label || "Outro";
+}
+
+function pautaToReportRow(pauta: Pauta): ReportRow {
+  return {
+    Tema: pauta.tema,
+    Acao: pauta.acoes || pauta.pendenciasObs || "Sem acao registrada",
+    Responsavel: pauta.responsavel || "Sem responsavel definido",
+    Email: pauta.email || "",
+    Prazo: formatDate(pauta.prazo),
+    Prioridade: pauta.prioridade || "",
+    Status: pauta.status || "Sem status",
+    Origem: pauta.origem || ""
+  };
+}
+
+function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): ReportRow {
+  return {
+    Titulo: lembrete.titulo,
+    Descricao: lembrete.descricao || "Sem descricao",
+    Responsaveis: formatResponsaveis(lembrete.responsaveis, profiles),
+    Prazo: formatDateTime(lembrete.prazo),
+    Prioridade: lembrete.prioridade,
+    Status: lembrete.status,
+    Confidencial: lembrete.confidencial ? "Sim" : "Nao",
+    Anexos: String(lembrete.anexos.length)
+  };
+}
+
+function exportReport(format: ReportFormat, title: string, rows: ReportRow[]) {
+  const reportRows = rows.length ? rows : [{ Info: "Nenhum registro encontrado para o filtro atual." }];
+  if (format === "pdf") {
+    openPrintableReport(title, reportRows);
+    return;
+  }
+
+  downloadExcelCompatibleReport(title, reportRows);
+}
+
+function openPrintableReport(title: string, rows: ReportRow[]) {
+  const reportWindow = window.open("", "_blank", "noopener,noreferrer");
+  if (!reportWindow) return;
+
+  reportWindow.document.write(buildReportHtml(title, rows, true));
+  reportWindow.document.close();
+  reportWindow.focus();
+  window.setTimeout(() => reportWindow.print(), 250);
+}
+
+function downloadExcelCompatibleReport(title: string, rows: ReportRow[]) {
+  const html = buildReportHtml(title, rows, false);
+  const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${toReportFileName(title)}.xls`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function buildReportHtml(title: string, rows: ReportRow[], printable: boolean) {
+  const columns = Object.keys(rows[0] || { Info: "" });
+  const generatedAt = new Date().toLocaleString("pt-BR");
+  const tableHead = columns.map((column) => `<th>${escapeHtmlText(column)}</th>`).join("");
+  const tableRows = rows
+    .map((row) => `<tr>${columns.map((column) => `<td>${escapeHtmlText(String(row[column] ?? ""))}</td>`).join("")}</tr>`)
+    .join("");
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtmlText(title)}</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #17211c; margin: 24px; }
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    p { color: #64716b; margin: 0 0 18px; }
+    table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    th, td { border: 1px solid #dce3dd; padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #eef2ed; }
+    ${printable ? "@page { size: A4 landscape; margin: 14mm; }" : ""}
+  </style>
+</head>
+<body>
+  <h1>${escapeHtmlText(title)}</h1>
+  <p>Gerado em ${escapeHtmlText(generatedAt)} pelo HUB Depto Tributario.</p>
+  <table>
+    <thead><tr>${tableHead}</tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+</body>
+</html>`;
+}
+
+function escapeHtmlText(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function toReportFileName(title: string) {
+  return normalizeForSearch(title).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "relatorio";
 }
 
 function formatResponsaveis(responsaveis: string[], profiles: Array<{ email: string; nome: string }> = teamMembers) {
