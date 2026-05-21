@@ -282,3 +282,8 @@
 - `npm.cmd run typecheck`: OK em 21/05/2026 apos ajustes de homologacao em Lembretes/Tarefas/exportacao.
 - `npm.cmd run preflight`: OK em 21/05/2026 apos ajustes de homologacao em Lembretes/Tarefas/exportacao.
 - `npm.cmd run build`: OK em 21/05/2026 apos ajustes de homologacao em Lembretes/Tarefas/exportacao.
+- E-mails: em 21/05/2026, a Function `email-outbox` passou a aceitar operacao manual pela sessao Supabase de admin/gestor, mantendo `EMAIL_DISPATCH_TOKEN` como alternativa; roteiro de homologacao atualizado para testar ambos os caminhos.
+- `node --check netlify/functions/email-outbox.mjs`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.
+- `npm.cmd run typecheck`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.
+- `npm.cmd run preflight`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.
+- `npm.cmd run build`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.

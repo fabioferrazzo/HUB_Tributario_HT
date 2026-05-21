@@ -18,7 +18,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 - `npm.cmd run preflight`: `OK`
 - `supabase/check_hub_status.sql`: `OK`
 - Netlify builds pausados para economia de creditos: confirmar visualmente no Netlify
-- Apos o proximo deploy de marco, `Configuracoes > Saude operacional` deve exibir `Versao do HUB: 2026-05-21-checklist-operacional`
+- Apos o proximo deploy de marco, `Configuracoes > Saude operacional` deve exibir `Versao do HUB: 2026-05-21-ajustes-homologacao`
 
 ## Bloco 1 - Login e perfis
 
@@ -56,16 +56,21 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Confidencial sem marcado aparece so para criador/admin | Pendente |
 | Confidencial com marcado aparece para criador/admin/marcado | Pendente |
 | Anexo em lembrete salva e abre | Pendente |
+| Clicar em lembrete no painel inicial abre edicao para admin/gestor/criador | Pendente |
+| Exportar lista de lembretes em PDF | Pendente |
+| Exportar lista de lembretes em Excel compativel | Pendente |
 
 ## Bloco 4 - Tarefas
 
 | Teste | Resultado |
 | --- | --- |
 | Criar tarefa pela sidebar | Pendente |
+| Sidebar inicia como `Minhas tarefas` com formulario oculto | Pendente |
+| Botao `Nova tarefa` abre formulario lateral | Pendente |
 | Criar tarefa pelo calendario original | Pendente |
 | Responsaveis aparecem e salvam | Pendente |
 | Anexo em tarefa salva | Pendente |
-| Editar tarefa | Pendente |
+| Editar tarefa/notas pela sidebar | Pendente |
 | Concluir/reabrir tarefa | Pendente |
 | Excluir tarefa permitida | Pendente |
 | Calendario e painel lateral ficam sincronizados | Pendente |
@@ -134,6 +139,8 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Reset de senha enfileira e-mail | Pendente |
 | Coordenacao envia pauta por e-mail | Pendente |
 | Coordenacao envia avaliacoes por e-mail | Pendente |
+| Consultar/processar fila funciona com admin/gestor logado sem colar token | Pendente |
+| Consultar/processar fila tambem funciona com `EMAIL_DISPATCH_TOKEN` colado | Pendente |
 | `email_outbox` registra `sent` em modo teste | Pendente |
 
 ## Bloco 10 - Coordenacao Tributaria
