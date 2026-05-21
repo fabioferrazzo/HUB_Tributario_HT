@@ -187,6 +187,8 @@ type HomologationBlock = {
 };
 
 const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
+const APP_RELEASE_LABEL = "2026-05-21-checklist-operacional";
+const APP_RELEASE_DATE = "21/05/2026";
 
 const homologationStatusLabels: Record<HomologationStatus, string> = {
   pendente: "Pendente",
@@ -4719,6 +4721,12 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordH
   const supabaseReady = [usersSource, lembretesSource, arquivosSource, linksSource].every((source) => source === "supabase");
 
   return [
+    {
+      area: "Versao do HUB",
+      status: APP_RELEASE_LABEL,
+      detail: `Pacote preparado em ${APP_RELEASE_DATE}; use esta etiqueta para confirmar se o navegador/Netlify carregou a versao correta.`,
+      tone: "info"
+    },
     {
       area: "Usuarios e perfis",
       status: usersSource === "supabase" ? "Supabase ativo" : "Modo local",
