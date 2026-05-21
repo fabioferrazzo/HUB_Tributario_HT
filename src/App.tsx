@@ -190,6 +190,44 @@ const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
 const APP_RELEASE_LABEL = "2026-05-21-checklist-operacional";
 const APP_RELEASE_DATE = "21/05/2026";
 
+const dailyOperationalGuide = [
+  {
+    title: "Abrir Saude operacional",
+    detail: "Conferir a etiqueta de versao, origens Supabase/local, Functions e avisos antes de mexer em dados reais."
+  },
+  {
+    title: "Conferir sino e pendencias",
+    detail: "Abrir notificacoes, revisar lembretes vencidos/proximos e pautas criticas do dia."
+  },
+  {
+    title: "Rodar e-mails do dia",
+    detail: "No console de Lembretes e e-mails, consultar fila, enfileirar vencimentos e processar pendentes quando necessario."
+  },
+  {
+    title: "Registrar homologacao",
+    detail: "Usar o Checklist funcional para marcar OK/Ajustar/Falhou e copiar o resumo ao final da rodada."
+  }
+];
+
+const weeklyOperationalGuide = [
+  {
+    title: "Revisar usuarios",
+    detail: "Confirmar admins, gestores, colaboradores ativos e remover/desativar acessos que nao devem permanecer."
+  },
+  {
+    title: "Revisar biblioteca",
+    detail: "Organizar arquivos por pastas, excluir duplicados e deixar documentos importantes com comentario ou grifo."
+  },
+  {
+    title: "Revisar Coordenacao",
+    detail: "Atualizar colaboradores, atividades, pautas e usar os botoes manuais de e-mail quando a comunicacao estiver pronta."
+  },
+  {
+    title: "Preflight antes de deploy",
+    detail: "Rodar npm.cmd run preflight e npm.cmd run build localmente antes de liberar builds do Netlify."
+  }
+];
+
 const homologationStatusLabels: Record<HomologationStatus, string> = {
   pendente: "Pendente",
   ok: "OK",
@@ -4183,6 +4221,8 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
           </p>
         </section>
 
+        <OperationalGuidePanel />
+
         <OperationalEmailConsole currentUser={currentUser} users={users} />
 
         <OperationalHomologationPanel />
@@ -4392,6 +4432,90 @@ function OperationalHomologationPanel() {
           </article>
         ))}
       </div>
+    </section>
+  );
+}
+
+function OperationalGuidePanel() {
+  const [copyNotice, setCopyNotice] = useState("");
+
+  const guideText = useMemo(
+    () =>
+      [
+        "# Guia rapido operacional - HUB Depto Tributario",
+        "",
+        `Versao esperada: ${APP_RELEASE_LABEL}`,
+        "",
+        "## Rotina diaria",
+        ...dailyOperationalGuide.flatMap((item, index) => [`${index + 1}. ${item.title}`, `   - ${item.detail}`]),
+        "",
+        "## Rotina semanal",
+        ...weeklyOperationalGuide.flatMap((item, index) => [`${index + 1}. ${item.title}`, `   - ${item.detail}`]),
+        "",
+        "## Antes de deploy de marco",
+        "- Confirmar checklist funcional sem itens Falhou.",
+        "- Rodar npm.cmd run preflight.",
+        "- Rodar npm.cmd run build.",
+        "- Conferir supabase/check_hub_status.sql com tudo OK.",
+        "- Liberar builds no Netlify somente quando for publicar o marco."
+      ].join("\n"),
+    []
+  );
+
+  async function copyGuide() {
+    try {
+      await navigator.clipboard.writeText(guideText);
+      setCopyNotice("Guia copiado.");
+    } catch {
+      setCopyNotice("Nao foi possivel copiar automaticamente.");
+    }
+  }
+
+  return (
+    <section className="operational-console operational-guide">
+      <div className="section-title-row">
+        <div>
+          <span className="panel-chip">Operacao</span>
+          <h3>Guia rapido do administrador</h3>
+        </div>
+        <button className="secondary-button" type="button" onClick={copyGuide}>
+          Copiar guia
+        </button>
+      </div>
+      <div className="operation-grid">
+        <article className="operation-card">
+          <strong>Rotina diaria</strong>
+          <p>Sequencia curta para abrir o HUB, conferir riscos e acionar e-mails sem depender de instrucoes externas.</p>
+          <ol className="operational-guide-list">
+            {dailyOperationalGuide.map((item) => (
+              <li key={item.title}>
+                <b>{item.title}</b>
+                <span>{item.detail}</span>
+              </li>
+            ))}
+          </ol>
+        </article>
+        <article className="operation-card">
+          <strong>Rotina semanal</strong>
+          <p>Revisoes de manutencao para manter dados, acessos, biblioteca e Coordenacao em ordem.</p>
+          <ol className="operational-guide-list">
+            {weeklyOperationalGuide.map((item) => (
+              <li key={item.title}>
+                <b>{item.title}</b>
+                <span>{item.detail}</span>
+              </li>
+            ))}
+          </ol>
+        </article>
+      </div>
+      <div className="operation-card operation-card--compact">
+        <strong>Antes de deploy de marco</strong>
+        <p>
+          Confirme o checklist funcional, rode <code>npm.cmd run preflight</code>, rode <code>npm.cmd run build</code> e so entao libere os
+          builds do Netlify para publicar a rodada.
+        </p>
+      </div>
+      {copyNotice ? <p className="module-notice">{copyNotice}</p> : null}
     </section>
   );
 }

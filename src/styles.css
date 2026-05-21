@@ -2278,6 +2278,33 @@ select {
   font-weight: 900;
 }
 
+.operation-card--compact {
+  gap: 6px;
+}
+
+.operational-guide-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.operational-guide-list li {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.operational-guide-list b,
+.operational-guide-list span {
+  display: block;
+}
+
+.operational-guide-list b {
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .operation-actions {
   display: flex;
   flex-wrap: wrap;
