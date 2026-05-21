@@ -13,7 +13,7 @@ const checks = [
     "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
     "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe"
   ]),
-  checkTool("OCRmyPDF", env.OCRMYPDF_BIN, ["ocrmypdf"]),
+  checkTool("OCRmyPDF", env.OCRMYPDF_BIN, ["ocrmypdf"], "ocrmypdf"),
   checkTool("Tesseract", env.TESSERACT_BIN, [
     "tesseract",
     "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
@@ -68,9 +68,18 @@ function checkEnv(label, value, secret = false) {
   };
 }
 
-function checkTool(label, explicitPath, candidates) {
+function checkTool(label, explicitPath, candidates, pythonModule = "") {
   const found = firstExistingCommand([explicitPath, ...candidates].filter(Boolean));
   if (!found) {
+    const moduleCommand = pythonModule ? detectPythonModuleCommand(pythonModule) : "";
+    if (moduleCommand) {
+      return {
+        ok: true,
+        label,
+        detail: moduleCommand
+      };
+    }
+
     return {
       ok: false,
       label,
@@ -83,6 +92,19 @@ function checkTool(label, explicitPath, candidates) {
     label,
     detail: found
   };
+}
+
+function detectPythonModuleCommand(moduleName) {
+  for (const command of ["py", "python", "python3"]) {
+    const result = spawnSync(command, ["-m", moduleName, "--version"], {
+      encoding: "utf8",
+    stdio: "pipe",
+      shell: false
+    });
+    if (result.status === 0) return `${command} -m ${moduleName}`;
+  }
+
+  return "";
 }
 
 function firstExistingCommand(candidates) {
@@ -107,3 +129,11 @@ function firstExistingCommand(candidates) {
 
   return "";
 }
+
+
+
+
+
+
+
+      
