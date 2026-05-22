@@ -287,3 +287,8 @@
 - `npm.cmd run typecheck`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.
 - `npm.cmd run preflight`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.
 - `npm.cmd run build`: OK em 21/05/2026 apos autorizacao por sessao admin/gestor na fila de e-mails.
+- Exportacao: em 22/05/2026, botoes de Pautas e Lembretes passaram a gerar `.xlsx` real no navegador, com pacote OpenXML e planilha filtrada conforme a tela.
+- Visualizador: em 22/05/2026, PDF/PPTX convertido para PDF pesquisavel passou a pesquisar todas as paginas e navegar automaticamente entre resultados, mantendo grifo amarelo manual e busca verde.
+- `npm.cmd run typecheck`: OK em 22/05/2026 apos XLSX real e busca global no visualizador PDF.
+- `npm.cmd run preflight`: OK em 22/05/2026 apos XLSX real e busca global no visualizador PDF.
+- `npm.cmd run build`: OK em 22/05/2026 apos XLSX real e busca global no visualizador PDF.
