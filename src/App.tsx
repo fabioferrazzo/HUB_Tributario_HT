@@ -109,6 +109,11 @@ type PdfSearchPlan = {
   indexesBySpanId: Map<string, number>;
 };
 
+type PdfGlobalSearchMatch = {
+  globalIndex: number;
+  page: number;
+};
+
 type PdfTextRawItem = {
   dir?: string;
   hasEOL?: boolean;
@@ -879,7 +884,7 @@ function Dashboard({
           </label>
           <div className="panel-export-actions" aria-label="Exportar pautas">
             <button type="button" onClick={() => exportPautas("pdf")}>PDF</button>
-            <button type="button" onClick={() => exportPautas("excel")}>Excel</button>
+            <button type="button" onClick={() => exportPautas("excel")}>XLSX</button>
           </div>
         </div>
         <div className="stack-list">
@@ -940,7 +945,7 @@ function Dashboard({
           </label>
           <div className="panel-export-actions" aria-label="Exportar lembretes">
             <button type="button" onClick={() => exportLembretes("pdf")}>PDF</button>
-            <button type="button" onClick={() => exportLembretes("excel")}>Excel</button>
+            <button type="button" onClick={() => exportLembretes("excel")}>XLSX</button>
           </div>
         </div>
         <div className="stack-list">
@@ -2913,6 +2918,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     searchTerm={viewerSearchTerm}
                     zoom={viewerZoom}
                     onPageCount={handleViewerPageCount}
+                    onRequestPage={setViewerPage}
                     onSearchStats={handleViewerSearchStats}
                     onSelectText={setViewerHighlight}
                   />
@@ -3022,6 +3028,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
 function InternalPdfViewer({
   highlightNotes,
   onPageCount,
+  onRequestPage,
   onSearchStats,
   onSelectText,
   page,
@@ -3032,6 +3039,7 @@ function InternalPdfViewer({
 }: {
   highlightNotes: FileViewerNote[];
   onPageCount: (total: number) => void;
+  onRequestPage: (page: number) => void;
   onSearchStats: (total: number) => void;
   onSelectText: (text: string) => void;
   page: number;
@@ -3048,19 +3056,92 @@ function InternalPdfViewer({
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [globalSearchMatches, setGlobalSearchMatches] = useState<PdfGlobalSearchMatch[]>([]);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
   const highlightTerms = useMemo(() => getViewerManualHighlightTerms(highlightNotes), [highlightNotes]);
   const normalizedSearchTerm = normalizeForSearch(searchTerm);
-  const searchPlan = useMemo(() => buildPdfSearchPlan(spans, normalizedSearchTerm), [normalizedSearchTerm, spans]);
+  const searchOffset = useMemo(() => getPdfSearchOffset(globalSearchMatches, page), [globalSearchMatches, page]);
+  const searchPlan = useMemo(() => buildPdfSearchPlan(spans, normalizedSearchTerm, searchOffset), [normalizedSearchTerm, searchOffset, spans]);
 
   useEffect(() => {
-    onSearchStats(searchPlan.total);
-  }, [onSearchStats, searchPlan.total]);
+    if (!normalizedSearchTerm) {
+      setGlobalSearchMatches([]);
+      setGlobalSearchTerm("");
+      setSearchError("");
+      setSearchLoading(false);
+      onSearchStats(0);
+      return;
+    }
+
+    let active = true;
+    setSearchLoading(true);
+    setSearchError("");
+    setGlobalSearchTerm(normalizedSearchTerm);
+    setGlobalSearchMatches([]);
+
+    async function collectPdfMatches() {
+      try {
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+        const response = await fetch(resource.url);
+        if (!response.ok) throw new Error("Nao foi possivel carregar o PDF para pesquisar todas as paginas.");
+        const bytes = await response.arrayBuffer();
+        const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        if (active) onPageCount(document.numPages);
+
+        const matches: PdfGlobalSearchMatch[] = [];
+        for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+          if (!active) return;
+          const pdfPage = await document.getPage(pageNumber);
+          const textContent = await pdfPage.getTextContent();
+          const pageText = normalizeForSearch(
+            (textContent.items as PdfTextRawItem[])
+              .map((item) => item.str || "")
+              .filter(Boolean)
+              .join(" ")
+          );
+
+          let matchIndex = pageText.indexOf(normalizedSearchTerm);
+          while (matchIndex >= 0) {
+            matches.push({ page: pageNumber, globalIndex: matches.length });
+            matchIndex = pageText.indexOf(normalizedSearchTerm, matchIndex + Math.max(1, normalizedSearchTerm.length));
+          }
+        }
+
+        if (!active) return;
+        setGlobalSearchMatches(matches);
+        onSearchStats(matches.length);
+        if (matches.length) onRequestPage(matches[0].page);
+      } catch (searchErrorValue) {
+        if (!active) return;
+        setSearchError(getErrorMessage(searchErrorValue));
+        setGlobalSearchMatches([]);
+        onSearchStats(0);
+      } finally {
+        if (active) setSearchLoading(false);
+      }
+    }
+
+    collectPdfMatches();
+
+    return () => {
+      active = false;
+    };
+  }, [normalizedSearchTerm, onPageCount, onRequestPage, onSearchStats, resource.url]);
 
   useEffect(() => {
-    if (!searchPlan.total) return;
+    if (!normalizedSearchTerm) return;
+    const activeMatch = globalSearchMatches[searchIndex];
+    if (activeMatch && activeMatch.page !== page) {
+      onRequestPage(activeMatch.page);
+      return;
+    }
+
     const target = containerRef.current?.querySelector(`[data-search-index="${searchIndex}"]`);
     target?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
-  }, [searchIndex, searchPlan.total]);
+  }, [globalSearchMatches, normalizedSearchTerm, onRequestPage, page, searchIndex]);
 
   useEffect(() => {
     let active = true;
@@ -3111,6 +3192,7 @@ function InternalPdfViewer({
         const renderTask = pdfPage.render({ canvasContext: context, viewport });
         renderTaskRef.current = renderTask;
         await renderTask.promise;
+        if (renderTaskRef.current === renderTask) renderTaskRef.current = null;
         if (!active || cancelled) return;
         const textContent = await pdfPage.getTextContent();
         if (textLayerElement) {
@@ -3154,6 +3236,7 @@ function InternalPdfViewer({
       } catch (renderError) {
         if (active && !isPdfRenderCancelled(renderError)) setError(getErrorMessage(renderError));
       } finally {
+        renderTaskRef.current = null;
         if (active) setLoading(false);
       }
     }
@@ -3204,6 +3287,10 @@ function InternalPdfViewer({
   return (
     <div className="internal-doc-viewer" onMouseUp={handleSelection} ref={containerRef}>
       {loading ? <div className="document-preview-banner">Renderizando PDF para estudo interno...</div> : null}
+      {searchLoading ? <div className="document-preview-banner">Pesquisando em todas as paginas do PDF...</div> : null}
+      {searchError && globalSearchTerm === normalizedSearchTerm ? (
+        <div className="document-preview-banner document-preview-banner--error">{searchError}</div>
+      ) : null}
       {error ? (
         <div className="document-preview-fallback">
           <FileArchive size={38} />
@@ -3231,7 +3318,12 @@ function InternalPdfViewer({
   );
 }
 
-function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string): PdfSearchPlan {
+function getPdfSearchOffset(matches: PdfGlobalSearchMatch[], page: number) {
+  if (!matches.length) return 0;
+  return matches.filter((match) => match.page < page).length;
+}
+
+function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string, startIndex = 0): PdfSearchPlan {
   const indexesBySpanId = new Map<string, number>();
   if (!normalizedSearchTerm) return { total: 0, indexesBySpanId };
 
@@ -3242,7 +3334,7 @@ function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string):
 
     let index = normalizedText.indexOf(normalizedSearchTerm);
     while (index >= 0) {
-      if (!indexesBySpanId.has(span.id)) indexesBySpanId.set(span.id, total);
+      if (!indexesBySpanId.has(span.id)) indexesBySpanId.set(span.id, startIndex + total);
       total += 1;
       index = normalizedText.indexOf(normalizedSearchTerm, index + Math.max(1, normalizedSearchTerm.length));
     }
@@ -3250,10 +3342,10 @@ function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string):
 
   if (total) return { total, indexesBySpanId };
 
-  return buildPdfCombinedSearchPlan(spans, normalizedSearchTerm);
+  return buildPdfCombinedSearchPlan(spans, normalizedSearchTerm, startIndex);
 }
 
-function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string): PdfSearchPlan {
+function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string, startIndex = 0): PdfSearchPlan {
   const indexesBySpanId = new Map<string, number>();
   let text = "";
   const ranges: Array<{ end: number; id: string; start: number }> = [];
@@ -3273,7 +3365,7 @@ function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: 
     const end = index + normalizedSearchTerm.length;
     for (const range of ranges) {
       if (range.end <= index || range.start >= end) continue;
-      if (!indexesBySpanId.has(range.id)) indexesBySpanId.set(range.id, total);
+      if (!indexesBySpanId.has(range.id)) indexesBySpanId.set(range.id, startIndex + total);
     }
     total += 1;
     index = text.indexOf(normalizedSearchTerm, index + Math.max(1, normalizedSearchTerm.length));
@@ -5063,7 +5155,7 @@ function exportReport(format: ReportFormat, title: string, rows: ReportRow[]) {
     return;
   }
 
-  downloadExcelCompatibleReport(title, reportRows);
+  downloadXlsxReport(title, reportRows);
 }
 
 function openPrintableReport(title: string, rows: ReportRow[]) {
@@ -5076,13 +5168,13 @@ function openPrintableReport(title: string, rows: ReportRow[]) {
   window.setTimeout(() => reportWindow.print(), 250);
 }
 
-function downloadExcelCompatibleReport(title: string, rows: ReportRow[]) {
-  const html = buildReportHtml(title, rows, false);
-  const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
+function downloadXlsxReport(title: string, rows: ReportRow[]) {
+  const workbook = buildXlsxWorkbook(title, rows);
+  const blob = new Blob([workbook], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${toReportFileName(title)}.xls`;
+  anchor.download = `${toReportFileName(title)}.xlsx`;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
@@ -5121,6 +5213,286 @@ function buildReportHtml(title: string, rows: ReportRow[], printable: boolean) {
   </table>
 </body>
 </html>`;
+}
+
+function buildXlsxWorkbook(title: string, rows: ReportRow[]) {
+  const columns = Object.keys(rows[0] || { Info: "" });
+  const generatedAt = new Date().toLocaleString("pt-BR");
+  const worksheetRows = [
+    columns,
+    ...rows.map((row) => columns.map((column) => row[column] ?? ""))
+  ];
+  const columnWidths = columns.map((column, columnIndex) => {
+    const widest = worksheetRows.reduce((width, row) => {
+      const value = String(row[columnIndex] ?? "");
+      return Math.max(width, Math.min(58, value.length + 3));
+    }, Math.max(12, column.length + 3));
+    return widest;
+  });
+  const sheetData = worksheetRows
+    .map((row, rowIndex) => {
+      const rowNumber = rowIndex + 1;
+      const cells = row
+        .map((value, columnIndex) => {
+          const cellRef = `${getSpreadsheetColumnName(columnIndex + 1)}${rowNumber}`;
+          const style = rowIndex === 0 ? " s=\"1\"" : "";
+          return `<c r="${cellRef}"${style} t="inlineStr"><is><t>${escapeXmlText(String(value ?? ""))}</t></is></c>`;
+        })
+        .join("");
+      return `<row r="${rowNumber}">${cells}</row>`;
+    })
+    .join("");
+  const cols = columnWidths
+    .map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`)
+    .join("");
+  const usedRange = `A1:${getSpreadsheetColumnName(Math.max(1, columns.length))}${Math.max(1, worksheetRows.length)}`;
+  const worksheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <sheetFormatPr defaultRowHeight="18"/>
+  <cols>${cols}</cols>
+  <sheetData>${sheetData}</sheetData>
+  <autoFilter ref="${usedRange}"/>
+</worksheet>`;
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <fileVersion appName="xl"/>
+  <sheets><sheet name="${escapeXmlAttribute(getSpreadsheetSheetName(title))}" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+  const files = [
+    {
+      name: "[Content_Types].xml",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`
+    },
+    {
+      name: "_rels/.rels",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`
+    },
+    {
+      name: "docProps/app.xml",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+  <Application>HUB Depto Tributario</Application>
+  <DocSecurity>0</DocSecurity>
+  <ScaleCrop>false</ScaleCrop>
+  <HeadingPairs><vt:vector size="2" baseType="variant"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>1</vt:i4></vt:variant></vt:vector></HeadingPairs>
+  <TitlesOfParts><vt:vector size="1" baseType="lpstr"><vt:lpstr>${escapeXmlText(getSpreadsheetSheetName(title))}</vt:lpstr></vt:vector></TitlesOfParts>
+</Properties>`
+    },
+    {
+      name: "docProps/core.xml",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>${escapeXmlText(title)}</dc:title>
+  <dc:creator>HUB Depto Tributario</dc:creator>
+  <cp:lastModifiedBy>HUB Depto Tributario</cp:lastModifiedBy>
+  <dc:description>Relatorio gerado em ${escapeXmlText(generatedAt)}</dc:description>
+  <dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>
+</cp:coreProperties>`
+    },
+    {
+      name: "xl/workbook.xml",
+      data: workbookXml
+    },
+    {
+      name: "xl/_rels/workbook.xml.rels",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`
+    },
+    {
+      name: "xl/styles.xml",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
+  <fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEFF3EF"/><bgColor indexed="64"/></patternFill></fill></fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`
+    },
+    {
+      name: "xl/worksheets/sheet1.xml",
+      data: worksheetXml
+    }
+  ];
+
+  return createZipArchive(files.map((file) => ({ name: file.name, data: encodeUtf8(file.data) })));
+}
+
+function getSpreadsheetColumnName(index: number) {
+  let name = "";
+  let current = index;
+  while (current > 0) {
+    current -= 1;
+    name = String.fromCharCode(65 + (current % 26)) + name;
+    current = Math.floor(current / 26);
+  }
+  return name || "A";
+}
+
+function getSpreadsheetSheetName(title: string) {
+  const clean = title.replace(/[:\\/?*\[\]]/g, " ").replace(/\s+/g, " ").trim();
+  return (clean || "Relatorio").slice(0, 31);
+}
+
+function createZipArchive(files: Array<{ data: Uint8Array; name: string }>) {
+  const localChunks: Uint8Array[] = [];
+  const centralChunks: Uint8Array[] = [];
+  const encodedEntries: Array<{ crc: number; data: Uint8Array; name: Uint8Array; offset: number }> = [];
+  let offset = 0;
+
+  for (const file of files) {
+    const name = encodeUtf8(file.name);
+    const crc = crc32(file.data);
+    const localHeader = createZipLocalHeader(name, file.data.length, crc);
+    encodedEntries.push({ name, data: file.data, crc, offset });
+    localChunks.push(localHeader, file.data);
+    offset += localHeader.length + file.data.length;
+  }
+
+  const centralDirectoryOffset = offset;
+  for (const entry of encodedEntries) {
+    const centralHeader = createZipCentralHeader(entry.name, entry.data.length, entry.crc, entry.offset);
+    centralChunks.push(centralHeader);
+    offset += centralHeader.length;
+  }
+
+  const centralDirectorySize = offset - centralDirectoryOffset;
+  const endRecord = createZipEndRecord(files.length, centralDirectorySize, centralDirectoryOffset);
+  return concatUint8Arrays([...localChunks, ...centralChunks, endRecord]);
+}
+
+function createZipLocalHeader(name: Uint8Array, size: number, crc: number) {
+  const header = new Uint8Array(30 + name.length);
+  const view = new DataView(header.buffer);
+  const { date, time } = getZipDateTime();
+  view.setUint32(0, 0x04034b50, true);
+  view.setUint16(4, 20, true);
+  view.setUint16(6, 0x0800, true);
+  view.setUint16(8, 0, true);
+  view.setUint16(10, time, true);
+  view.setUint16(12, date, true);
+  view.setUint32(14, crc, true);
+  view.setUint32(18, size, true);
+  view.setUint32(22, size, true);
+  view.setUint16(26, name.length, true);
+  view.setUint16(28, 0, true);
+  header.set(name, 30);
+  return header;
+}
+
+function createZipCentralHeader(name: Uint8Array, size: number, crc: number, localHeaderOffset: number) {
+  const header = new Uint8Array(46 + name.length);
+  const view = new DataView(header.buffer);
+  const { date, time } = getZipDateTime();
+  view.setUint32(0, 0x02014b50, true);
+  view.setUint16(4, 20, true);
+  view.setUint16(6, 20, true);
+  view.setUint16(8, 0x0800, true);
+  view.setUint16(10, 0, true);
+  view.setUint16(12, time, true);
+  view.setUint16(14, date, true);
+  view.setUint32(16, crc, true);
+  view.setUint32(20, size, true);
+  view.setUint32(24, size, true);
+  view.setUint16(28, name.length, true);
+  view.setUint16(30, 0, true);
+  view.setUint16(32, 0, true);
+  view.setUint16(34, 0, true);
+  view.setUint16(36, 0, true);
+  view.setUint32(38, 0, true);
+  view.setUint32(42, localHeaderOffset, true);
+  header.set(name, 46);
+  return header;
+}
+
+function createZipEndRecord(entryCount: number, centralDirectorySize: number, centralDirectoryOffset: number) {
+  const record = new Uint8Array(22);
+  const view = new DataView(record.buffer);
+  view.setUint32(0, 0x06054b50, true);
+  view.setUint16(4, 0, true);
+  view.setUint16(6, 0, true);
+  view.setUint16(8, entryCount, true);
+  view.setUint16(10, entryCount, true);
+  view.setUint32(12, centralDirectorySize, true);
+  view.setUint32(16, centralDirectoryOffset, true);
+  view.setUint16(20, 0, true);
+  return record;
+}
+
+function getZipDateTime() {
+  const now = new Date();
+  const time = (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2);
+  const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  return { date, time };
+}
+
+function concatUint8Arrays(chunks: Uint8Array[]) {
+  const totalLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const output = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return output;
+}
+
+function encodeUtf8(value: string) {
+  return new TextEncoder().encode(value);
+}
+
+const CRC32_TABLE = buildCrc32Table();
+
+function buildCrc32Table() {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let crc = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+    }
+    table[index] = crc >>> 0;
+  }
+  return table;
+}
+
+function crc32(data: Uint8Array) {
+  let crc = 0xffffffff;
+  for (const byte of data) {
+    crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function escapeXmlText(value: string) {
+  return value
+    .replace(/[^\u0009\u000a\u000d\u0020-\ud7ff\ue000-\ufffd]/g, "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function escapeXmlAttribute(value: string) {
+  return escapeXmlText(value).replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
 function escapeHtmlText(value: string) {
