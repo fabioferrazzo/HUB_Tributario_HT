@@ -258,6 +258,25 @@ as $$
   );
 $$;
 
+create table if not exists public.notificacoes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  tipo text not null default 'sistema',
+  titulo text not null default '',
+  body text not null default '',
+  meta text not null default '',
+  target_type text,
+  target_id uuid,
+  target_ref text,
+  dedupe_key text,
+  route text not null default 'home',
+  tone text not null default 'info',
+  active boolean not null default true,
+  read_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.notificacoes
   add column if not exists body text not null default '',
   add column if not exists meta text not null default '',
@@ -291,6 +310,168 @@ alter table public.notificacoes
 
 create unique index if not exists notificacoes_user_dedupe_unique
 on public.notificacoes (user_id, dedupe_key);
+
+create table if not exists public.email_outbox (
+  id uuid primary key default gen_random_uuid(),
+  dedupe_key text not null unique,
+  to_email text not null,
+  to_name text,
+  subject text not null,
+  html_body text not null,
+  text_body text not null default '',
+  category text not null default 'sistema',
+  target_type text,
+  target_ref text,
+  status text not null default 'queued',
+  scheduled_for timestamptz not null default now(),
+  attempts integer not null default 0,
+  last_error text,
+  provider text,
+  provider_message_id text,
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  sent_at timestamptz
+);
+
+alter table public.email_outbox
+  add column if not exists dedupe_key text not null default gen_random_uuid()::text,
+  add column if not exists to_email text not null default '',
+  add column if not exists to_name text,
+  add column if not exists subject text not null default '',
+  add column if not exists html_body text not null default '',
+  add column if not exists text_body text not null default '',
+  add column if not exists category text not null default 'sistema',
+  add column if not exists target_type text,
+  add column if not exists target_ref text,
+  add column if not exists status text not null default 'queued',
+  add column if not exists scheduled_for timestamptz not null default now(),
+  add column if not exists attempts integer not null default 0,
+  add column if not exists last_error text,
+  add column if not exists provider text,
+  add column if not exists provider_message_id text,
+  add column if not exists created_by uuid references public.profiles(id),
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now(),
+  add column if not exists sent_at timestamptz;
+
+create index if not exists email_outbox_status_schedule_idx
+on public.email_outbox (status, scheduled_for);
+
+create index if not exists email_outbox_target_idx
+on public.email_outbox (target_type, target_ref);
+
+update public.email_outbox
+set dedupe_key = coalesce(nullif(dedupe_key, ''), id::text)
+where dedupe_key is null
+   or dedupe_key = '';
+
+with duplicated as (
+  select
+    id,
+    row_number() over (partition by dedupe_key order by created_at, id) as rn
+  from public.email_outbox
+  where dedupe_key is not null
+)
+update public.email_outbox e
+set dedupe_key = e.dedupe_key || ':' || e.id::text
+from duplicated d
+where e.id = d.id
+  and d.rn > 1;
+
+create unique index if not exists email_outbox_dedupe_key_unique
+on public.email_outbox (dedupe_key);
+
+drop trigger if exists email_outbox_touch_updated_at on public.email_outbox;
+create trigger email_outbox_touch_updated_at
+before update on public.email_outbox
+for each row execute function public.touch_updated_at();
+
+alter table public.email_outbox enable row level security;
+
+drop policy if exists "email_outbox_select_managers" on public.email_outbox;
+create policy "email_outbox_select_managers"
+on public.email_outbox for select
+to authenticated
+using (public.is_manager());
+
+create or replace function public.queue_email(
+  p_to_email text,
+  p_subject text,
+  p_html_body text,
+  p_text_body text default '',
+  p_category text default 'sistema',
+  p_target_type text default null,
+  p_target_ref text default null,
+  p_scheduled_for timestamptz default now(),
+  p_dedupe_key text default null,
+  p_to_name text default null,
+  p_created_by uuid default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+  v_dedupe_key text := coalesce(nullif(trim(p_dedupe_key), ''), gen_random_uuid()::text);
+begin
+  if nullif(trim(p_to_email), '') is null then
+    raise exception 'Destinatario de e-mail nao informado.';
+  end if;
+
+  if nullif(trim(p_subject), '') is null then
+    raise exception 'Assunto do e-mail nao informado.';
+  end if;
+
+  insert into public.email_outbox (
+    dedupe_key,
+    to_email,
+    to_name,
+    subject,
+    html_body,
+    text_body,
+    category,
+    target_type,
+    target_ref,
+    scheduled_for,
+    created_by
+  )
+  values (
+    v_dedupe_key,
+    lower(trim(p_to_email)),
+    nullif(trim(p_to_name), ''),
+    trim(p_subject),
+    p_html_body,
+    coalesce(p_text_body, ''),
+    coalesce(nullif(trim(p_category), ''), 'sistema'),
+    nullif(trim(p_target_type), ''),
+    nullif(trim(p_target_ref), ''),
+    coalesce(p_scheduled_for, now()),
+    p_created_by
+  )
+  on conflict (dedupe_key) do update
+  set to_email = excluded.to_email,
+      to_name = excluded.to_name,
+      subject = excluded.subject,
+      html_body = excluded.html_body,
+      text_body = excluded.text_body,
+      category = excluded.category,
+      target_type = excluded.target_type,
+      target_ref = excluded.target_ref,
+      scheduled_for = excluded.scheduled_for,
+      status = case
+        when public.email_outbox.status in ('sent', 'processing') then public.email_outbox.status
+        else 'queued'
+      end,
+      last_error = null,
+      updated_at = now()
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
 
 create or replace function public.notify_pauta_conclusion(p_pauta_id uuid, p_completed_by uuid default auth.uid())
 returns integer
