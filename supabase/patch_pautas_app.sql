@@ -1,6 +1,8 @@
 -- HUB Depto Tributario - modulo Pautas nativo do app.
 -- Execute no SQL Editor antes do deploy que remove a dependencia do Sheets.
 
+create extension if not exists "pgcrypto";
+
 create table if not exists public.pautas (
   id uuid primary key default gen_random_uuid(),
   titulo text not null,
@@ -16,6 +18,18 @@ create table if not exists public.pautas (
   updated_at timestamptz not null default now()
 );
 
+alter table public.pautas
+  add column if not exists descricao text not null default '',
+  add column if not exists prazo timestamptz,
+  add column if not exists prioridade text not null default 'normal',
+  add column if not exists status text not null default 'aberta',
+  add column if not exists scope text not null default 'todos',
+  add column if not exists destaque boolean not null default false,
+  add column if not exists created_by uuid references public.profiles(id),
+  add column if not exists created_by_email text not null default '',
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
 create table if not exists public.pauta_usuarios (
   pauta_id uuid not null references public.pautas(id) on delete cascade,
   user_id uuid references public.profiles(id),
@@ -24,6 +38,12 @@ create table if not exists public.pauta_usuarios (
   created_at timestamptz not null default now(),
   primary key (pauta_id, email)
 );
+
+alter table public.pauta_usuarios
+  add column if not exists user_id uuid references public.profiles(id),
+  add column if not exists email text not null default '',
+  add column if not exists nome text not null default '',
+  add column if not exists created_at timestamptz not null default now();
 
 create table if not exists public.pauta_anexos (
   id uuid primary key default gen_random_uuid(),
@@ -36,6 +56,14 @@ create table if not exists public.pauta_anexos (
   created_at timestamptz not null default now()
 );
 
+alter table public.pauta_anexos
+  add column if not exists file_name text not null default '',
+  add column if not exists storage_path text not null default '',
+  add column if not exists mime_type text,
+  add column if not exists size_bytes bigint not null default 0,
+  add column if not exists uploaded_by uuid references public.profiles(id),
+  add column if not exists created_at timestamptz not null default now();
+
 create table if not exists public.pauta_conclusoes (
   pauta_id uuid not null references public.pautas(id) on delete cascade,
   user_id uuid references public.profiles(id),
@@ -44,6 +72,12 @@ create table if not exists public.pauta_conclusoes (
   completed_at timestamptz not null default now(),
   primary key (pauta_id, email)
 );
+
+alter table public.pauta_conclusoes
+  add column if not exists user_id uuid references public.profiles(id),
+  add column if not exists email text not null default '',
+  add column if not exists nome text not null default '',
+  add column if not exists completed_at timestamptz not null default now();
 
 create index if not exists pautas_prazo_idx on public.pautas (prazo);
 create index if not exists pauta_usuarios_email_idx on public.pauta_usuarios (lower(email));
@@ -99,6 +133,67 @@ begin
 exception when others then
   return null;
 end;
+$$;
+
+-- Compatibilidade entre bases que usam nomes diferentes para usuario ativo.
+-- O uso de to_jsonb evita erro de compilacao quando uma dessas colunas nao existe.
+create or replace function public.profile_is_active(p_profile public.profiles)
+returns boolean
+language sql
+stable
+as $$
+  select coalesce(
+    nullif(to_jsonb(p_profile)->>'active', '')::boolean,
+    nullif(to_jsonb(p_profile)->>'is_active', '')::boolean,
+    true
+  );
+$$;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and public.profile_is_active(p)
+      and to_jsonb(p)->>'role' = 'admin'
+  );
+$$;
+
+create or replace function public.is_manager()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and public.profile_is_active(p)
+      and to_jsonb(p)->>'role' in ('admin', 'gestor')
+  );
+$$;
+
+create or replace function public.is_active_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and public.profile_is_active(p)
+  );
 $$;
 
 create or replace function public.can_read_pauta(p_pauta_id uuid)
@@ -163,6 +258,40 @@ as $$
   );
 $$;
 
+alter table public.notificacoes
+  add column if not exists body text not null default '',
+  add column if not exists meta text not null default '',
+  add column if not exists target_type text,
+  add column if not exists target_ref text,
+  add column if not exists dedupe_key text,
+  add column if not exists route text not null default 'home',
+  add column if not exists tone text not null default 'info',
+  add column if not exists active boolean not null default true,
+  add column if not exists updated_at timestamptz not null default now();
+
+update public.notificacoes
+set dedupe_key = coalesce(dedupe_key, id::text)
+where dedupe_key is null;
+
+with duplicated as (
+  select
+    id,
+    row_number() over (partition by user_id, dedupe_key order by created_at, id) as rn
+  from public.notificacoes
+  where dedupe_key is not null
+)
+update public.notificacoes n
+set dedupe_key = n.dedupe_key || ':' || n.id::text
+from duplicated d
+where n.id = d.id
+  and d.rn > 1;
+
+alter table public.notificacoes
+  alter column dedupe_key set not null;
+
+create unique index if not exists notificacoes_user_dedupe_unique
+on public.notificacoes (user_id, dedupe_key);
+
 create or replace function public.notify_pauta_conclusion(p_pauta_id uuid, p_completed_by uuid default auth.uid())
 returns integer
 language plpgsql
@@ -222,8 +351,8 @@ begin
     now(),
     now()
   from public.profiles admin_profile
-  where admin_profile.role = 'admin'
-    and admin_profile.active
+  where to_jsonb(admin_profile)->>'role' = 'admin'
+    and public.profile_is_active(admin_profile)
   on conflict (user_id, dedupe_key) do update
   set active = true,
       read_at = null,
@@ -247,8 +376,8 @@ begin
       v_user.id
     ) as id
     from public.profiles admin_profile
-    where admin_profile.role = 'admin'
-      and admin_profile.active
+    where to_jsonb(admin_profile)->>'role' = 'admin'
+      and public.profile_is_active(admin_profile)
   )
   select count(*) into v_count from queued;
 
@@ -372,3 +501,8 @@ grant execute on function public.can_manage_pauta(uuid) to authenticated;
 grant execute on function public.can_complete_pauta(uuid) to authenticated;
 grant execute on function public.notify_pauta_conclusion(uuid, uuid) to authenticated;
 grant execute on function public.purge_old_notifications(integer) to authenticated;
+grant execute on function public.uuid_or_null(text) to authenticated;
+grant execute on function public.profile_is_active(public.profiles) to authenticated;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.is_manager() to authenticated;
+grant execute on function public.is_active_user() to authenticated;
