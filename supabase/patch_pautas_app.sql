@@ -50,6 +50,40 @@ create index if not exists pauta_usuarios_email_idx on public.pauta_usuarios (lo
 create index if not exists pauta_anexos_pauta_idx on public.pauta_anexos (pauta_id);
 create index if not exists pauta_conclusoes_pauta_idx on public.pauta_conclusoes (pauta_id);
 
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create or replace function public.email_escape_html(value text)
+returns text
+language sql
+immutable
+as $$
+  select replace(
+    replace(
+      replace(
+        replace(
+          replace(coalesce(value, ''), '&', '&amp;'),
+          '<',
+          '&lt;'
+        ),
+        '>',
+        '&gt;'
+      ),
+      '"',
+      '&quot;'
+    ),
+    '''',
+    '&#39;'
+  );
+$$;
+
 drop trigger if exists pautas_touch_updated_at on public.pautas;
 create trigger pautas_touch_updated_at
 before update on public.pautas
