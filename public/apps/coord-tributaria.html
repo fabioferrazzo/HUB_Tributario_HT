@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="hub-module-version" content="coord-pautas-anexos-2026-05-20" />
+  <meta name="hub-module-version" content="coord-pautas-nativas-2026-05-26" />
   <title>Coordenacao Tributaria | HUB</title>
   <style>
     :root {
@@ -647,7 +647,7 @@
         <div class="title-mark">CT</div>
         <div>
           <h1>Coordenacao Tributaria</h1>
-          <p class="subtitle">Resumo, colaboradores, atividades e pautas do setor. <span id="syncStatus" class="sync-pill">local</span></p>
+          <p class="subtitle">Resumo, lembretes de avaliacao e pautas do setor. <span id="syncStatus" class="sync-pill">local</span></p>
         </div>
       </div>
       <div class="top-controls" aria-label="Filtros e acoes">
@@ -670,8 +670,8 @@
 
     <nav class="tabs" aria-label="Navegacao">
       <button class="tab-button active" type="button" data-tab="resumo">Resumo geral</button>
-      <button class="tab-button" type="button" data-tab="colaboradores">Colaboradores</button>
-      <button class="tab-button" type="button" data-tab="atividades">Atividades e pautas</button>
+      <button class="tab-button" type="button" data-tab="colaboradores">Lembretes avaliacao</button>
+      <button class="tab-button" type="button" data-tab="atividades">Pautas e lembretes</button>
       <button class="tab-button" type="button" data-tab="relatorios">Relatorios e e-mails</button>
     </nav>
 
@@ -683,7 +683,7 @@
         <div class="board-grid">
           <section class="panel">
             <div class="panel-header">
-              <h2><span class="priority-dot priority-baixa"></span> Colaboradores</h2>
+              <h2><span class="priority-dot priority-baixa"></span> Lembretes Avaliacao Colaboradores</h2>
               <button type="button" class="ghost" data-toggle-drawer="colaborador">Expandir</button>
             </div>
             <div class="panel-body">
@@ -693,7 +693,7 @@
           </section>
           <section class="panel">
             <div class="panel-header">
-              <h2><span class="priority-dot priority-media"></span> Coordenacao</h2>
+              <h2><span class="priority-dot priority-media"></span> Pautas</h2>
               <button type="button" class="ghost" data-toggle-drawer="coordenacao">Expandir</button>
             </div>
             <div class="panel-body">
@@ -737,7 +737,7 @@
         <div class="agenda-layout">
           <section class="panel">
             <div class="panel-header">
-              <h2>Atividades, lembretes e pautas</h2>
+              <h2>Pautas e lembretes</h2>
               <span class="chip" id="agendaCount">0 itens</span>
             </div>
             <div class="panel-body">
@@ -803,7 +803,7 @@
             <label>Tipo
               <select id="reminderType">
                 <option value="colaborador">Colaborador</option>
-                <option value="coordenacao">Coordenacao</option>
+                <option value="coordenacao">Pautas</option>
                 <option value="pauta">Pauta</option>
               </select>
             </label>
@@ -1148,7 +1148,7 @@
           metric("Abertos", open.length),
           metric("Atrasados", overdue.length),
           metric("Hoje", today.length),
-          metric("Colaboradores", activeCollaborators().length)
+          metric("Lembretes avaliacao", activeCollaborators().length)
         ].join("");
       }
 
@@ -1214,8 +1214,8 @@
 
       function itemTypeLabel(type) {
         if (type === "pauta") return "Pauta";
-        if (type === "coordenacao") return "Coordenacao";
-        return "Colaborador";
+        if (type === "coordenacao") return "Pauta";
+        return "Lembrete avaliacao";
       }
 
       function renderCollaborators() {
