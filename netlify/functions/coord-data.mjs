@@ -56,7 +56,7 @@ export default async function handler(request) {
 }
 
 async function loadState(supabaseUrl, serviceRoleKey) {
-  const [collaboratorRows, itemRows] = await Promise.all([
+  const [collaboratorRows, itemRows, pautaRows] = await Promise.all([
     supabaseRequest(
       `${trimUrl(supabaseUrl)}/rest/v1/coord_colaboradores?select=id,nome,email,funcao,active,created_at,updated_at&order=nome.asc`,
       { headers: serviceHeaders(serviceRoleKey) }
@@ -64,12 +64,22 @@ async function loadState(supabaseUrl, serviceRoleKey) {
     supabaseRequest(
       `${trimUrl(supabaseUrl)}/rest/v1/coord_itens?select=id,titulo,descricao,tipo,colaborador_id,prazo,prioridade,recorrencia,status,pinned,anexos,deleted_at,completed_at,created_at,updated_at&order=updated_at.desc`,
       { headers: serviceHeaders(serviceRoleKey) }
+    ),
+    supabaseRequest(
+      `${trimUrl(supabaseUrl)}/rest/v1/pautas?select=id,titulo,descricao,prazo,prioridade,status,scope,destaque,created_by,created_by_email,created_at,updated_at&order=updated_at.desc`,
+      { headers: serviceHeaders(serviceRoleKey) }
     )
   ]);
 
+  const nativePautas = await loadNativePautasForCoord(supabaseUrl, serviceRoleKey, Array.isArray(pautaRows) ? pautaRows : []);
+  const nativePautaIds = new Set(nativePautas.map((item) => item.id));
+  const legacyItems = (Array.isArray(itemRows) ? itemRows : [])
+    .map(fromItemRow)
+    .filter((item) => !(item.type === "pauta" && nativePautaIds.has(item.id)));
+
   return {
     collaborators: (Array.isArray(collaboratorRows) ? collaboratorRows : []).map(fromCollaboratorRow),
-    reminders: (Array.isArray(itemRows) ? itemRows : []).map(fromItemRow)
+    reminders: [...nativePautas, ...legacyItems]
   };
 }
 
@@ -95,6 +105,84 @@ async function saveState(supabaseUrl, serviceRoleKey, state) {
         prefer: "resolution=merge-duplicates"
       },
       body: JSON.stringify(state.reminders.map(toItemRow))
+    });
+  }
+
+  await saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, state.reminders);
+}
+
+async function loadNativePautasForCoord(supabaseUrl, serviceRoleKey, rows) {
+  if (!rows.length) return [];
+
+  const ids = rows.map((row) => row.id).filter(Boolean);
+  const [usuariosRows, anexoRows] = await Promise.all([
+    ids.length
+      ? supabaseRequest(
+          `${trimUrl(supabaseUrl)}/rest/v1/pauta_usuarios?pauta_id=in.(${ids.map(encodeURIComponent).join(",")})&select=pauta_id,email,nome,user_id`,
+          { headers: serviceHeaders(serviceRoleKey) }
+        )
+      : [],
+    ids.length
+      ? supabaseRequest(
+          `${trimUrl(supabaseUrl)}/rest/v1/pauta_anexos?pauta_id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,pauta_id,file_name,mime_type,size_bytes,created_at`,
+          { headers: serviceHeaders(serviceRoleKey) }
+        )
+      : []
+  ]);
+
+  return rows.map((row) =>
+    fromPautaRow(
+      row,
+      (Array.isArray(usuariosRows) ? usuariosRows : []).filter((item) => item.pauta_id === row.id),
+      (Array.isArray(anexoRows) ? anexoRows : []).filter((item) => item.pauta_id === row.id)
+    )
+  );
+}
+
+async function saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, reminders) {
+  const pautaItems = reminders.filter((item) => item.type === "pauta");
+  if (!pautaItems.length) return;
+
+  const deletedIds = pautaItems.filter((item) => item.deletedAt).map((item) => item.id).filter(Boolean);
+  if (deletedIds.length) {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/pautas?id=in.(${deletedIds.map(encodeURIComponent).join(",")})`, {
+      method: "DELETE",
+      headers: serviceHeaders(serviceRoleKey)
+    });
+  }
+
+  const activePautas = pautaItems.filter((item) => !item.deletedAt);
+  if (!activePautas.length) return;
+
+  const ids = activePautas.map((item) => item.id).filter(Boolean);
+  const existingRows = ids.length
+    ? await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/pautas?id=in.(${ids.map(encodeURIComponent).join(",")})&select=id`, {
+        headers: serviceHeaders(serviceRoleKey)
+      })
+    : [];
+  const existingIds = new Set((Array.isArray(existingRows) ? existingRows : []).map((row) => row.id));
+
+  const inserts = activePautas.filter((item) => !existingIds.has(item.id)).map(toNewPautaRow);
+  if (inserts.length) {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/pautas?on_conflict=id`, {
+      method: "POST",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json",
+        prefer: "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(inserts)
+    });
+  }
+
+  for (const item of activePautas.filter((entry) => existingIds.has(entry.id))) {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/pautas?id=eq.${encodeURIComponent(item.id)}`, {
+      method: "PATCH",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(toExistingPautaPatch(item))
     });
   }
 }
@@ -213,6 +301,43 @@ function fromItemRow(row) {
   };
 }
 
+function fromPautaRow(row, usuarios, anexos) {
+  return {
+    id: row.id,
+    title: row.titulo,
+    description: row.descricao || "",
+    type: "pauta",
+    collaboratorId: "",
+    due: row.prazo || "",
+    priority: fromPautaPriority(row.prioridade),
+    recurring: "none",
+    status: row.status === "concluida" ? "concluido" : "aberto",
+    pinned: row.destaque ? "main" : "main",
+    attachments: anexos.map(fromPautaAnexoRow),
+    deletedAt: "",
+    completedAt: "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    scope: row.scope || "todos",
+    assignedUsers: usuarios.map((item) => ({
+      email: item.email,
+      name: item.nome || item.email,
+      userId: item.user_id || ""
+    }))
+  };
+}
+
+function fromPautaAnexoRow(row) {
+  return {
+    id: row.id,
+    name: row.file_name,
+    type: row.mime_type || "application/octet-stream",
+    size: Number(row.size_bytes || 0),
+    dataUrl: "",
+    createdAt: row.created_at
+  };
+}
+
 function toCollaboratorRow(item) {
   return {
     id: item.id,
@@ -245,6 +370,45 @@ function toItemRow(item) {
     created_at: item.createdAt,
     updated_at: item.updatedAt
   };
+}
+
+function toNewPautaRow(item) {
+  return {
+    id: item.id,
+    titulo: item.title,
+    descricao: item.description,
+    prazo: item.due || null,
+    prioridade: toPautaPriority(item.priority),
+    status: item.status === "concluido" ? "concluida" : "aberta",
+    scope: "todos",
+    destaque: item.pinned === "main",
+    created_by: item.createdBy,
+    created_by_email: "",
+    created_at: item.createdAt,
+    updated_at: item.updatedAt
+  };
+}
+
+function toExistingPautaPatch(item) {
+  return {
+    titulo: item.title,
+    descricao: item.description,
+    prazo: item.due || null,
+    prioridade: toPautaPriority(item.priority),
+    status: item.status === "concluido" ? "concluida" : "aberta",
+    destaque: item.pinned === "main",
+    updated_at: item.updatedAt
+  };
+}
+
+function fromPautaPriority(value) {
+  if (value === "alta" || value === "baixa") return value;
+  return "media";
+}
+
+function toPautaPriority(value) {
+  if (value === "alta" || value === "baixa") return value;
+  return "normal";
 }
 
 async function verifySession(supabaseUrl, anonKey, token) {
