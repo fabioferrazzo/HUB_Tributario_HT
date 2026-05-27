@@ -19,6 +19,10 @@ with required_objects as (
       ('table', 'tarefas', 'Tabela public.tarefas'),
       ('table', 'tarefa_usuarios', 'Tabela public.tarefa_usuarios'),
       ('table', 'tarefa_anexos', 'Tabela public.tarefa_anexos'),
+      ('table', 'pautas', 'Tabela public.pautas'),
+      ('table', 'pauta_usuarios', 'Tabela public.pauta_usuarios'),
+      ('table', 'pauta_anexos', 'Tabela public.pauta_anexos'),
+      ('table', 'pauta_conclusoes', 'Tabela public.pauta_conclusoes'),
       ('table', 'coord_colaboradores', 'Tabela public.coord_colaboradores'),
       ('table', 'coord_itens', 'Tabela public.coord_itens'),
       ('column', 'arquivo_recursos.processing_status', 'Coluna public.arquivo_recursos.processing_status'),
@@ -39,6 +43,11 @@ with required_objects as (
       ('function', 'queue_lembrete_deadline_emails', 'Funcao public.queue_lembrete_deadline_emails'),
       ('function', 'can_read_tarefa', 'Funcao public.can_read_tarefa'),
       ('function', 'can_manage_tarefa', 'Funcao public.can_manage_tarefa'),
+      ('function', 'can_read_pauta', 'Funcao public.can_read_pauta'),
+      ('function', 'can_manage_pauta', 'Funcao public.can_manage_pauta'),
+      ('function', 'can_complete_pauta', 'Funcao public.can_complete_pauta'),
+      ('function', 'notify_pauta_conclusion', 'Funcao public.notify_pauta_conclusion'),
+      ('function', 'purge_old_notifications', 'Funcao public.purge_old_notifications'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
