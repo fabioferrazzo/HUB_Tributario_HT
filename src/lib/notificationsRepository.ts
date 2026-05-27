@@ -37,6 +37,7 @@ export async function syncAppNotifications(user: HubUser, generated: HubNotifica
 
   if (getNotificationsSource(user) === "supabase") {
     try {
+      await purgeOldSupabaseNotifications();
       const { data, error } = await assertSupabase().rpc("sync_user_notifications", {
         p_items: normalized.map((item) => ({
           tipo: item.tipo,
@@ -59,6 +60,14 @@ export async function syncAppNotifications(user: HubUser, generated: HubNotifica
   }
 
   return syncLocalNotifications(user, normalized);
+}
+
+async function purgeOldSupabaseNotifications() {
+  try {
+    await assertSupabase().rpc("purge_old_notifications", { p_days: 5 });
+  } catch {
+    // Ambientes antigos continuam sincronizando mesmo antes do patch de retencao.
+  }
 }
 
 export async function markAppNotificationRead(user: HubUser, notificationId: string) {
