@@ -36,6 +36,32 @@ export type Pauta = {
   modificadoEm: string;
   concluidoEm: string;
   origem: string;
+  scope?: "todos" | "usuarios";
+  destaque?: boolean;
+  responsaveis?: string[];
+  anexos?: PautaAttachment[];
+  conclusoes?: PautaCompletion[];
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type PautaAttachment = {
+  id: string;
+  name: string;
+  storagePath: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedBy: string;
+  createdAt: string;
+};
+
+export type PautaCompletion = {
+  userId: string;
+  email: string;
+  nome: string;
+  completedAt: string;
 };
 
 export type Lembrete = {

@@ -31,7 +31,7 @@
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { loadPautas, sheetsHubUrl, teamMembers } from "./data/hubData";
+import { teamMembers } from "./data/hubData";
 import {
   deleteAppFileAnnotation,
   deleteAppFileFolder,
@@ -54,6 +54,17 @@ import {
 } from "./lib/lembretesRepository";
 import { deleteAppLink, getLinksSource, listAppLinks, saveAppLink } from "./lib/linksRepository";
 import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
+import {
+  canUserCompletePautaApp,
+  canUserManagePautaApp,
+  canUserViewPautaApp,
+  completeAppPauta,
+  deleteAppPauta,
+  getPautasSource,
+  hasUserCompletedPauta,
+  listAppPautas,
+  saveAppPauta
+} from "./lib/pautasRepository";
 import {
   canUserManageTask,
   deleteAppTask,
@@ -84,7 +95,7 @@ import type {
   UserRole
 } from "./types";
 
-type PautaFilter = "todas" | "minhas" | "alta" | "atrasadas" | "semPrazo";
+type PautaFilter = "todas" | "minhas" | "destaques" | "alta" | "atrasadas" | "semPrazo" | "concluidas";
 type TaskFilter = "todas" | "minhas" | "abertas" | "concluidas";
 type HealthStatusTone = "ok" | "warning" | "info";
 type ViewerPreviewMode = "image" | "iframe" | "unsupported";
@@ -309,8 +320,8 @@ const homologationBlocks: HomologationBlock[] = [
 ];
 
 const routes = [
-  { id: "home", label: "Inicio", icon: Home },
-  { id: "tarefas", label: "Tarefas", icon: CalendarDays },
+  { id: "home", label: "Pautas", icon: ListChecks },
+  { id: "tarefas", label: "Calendario de Tarefas", icon: CalendarDays },
   { id: "lembretes", label: "Lembretes", icon: Bell },
   { id: "arquivos", label: "Arquivos", icon: FileArchive },
   { id: "agenda", label: "Agenda tributaria", icon: ListChecks },
@@ -326,7 +337,7 @@ const routeGroups = [
   { label: "Sistema", items: ["coord", "admin"] }
 ] satisfies Array<{ label: string; items: HubRoute[] }>;
 
-const coordStandaloneVersion = "2026-05-20-pautas-anexos";
+const coordStandaloneVersion = "2026-05-26-pautas-nativas";
 
 const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: string }> = {
   agenda: { title: "Agenda tributaria", src: "/apps/agenda-tributaria.html" },
@@ -355,6 +366,7 @@ export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const [lembretesVersion, setLembretesVersion] = useState(0);
+  const [pautasVersion, setPautasVersion] = useState(0);
   const [usersVersion, setUsersVersion] = useState(0);
   const [hubUsers, setHubUsers] = useState<HubProfile[]>([]);
   const [notificationItems, setNotificationItems] = useState<HubNotification[]>([]);
@@ -366,6 +378,15 @@ export function App() {
 
     window.addEventListener("hub:lembretes", handleLembretesChange);
     return () => window.removeEventListener("hub:lembretes", handleLembretesChange);
+  }, []);
+
+  useEffect(() => {
+    function handlePautasChange() {
+      setPautasVersion((version) => version + 1);
+    }
+
+    window.addEventListener("hub:pautas", handlePautasChange);
+    return () => window.removeEventListener("hub:pautas", handlePautasChange);
   }, []);
 
   useEffect(() => {
@@ -406,10 +427,10 @@ export function App() {
       return;
     }
 
-    Promise.all([listAppLembretes(user), loadPautas()])
+    Promise.all([listAppLembretes(user), listAppPautas(user)])
       .then(([lembretes, pautas]) => {
         if (!active) return undefined;
-        const visiblePautas = user.role === "colaborador" ? pautas.filter((pauta) => canUserViewPauta(pauta, user)) : pautas;
+        const visiblePautas = pautas.filter((pauta) => canUserViewPauta(pauta, user));
         return syncAppNotifications(user, buildSystemNotifications({ hubUsers, lembretes, pautas: visiblePautas, user }));
       })
       .then((notifications) => {
@@ -422,7 +443,7 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [hubUsers, lembretesVersion, user]);
+  }, [hubUsers, lembretesVersion, pautasVersion, user]);
 
   if (!user) {
     return <LoginScreen onLogin={setUser} />;
@@ -614,10 +635,27 @@ function TopBar({
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationAction, setNotificationAction] = useState("");
 
   useEffect(() => {
     setNotificationsOpen(false);
   }, [route]);
+
+  function exportNotificationsDocx() {
+    const rows = notificationItems.length ? notificationItems.map(notificationToReportRow) : [{ Info: "Nenhuma notificacao pendente." }];
+    downloadDocxReport("Notificacoes - HUB Depto Tributario", rows);
+  }
+
+  async function emailNotifications() {
+    setNotificationAction("Enviando...");
+    try {
+      await sendNotificationsByEmail(user, notificationItems);
+      setNotificationAction("E-mail enviado.");
+      window.setTimeout(() => setNotificationAction(""), 2500);
+    } catch (error) {
+      setNotificationAction(getErrorMessage(error));
+    }
+  }
 
   return (
     <header className="topbar">
@@ -642,7 +680,7 @@ function TopBar({
         <div className="top-chip">
           <Link2 size={14} />
           <span>
-            Sheets HUB <strong>CSV local</strong>
+            Pautas HUB <strong>app</strong>
           </span>
         </div>
         <div className="notification-wrap">
@@ -664,12 +702,21 @@ function TopBar({
                   <strong>Notificacoes</strong>
                   <small>{notificationItems.length ? `${notificationItems.length} aviso(s) nao lido(s)` : "Sem avisos ativos"}</small>
                 </div>
-                {notificationItems.length ? (
-                  <button className="notification-read-all" type="button" onClick={onNotificationsReadAll}>
-                    Marcar todas
+                <div className="notification-actions">
+                  <button className="notification-read-all" type="button" onClick={exportNotificationsDocx}>
+                    DOCX
                   </button>
-                ) : null}
+                  <button className="notification-read-all" type="button" onClick={emailNotifications}>
+                    E-mail
+                  </button>
+                  {notificationItems.length ? (
+                    <button className="notification-read-all" type="button" onClick={onNotificationsReadAll}>
+                      Marcar todas
+                    </button>
+                  ) : null}
+                </div>
               </header>
+              {notificationAction ? <p className="notification-action-status">{notificationAction}</p> : null}
 
               <div className="notification-list">
                 {notificationItems.length ? (
@@ -721,8 +768,8 @@ function TopBar({
 }
 
 function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
-  if (route === "home") return <Dashboard hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
-  if (route === "tarefas") return <TasksModule hubUsers={hubUsers} user={user} />;
+  if (route === "home") return <Dashboard hubUsers={hubUsers} user={user} />;
+  if (route === "tarefas") return <TasksModule hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
   if (route === "arquivos") return <ArquivosModule user={user} />;
   if (route === "links") return <LinksModule user={user} />;
@@ -730,131 +777,296 @@ function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onN
   if (route === "agenda" || route === "pomodoro" || route === "coord") {
     return <ModuleFrame title={appFrames[route].title} src={appFrames[route].src} />;
   }
-  return <Dashboard hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
+  return <Dashboard hubUsers={hubUsers} user={user} />;
 }
 
 function Dashboard({
   hubUsers,
-  onNavigate,
   user
 }: {
   hubUsers: HubProfile[];
-  onNavigate: (route: HubRoute) => void;
   user: HubUser;
 }) {
   const [pautas, setPautas] = useState<Pauta[]>([]);
-  const [lembretes, setLembretes] = useState<Lembrete[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lembretesLoading, setLembretesLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [pautaQuery, setPautaQuery] = useState("");
   const [pautaFilter, setPautaFilter] = useState<PautaFilter>("todas");
-  const [lembreteQuery, setLembreteQuery] = useState("");
-
-  useEffect(() => {
-    loadPautas()
-      .then(setPautas)
-      .finally(() => setLoading(false));
-  }, []);
+  const [monthCursor, setMonthCursor] = useState(() => new Date());
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [titulo, setTitulo] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [prazo, setPrazo] = useState("");
+  const [prioridade, setPrioridade] = useState("normal");
+  const [status, setStatus] = useState("aberta");
+  const [scope, setScope] = useState<"todos" | "usuarios">("todos");
+  const [destaque, setDestaque] = useState(false);
+  const [responsaveis, setResponsaveis] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const source = getPautasSource(user);
 
   useEffect(() => {
     let active = true;
 
-    async function refreshLembretes() {
-      setLembretesLoading(true);
+    async function refreshPautas() {
+      setLoading(true);
+      setError("");
       try {
-        const loaded = await listAppLembretes(user);
-        if (active) setLembretes(loaded);
+        const loaded = await listAppPautas(user);
+        if (active) setPautas(loaded);
+      } catch (loadError) {
+        if (active) setError(getErrorMessage(loadError));
       } finally {
-        if (active) setLembretesLoading(false);
+        if (active) setLoading(false);
       }
     }
 
-    refreshLembretes();
-    window.addEventListener("hub:lembretes", refreshLembretes);
+    refreshPautas();
+    window.addEventListener("hub:pautas", refreshPautas);
 
     return () => {
       active = false;
-      window.removeEventListener("hub:lembretes", refreshLembretes);
+      window.removeEventListener("hub:pautas", refreshPautas);
     };
   }, [user]);
 
   const canManagePautas = user.role === "admin";
-  const canSeeAllPautas = user.role === "admin" || user.role === "gestor";
+  const selectedYear = monthCursor.getFullYear();
+  const selectedMonth = monthCursor.getMonth();
 
   const visiblePautas = useMemo(() => {
-    const allowed = canSeeAllPautas ? pautas : pautas.filter((pauta) => canUserViewPauta(pauta, user));
+    const allowed = pautas.filter((pauta) => canUserViewPauta(pauta, user));
     return sortPautasForDashboard(allowed);
-  }, [canSeeAllPautas, pautas, user]);
+  }, [pautas, user]);
+
+  const monthPautas = useMemo(() => {
+    return visiblePautas.filter((pauta) => {
+      if (!pauta.prazo?.trim()) return true;
+      const date = parseBrazilianDate(pauta.prazo) || new Date(pauta.prazo);
+      if (Number.isNaN(date.getTime())) return true;
+      return date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
+    });
+  }, [selectedMonth, selectedYear, visiblePautas]);
 
   const filteredPautas = useMemo(() => {
     const query = normalizeForSearch(pautaQuery);
-    return visiblePautas.filter((pauta) => {
+    return monthPautas.filter((pauta) => {
       if (pautaFilter === "minhas" && !isPautaAssignedToUser(pauta, user)) return false;
+      if (pautaFilter === "destaques" && !pauta.destaque) return false;
       if (pautaFilter === "alta" && !isPautaAlta(pauta)) return false;
       if (pautaFilter === "atrasadas" && !isPautaAtrasada(pauta)) return false;
       if (pautaFilter === "semPrazo" && pauta.prazo.trim()) return false;
+      if (pautaFilter === "concluidas" && !isPautaConcluida(pauta)) return false;
 
       if (!query) return true;
 
       return normalizeForSearch(
-        [pauta.tema, pauta.acoes, pauta.responsavel, pauta.email, pauta.status, pauta.prioridade, pauta.pendenciasObs, pauta.retorno].join(" ")
+        [
+          pauta.tema,
+          pauta.acoes,
+          pauta.responsavel,
+          pauta.email,
+          pauta.status,
+          pauta.prioridade,
+          pauta.pendenciasObs,
+          pauta.retorno,
+          formatResponsaveis(pauta.responsaveis || [], hubUsers)
+        ].join(" ")
       ).includes(query);
     });
-  }, [pautaFilter, pautaQuery, user, visiblePautas]);
-  const filteredLembretes = useMemo(() => {
-    const query = lembreteQuery.trim().toLowerCase();
-    if (!query) return lembretes;
-    return lembretes.filter((lembrete) =>
-      [lembrete.titulo, lembrete.descricao, lembrete.prioridade, lembrete.status].join(" ").toLowerCase().includes(query)
-    );
-  }, [lembreteQuery, lembretes]);
-  const statusCounts = useMemo(() => countPautaStatus(visiblePautas, user), [user, visiblePautas]);
-  const overdueLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "danger").length;
-  const todayLembretes = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "warning").length;
-  const pautaStatusLabel = loading
-    ? "Sincronizando"
-    : `${canSeeAllPautas ? "CSV HUB" : "minhas pautas"} - ${visiblePautas.length} itens`;
+  }, [hubUsers, monthPautas, pautaFilter, pautaQuery, user]);
+  const statusCounts = useMemo(() => countPautaStatus(monthPautas, user), [monthPautas, user]);
+  const pautaStatusLabel = loading ? "Sincronizando" : `${source} - ${monthPautas.length} pauta(s)`;
 
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
   }
 
-  function exportLembretes(format: ReportFormat) {
-    exportReport(format, "Lembretes - HUB Depto Tributario", filteredLembretes.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)));
+  function clearForm() {
+    setEditingId(null);
+    setTitulo("");
+    setDescricao("");
+    setPrazo("");
+    setPrioridade("normal");
+    setStatus("aberta");
+    setScope("todos");
+    setDestaque(false);
+    setResponsaveis([]);
+    setSelectedFiles([]);
   }
 
-  function openLembreteForEdit(lembrete: Lembrete) {
-    if (!canUserManageLembrete(lembrete, user)) return;
-    sessionStorage.setItem("hub_open_lembrete_id", lembrete.id);
-    onNavigate("lembretes");
+  function startNewPauta() {
+    clearForm();
+    setFormOpen(true);
+    setError("");
   }
 
-  function handleLembreteKeyDown(event: React.KeyboardEvent<HTMLElement>, lembrete: Lembrete) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openLembreteForEdit(lembrete);
+  function startEditPauta(pauta: Pauta) {
+    if (!canUserManagePautaApp(pauta, user)) {
+      setError("Apenas o administrador pode editar pautas.");
+      return;
+    }
+
+    setEditingId(pauta.id);
+    setTitulo(pauta.tema);
+    setDescricao(pauta.acoes || pauta.pendenciasObs || "");
+    setPrazo(toDatetimeLocalValue(pauta.prazo));
+    setPrioridade(pauta.prioridade || "normal");
+    setStatus(pauta.status || "aberta");
+    setScope(pauta.scope || "todos");
+    setDestaque(Boolean(pauta.destaque));
+    setResponsaveis(pauta.responsaveis || []);
+    setSelectedFiles([]);
+    setFormOpen(true);
+    setError("");
+  }
+
+  async function submitPauta(event: FormEvent) {
+    event.preventDefault();
+    if (!canManagePautas) return;
+    if (!titulo.trim()) {
+      setError("Informe o titulo da pauta.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const existing = pautas.find((pauta) => pauta.id === editingId);
+    const nextPauta: Pauta = {
+      id: existing?.id || crypto.randomUUID(),
+      tema: titulo.trim(),
+      acoes: descricao.trim(),
+      prazo,
+      prioridade,
+      responsavel: scope === "todos" ? "Todos" : formatResponsaveis(responsaveis, hubUsers),
+      email: user.email,
+      pendenciasObs: "",
+      retorno: "",
+      status,
+      periodicidade: "",
+      modificadoEm: now,
+      concluidoEm: existing?.concluidoEm || "",
+      origem: "HUB Pautas",
+      scope,
+      destaque,
+      responsaveis: scope === "usuarios" ? responsaveis : [],
+      anexos: existing?.anexos || [],
+      conclusoes: existing?.conclusoes || [],
+      createdBy: existing?.createdBy || user.id || user.email,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now
+    };
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await saveAppPauta({ current: pautas, files: selectedFiles, pauta: nextPauta, user });
+      setPautas(saved);
+      clearForm();
+      setFormOpen(false);
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setSaving(false);
     }
   }
 
+  async function persistPauta(pauta: Pauta, files: File[] = []) {
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await saveAppPauta({ current: pautas, files, pauta, user });
+      setPautas(saved);
+    } catch (persistError) {
+      setError(getErrorMessage(persistError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleDestaque(pauta: Pauta) {
+    if (!canUserManagePautaApp(pauta, user)) return;
+    await persistPauta({ ...pauta, destaque: !pauta.destaque, updatedAt: new Date().toISOString(), modificadoEm: new Date().toISOString() });
+  }
+
+  async function concludePauta(pauta: Pauta) {
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await completeAppPauta({ current: pautas, pauta, user });
+      setPautas(saved);
+    } catch (completeError) {
+      setError(getErrorMessage(completeError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removePauta(pauta: Pauta) {
+    if (!canUserManagePautaApp(pauta, user)) return;
+    setSaving(true);
+    setError("");
+
+    try {
+      const saved = await deleteAppPauta({ current: pautas, pauta, user });
+      setPautas(saved);
+      if (editingId === pauta.id) {
+        clearForm();
+        setFormOpen(false);
+      }
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toggleResponsavel(email: string) {
+    setResponsaveis((current) => (current.includes(email) ? current.filter((item) => item !== email) : [...current, email]));
+  }
+
+  function shiftMonth(delta: number) {
+    setMonthCursor((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+  }
+
   return (
-    <div className="dashboard-grid">
+    <div className="pautas-page">
       <section className="panel panel--pautas">
         <DashboardPanelHeader
-          actionLabel={canManagePautas ? "Nova" : undefined}
-          actionTitle="Abrir planilha HUB para cadastrar pauta"
+          actionLabel={canManagePautas ? "Nova pauta" : undefined}
+          actionTitle="Criar pauta no HUB"
           icon={<ListChecks size={18} />}
-          onAction={canManagePautas ? () => window.open(sheetsHubUrl, "_blank", "noopener,noreferrer") : undefined}
-          secondaryIcon={<Filter size={14} />}
-          secondaryLabel="Filtrar"
+          onAction={canManagePautas ? startNewPauta : undefined}
+          secondaryIcon={<RefreshCw size={14} />}
+          secondaryLabel={autoScroll ? "Rolagem ligada" : "Rolagem parada"}
+          onSecondaryAction={() => setAutoScroll((current) => !current)}
           status={pautaStatusLabel}
           title="Pautas"
         />
+        <div className="pautas-monthbar">
+          <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
+            <ChevronLeft size={16} />
+          </button>
+          <strong>{monthCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong>
+          <button type="button" onClick={() => shiftMonth(1)} aria-label="Proximo mes">
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" onClick={() => setMonthCursor(new Date())}>Mes atual</button>
+        </div>
         <div className="panel-toolbar">
           <button className={`filter-pill ${pautaFilter === "todas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("todas")}>
-            Todas ({visiblePautas.length})
+            Todas ({monthPautas.length})
           </button>
           <button className={`filter-pill ${pautaFilter === "minhas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("minhas")}>
             Minhas ({statusCounts.minhas})
+          </button>
+          <button className={`filter-pill ${pautaFilter === "destaques" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("destaques")}>
+            Destaques ({statusCounts.destaques})
           </button>
           <button className={`filter-pill ${pautaFilter === "alta" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("alta")}>
             Alta ({statusCounts.alta})
@@ -873,6 +1085,9 @@ function Dashboard({
           >
             Sem prazo ({statusCounts.semPrazo})
           </button>
+          <button className={`filter-pill ${pautaFilter === "concluidas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("concluidas")}>
+            Concluidas ({statusCounts.concluidas})
+          </button>
           <label className="panel-search">
             <Search size={14} />
             <input
@@ -887,16 +1102,28 @@ function Dashboard({
             <button type="button" onClick={() => exportPautas("excel")}>XLSX</button>
           </div>
         </div>
-        <div className="stack-list">
+        {error ? <p className="module-error module-error--compact">{error}</p> : null}
+        <div className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}>
           {filteredPautas.map((pauta) => (
-            <article className="list-row list-row--pauta" key={pauta.id}>
+            <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} key={pauta.id}>
               <div>
                 <strong>{pauta.tema}</strong>
                 <span>{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
                 {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
-                <em>{pauta.responsavel || "Sem responsavel definido"}{pauta.email ? ` - ${pauta.email}` : ""}</em>
+                <em>{pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}</em>
+                {pauta.anexos?.length ? (
+                  <div className="pauta-attachments">
+                    {pauta.anexos.map((anexo) => (
+                      <a href={anexo.url} key={anexo.id} rel="noreferrer" target="_blank">
+                        <Paperclip size={12} />
+                        {anexo.name}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="pauta-row-badges">
+                {pauta.destaque ? <StatusPill label="Destaque" /> : null}
                 <StatusPill label={pauta.status || "Sem status"} />
                 {pauta.prioridade ? <StatusPill label={pauta.prioridade} /> : null}
               </div>
@@ -904,6 +1131,31 @@ function Dashboard({
                 <CalendarDays size={12} />
                 {formatDate(pauta.prazo)} - {pauta.origem}
               </small>
+              <div className="record-actions pauta-actions">
+                {canUserCompletePautaApp(pauta, user) && !hasUserCompletedPauta(pauta, user) ? (
+                  <button disabled={saving} type="button" onClick={() => concludePauta(pauta)}>
+                    <CheckCircle2 size={14} />
+                    Concluir
+                  </button>
+                ) : null}
+                {hasUserCompletedPauta(pauta, user) ? <span className="readonly-note">Concluida por voce</span> : null}
+                {canUserManagePautaApp(pauta, user) ? (
+                  <>
+                    <button disabled={saving} type="button" onClick={() => startEditPauta(pauta)}>
+                      <Edit3 size={14} />
+                      Editar
+                    </button>
+                    <button disabled={saving} type="button" onClick={() => toggleDestaque(pauta)}>
+                      <Tag size={14} />
+                      {pauta.destaque ? "Remover destaque" : "Destacar"}
+                    </button>
+                    <button className="danger-action" disabled={saving} type="button" onClick={() => removePauta(pauta)}>
+                      <Trash2 size={14} />
+                      Excluir
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </article>
           ))}
           {!filteredPautas.length && !loading ? (
@@ -914,66 +1166,95 @@ function Dashboard({
         </div>
       </section>
 
-      <section className="panel panel--lembretes">
-        <DashboardPanelHeader
-          actionLabel="Novo"
-          icon={<Bell size={18} />}
-          onAction={() => onNavigate("lembretes")}
-          secondaryIcon={<Bell size={14} />}
-          secondaryLabel="Avisos"
-          status={lembretesLoading ? "Carregando" : `${getLembretesSource(user)} - ${lembretes.length} itens`}
-          title="Lembretes"
-        />
-        <div className="panel-toolbar">
-          <button className="filter-pill active" type="button">
-            Todos ({lembretes.length})
-          </button>
-          <button className="filter-pill filter-pill--danger" type="button">
-            Atrasados ({overdueLembretes})
-          </button>
-          <button className="filter-pill filter-pill--warning" type="button">
-            Hoje ({todayLembretes})
-          </button>
-          <label className="panel-search">
-            <Search size={14} />
-            <input
-              aria-label="Buscar lembretes"
-              onChange={(event) => setLembreteQuery(event.target.value)}
-              placeholder="Buscar..."
-              value={lembreteQuery}
-            />
-          </label>
-          <div className="panel-export-actions" aria-label="Exportar lembretes">
-            <button type="button" onClick={() => exportLembretes("pdf")}>PDF</button>
-            <button type="button" onClick={() => exportLembretes("excel")}>XLSX</button>
-          </div>
-        </div>
-        <div className="stack-list">
-          {filteredLembretes.map((lembrete) => {
-            const canOpen = canUserManageLembrete(lembrete, user);
-
-            return (
-              <article
-                className={`list-row ${canOpen ? "list-row--clickable" : ""}`}
-                key={lembrete.id}
-                onClick={canOpen ? () => openLembreteForEdit(lembrete) : undefined}
-                onKeyDown={canOpen ? (event) => handleLembreteKeyDown(event, lembrete) : undefined}
-                role={canOpen ? "button" : undefined}
-                tabIndex={canOpen ? 0 : undefined}
-                title={canOpen ? "Abrir lembrete para edicao" : undefined}
-              >
+      {canManagePautas && formOpen ? (
+        <section className="panel pauta-editor-panel">
+          <PanelHeader title={editingId ? "Editar pauta" : "Nova pauta"} icon={<ListChecks size={18} />} action={source} />
+          <form className="stack-form" onSubmit={submitPauta}>
+            <label>
+              Titulo
+              <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
+            </label>
+            <label>
+              Descricao / orientacao
+              <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
+            </label>
+            <div className="form-row">
+              <label>
+                Prazo
+                <input value={prazo} onChange={(event) => setPrazo(event.target.value)} type="datetime-local" />
+              </label>
+              <label>
+                Prioridade
+                <select value={prioridade} onChange={(event) => setPrioridade(event.target.value)}>
+                  <option value="normal">Normal</option>
+                  <option value="alta">Alta</option>
+                  <option value="baixa">Baixa</option>
+                </select>
+              </label>
+            </div>
+            <div className="form-row">
+              <label>
+                Status
+                <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                  <option value="aberta">Aberta</option>
+                  <option value="concluida">Concluida</option>
+                </select>
+              </label>
+              <label>
+                Escopo
+                <select value={scope} onChange={(event) => setScope(event.target.value as "todos" | "usuarios")}>
+                  <option value="todos">Todos</option>
+                  <option value="usuarios">Usuarios especificos</option>
+                </select>
+              </label>
+            </div>
+            <label className="confidential-field">
+              <input checked={destaque} onChange={(event) => setDestaque(event.target.checked)} type="checkbox" />
+              <span>
+                <strong>Destacar pauta</strong>
+                <small>Exibe o item em alto relevo no painel principal.</small>
+              </span>
+            </label>
+            {scope === "usuarios" ? (
+              <fieldset className="member-picker">
+                <legend>Usuarios selecionados</legend>
                 <div>
-                  <strong>{lembrete.titulo}</strong>
-                  <span>{lembrete.descricao || "Sem descricao"}</span>
-                  <em>{formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
+                  {getActiveProfiles(hubUsers).map((member) => (
+                    <label key={member.email}>
+                      <input
+                        checked={responsaveis.includes(member.email)}
+                        onChange={() => toggleResponsavel(member.email)}
+                        type="checkbox"
+                      />
+                      <span>{member.iniciais || getInitials(member.nome)}</span>
+                      {member.nome}
+                    </label>
+                  ))}
                 </div>
-                <DueSignal prazo={lembrete.prazo} />
-                <small>{formatDateTime(lembrete.prazo)} - {lembrete.anexos.length} anexo(s)</small>
-              </article>
-            );
-          })}
-        </div>
-      </section>
+              </fieldset>
+            ) : null}
+            <label>
+              Anexos
+              <input multiple onChange={(event) => setSelectedFiles(Array.from(event.target.files || []))} type="file" />
+            </label>
+            {selectedFiles.length ? (
+              <div className="attachment-list">
+                {selectedFiles.map((file) => (
+                  <span key={`${file.name}-${file.size}`}>{file.name}</span>
+                ))}
+              </div>
+            ) : null}
+            <div className="form-actions-inline">
+              <button className="primary-action" disabled={saving || loading} type="submit">
+                {saving ? "Salvando..." : editingId ? "Atualizar pauta" : "Salvar pauta"}
+              </button>
+              <button disabled={saving} type="button" onClick={() => { clearForm(); setFormOpen(false); }}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
 
       <FooterUpdates />
     </div>
@@ -985,6 +1266,7 @@ function DashboardPanelHeader({
   actionTitle,
   icon,
   onAction,
+  onSecondaryAction,
   secondaryIcon,
   secondaryLabel,
   status,
@@ -994,6 +1276,7 @@ function DashboardPanelHeader({
   actionTitle?: string;
   icon: React.ReactNode;
   onAction?: () => void;
+  onSecondaryAction?: () => void;
   secondaryIcon: React.ReactNode;
   secondaryLabel: string;
   status: string;
@@ -1008,7 +1291,7 @@ function DashboardPanelHeader({
       </div>
       <div className="panel-actions">
         <span className="panel-status">{status}</span>
-        <button className="btn-mini" type="button">
+        <button className="btn-mini" type="button" onClick={onSecondaryAction}>
           {secondaryIcon}
           {secondaryLabel}
         </button>
@@ -1145,6 +1428,10 @@ function UpdateTicker({ icon, items, onOpen, title }: { icon: React.ReactNode; i
 }
 
 function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind: "noticia" | "legislacao"; onClose: () => void; title: string }) {
+  function exportUpdates(format: ReportFormat) {
+    exportReport(format, title, items.map(noticiaToReportRow));
+  }
+
   return (
     <div className="updates-sidebar-backdrop" role="presentation" onClick={onClose}>
       <aside className="updates-sidebar" aria-label={title} role="dialog" onClick={(event) => event.stopPropagation()}>
@@ -1153,9 +1440,13 @@ function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind
             <strong>{title}</strong>
             <small>{kind === "legislacao" ? "Normas oficiais monitoradas" : "Ultimos 7 dias"} - {items.length} item(ns)</small>
           </div>
-          <button aria-label="Fechar atualizacoes" type="button" onClick={onClose}>
-            <X size={18} />
-          </button>
+          <div className="updates-sidebar-actions">
+            <button type="button" onClick={() => exportUpdates("pdf")}>PDF</button>
+            <button type="button" onClick={() => exportUpdates("excel")}>XLSX</button>
+            <button aria-label="Fechar atualizacoes" type="button" onClick={onClose}>
+              <X size={18} />
+            </button>
+          </div>
         </header>
 
         <div className="updates-list">
@@ -1174,7 +1465,7 @@ function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind
   );
 }
 
-function TasksModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
+function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; onNavigate: (route: HubRoute) => void; user: HubUser }) {
   const [calendarVersion, setCalendarVersion] = useState(0);
 
   useEffect(() => {
@@ -1202,12 +1493,12 @@ function TasksModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
       <div className="calendar-shell">
         <iframe key={calendarVersion} src="/apps/calendar.html" title="Calendario de tarefas" />
       </div>
-      <TaskSidebar hubUsers={hubUsers} user={user} />
+      <TaskSidebar hubUsers={hubUsers} onNavigate={onNavigate} user={user} />
     </div>
   );
 }
 
-function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
+function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; onNavigate: (route: HubRoute) => void; user: HubUser }) {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1615,7 +1906,124 @@ function TaskSidebar({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser
         })}
         {!filteredTasks.length ? <div className="empty-state">Nenhuma tarefa encontrada.</div> : null}
       </div>
+
+      <TaskLembretesPanel hubUsers={hubUsers} onNavigate={onNavigate} user={user} />
     </aside>
+  );
+}
+
+function TaskLembretesPanel({
+  hubUsers,
+  onNavigate,
+  user
+}: {
+  hubUsers: HubProfile[];
+  onNavigate: (route: HubRoute) => void;
+  user: HubUser;
+}) {
+  const [lembretes, setLembretes] = useState<Lembrete[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const source = getLembretesSource(user);
+
+  useEffect(() => {
+    let active = true;
+
+    async function refresh(options: { silent?: boolean } = {}) {
+      if (!options.silent) setLoading(true);
+      try {
+        const loaded = await listAppLembretes(user);
+        if (active) setLembretes(loaded);
+      } finally {
+        if (active && !options.silent) setLoading(false);
+      }
+    }
+
+    function handleLembretesChange() {
+      refresh({ silent: true });
+    }
+
+    refresh();
+    window.addEventListener("hub:lembretes", handleLembretesChange);
+
+    return () => {
+      active = false;
+      window.removeEventListener("hub:lembretes", handleLembretesChange);
+    };
+  }, [user]);
+
+  const filtered = useMemo(() => {
+    const normalizedQuery = normalizeForSearch(query);
+    if (!normalizedQuery) return lembretes;
+    return lembretes.filter((lembrete) =>
+      normalizeForSearch(
+        [lembrete.titulo, lembrete.descricao, lembrete.status, lembrete.prioridade, formatResponsaveis(lembrete.responsaveis, hubUsers)].join(" ")
+      ).includes(normalizedQuery)
+    );
+  }, [hubUsers, lembretes, query]);
+
+  const overdueCount = lembretes.filter((lembrete) => getDueTone(lembrete.prazo) === "danger").length;
+
+  function openLembrete(lembrete?: Lembrete) {
+    if (lembrete && canUserManageLembrete(lembrete, user)) {
+      sessionStorage.setItem("hub_open_lembrete_id", lembrete.id);
+    }
+    onNavigate("lembretes");
+  }
+
+  return (
+    <section className="task-lembretes-panel">
+      <header>
+        <div>
+          <strong>Lembretes</strong>
+          <small>{loading ? "Carregando..." : `${source} - ${lembretes.length} item(ns)`}</small>
+        </div>
+        <button className="btn-mini primary" type="button" onClick={() => openLembrete()}>
+          <Plus size={14} />
+          Novo
+        </button>
+      </header>
+      <div className="task-sidebar-summary">
+        <span>{lembretes.length} visiveis</span>
+        <span>{overdueCount} atrasados</span>
+      </div>
+      <div className="panel-toolbar task-toolbar">
+        <label className="panel-search">
+          <Search size={14} />
+          <input aria-label="Buscar lembretes" onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lembrete..." value={query} />
+        </label>
+        <div className="panel-export-actions" aria-label="Exportar lembretes">
+          <button type="button" onClick={() => exportReport("pdf", "Lembretes - HUB Depto Tributario", filtered.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)))}>
+            PDF
+          </button>
+          <button type="button" onClick={() => exportReport("excel", "Lembretes - HUB Depto Tributario", filtered.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)))}>
+            XLSX
+          </button>
+        </div>
+      </div>
+      <div className="task-lembretes-list">
+        {filtered.map((lembrete) => {
+          const canOpen = canUserManageLembrete(lembrete, user);
+          return (
+            <article
+              className={`task-item task-lembrete-item ${canOpen ? "task-lembrete-item--clickable" : ""}`}
+              key={lembrete.id}
+              onClick={canOpen ? () => openLembrete(lembrete) : undefined}
+              role={canOpen ? "button" : undefined}
+              tabIndex={canOpen ? 0 : undefined}
+            >
+              <DueSignal prazo={lembrete.prazo} />
+              <div>
+                <strong>{lembrete.titulo}</strong>
+                <span>{lembrete.descricao || "Sem descricao"}</span>
+                <small>{formatDateTime(lembrete.prazo)} - {formatResponsaveis(lembrete.responsaveis, hubUsers)}</small>
+              </div>
+            </article>
+          );
+        })}
+        {!filtered.length ? <div className="empty-state">Nenhum lembrete encontrado.</div> : null}
+      </div>
+    </section>
   );
 }
 
@@ -5148,6 +5556,53 @@ function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): Report
   };
 }
 
+function noticiaToReportRow(item: Noticia): ReportRow {
+  return {
+    Data: formatDate(item.data),
+    Titulo: item.titulo,
+    Fonte: item.fonte,
+    URL: item.url,
+    Tipo: item.tipo || ""
+  };
+}
+
+function notificationToReportRow(item: HubNotification): ReportRow {
+  return {
+    Titulo: item.title,
+    Detalhe: item.detail,
+    Meta: item.meta,
+    Tom: item.tone,
+    Tipo: item.tipo,
+    Criada: formatDateTime(item.createdAt),
+    Rota: item.route
+  };
+}
+
+async function sendNotificationsByEmail(user: HubUser, items: HubNotification[]) {
+  const rows = items.length ? items.map(notificationToReportRow) : [{ Info: "Nenhuma notificacao pendente." }];
+  const body = rows
+    .map((row) => Object.entries(row).map(([key, value]) => `${key}: ${value}`).join("\n"))
+    .join("\n\n");
+  const authToken = await getSupabaseAccessToken();
+  const response = await fetch("/.netlify/functions/coord-email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      authToken,
+      to: user.email,
+      subject: "Notificacoes do HUB Depto Tributario",
+      body,
+      htmlBody: `<p>Segue o resumo das notificacoes do HUB Depto Tributario.</p><pre>${escapeHtmlText(body)}</pre>`
+    })
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "Nao foi possivel enviar as notificacoes por e-mail.");
+  return data;
+}
+
 function exportReport(format: ReportFormat, title: string, rows: ReportRow[]) {
   const reportRows = rows.length ? rows : [{ Info: "Nenhum registro encontrado para o filtro atual." }];
   if (format === "pdf") {
@@ -5179,6 +5634,74 @@ function downloadXlsxReport(title: string, rows: ReportRow[]) {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+function downloadDocxReport(title: string, rows: ReportRow[]) {
+  const docx = buildDocxReport(title, rows);
+  const blob = new Blob([docx], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `${toReportFileName(title)}.docx`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function buildDocxReport(title: string, rows: ReportRow[]) {
+  const columns = Object.keys(rows[0] || { Info: "" });
+  const generatedAt = new Date().toLocaleString("pt-BR");
+  const bodyRows = rows
+    .map((row) =>
+      `<w:p><w:r><w:t>${escapeXmlText(columns.map((column) => `${column}: ${String(row[column] ?? "")}`).join(" | "))}</w:t></w:r></w:p>`
+    )
+    .join("");
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>${escapeXmlText(title)}</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Gerado em ${escapeXmlText(generatedAt)} pelo HUB Depto Tributario.</w:t></w:r></w:p>
+    ${bodyRows}
+    <w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr>
+  </w:body>
+</w:document>`;
+  const files = [
+    {
+      name: "[Content_Types].xml",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+</Types>`
+    },
+    {
+      name: "_rels/.rels",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+</Relationships>`
+    },
+    {
+      name: "docProps/core.xml",
+      data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>${escapeXmlText(title)}</dc:title>
+  <dc:creator>HUB Depto Tributario</dc:creator>
+  <dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>
+</cp:coreProperties>`
+    },
+    {
+      name: "word/document.xml",
+      data: documentXml
+    }
+  ];
+
+  return createZipArchive(files.map((file) => ({ name: file.name, data: encodeUtf8(file.data) })));
 }
 
 function buildReportHtml(title: string, rows: ReportRow[], printable: boolean) {
@@ -5524,6 +6047,8 @@ function normalizeForSearch(value: string) {
 }
 
 function isPautaAssignedToUser(pauta: Pauta, user: HubUser) {
+  if ((pauta.responsaveis || []).some((email) => email.toLowerCase() === user.email.toLowerCase())) return true;
+  if (pauta.createdBy === user.id || pauta.createdBy === user.email) return true;
   const pautaEmail = normalizeForSearch(pauta.email);
   const userEmail = normalizeForSearch(user.email);
   const pautaResponsavel = normalizeForSearch(pauta.responsavel);
@@ -5536,6 +6061,7 @@ function isPautaAssignedToUser(pauta: Pauta, user: HubUser) {
 }
 
 function isPautaGeneral(pauta: Pauta) {
+  if (pauta.scope) return pauta.scope === "todos";
   const pautaEmail = normalizeForSearch(pauta.email);
   const pautaResponsavel = normalizeForSearch(pauta.responsavel);
 
@@ -5549,7 +6075,7 @@ function isPautaGeneral(pauta: Pauta) {
 }
 
 function canUserViewPauta(pauta: Pauta, user: HubUser) {
-  return isPautaGeneral(pauta) || isPautaAssignedToUser(pauta, user);
+  return canUserViewPautaApp(pauta, user);
 }
 
 function isTaskAssignedToUser(task: TaskItem, user: HubUser) {
@@ -5599,12 +6125,14 @@ function countPautaStatus(pautas: Pauta[], user: HubUser) {
   return pautas.reduce(
     (acc, pauta) => {
       if (isPautaAssignedToUser(pauta, user)) acc.minhas += 1;
+      if (pauta.destaque) acc.destaques += 1;
       if (isPautaAlta(pauta)) acc.alta += 1;
       if (isPautaAtrasada(pauta)) acc.atrasado += 1;
+      if (isPautaConcluida(pauta)) acc.concluidas += 1;
       if (!pauta.prazo.trim()) acc.semPrazo += 1;
       return acc;
     },
-    { alta: 0, atrasado: 0, minhas: 0, semPrazo: 0 }
+    { alta: 0, atrasado: 0, concluidas: 0, destaques: 0, minhas: 0, semPrazo: 0 }
   );
 }
 
@@ -5813,6 +6341,16 @@ function formatDateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function toDatetimeLocalValue(value: string) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return value.slice(0, 16);
+  const brDate = parseBrazilianDate(value);
+  const date = brDate || new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function parseBrazilianDate(value: string) {
