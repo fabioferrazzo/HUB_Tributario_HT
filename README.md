@@ -37,9 +37,13 @@ Os HTMLs fornecidos ficam em:
 - `public/apps/pomodoro.html`
 - `public/apps/coord-tributaria.html`
 
-## Planilha
+## Pautas
 
-Sheet ID configurado:
+O menu principal do HUB usa o modulo nativo de Pautas, com persistencia Supabase/local, anexos, destaques, conclusoes por usuario e notificacoes ao administrador.
+
+A antiga integracao com Google Sheets fica em stand by como historico de projeto. Ela nao e mais a fonte ativa do menu Pautas.
+
+Sheet ID historico:
 
 ```text
 1rpAcGBQCmm5KlMX1TMBN-qBL1vaNgy6gn3j_ffjkVsg
@@ -51,9 +55,7 @@ GID configurado:
 1705398292
 ```
 
-O teste de leitura CSV retornou `401 Nao Autorizado`; para sincronizar pautas reais, liberar leitura por link ou configurar conta de servico Google.
-
-## CSV local de pautas
+## CSV historico de pautas
 
 O arquivo recebido foi copiado para:
 
@@ -61,7 +63,7 @@ O arquivo recebido foi copiado para:
 public/data/pautas-hub.csv
 ```
 
-Enquanto a integracao autenticada com Google Sheets nao estiver configurada, o dashboard usa esse CSV como fonte local das pautas.
+O CSV permanece no repositorio apenas como massa historica de apoio. O dashboard nao depende mais dele para a operacao principal.
 
 ## Build
 

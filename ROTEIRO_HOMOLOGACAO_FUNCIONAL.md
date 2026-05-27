@@ -18,7 +18,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 - `npm.cmd run preflight`: `OK`
 - `supabase/check_hub_status.sql`: `OK`
 - Netlify builds pausados para economia de creditos: confirmar visualmente no Netlify
-- Apos o proximo deploy de marco, `Configuracoes > Saude operacional` deve exibir `Versao do HUB: 2026-05-21-ajustes-homologacao`
+- Apos o proximo deploy de marco, o menu lateral deve exibir `Pautas` e `Calendario de Tarefas`, com Pautas nativas sem dependencia ativa do Sheets.
 
 ## Bloco 1 - Login e perfis
 
@@ -42,7 +42,26 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Reativar usuario | Pendente |
 | Reset de senha provisoria enfileira e-mail | Pendente |
 
-## Bloco 3 - Lembretes
+## Bloco 3 - Pautas
+
+| Teste | Resultado |
+| --- | --- |
+| Menu principal aparece como `Pautas` | Pendente |
+| Admin cria nova pauta nativa | Pendente |
+| Admin edita pauta nativa | Pendente |
+| Admin adiciona anexo em pauta | Pendente |
+| Usuario baixa anexo quando pauta for geral ou atribuida a ele | Pendente |
+| Filtro mensal altera mes/ano exibido | Pendente |
+| Botao destacar deixa pauta em alto relevo | Pendente |
+| Botao de rolagem liga/desliga rolagem da lista | Pendente |
+| Usuario conclui pauta geral ou atribuida | Pendente |
+| Conclusao de pauta gera notificacao/e-mail para admin | Pendente |
+| Exportar pautas em PDF | Pendente |
+| Exportar pautas em XLSX real | Pendente |
+| Pauta criada na Coordenacao aparece no menu Pautas apos recarregar | Pendente |
+| Pauta criada no menu Pautas aparece na Coordenacao apos recarregar | Pendente |
+
+## Bloco 4 - Lembretes
 
 | Teste | Resultado |
 | --- | --- |
@@ -56,14 +75,16 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Confidencial sem marcado aparece so para criador/admin | Pendente |
 | Confidencial com marcado aparece para criador/admin/marcado | Pendente |
 | Anexo em lembrete salva e abre | Pendente |
-| Clicar em lembrete no painel inicial abre edicao para admin/gestor/criador | Pendente |
+| Lembretes aparecem na sidebar do Calendario de Tarefas | Pendente |
+| Clicar em lembrete na sidebar abre edicao para admin/gestor/criador | Pendente |
 | Exportar lista de lembretes em PDF | Pendente |
-| Exportar lista de lembretes em Excel compativel | Pendente |
+| Exportar lista de lembretes em XLSX real | Pendente |
 
-## Bloco 4 - Tarefas
+## Bloco 5 - Calendario de Tarefas
 
 | Teste | Resultado |
 | --- | --- |
+| Menu lateral aparece como `Calendario de Tarefas` | Pendente |
 | Criar tarefa pela sidebar | Pendente |
 | Sidebar inicia como `Minhas tarefas` com formulario oculto | Pendente |
 | Botao `Nova tarefa` abre formulario lateral | Pendente |
@@ -73,9 +94,9 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Editar tarefa/notas pela sidebar | Pendente |
 | Concluir/reabrir tarefa | Pendente |
 | Excluir tarefa permitida | Pendente |
-| Calendario e painel lateral ficam sincronizados | Pendente |
+| Calendario, painel lateral e sidebar de lembretes ficam sincronizados | Pendente |
 
-## Bloco 5 - Arquivos e visualizador
+## Bloco 6 - Arquivos e visualizador
 
 | Teste | Resultado |
 | --- | --- |
@@ -96,7 +117,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Arquivo processado mostra `Versao pesquisavel pronta` | Pendente |
 | Colaborador nao exclui global de terceiro | Pendente |
 
-## Bloco 6 - Links uteis
+## Bloco 7 - Links uteis
 
 | Teste | Resultado |
 | --- | --- |
@@ -106,7 +127,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Colaborador cria link pessoal | Pendente |
 | Colaborador edita/exclui apenas link pessoal | Pendente |
 
-## Bloco 7 - Rodapes
+## Bloco 8 - Rodapes
 
 | Teste | Resultado |
 | --- | --- |
@@ -114,12 +135,14 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Noticias abrem sidebar | Pendente |
 | Noticias sao de cunho tributario | Pendente |
 | Links de noticias abrem noticia especifica | Pendente |
+| Sidebar de noticias exporta PDF/XLSX | Pendente |
 | Legislacoes rolam em velocidade legivel | Pendente |
 | Legislacoes abrem sidebar | Pendente |
 | Legislacoes trazem apenas normas oficiais | Pendente |
 | Titulos de legislacoes mostram norma/data | Pendente |
+| Sidebar de legislacoes exporta PDF/XLSX | Pendente |
 
-## Bloco 8 - Notificacoes
+## Bloco 9 - Notificacoes
 
 | Teste | Resultado |
 | --- | --- |
@@ -129,8 +152,11 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Marcar uma como lida funciona | Pendente |
 | Marcar todas como lidas funciona | Pendente |
 | Colaborador recebe somente notificacoes visiveis | Pendente |
+| Exportar notificacoes em DOCX | Pendente |
+| Enviar notificacoes por e-mail | Pendente |
+| Notificacoes antigas sao removidas apos 5 dias pela rotina de sincronizacao | Pendente |
 
-## Bloco 9 - E-mails
+## Bloco 10 - E-mails
 
 | Teste | Resultado |
 | --- | --- |
@@ -143,12 +169,14 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Consultar/processar fila tambem funciona com `EMAIL_DISPATCH_TOKEN` colado | Pendente |
 | `email_outbox` registra `sent` em modo teste | Pendente |
 
-## Bloco 10 - Coordenacao Tributaria
+## Bloco 11 - Coordenacao Tributaria
 
 | Teste | Resultado |
 | --- | --- |
 | App abre sem erro | Pendente |
 | Topo compacto exibe busca, colaborador e acoes na mesma linha | Pendente |
+| Quadro `Lembretes Avaliacao Colaboradores` aparece no resumo | Pendente |
+| Quadro `Pautas` aparece no resumo | Pendente |
 | Botao `Criar pauta` aparece no topo e nas acoes rapidas | Pendente |
 | Criar pauta registra item na lista de atividades | Pendente |
 | Criar lembrete registra item na lista de atividades | Pendente |

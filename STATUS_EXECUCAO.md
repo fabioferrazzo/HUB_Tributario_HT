@@ -292,3 +292,13 @@
 - `npm.cmd run typecheck`: OK em 22/05/2026 apos XLSX real e busca global no visualizador PDF.
 - `npm.cmd run preflight`: OK em 22/05/2026 apos XLSX real e busca global no visualizador PDF.
 - `npm.cmd run build`: OK em 22/05/2026 apos XLSX real e busca global no visualizador PDF.
+- Pautas: em 26/05/2026, o menu `Inicio` foi renomeado para `Pautas`, passou a operar com fonte nativa do HUB, seletor mensal, destaques, anexos, conclusoes por usuario, exportacao PDF/XLSX e sem dependencia ativa do Google Sheets/CSV.
+- Tarefas: em 26/05/2026, o menu foi renomeado para `Calendario de Tarefas` e recebeu a sidebar de Lembretes com busca, exportacao e abertura para edicao quando o usuario tem permissao.
+- Coordenacao Tributaria: em 26/05/2026, os quadros foram renomeados para `Lembretes Avaliacao Colaboradores` e `Pautas`; a Function `coord-data` passou a ler/gravar pautas nativas para espelhar o menu principal.
+- Notificacoes e rodapes: em 26/05/2026, notificacoes ganharam exportacao DOCX e envio por e-mail, e as sidebars de noticias/legislacoes ganharam exportacao PDF/XLSX.
+- Supabase: em 26/05/2026, `supabase/check_hub_status.sql` passou a validar as tabelas/funcoes de Pautas nativas.
+- `node --check netlify/functions/coord-data.mjs`: OK em 26/05/2026 apos ponte entre Coordenacao e Pautas nativas.
+- `node --check netlify/functions/coord-email.mjs`: OK em 26/05/2026 apos ajustes de notificacoes/e-mails.
+- `npm.cmd run typecheck`: OK em 26/05/2026 apos reestruturacao Pautas/Tarefas/Coordenacao.
+- `npm.cmd run preflight`: OK em 26/05/2026 apos reestruturacao Pautas/Tarefas/Coordenacao.
+- `npm.cmd run build`: OK em 26/05/2026 apos reestruturacao Pautas/Tarefas/Coordenacao.
