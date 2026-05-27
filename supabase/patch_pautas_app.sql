@@ -319,8 +319,8 @@ on storage.objects for select
 to authenticated
 using (
   bucket_id = 'hub-anexos'
-  and storage.foldername(name)[1] = 'pautas'
-  and public.can_read_pauta(public.uuid_or_null(storage.foldername(name)[2]))
+  and (storage.foldername(name))[1] = 'pautas'
+  and public.can_read_pauta(public.uuid_or_null((storage.foldername(name))[2]))
 );
 
 drop policy if exists "hub_anexos_pautas_insert_admin" on storage.objects;
@@ -329,7 +329,7 @@ on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'hub-anexos'
-  and storage.foldername(name)[1] = 'pautas'
+  and (storage.foldername(name))[1] = 'pautas'
   and public.is_admin()
 );
 
