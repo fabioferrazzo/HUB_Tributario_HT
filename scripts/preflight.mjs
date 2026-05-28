@@ -14,7 +14,6 @@ const requiredFiles = [
   "netlify/functions/email-outbox.mjs",
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
-  "netlify/functions/sheets-pautas.mjs",
   "scripts/diagnose-arquivos-processador.mjs",
   "scripts/ocr-local-agent.mjs",
   "scripts/process-arquivos.mjs",
@@ -73,11 +72,6 @@ const commandChecks = [
     label: "Function refresh-updates",
     command: process.execPath,
     args: ["--check", "netlify/functions/refresh-updates.mjs"]
-  },
-  {
-    label: "Function sheets-pautas",
-    command: process.execPath,
-    args: ["--check", "netlify/functions/sheets-pautas.mjs"]
   },
   {
     label: "Processador de arquivos",
