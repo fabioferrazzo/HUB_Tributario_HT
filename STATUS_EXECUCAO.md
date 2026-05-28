@@ -306,3 +306,9 @@
 - `npm.cmd run typecheck`: OK em 28/05/2026 apos limpeza da integracao Sheets.
 - `npm.cmd run preflight`: OK em 28/05/2026 apos limpeza da integracao Sheets.
 - `npm.cmd run build`: OK em 28/05/2026 apos limpeza da integracao Sheets.
+- Coordenacao/Pautas: em 28/05/2026, anexos criados em pautas pela Coordenacao passaram a ser sincronizados para o Storage `hub-anexos` e para `pauta_anexos`, preservando abertura/download quando a pauta e lida pelo modulo nativo.
+- `node --check netlify/functions/coord-data.mjs`: OK em 28/05/2026 apos sincronizacao de anexos da Coordenacao com Pautas nativas.
+- `node --check`: OK em 28/05/2026 para o JavaScript standalone da Coordenacao apos suporte a anexos por URL do Storage.
+- `npm.cmd run typecheck`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
+- `npm.cmd run preflight`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
+- `npm.cmd run build`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
