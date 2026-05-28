@@ -1019,7 +1019,17 @@
             recurring: ["none", "weekly", "monthly"].includes(item.recurring) ? item.recurring : "none",
             status: item.status === "concluido" ? "concluido" : "aberto",
             pinned: item.pinned === "hidden" ? "hidden" : "main",
-            attachments: Array.isArray(item.attachments) ? item.attachments : [],
+            attachments: Array.isArray(item.attachments)
+              ? item.attachments.map((attachment) => ({
+                  id: String(attachment.id || cryptoId()),
+                  name: String(attachment.name || ""),
+                  type: String(attachment.type || "application/octet-stream"),
+                  size: Number(attachment.size || 0),
+                  dataUrl: String(attachment.dataUrl || ""),
+                  url: String(attachment.url || ""),
+                  createdAt: attachment.createdAt || new Date().toISOString()
+                }))
+              : [],
             deletedAt: item.deletedAt || "",
             completedAt: item.completedAt || "",
             createdAt: item.createdAt || new Date().toISOString(),
@@ -1402,6 +1412,7 @@
                     type: file.type || "application/octet-stream",
                     size: file.size,
                     dataUrl: String(reader.result || ""),
+                    url: "",
                     createdAt: new Date().toISOString()
                   });
                 reader.onerror = () => reject(new Error(`Nao foi possivel ler o anexo ${file.name}.`));
@@ -1513,7 +1524,8 @@
       function openAttachment(reminderId, attachmentId) {
         const item = state.reminders.find((reminder) => reminder.id === reminderId);
         const attachment = item?.attachments?.find((entry) => entry.id === attachmentId);
-        if (!attachment?.dataUrl) return showNotice("Anexo indisponivel neste navegador.", true);
+        const source = attachment?.dataUrl || attachment?.url || "";
+        if (!source) return showNotice("Anexo indisponivel neste navegador.", true);
         const win = window.open("", "_blank", "noopener,noreferrer");
         if (!win) return showNotice("Permita pop-ups para abrir anexos.", true);
         win.document.write(`
@@ -1521,7 +1533,7 @@
           <html lang="pt-BR">
           <head><meta charset="utf-8"><title>${escapeHtml(attachment.name)}</title></head>
           <body style="margin:0;background:#f4f0e7;">
-            <iframe src="${attachment.dataUrl}" title="${escapeHtml(attachment.name)}" style="border:0;width:100vw;height:100vh;"></iframe>
+            <iframe src="${source}" title="${escapeHtml(attachment.name)}" style="border:0;width:100vw;height:100vh;"></iframe>
           </body>
           </html>
         `);
