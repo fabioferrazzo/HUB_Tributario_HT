@@ -6,9 +6,9 @@ Marque cada item como:
 
 - `OK`: passou sem erro.
 - `Ajustar`: passou parcialmente ou exige melhoria.
-- `Falhou`: bloqueia o deploy de marco.
+- `Falhou`: bloqueia o deploy final.
 
-Nao acione deploy no Netlify durante esta rodada. O objetivo e testar o HUB ja publicado/ambiente disponivel e registrar o que ainda precisa de ajuste antes do deploy de marco.
+Enquanto estivermos economizando creditos, nao acione deploy no Netlify durante ajustes intermediarios. Use este roteiro em dois momentos: antes do deploy final, para conferir estrutura/local, e depois do deploy unico, para validar o HUB publicado.
 
 Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB para marcar `OK`, `Ajustar`, `Falhou` ou `Pendente` durante a rodada. O painel salva a marcacao no navegador e permite copiar um resumo.
 
@@ -16,9 +16,10 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 
 - GitHub atualizado: `OK`
 - `npm.cmd run preflight`: `OK`
+- `npm.cmd run build`: `OK`
 - `supabase/check_hub_status.sql`: `OK`
 - Netlify builds pausados para economia de creditos: confirmar visualmente no Netlify
-- Apos o proximo deploy de marco, o menu lateral deve exibir `Pautas` e `Calendario de Tarefas`, com Pautas nativas sem dependencia ativa do Sheets.
+- Apos o deploy final, o menu lateral deve exibir `Pautas` e `Calendario de Tarefas`, com Pautas nativas sem dependencia ativa do Sheets.
 
 ## Bloco 1 - Login e perfis
 
@@ -60,6 +61,8 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Exportar pautas em XLSX real | Pendente |
 | Pauta criada na Coordenacao aparece no menu Pautas apos recarregar | Pendente |
 | Pauta criada no menu Pautas aparece na Coordenacao apos recarregar | Pendente |
+| Pauta criada na Coordenacao com anexo aparece no menu Pautas com anexo abrindo/baixando | Pendente |
+| Pauta criada no menu Pautas com anexo fica disponivel para usuarios autorizados | Pendente |
 
 ## Bloco 4 - Lembretes
 
@@ -181,6 +184,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Criar pauta registra item na lista de atividades | Pendente |
 | Criar lembrete registra item na lista de atividades | Pendente |
 | Anexo em pauta/lembrete salva e aparece no card | Pendente |
+| Anexo de pauta criada na Coordenacao permanece disponivel no menu Pautas nativo | Pendente |
 | Historico dos ultimos 30 dias abre | Pendente |
 | Gerar relatorio inclui pautas, lembretes e anexos | Pendente |
 | Botao enviar pauta por e-mail funciona | Pendente |
@@ -195,8 +199,8 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Item | Resultado |
 | --- | --- |
 | Todos os blocos criticos passaram | Pendente |
-| Ha ajustes antes do deploy de marco | Pendente |
-| Liberado para reativar Netlify e fazer deploy de marco | Pendente |
+| Ha ajustes antes do deploy final | Pendente |
+| Liberado para reativar Netlify e fazer deploy final | Pendente |
 
 ## Observacoes da rodada
 

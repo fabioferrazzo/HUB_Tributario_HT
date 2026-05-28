@@ -12,7 +12,7 @@ Enquanto estivermos economizando creditos, nao acione deploy no Netlify. Suba ar
 
 - So reativar o Netlify quando todos os itens criticos abaixo estiverem `OK`.
 - Se algum item falhar, corrigir localmente, rodar preflight e subir somente os arquivos alterados no GitHub.
-- Depois do deploy de marco, voltar para `Stopped builds` se ainda estivermos em desenvolvimento.
+- Depois do deploy final, voltar para `Stopped builds` se ainda estivermos em desenvolvimento.
 
 ## 1. Conferencia local
 
@@ -77,7 +77,32 @@ Como administrador:
 - testar reset de senha provisoria;
 - confirmar que o usuario aparece como ativo/inativo corretamente.
 
-## 5. Lembretes
+## 5. Pautas
+
+Como administrador:
+
+- confirmar que o menu principal aparece como `Pautas`;
+- criar pauta nativa;
+- editar pauta nativa;
+- anexar arquivo em pauta;
+- destacar pauta e remover destaque;
+- ligar/desligar rolagem da lista;
+- alterar mes/ano exibido;
+- exportar pauta em PDF;
+- exportar pauta em XLSX real;
+- criar pauta na Coordenacao e confirmar reflexo no menu `Pautas`;
+- criar pauta no menu `Pautas` e confirmar reflexo na Coordenacao;
+- confirmar que anexo criado pela Coordenacao abre/baixa no menu `Pautas`.
+
+Como colaborador:
+
+- visualizar pauta geral;
+- visualizar pauta atribuida ao usuario;
+- baixar anexo quando autorizado;
+- concluir pauta geral ou atribuida;
+- nao visualizar pauta restrita a outro usuario.
+
+## 6. Lembretes
 
 Como administrador:
 
@@ -96,7 +121,7 @@ Como colaborador:
 - nao visualizar lembrete confidencial sem estar marcado;
 - visualizar lembrete confidencial quando estiver marcado.
 
-## 6. Tarefas
+## 7. Tarefas
 
 Validar os dois caminhos:
 
@@ -111,7 +136,7 @@ Validar os dois caminhos:
 
 Observacao: a sincronizacao multiusuario Supabase de Tarefas esta preparada para ativacao futura por variavel. O fluxo atual preserva a integracao com o calendario original.
 
-## 7. Arquivos
+## 8. Arquivos
 
 Como administrador:
 
@@ -136,7 +161,7 @@ Como colaborador:
 - criar arquivo/pasta pessoal, se permitido;
 - nao excluir recursos globais de terceiros.
 
-## 8. Links uteis
+## 9. Links uteis
 
 Como administrador/gestor:
 
@@ -150,7 +175,7 @@ Como colaborador:
 - criar link pessoal;
 - editar/excluir apenas link pessoal.
 
-## 9. Noticias e legislacoes
+## 10. Noticias e legislacoes
 
 Noticias:
 
@@ -168,7 +193,7 @@ Legislacoes:
 - titulos devem trazer nome da norma e data;
 - se nao houver norma publicada no dia, trazer normas oficiais recentes anteriores.
 
-## 10. Notificacoes
+## 11. Notificacoes
 
 No sino:
 
@@ -178,7 +203,7 @@ No sino:
 - `marcar todas` funciona;
 - colaborador recebe apenas notificacoes visiveis para ele.
 
-## 11. E-mails
+## 12. E-mails
 
 Enquanto o dominio proprio nao estiver verificado no Resend, manter:
 
@@ -195,7 +220,7 @@ Validar:
 - Coordenacao envia avaliacoes por e-mail por comando manual;
 - tabela `email_outbox` registra `sent` em modo teste.
 
-## 12. Coordenacao Tributaria
+## 13. Coordenacao Tributaria
 
 Validar no app integrado:
 
@@ -205,6 +230,7 @@ Validar no app integrado:
 - criar lembrete;
 - anexar arquivo em pauta/lembrete;
 - confirmar que anexos aparecem no card;
+- confirmar que anexo de pauta criada na Coordenacao permanece disponivel no menu `Pautas`;
 - abrir historico dos ultimos 30 dias;
 - gerar relatorio e conferir pautas, lembretes e anexos;
 - usar botao manual de envio de pauta por e-mail;
@@ -214,13 +240,14 @@ Validar no app integrado:
 - confirmar que dados salvos por um admin/gestor continuam apos recarregar e aparecem para outro admin/gestor;
 - confirmar que, se a Function falhar, o app preserva fallback `local` sem bloquear o uso.
 
-## 13. Criterios para liberar deploy de marco
+## 14. Criterios para liberar deploy final
 
 Liberar Netlify somente se:
 
 - `npm.cmd run preflight` passou;
 - `supabase/check_hub_status.sql` passou;
 - login admin e colaborador passaram;
+- pautas nativas passaram;
 - lembretes passaram;
 - tarefas passaram;
 - arquivos e visualizador passaram;
@@ -229,11 +256,11 @@ Liberar Netlify somente se:
 - e-mails pelo menos enfileiram e, em modo teste, enviam para `fiscal10`;
 - nao ha erro vermelho em fluxo principal.
 
-## 14. Pendencias planejadas para depois
+## 15. Pendencias planejadas para depois
 
-Estas pendencias nao bloqueiam o deploy de marco, salvo decisao em contrario:
+Estas pendencias nao bloqueiam o deploy final, salvo decisao em contrario:
 
-- integrar definitivamente com Sheets ou com o app substituto da planilha HUB;
+- avaliar futuramente app substituto externo, se voltar a ser necessario; Pautas nativas sao a fonte ativa;
 - verificar dominio proprio no Resend para envio real a todos os colaboradores;
 - evoluir precisao de OCR/grifo quando o documento original tiver baixa qualidade ou layout complexo;
 - ativar sincronizacao multiusuario Supabase de Tarefas quando o fluxo local estiver totalmente aprovado.

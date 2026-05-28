@@ -312,3 +312,4 @@
 - `npm.cmd run typecheck`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
 - `npm.cmd run preflight`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
 - `npm.cmd run build`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
+- Homologacao final: em 28/05/2026, roteiro/checklist/manual foram alinhados com Pautas nativas, Calendario de Tarefas, Coordenacao espelhada e ausencia de dependencia ativa do Sheets.
