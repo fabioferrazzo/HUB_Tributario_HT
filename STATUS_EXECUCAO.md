@@ -6,7 +6,7 @@
 - Apps HTML copiados para `public/apps`.
 - Layout base ajustado ao mockup aprovado.
 - Menu lateral retratil implementado.
-- CSV da aba HUB integrado como fonte local de Pautas.
+- Pautas nativas do HUB configuradas como fonte ativa, sem dependencia ativa de Google Sheets/CSV.
 - Rodape dividido entre noticias tributarias e legislacoes da Reforma Tributaria.
 - Logo do escritorio incorporado ao cabecalho.
 - Modulo Lembretes com persistencia local implementado.
@@ -21,7 +21,7 @@
 - Criacao real de usuario Supabase Auth pelo Admin validada em producao.
 - Controle de menu por perfil validado: colaborador nao visualiza Configuracoes nem Coordenacao Tributaria.
 - Botao Novo em Lembretes no painel inicial ajustado para abrir o modulo de cadastro.
-- Botao Nova em Pautas restringido a administradores e direcionado para a planilha HUB.
+- Botao Nova em Pautas restringido a administradores e direcionado para criacao nativa no HUB.
 - Botao Sair duplicado do cabecalho removido; permanece apenas no menu lateral.
 - Policy de insert em `profiles` adicionada ao schema Supabase para uso por administradores.
 - Patch SQL criado para usuarios ativos poderem listar usuarios ativos e marcar responsaveis em Lembretes.
@@ -120,7 +120,7 @@
 - Rodar `supabase/check_hub_status.sql` no SQL Editor antes do proximo deploy de marco.
 - Percorrer `CHECKLIST_HOMOLOGACAO_FINAL.md` e `ROTEIRO_HOMOLOGACAO_FUNCIONAL.md`, registrando itens `OK`, `Ajustar` ou `Falhou`.
 - Manter `EMAIL_FORCE_TEST_TO=fiscal10.hteixeira@gmail.com` ate verificar dominio proprio no Resend.
-- Integrar definitivamente Pautas com Sheets ou com o app substituto da planilha HUB quando a decisao tecnica estiver fechada.
+- Manter Google Sheets apenas como historico/stand-by externo; Pautas nativas do HUB sao a fonte ativa.
 
 ## Validacoes da rodada
 
@@ -302,3 +302,7 @@
 - `npm.cmd run typecheck`: OK em 26/05/2026 apos reestruturacao Pautas/Tarefas/Coordenacao.
 - `npm.cmd run preflight`: OK em 26/05/2026 apos reestruturacao Pautas/Tarefas/Coordenacao.
 - `npm.cmd run build`: OK em 26/05/2026 apos reestruturacao Pautas/Tarefas/Coordenacao.
+- Pautas/Sheets: em 28/05/2026, removidos os residuos ativos da antiga integracao Sheets: Function `sheets-pautas`, variaveis `VITE_SHEETS_*`/Google do exemplo de ambiente, chamadas de fetch antigas e exigencia no preflight.
+- `npm.cmd run typecheck`: OK em 28/05/2026 apos limpeza da integracao Sheets.
+- `npm.cmd run preflight`: OK em 28/05/2026 apos limpeza da integracao Sheets.
+- `npm.cmd run build`: OK em 28/05/2026 apos limpeza da integracao Sheets.

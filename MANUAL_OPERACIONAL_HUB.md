@@ -64,5 +64,5 @@ supabase/check_hub_status.sql
 
 ## Itens em stand by
 
-- Integracao definitiva com Sheets ou com o app substituto da planilha HUB.
+- Possivel integracao futura com app substituto externo, se ainda for necessaria.
 - Evolucao do OCR/conversao automatica de documentos.

@@ -7,7 +7,7 @@ Use esta opcao para manter:
 - login Supabase;
 - Netlify Functions;
 - criacao de usuarios no Supabase Auth pelo Admin;
-- leitura server-side da planilha quando configurada.
+- Pautas nativas do HUB, sem dependencia ativa de Google Sheets.
 
 No Netlify, conecte o repositorio/pasta do projeto e use:
 
@@ -49,8 +49,6 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 VITE_ADMIN_EMAIL
-VITE_SHEETS_ID
-VITE_SHEETS_HUB_GID
 APP_BASE_URL
 ```
 

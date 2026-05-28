@@ -72,7 +72,7 @@ Depois do deploy completo, validar:
 - URL abre;
 - login local funciona com `hub-demo-2026`;
 - Netlify mostra a aba `Functions`;
-- funcoes `admin-users` e `sheets-pautas` aparecem no painel.
+- funcoes ativas do projeto aparecem no painel, como `admin-users`, `coord-data`, `coord-email`, `email-outbox` e `refresh-updates`.
 
 ## 5. Proxima etapa
 
