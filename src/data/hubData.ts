@@ -1,11 +1,4 @@
 import type { Lembrete, Noticia, Pauta, TeamMember } from "../types";
-import { csvToRecords, type CsvRecord } from "../lib/csv";
-
-const SHEET_ID = import.meta.env.VITE_SHEETS_ID || "1rpAcGBQCmm5KlMX1TMBN-qBL1vaNgy6gn3j_ffjkVsg";
-const SHEET_GID = import.meta.env.VITE_SHEETS_HUB_GID || "1705398292";
-const LOCAL_PAUTAS_CSV = "/data/pautas-hub.csv";
-
-export const sheetsHubUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${SHEET_GID}`;
 
 export const mockPautas: Pauta[] = [
   {
@@ -228,61 +221,6 @@ export const mockLegislacoes: Noticia[] = [
   }
 ];
 
-function pick(record: CsvRecord, ...keys: string[]) {
-  for (const key of keys) {
-    if (record[key]) return record[key];
-  }
-  return "";
-}
-
-function mapHubRecord(record: CsvRecord, index: number, origem: string): Pauta {
-  return {
-    id: pick(record, "id") || `${origem.toLowerCase().replace(/\s+/g, "-")}-${index + 1}`,
-    tema: pick(record, "tema", "pauta", "assunto", "titulo") || "Pauta sem titulo",
-    acoes: pick(record, "acoes", "acao"),
-    prazo: pick(record, "prazo", "data", "vencimento"),
-    prioridade: pick(record, "prioridade") || "Normal",
-    responsavel: pick(record, "responsavel", "usuario", "colaborador"),
-    email: pick(record, "email", "e_mail"),
-    pendenciasObs: pick(record, "pendencias_obs", "pendencias", "obs", "observacoes"),
-    retorno: pick(record, "retorno"),
-    status: pick(record, "status") || "Sem status",
-    periodicidade: pick(record, "periodicidade"),
-    modificadoEm: pick(record, "modificado_em", "modificado"),
-    concluidoEm: pick(record, "concluido_em", "concluido"),
-    origem
-  };
-}
-
-function mapCsvToPautas(text: string, origem: string) {
-  return csvToRecords(text)
-    .map((record, index) => mapHubRecord(record, index, origem))
-    .filter((pauta) => pauta.tema !== "Pauta sem titulo" || pauta.acoes || pauta.responsavel || pauta.status);
-}
-
-async function loadLocalCsvPautas(): Promise<Pauta[]> {
-  const response = await fetch(LOCAL_PAUTAS_CSV, { cache: "no-store" });
-  if (!response.ok) return [];
-  const text = await response.text();
-  return mapCsvToPautas(text, "CSV HUB");
-}
-
 export async function loadPautas(): Promise<Pauta[]> {
-  try {
-    const localPautas = await loadLocalCsvPautas();
-    if (localPautas.length) return localPautas;
-  } catch {
-    // Keep the HUB usable even before the CSV is published.
-  }
-
-  try {
-    const params = new URLSearchParams({ sheetId: SHEET_ID, gid: SHEET_GID });
-    const response = await fetch(`/.netlify/functions/sheets-pautas?${params.toString()}`);
-    if (!response.ok) return mockPautas;
-
-    const payload = (await response.json()) as { rows?: Pauta[] };
-    return payload.rows?.length ? payload.rows : mockPautas;
-  } catch {
-    return mockPautas;
-  }
+  return mockPautas;
 }
