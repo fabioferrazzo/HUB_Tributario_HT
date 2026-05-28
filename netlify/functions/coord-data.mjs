@@ -124,7 +124,7 @@ async function loadNativePautasForCoord(supabaseUrl, serviceRoleKey, rows) {
       : [],
     ids.length
       ? supabaseRequest(
-          `${trimUrl(supabaseUrl)}/rest/v1/pauta_anexos?pauta_id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,pauta_id,file_name,mime_type,size_bytes,created_at`,
+          `${trimUrl(supabaseUrl)}/rest/v1/pauta_anexos?pauta_id=in.(${ids.map(encodeURIComponent).join(",")})&select=id,pauta_id,file_name,storage_path,mime_type,size_bytes,created_at`,
           { headers: serviceHeaders(serviceRoleKey) }
         )
       : []
@@ -134,7 +134,8 @@ async function loadNativePautasForCoord(supabaseUrl, serviceRoleKey, rows) {
     fromPautaRow(
       row,
       (Array.isArray(usuariosRows) ? usuariosRows : []).filter((item) => item.pauta_id === row.id),
-      (Array.isArray(anexoRows) ? anexoRows : []).filter((item) => item.pauta_id === row.id)
+      (Array.isArray(anexoRows) ? anexoRows : []).filter((item) => item.pauta_id === row.id),
+      supabaseUrl
     )
   );
 }
@@ -185,6 +186,8 @@ async function saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, reminders)
       body: JSON.stringify(toExistingPautaPatch(item))
     });
   }
+
+  await syncPautaAttachmentsFromCoord(supabaseUrl, serviceRoleKey, activePautas);
 }
 
 function normalizeState(value, userId) {
@@ -265,6 +268,7 @@ function normalizeAttachment(item) {
     type: String(item.type || item.mime_type || "application/octet-stream"),
     size: Number(item.size || item.size_bytes || 0),
     dataUrl: String(item.dataUrl || ""),
+    url: String(item.url || ""),
     createdAt: normalizeDate(item.createdAt) || new Date().toISOString()
   };
 }
@@ -301,7 +305,7 @@ function fromItemRow(row) {
   };
 }
 
-function fromPautaRow(row, usuarios, anexos) {
+function fromPautaRow(row, usuarios, anexos, supabaseUrl) {
   return {
     id: row.id,
     title: row.titulo,
@@ -313,7 +317,7 @@ function fromPautaRow(row, usuarios, anexos) {
     recurring: "none",
     status: row.status === "concluida" ? "concluido" : "aberto",
     pinned: row.destaque ? "main" : "main",
-    attachments: anexos.map(fromPautaAnexoRow),
+    attachments: anexos.map((anexo) => fromPautaAnexoRow(anexo, supabaseUrl)),
     deletedAt: "",
     completedAt: "",
     createdAt: row.created_at,
@@ -327,13 +331,14 @@ function fromPautaRow(row, usuarios, anexos) {
   };
 }
 
-function fromPautaAnexoRow(row) {
+function fromPautaAnexoRow(row, supabaseUrl) {
   return {
     id: row.id,
     name: row.file_name,
     type: row.mime_type || "application/octet-stream",
     size: Number(row.size_bytes || 0),
     dataUrl: "",
+    url: buildPublicStorageUrl(supabaseUrl, "hub-anexos", row.storage_path),
     createdAt: row.created_at
   };
 }
@@ -399,6 +404,113 @@ function toExistingPautaPatch(item) {
     destaque: item.pinned === "main",
     updated_at: item.updatedAt
   };
+}
+
+async function syncPautaAttachmentsFromCoord(supabaseUrl, serviceRoleKey, pautaItems) {
+  const candidates = pautaItems
+    .flatMap((item) =>
+      (item.attachments || [])
+        .filter((attachment) => attachment?.dataUrl && attachment.name)
+        .map((attachment) => ({ pauta: item, attachment }))
+    );
+
+  if (!candidates.length) return;
+
+  const pautaIds = [...new Set(candidates.map((item) => item.pauta.id).filter(Boolean))];
+  const existingRows = pautaIds.length
+    ? await supabaseRequest(
+        `${trimUrl(supabaseUrl)}/rest/v1/pauta_anexos?pauta_id=in.(${pautaIds.map(encodeURIComponent).join(",")})&select=id,pauta_id,file_name,size_bytes`,
+        { headers: serviceHeaders(serviceRoleKey) }
+      )
+    : [];
+
+  const existingIds = new Set((Array.isArray(existingRows) ? existingRows : []).map((row) => row.id));
+  const existingKeys = new Set(
+    (Array.isArray(existingRows) ? existingRows : []).map((row) => `${row.pauta_id}:${row.file_name}:${Number(row.size_bytes || 0)}`)
+  );
+
+  for (const { pauta, attachment } of candidates) {
+    const bytes = parseDataUrlBytes(attachment.dataUrl);
+    if (!bytes?.length) continue;
+
+    const attachmentId = isUuid(attachment.id) ? attachment.id : randomId();
+    const duplicateKey = `${pauta.id}:${attachment.name}:${bytes.length}`;
+    if (existingIds.has(attachmentId) || existingKeys.has(duplicateKey)) continue;
+
+    const storagePath = `pautas/${pauta.id}/${attachmentId}-${toSafeStorageFileName(attachment.name)}`;
+    await uploadStorageObject(supabaseUrl, serviceRoleKey, "hub-anexos", storagePath, bytes, attachment.type || "application/octet-stream");
+
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/pauta_anexos`, {
+      method: "POST",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        id: attachmentId,
+        pauta_id: pauta.id,
+        file_name: attachment.name,
+        storage_path: storagePath,
+        mime_type: attachment.type || "application/octet-stream",
+        size_bytes: bytes.length,
+        uploaded_by: pauta.createdBy || null
+      })
+    });
+
+    existingIds.add(attachmentId);
+    existingKeys.add(duplicateKey);
+  }
+}
+
+async function uploadStorageObject(supabaseUrl, serviceRoleKey, bucket, storagePath, bytes, contentType) {
+  const response = await fetch(`${trimUrl(supabaseUrl)}/storage/v1/object/${bucket}/${encodeStoragePath(storagePath)}`, {
+    method: "POST",
+    headers: {
+      ...serviceHeaders(serviceRoleKey),
+      "content-type": contentType,
+      "x-upsert": "false"
+    },
+    body: bytes
+  });
+
+  const text = await response.text();
+  if (!response.ok && response.status !== 409) {
+    const data = parseJson(text);
+    throw httpError(response.status, data?.message || data?.error || text || response.statusText);
+  }
+}
+
+function parseDataUrlBytes(value) {
+  const match = String(value || "").match(/^data:([^;,]+)?(?:;base64)?,(.*)$/);
+  if (!match) return null;
+  try {
+    return Buffer.from(match[2], "base64");
+  } catch {
+    return null;
+  }
+}
+
+function buildPublicStorageUrl(supabaseUrl, bucket, storagePath) {
+  if (!storagePath) return "";
+  return `${trimUrl(supabaseUrl)}/storage/v1/object/public/${bucket}/${encodeStoragePath(storagePath)}`;
+}
+
+function encodeStoragePath(value) {
+  return String(value || "")
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+}
+
+function toSafeStorageFileName(fileName) {
+  const normalized = String(fileName || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "");
+
+  return normalized || "pauta-anexo";
 }
 
 function fromPautaPriority(value) {
