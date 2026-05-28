@@ -101,6 +101,7 @@ type HealthStatusTone = "ok" | "warning" | "info";
 type ViewerPreviewMode = "image" | "iframe" | "unsupported";
 type ReportFormat = "pdf" | "excel";
 type ReportRow = Record<string, string | number>;
+type PdfReportLine = { bold?: boolean; size?: number; text: string };
 
 type ViewerPreview = {
   mode: ViewerPreviewMode;
@@ -2699,14 +2700,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
 
     const markdown = buildViewerNotesMarkdown(viewerResource, viewerNotes);
     const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${toSafeDownloadFileName(viewerResource.titulo || viewerResource.fileName || "arquivo")}-anotacoes.md`;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadBlob(blob, `${toSafeDownloadFileName(viewerResource.titulo || viewerResource.fileName || "arquivo")}-anotacoes.md`);
   }
 
   function canManageFolder(folder: FileFolder) {
@@ -3504,17 +3498,10 @@ function InternalPdfViewer({
           if (!active) return;
           const pdfPage = await document.getPage(pageNumber);
           const textContent = await pdfPage.getTextContent();
-          const pageText = normalizeForSearch(
-            (textContent.items as PdfTextRawItem[])
-              .map((item) => item.str || "")
-              .filter(Boolean)
-              .join(" ")
-          );
+          const matchCount = countPdfTextContentMatches(textContent.items as PdfTextRawItem[], normalizedSearchTerm);
 
-          let matchIndex = pageText.indexOf(normalizedSearchTerm);
-          while (matchIndex >= 0) {
+          for (let matchNumber = 0; matchNumber < matchCount; matchNumber += 1) {
             matches.push({ page: pageNumber, globalIndex: matches.length });
-            matchIndex = pageText.indexOf(normalizedSearchTerm, matchIndex + Math.max(1, normalizedSearchTerm.length));
           }
         }
 
@@ -3582,14 +3569,17 @@ function InternalPdfViewer({
         if (!response.ok) throw new Error("Nao foi possivel carregar o PDF para estudo interno.");
         const bytes = await response.arrayBuffer();
         const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+        if (!active || cancelled) return;
         if (active) onPageCount(document.numPages);
         const safePage = Math.min(Math.max(1, page), document.numPages);
         const pdfPage = await document.getPage(safePage);
+        if (!active || cancelled) return;
         const scale = Math.max(0.6, Math.min(2.4, zoom / 100)) * 1.35;
         const viewport = pdfPage.getViewport({ scale });
         const context = canvas.getContext("2d");
         const textLayerElement = textLayerRef.current;
         if (!context) throw new Error("Canvas indisponivel para renderizar PDF.");
+        if (!active || cancelled) return;
 
         canvas.width = Math.floor(viewport.width);
         canvas.height = Math.floor(viewport.height);
@@ -3731,6 +3721,32 @@ function getPdfSearchOffset(matches: PdfGlobalSearchMatch[], page: number) {
   return matches.filter((match) => match.page < page).length;
 }
 
+function countPdfTextContentMatches(items: PdfTextRawItem[], normalizedSearchTerm: string) {
+  if (!normalizedSearchTerm) return 0;
+  const normalizedItems = items.map((item) => normalizeForSearch(item.str || "")).filter(Boolean);
+  if (!normalizedItems.length) return 0;
+
+  const spacedText = normalizedItems.join(" ");
+  const compactText = normalizedItems.join("");
+  const compactTerm = normalizedSearchTerm.replace(/\s+/g, "");
+
+  return Math.max(
+    countNormalizedTermMatches(spacedText, normalizedSearchTerm),
+    compactTerm ? countNormalizedTermMatches(compactText, compactTerm) : 0
+  );
+}
+
+function countNormalizedTermMatches(text: string, term: string) {
+  if (!text || !term) return 0;
+  let total = 0;
+  let index = text.indexOf(term);
+  while (index >= 0) {
+    total += 1;
+    index = text.indexOf(term, index + Math.max(1, term.length));
+  }
+  return total;
+}
+
 function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string, startIndex = 0): PdfSearchPlan {
   const indexesBySpanId = new Map<string, number>();
   if (!normalizedSearchTerm) return { total: 0, indexesBySpanId };
@@ -3750,10 +3766,10 @@ function buildPdfSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string, 
 
   if (total) return { total, indexesBySpanId };
 
-  return buildPdfCombinedSearchPlan(spans, normalizedSearchTerm, startIndex);
+  return buildPdfCombinedSearchPlan(spans, normalizedSearchTerm, startIndex, " ");
 }
 
-function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string, startIndex = 0): PdfSearchPlan {
+function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: string, startIndex = 0, separator = ""): PdfSearchPlan {
   const indexesBySpanId = new Map<string, number>();
   let text = "";
   const ranges: Array<{ end: number; id: string; start: number }> = [];
@@ -3762,6 +3778,7 @@ function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: 
     const normalizedText = normalizeForSearch(span.text);
     if (!normalizedText) continue;
 
+    if (separator && text) text += separator;
     const start = text.length;
     text += normalizedText;
     ranges.push({ id: span.id, start, end: text.length });
@@ -3779,7 +3796,9 @@ function buildPdfCombinedSearchPlan(spans: PdfTextSpan[], normalizedSearchTerm: 
     index = text.indexOf(normalizedSearchTerm, index + Math.max(1, normalizedSearchTerm.length));
   }
 
-  return { total, indexesBySpanId };
+  if (total || !separator) return { total, indexesBySpanId };
+
+  return buildPdfCombinedSearchPlan(spans, normalizedSearchTerm.replace(/\s+/g, ""), startIndex);
 }
 
 function renderManualPdfTextLayer(
@@ -5606,7 +5625,7 @@ async function sendNotificationsByEmail(user: HubUser, items: HubNotification[])
 function exportReport(format: ReportFormat, title: string, rows: ReportRow[]) {
   const reportRows = rows.length ? rows : [{ Info: "Nenhum registro encontrado para o filtro atual." }];
   if (format === "pdf") {
-    openPrintableReport(title, reportRows);
+    downloadPdfReport(title, reportRows);
     return;
   }
 
@@ -5623,30 +5642,215 @@ function openPrintableReport(title: string, rows: ReportRow[]) {
   window.setTimeout(() => reportWindow.print(), 250);
 }
 
+function downloadPdfReport(title: string, rows: ReportRow[]) {
+  const pdf = buildPdfReport(title, rows);
+  downloadBlob(new Blob([pdf], { type: "application/pdf" }), `${toReportFileName(title)}.pdf`);
+}
+
 function downloadXlsxReport(title: string, rows: ReportRow[]) {
   const workbook = buildXlsxWorkbook(title, rows);
-  const blob = new Blob([workbook], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${toReportFileName(title)}.xlsx`;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(new Blob([workbook], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `${toReportFileName(title)}.xlsx`);
 }
 
 function downloadDocxReport(title: string, rows: ReportRow[]) {
   const docx = buildDocxReport(title, rows);
-  const blob = new Blob([docx], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  downloadBlob(new Blob([docx], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), `${toReportFileName(title)}.docx`);
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${toReportFileName(title)}.docx`;
+  anchor.download = fileName;
+  anchor.rel = "noopener";
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 2500);
+}
+
+function buildPdfReport(title: string, rows: ReportRow[]) {
+  const pageWidth = 842;
+  const pageHeight = 595;
+  const margin = 36;
+  const maxLineLength = 118;
+  const columns = Object.keys(rows[0] || { Info: "" });
+  const generatedAt = new Date().toLocaleString("pt-BR");
+  const lines: PdfReportLine[] = [
+    { text: title, bold: true, size: 16 },
+    { text: `Gerado em ${generatedAt} pelo HUB Depto Tributario.`, size: 9 },
+    { text: "", size: 5 }
+  ];
+
+  rows.forEach((row, rowIndex) => {
+    if (rowIndex > 0) lines.push({ text: "", size: 5 });
+    lines.push({ text: `Registro ${rowIndex + 1}`, bold: true, size: 10 });
+    columns.forEach((column) => {
+      const value = `${column}: ${String(row[column] ?? "")}`;
+      wrapReportText(value, maxLineLength).forEach((text) => lines.push({ text, size: 9 }));
+    });
+  });
+
+  const pages = paginatePdfReportLines(lines, pageHeight, margin);
+  const pageObjectNumbers: number[] = [];
+  const contentObjectNumbers: number[] = [];
+  let nextObjectNumber = 5;
+  pages.forEach(() => {
+    pageObjectNumbers.push(nextObjectNumber);
+    nextObjectNumber += 1;
+    contentObjectNumbers.push(nextObjectNumber);
+    nextObjectNumber += 1;
+  });
+
+  const objects = new Map<number, string>();
+  objects.set(1, "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  objects.set(
+    2,
+    `2 0 obj\n<< /Type /Pages /Kids [${pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")}] /Count ${pages.length} >>\nendobj\n`
+  );
+  objects.set(3, "3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n");
+  objects.set(4, "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n");
+
+  pages.forEach((pageLines, index) => {
+    const pageObjectNumber = pageObjectNumbers[index];
+    const contentObjectNumber = contentObjectNumbers[index];
+    const content = buildPdfReportPageStream(pageLines, pageHeight, margin);
+    objects.set(
+      pageObjectNumber,
+      `${pageObjectNumber} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjectNumber} 0 R >>\nendobj\n`
+    );
+    objects.set(
+      contentObjectNumber,
+      `${contentObjectNumber} 0 obj\n<< /Length ${encodeAscii(content).length} >>\nstream\n${content}\nendstream\nendobj\n`
+    );
+  });
+
+  const maxObjectNumber = nextObjectNumber - 1;
+  const offsets = new Array<number>(maxObjectNumber + 1).fill(0);
+  let document = "%PDF-1.4\n% HUB Depto Tributario\n";
+
+  for (let objectNumber = 1; objectNumber <= maxObjectNumber; objectNumber += 1) {
+    offsets[objectNumber] = document.length;
+    document += objects.get(objectNumber) || `${objectNumber} 0 obj\n<<>>\nendobj\n`;
+  }
+
+  const xrefOffset = document.length;
+  document += `xref\n0 ${maxObjectNumber + 1}\n0000000000 65535 f \n`;
+  for (let objectNumber = 1; objectNumber <= maxObjectNumber; objectNumber += 1) {
+    document += `${String(offsets[objectNumber]).padStart(10, "0")} 00000 n \n`;
+  }
+  document += `trailer\n<< /Size ${maxObjectNumber + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return encodeAscii(document);
+}
+
+function paginatePdfReportLines(lines: PdfReportLine[], pageHeight: number, margin: number) {
+  const pages: PdfReportLine[][] = [];
+  let page: PdfReportLine[] = [];
+  let cursorY = pageHeight - margin;
+
+  lines.forEach((line) => {
+    const size = line.size || 9;
+    const lineHeight = size + 4;
+    if (page.length && cursorY - lineHeight < margin) {
+      pages.push(page);
+      page = [];
+      cursorY = pageHeight - margin;
+    }
+    page.push(line);
+    cursorY -= lineHeight;
+  });
+
+  if (page.length) pages.push(page);
+  return pages.length ? pages : [[{ text: "Nenhum registro encontrado.", size: 10 }]];
+}
+
+function buildPdfReportPageStream(lines: PdfReportLine[], pageHeight: number, margin: number) {
+  let cursorY = pageHeight - margin;
+  const commands: string[] = [];
+
+  lines.forEach((line) => {
+    const size = line.size || 9;
+    const font = line.bold ? "F2" : "F1";
+    if (line.text.trim()) {
+      commands.push(`BT /${font} ${size} Tf 1 0 0 1 ${margin} ${cursorY.toFixed(2)} Tm <${pdfTextHex(line.text)}> Tj ET`);
+    }
+    cursorY -= size + 4;
+  });
+
+  return commands.join("\n");
+}
+
+function wrapReportText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return [""];
+
+  const lines: string[] = [];
+  let current = "";
+
+  normalized.split(" ").forEach((word) => {
+    if (!word) return;
+    if (word.length > maxLength) {
+      if (current) {
+        lines.push(current);
+        current = "";
+      }
+      for (let index = 0; index < word.length; index += maxLength) {
+        lines.push(word.slice(index, index + maxLength));
+      }
+      return;
+    }
+
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxLength) {
+      lines.push(current);
+      current = word;
+      return;
+    }
+    current = candidate;
+  });
+
+  if (current) lines.push(current);
+  return lines.length ? lines : [normalized.slice(0, maxLength)];
+}
+
+function pdfTextHex(value: string) {
+  return Array.from(encodeWinAnsiPdfText(value), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function encodeWinAnsiPdfText(value: string) {
+  const fallbackMap: Record<number, number> = {
+    0x00a0: 32,
+    0x2013: 45,
+    0x2014: 45,
+    0x2018: 39,
+    0x2019: 39,
+    0x201c: 34,
+    0x201d: 34,
+    0x2026: 46,
+    0x20ac: 128
+  };
+  const bytes: number[] = [];
+  const normalized = value.replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+
+  for (const character of normalized) {
+    const codePoint = character.codePointAt(0) || 0;
+    if (codePoint >= 32 && codePoint <= 255) {
+      bytes.push(codePoint);
+    } else {
+      bytes.push(fallbackMap[codePoint] || 63);
+    }
+  }
+
+  return new Uint8Array(bytes);
+}
+
+function encodeAscii(value: string) {
+  const output = new Uint8Array(value.length);
+  for (let index = 0; index < value.length; index += 1) {
+    output[index] = value.charCodeAt(index) & 0xff;
+  }
+  return output;
 }
 
 function buildDocxReport(title: string, rows: ReportRow[]) {
