@@ -41,7 +41,7 @@ Os HTMLs fornecidos ficam em:
 
 O menu principal do HUB usa o modulo nativo de Pautas, com persistencia Supabase/local, anexos, destaques, conclusoes por usuario e notificacoes ao administrador.
 
-A antiga integracao com Google Sheets fica em stand by como historico de projeto. Ela nao e mais a fonte ativa do menu Pautas.
+A antiga integracao com Google Sheets foi retirada do fluxo ativo. O menu Pautas usa a base nativa do HUB; qualquer app externo futuro deve ser tratado como nova integracao.
 
 Sheet ID historico:
 
