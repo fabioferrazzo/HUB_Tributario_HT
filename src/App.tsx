@@ -1107,7 +1107,7 @@ function Dashboard({
         <div className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}>
           {filteredPautas.map((pauta) => (
             <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} key={pauta.id}>
-              <div>
+              <div className="pauta-content">
                 <strong>{pauta.tema}</strong>
                 <span>{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
                 {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}

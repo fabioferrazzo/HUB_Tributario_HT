@@ -607,10 +607,6 @@ textarea:focus {
   font-weight: 650;
 }
 
-.list-row--pauta {
-  min-height: 92px;
-}
-
 .list-row small {
   color: var(--muted);
   white-space: nowrap;
@@ -3162,15 +3158,18 @@ body {
 
 .list-row--pauta {
   min-height: auto;
-  grid-template-columns: minmax(0, 1fr) minmax(86px, auto);
+  grid-template-columns: minmax(0, 1fr) minmax(112px, max-content);
   grid-template-areas:
     "content status"
-    "date date";
-  row-gap: 8px;
-  padding-block: 16px;
+    "date status"
+    "actions actions";
+  align-items: start;
+  column-gap: 18px;
+  row-gap: 10px;
+  padding: 16px 18px;
 }
 
-.list-row--pauta > div {
+.pauta-content {
   grid-area: content;
   min-width: 0;
   display: grid;
@@ -3191,16 +3190,17 @@ body {
   grid-area: status;
   justify-self: end;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
   gap: 6px;
-  flex-wrap: wrap;
-  max-width: 124px;
+  max-width: 160px;
 }
 
 .pauta-row-badges .status-pill {
   text-align: center;
   line-height: 1.2;
+  min-width: 72px;
 }
 
 .list-row--pauta small {
@@ -3216,7 +3216,10 @@ body {
 .pauta-date {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 5px;
+  min-width: 0;
+  white-space: normal;
 }
 
 .pauta-date--danger {
@@ -3503,9 +3506,37 @@ body {
 }
 
 .pauta-actions {
-  grid-column: 1 / -1;
+  grid-area: actions;
+  grid-column: auto;
   justify-content: flex-start;
   gap: 6px;
+}
+
+.pauta-actions button {
+  min-height: 32px;
+}
+
+@media (max-width: 780px) {
+  .list-row--pauta {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "status"
+      "content"
+      "date"
+      "actions";
+    padding: 14px;
+  }
+
+  .pauta-row-badges {
+    justify-self: start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: none;
+  }
+
+  .pauta-actions {
+    gap: 5px;
+  }
 }
 
 .readonly-note {
