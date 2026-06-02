@@ -130,9 +130,10 @@ export async function deleteAppPauta({
   }
 
   if (getPautasSource(user) === "supabase") {
-    const client = assertSupabase();
-    const { error } = await client.from("pautas").delete().eq("id", pauta.id);
-    if (error) throw error;
+    await callPautasAdminFunction<{ ok: boolean; id: string }>({
+      action: "delete",
+      id: pauta.id
+    });
     notifyPautasChanged();
     return listAppPautas(user);
   }
@@ -240,53 +241,28 @@ async function loadSupabasePautas(user?: HubUser | null): Promise<Pauta[]> {
 }
 
 async function upsertSupabasePauta(pauta: Pauta, user: HubUser, options: { isExisting: boolean }) {
-  const client = assertSupabase();
   const authUserId = await getCurrentAuthUserId();
   const normalized = normalizePauta(pauta);
   const existingCreatedBy = options.isExisting && isUuid(normalized.createdBy || "") ? normalized.createdBy : authUserId;
 
-  const { data, error } = await client
-    .from("pautas")
-    .upsert(
-      {
-        id: normalized.id,
-        titulo: normalized.tema,
-        descricao: normalized.acoes,
-        prazo: normalized.prazo || null,
-        prioridade: normalized.prioridade || "normal",
-        status: normalized.status || "aberta",
-        scope: normalized.scope || "todos",
-        destaque: Boolean(normalized.destaque),
-        created_by: existingCreatedBy,
-        created_by_email: options.isExisting ? normalized.email || user.email.toLowerCase() : user.email.toLowerCase()
-      },
-      { onConflict: "id" }
-    )
-    .select("id")
-    .single();
-
-  if (error) throw error;
-
-  const pautaId = data.id as string;
-  await client.from("pauta_usuarios").delete().eq("pauta_id", pautaId);
-
-  const profilesByEmail = await getProfilesByEmail(normalized.responsaveis || []);
-  const userLinks = (normalized.responsaveis || []).map((email) => {
-    const profile = profilesByEmail.get(email.toLowerCase());
-    return {
-      pauta_id: pautaId,
-      user_id: profile?.id || null,
-      email: email.toLowerCase(),
-      nome: profile?.nome || email
-    };
+  const result = await callPautasAdminFunction<{ id: string }>({
+    action: "upsert",
+    pauta: {
+      id: normalized.id,
+      titulo: normalized.tema,
+      descricao: normalized.acoes,
+      prazo: normalized.prazo || null,
+      prioridade: normalized.prioridade || "normal",
+      status: normalized.status || "aberta",
+      scope: normalized.scope || "todos",
+      destaque: Boolean(normalized.destaque),
+      createdBy: existingCreatedBy,
+      createdByEmail: options.isExisting ? normalized.email || user.email.toLowerCase() : user.email.toLowerCase(),
+      responsaveis: normalized.responsaveis || []
+    }
   });
 
-  if (userLinks.length) {
-    const { error: linksError } = await client.from("pauta_usuarios").insert(userLinks);
-    if (linksError) throw linksError;
-  }
-
-  return pautaId;
+  return result.id;
 }
 
 async function uploadSupabasePautaAnexo(pautaId: string, file: File) {
@@ -441,6 +417,49 @@ async function getCurrentAuthUserId() {
   }
 
   return data.user.id;
+}
+
+async function getCurrentAccessToken() {
+  const client = assertSupabase();
+  const { data, error } = await client.auth.getSession();
+
+  if (error || !data.session?.access_token) {
+    throw new Error("Sessao Supabase expirada. Entre novamente.");
+  }
+
+  return data.session.access_token;
+}
+
+async function callPautasAdminFunction<T>(body: unknown): Promise<T> {
+  const token = await getCurrentAccessToken();
+  const response = await fetch("/.netlify/functions/pautas-admin", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(body)
+  });
+  const text = await response.text();
+  let data: { error?: string; detail?: unknown } | null = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const detail =
+      data?.detail && typeof data.detail === "object"
+        ? ` (${Object.entries(data.detail as Record<string, unknown>)
+            .map(([key, value]) => `${key}: ${String(value)}`)
+            .join(", ")})`
+        : "";
+    throw new Error(`${data?.error || text || "Nao foi possivel gerenciar a pauta."}${detail}`);
+  }
+
+  return data as T;
 }
 
 async function getProfilesByEmail(emails: string[]) {
