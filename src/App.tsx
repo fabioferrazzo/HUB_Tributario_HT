@@ -797,6 +797,7 @@ function Dashboard({
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [autoScroll, setAutoScroll] = useState(true);
   const pautasScrollRef = useRef<HTMLDivElement | null>(null);
+  const pautasScrollIndexRef = useRef(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
@@ -887,21 +888,24 @@ function Dashboard({
   const pautaStatusLabel = loading ? "Sincronizando" : `${source} - ${monthPautas.length} pauta(s)`;
 
   useEffect(() => {
-    if (!autoScroll || loading || filteredPautas.length < 2) return undefined;
+    pautasScrollIndexRef.current = 0;
+    pautasScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [filteredPautas.length, pautaFilter, selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    if (!autoScroll || loading || filteredPautas.length < 4) return undefined;
 
     const intervalId = window.setInterval(() => {
       const element = pautasScrollRef.current;
       if (!element || element.scrollHeight <= element.clientHeight + 8) return;
 
-      const step = Math.max(120, Math.round(element.clientHeight * 0.46));
-      const nextTop = element.scrollTop + step;
-      const nearEnd = nextTop + element.clientHeight >= element.scrollHeight - 8;
+      const rows = Array.from(element.querySelectorAll<HTMLElement>("[data-pauta-row]"));
+      if (rows.length < 4) return;
 
-      element.scrollTo({
-        top: nearEnd ? 0 : nextTop,
-        behavior: "smooth"
-      });
-    }, 3200);
+      const nextIndex = (pautasScrollIndexRef.current + 1) % rows.length;
+      pautasScrollIndexRef.current = nextIndex;
+      rows[nextIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 3600);
 
     return () => window.clearInterval(intervalId);
   }, [autoScroll, filteredPautas.length, loading]);
@@ -1139,11 +1143,12 @@ function Dashboard({
         {error ? <p className="module-error module-error--compact">{error}</p> : null}
         <div ref={pautasScrollRef} className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}>
           {filteredPautas.map((pauta) => (
-            <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} key={pauta.id}>
+            <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={pauta.id}>
               <div
                 className={`pauta-content pauta-content--${pauta.textSize || "normal"} ${pauta.textBold ? "pauta-content--bold" : ""} ${
                   pauta.textItalic ? "pauta-content--italic" : ""
                 }`}
+                style={getPautaContentStyle(pauta)}
               >
                 <strong>{pauta.tema}</strong>
                 <span className="pauta-description">{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
@@ -1223,6 +1228,7 @@ function Dashboard({
                   <option value="pequena">Pequena</option>
                   <option value="normal">Normal</option>
                   <option value="grande">Grande</option>
+                  <option value="muito-grande">Muito grande</option>
                 </select>
               </label>
               <button
@@ -6372,6 +6378,13 @@ function getPautaTone(pauta: Pauta) {
   if (isPautaConcluida(pauta)) return "ok";
   if (isPautaAtrasada(pauta)) return "danger";
   return getDueTone(pauta.prazo);
+}
+
+function getPautaContentStyle(pauta: Pauta): CSSProperties {
+  return {
+    fontWeight: pauta.textBold ? 850 : undefined,
+    fontStyle: pauta.textItalic ? "italic" : undefined
+  };
 }
 
 function sortPautasForDashboard(pautas: Pauta[]) {

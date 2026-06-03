@@ -21,7 +21,7 @@ export type HubProfile = TeamMember & {
   updatedAt?: string;
 };
 
-export type PautaTextSize = "pequena" | "normal" | "grande";
+export type PautaTextSize = "pequena" | "normal" | "grande" | "muito-grande";
 
 export type Pauta = {
   id: string;

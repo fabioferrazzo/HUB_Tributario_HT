@@ -3157,7 +3157,7 @@ body {
 }
 
 .list-row--pauta {
-  min-height: auto;
+  min-height: 132px;
   grid-template-columns: minmax(0, 1fr) minmax(112px, max-content);
   grid-template-areas:
     "content status"
@@ -3167,6 +3167,7 @@ body {
   column-gap: 18px;
   row-gap: 10px;
   padding: 16px 18px;
+  scroll-snap-align: start;
 }
 
 .pauta-content {
@@ -3174,36 +3175,45 @@ body {
   min-width: 0;
   display: grid;
   gap: 5px;
+  color: #23344a;
+  font-size: 13px;
+  line-height: 1.42;
 }
 
 .pauta-description {
   max-width: 100%;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 1em;
+  line-height: 1.46;
 }
 
-.pauta-content--pequena .pauta-description {
+.pauta-content--pequena {
   font-size: 12px;
 }
 
-.pauta-content--normal .pauta-description {
+.pauta-content--normal {
   font-size: 13px;
 }
 
-.pauta-content--grande .pauta-description {
-  font-size: 15px;
+.pauta-content--grande {
+  font-size: 16px;
 }
 
-.pauta-content--bold .pauta-description {
-  color: #23344a;
+.pauta-content--muito-grande {
+  font-size: 19px;
+}
+
+.pauta-content--bold {
   font-weight: 850;
 }
 
-.pauta-content--italic .pauta-description {
+.pauta-content--italic {
   font-style: italic;
 }
 
-.list-row--pauta strong {
-  font-size: 15px;
+.list-row--pauta .pauta-content strong {
+  font-size: 1.1em;
   line-height: 1.28;
 }
 
@@ -3447,15 +3457,18 @@ body {
 }
 
 .pautas-page {
-  min-height: calc(100vh - 104px);
+  height: calc(100vh - 104px);
+  min-height: 560px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
+  overflow: hidden;
 }
 
 .pautas-page .panel--pautas {
-  min-height: min(720px, calc(100vh - 186px));
+  min-height: 0;
+  height: 100%;
 }
 
 .pautas-monthbar {
@@ -3491,9 +3504,12 @@ body {
   display: grid;
   align-content: start;
   gap: 8px;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px;
+  scroll-snap-type: y proximity;
   scroll-padding-block: 12px;
 }
 
