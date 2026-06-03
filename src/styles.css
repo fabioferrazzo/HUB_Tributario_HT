@@ -3176,6 +3176,32 @@ body {
   gap: 5px;
 }
 
+.pauta-description {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.pauta-content--pequena .pauta-description {
+  font-size: 12px;
+}
+
+.pauta-content--normal .pauta-description {
+  font-size: 13px;
+}
+
+.pauta-content--grande .pauta-description {
+  font-size: 15px;
+}
+
+.pauta-content--bold .pauta-description {
+  color: #23344a;
+  font-weight: 850;
+}
+
+.pauta-content--italic .pauta-description {
+  font-style: italic;
+}
+
 .list-row--pauta strong {
   font-size: 15px;
   line-height: 1.28;
@@ -3465,7 +3491,10 @@ body {
   display: grid;
   align-content: start;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
   padding: 12px;
+  scroll-padding-block: 12px;
 }
 
 .pautas-stack--scrolling {
@@ -3558,6 +3587,41 @@ body {
 
 .pauta-editor-panel .stack-form {
   padding: 14px;
+}
+
+.pauta-format-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfaf6;
+  padding: 8px;
+}
+
+.pauta-format-toolbar label {
+  min-width: 150px;
+}
+
+.pauta-format-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.pauta-format-toolbar button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .form-actions-inline {

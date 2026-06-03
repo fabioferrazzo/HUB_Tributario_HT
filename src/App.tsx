@@ -796,10 +796,14 @@ function Dashboard({
   const [pautaFilter, setPautaFilter] = useState<PautaFilter>("todas");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [autoScroll, setAutoScroll] = useState(true);
+  const pautasScrollRef = useRef<HTMLDivElement | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [pautaTextSize, setPautaTextSize] = useState<NonNullable<Pauta["textSize"]>>("normal");
+  const [pautaTextBold, setPautaTextBold] = useState(false);
+  const [pautaTextItalic, setPautaTextItalic] = useState(false);
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState("normal");
   const [status, setStatus] = useState("aberta");
@@ -882,6 +886,26 @@ function Dashboard({
   const statusCounts = useMemo(() => countPautaStatus(monthPautas, user), [monthPautas, user]);
   const pautaStatusLabel = loading ? "Sincronizando" : `${source} - ${monthPautas.length} pauta(s)`;
 
+  useEffect(() => {
+    if (!autoScroll || loading || filteredPautas.length < 2) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      const element = pautasScrollRef.current;
+      if (!element || element.scrollHeight <= element.clientHeight + 8) return;
+
+      const step = Math.max(120, Math.round(element.clientHeight * 0.46));
+      const nextTop = element.scrollTop + step;
+      const nearEnd = nextTop + element.clientHeight >= element.scrollHeight - 8;
+
+      element.scrollTo({
+        top: nearEnd ? 0 : nextTop,
+        behavior: "smooth"
+      });
+    }, 3200);
+
+    return () => window.clearInterval(intervalId);
+  }, [autoScroll, filteredPautas.length, loading]);
+
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
   }
@@ -890,6 +914,9 @@ function Dashboard({
     setEditingId(null);
     setTitulo("");
     setDescricao("");
+    setPautaTextSize("normal");
+    setPautaTextBold(false);
+    setPautaTextItalic(false);
     setPrazo("");
     setPrioridade("normal");
     setStatus("aberta");
@@ -914,6 +941,9 @@ function Dashboard({
     setEditingId(pauta.id);
     setTitulo(pauta.tema);
     setDescricao(pauta.acoes || pauta.pendenciasObs || "");
+    setPautaTextSize(pauta.textSize || "normal");
+    setPautaTextBold(Boolean(pauta.textBold));
+    setPautaTextItalic(Boolean(pauta.textItalic));
     setPrazo(toDatetimeLocalValue(pauta.prazo));
     setPrioridade(pauta.prioridade || "normal");
     setStatus(pauta.status || "aberta");
@@ -952,6 +982,9 @@ function Dashboard({
       origem: "HUB Pautas",
       scope,
       destaque,
+      textSize: pautaTextSize,
+      textBold: pautaTextBold,
+      textItalic: pautaTextItalic,
       responsaveis: scope === "usuarios" ? responsaveis : [],
       anexos: existing?.anexos || [],
       conclusoes: existing?.conclusoes || [],
@@ -1104,12 +1137,16 @@ function Dashboard({
           </div>
         </div>
         {error ? <p className="module-error module-error--compact">{error}</p> : null}
-        <div className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}>
+        <div ref={pautasScrollRef} className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}>
           {filteredPautas.map((pauta) => (
             <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} key={pauta.id}>
-              <div className="pauta-content">
+              <div
+                className={`pauta-content pauta-content--${pauta.textSize || "normal"} ${pauta.textBold ? "pauta-content--bold" : ""} ${
+                  pauta.textItalic ? "pauta-content--italic" : ""
+                }`}
+              >
                 <strong>{pauta.tema}</strong>
-                <span>{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
+                <span className="pauta-description">{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
                 {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
                 <em>{pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}</em>
                 {pauta.anexos?.length ? (
@@ -1179,6 +1216,32 @@ function Dashboard({
               Descricao / orientacao
               <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
             </label>
+            <div className="pauta-format-toolbar" aria-label="Formatacao da descricao da pauta">
+              <label>
+                Fonte
+                <select value={pautaTextSize} onChange={(event) => setPautaTextSize(event.target.value as NonNullable<Pauta["textSize"]>)}>
+                  <option value="pequena">Pequena</option>
+                  <option value="normal">Normal</option>
+                  <option value="grande">Grande</option>
+                </select>
+              </label>
+              <button
+                className={pautaTextBold ? "active" : ""}
+                onClick={() => setPautaTextBold((current) => !current)}
+                type="button"
+                title="Negrito"
+              >
+                <strong>B</strong>
+              </button>
+              <button
+                className={pautaTextItalic ? "active" : ""}
+                onClick={() => setPautaTextItalic((current) => !current)}
+                type="button"
+                title="Italico"
+              >
+                <em>I</em>
+              </button>
+            </div>
             <div className="form-row">
               <label>
                 Prazo

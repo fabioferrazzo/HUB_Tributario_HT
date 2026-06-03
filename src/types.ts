@@ -21,6 +21,8 @@ export type HubProfile = TeamMember & {
   updatedAt?: string;
 };
 
+export type PautaTextSize = "pequena" | "normal" | "grande";
+
 export type Pauta = {
   id: string;
   tema: string;
@@ -38,6 +40,9 @@ export type Pauta = {
   origem: string;
   scope?: "todos" | "usuarios";
   destaque?: boolean;
+  textSize?: PautaTextSize;
+  textBold?: boolean;
+  textItalic?: boolean;
   responsaveis?: string[];
   anexos?: PautaAttachment[];
   conclusoes?: PautaCompletion[];
