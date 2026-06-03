@@ -1,4 +1,4 @@
-import type { HubProfile, HubUser, Pauta, PautaAttachment, PautaCompletion } from "../types";
+import type { HubProfile, HubUser, Pauta, PautaAttachment, PautaCompletion, PautaTextSize } from "../types";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
@@ -49,6 +49,7 @@ type ProfileRow = Pick<HubProfile, "id" | "email" | "nome">;
 
 const PAUTAS_STORAGE_KEY = "hub_pautas_app";
 const STORAGE_BUCKET = "hub-anexos";
+const PAUTA_STYLE_META_RE = /^<!--hub:pauta-style:([\s\S]*?)-->\s*/;
 
 export function getPautasSource(user?: HubUser | null): PautasSource {
   return isSupabaseConfigured && Boolean(user?.id) ? "supabase" : "local";
@@ -250,7 +251,7 @@ async function upsertSupabasePauta(pauta: Pauta, user: HubUser, options: { isExi
     pauta: {
       id: normalized.id,
       titulo: normalized.tema,
-      descricao: normalized.acoes,
+      descricao: encodePautaDescricao(normalized),
       prazo: normalized.prazo || null,
       prioridade: normalized.prioridade || "normal",
       status: normalized.status || "aberta",
@@ -291,11 +292,12 @@ function mapPautaRow(row: PautaRow, usuarios: PautaUsuarioRow[], anexos: PautaAn
   const firstResponsavel = usuarios.map((item) => item.nome || item.email).filter(Boolean).join(", ");
   const concludedDates = conclusoes.map((item) => item.completed_at).sort();
   const concludedAt = concludedDates[concludedDates.length - 1] || "";
+  const descricao = decodePautaDescricao(row.descricao || "");
 
   return normalizePauta({
     id: row.id,
     tema: row.titulo,
-    acoes: row.descricao || "",
+    acoes: descricao.text,
     prazo: row.prazo || "",
     prioridade: row.prioridade || "normal",
     responsavel: (row.scope || "todos") === "todos" ? "Todos" : firstResponsavel,
@@ -309,6 +311,9 @@ function mapPautaRow(row: PautaRow, usuarios: PautaUsuarioRow[], anexos: PautaAn
     origem: "HUB Pautas",
     scope: row.scope || "todos",
     destaque: Boolean(row.destaque),
+    textSize: descricao.textSize,
+    textBold: descricao.textBold,
+    textItalic: descricao.textItalic,
     responsaveis,
     anexos: anexos.map(mapPautaAnexoRow),
     conclusoes: conclusoes.map(mapPautaConclusaoRow),
@@ -363,6 +368,9 @@ function normalizePauta(value: Partial<Pauta>): Pauta {
     origem: value.origem || "HUB Pautas",
     scope,
     destaque: Boolean(value.destaque),
+    textSize: normalizePautaTextSize(value.textSize),
+    textBold: Boolean(value.textBold),
+    textItalic: Boolean(value.textItalic),
     responsaveis,
     anexos: Array.isArray(value.anexos) ? value.anexos : [],
     conclusoes: Array.isArray(value.conclusoes) ? value.conclusoes : [],
@@ -370,6 +378,55 @@ function normalizePauta(value: Partial<Pauta>): Pauta {
     createdAt: value.createdAt || now,
     updatedAt: value.updatedAt || now
   };
+}
+
+function encodePautaDescricao(pauta: Pauta) {
+  const meta = {
+    textSize: normalizePautaTextSize(pauta.textSize),
+    textBold: Boolean(pauta.textBold),
+    textItalic: Boolean(pauta.textItalic)
+  };
+
+  return `<!--hub:pauta-style:${JSON.stringify(meta)}-->\n${pauta.acoes || ""}`;
+}
+
+function decodePautaDescricao(value: string): {
+  text: string;
+  textSize: PautaTextSize;
+  textBold: boolean;
+  textItalic: boolean;
+} {
+  const match = value.match(PAUTA_STYLE_META_RE);
+  if (!match) {
+    return {
+      text: value,
+      textSize: "normal",
+      textBold: false,
+      textItalic: false
+    };
+  }
+
+  try {
+    const meta = JSON.parse(match[1] || "{}") as Partial<Pick<Pauta, "textSize" | "textBold" | "textItalic">>;
+    return {
+      text: value.replace(PAUTA_STYLE_META_RE, ""),
+      textSize: normalizePautaTextSize(meta.textSize),
+      textBold: Boolean(meta.textBold),
+      textItalic: Boolean(meta.textItalic)
+    };
+  } catch {
+    return {
+      text: value.replace(PAUTA_STYLE_META_RE, ""),
+      textSize: "normal",
+      textBold: false,
+      textItalic: false
+    };
+  }
+}
+
+function normalizePautaTextSize(value?: string): PautaTextSize {
+  if (value === "pequena" || value === "grande") return value;
+  return "normal";
 }
 
 function seedLocalPautas(): Pauta[] {
