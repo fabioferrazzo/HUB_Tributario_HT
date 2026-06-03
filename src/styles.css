@@ -3157,7 +3157,7 @@ body {
 }
 
 .list-row--pauta {
-  min-height: 132px;
+  min-height: 146px;
   grid-template-columns: minmax(0, 1fr) minmax(112px, max-content);
   grid-template-areas:
     "content status"
@@ -3165,15 +3165,16 @@ body {
     "actions actions";
   align-items: start;
   column-gap: 18px;
-  row-gap: 10px;
+  row-gap: 12px;
   padding: 16px 18px;
-  scroll-snap-align: start;
+  overflow: visible;
 }
 
 .pauta-content {
   grid-area: content;
   min-width: 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 5px;
   color: #23344a;
   font-size: 13px;
@@ -3201,7 +3202,7 @@ body {
 }
 
 .pauta-content--muito-grande {
-  font-size: 19px;
+  font-size: 18px;
 }
 
 .pauta-content--bold {
@@ -3215,6 +3216,7 @@ body {
 .list-row--pauta .pauta-content strong {
   font-size: 1.1em;
   line-height: 1.28;
+  overflow-wrap: anywhere;
 }
 
 .list-row--pauta span,
@@ -3501,20 +3503,18 @@ body {
 }
 
 .pautas-stack {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px;
-  scroll-snap-type: y proximity;
-  scroll-padding-block: 12px;
 }
 
 .pautas-stack--scrolling {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 .list-row--pauta-featured {
@@ -3522,7 +3522,7 @@ body {
   border-radius: 10px;
   background: #fff9df;
   box-shadow: 0 8px 22px rgba(154, 108, 29, 0.12);
-  padding: 18px 14px;
+  padding: 18px;
 }
 
 .list-row--pauta-featured strong {
@@ -3555,6 +3555,7 @@ body {
   grid-column: auto;
   justify-content: flex-start;
   gap: 6px;
+  padding-top: 2px;
 }
 
 .pauta-actions button {
@@ -3603,6 +3604,17 @@ body {
 
 .pauta-editor-panel .stack-form {
   padding: 14px;
+}
+
+.pauta-editor-panel .form-actions-inline {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 4px -14px -14px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 10px 14px;
+  backdrop-filter: blur(8px);
 }
 
 .pauta-format-toolbar {

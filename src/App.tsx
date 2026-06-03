@@ -797,7 +797,11 @@ function Dashboard({
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [autoScroll, setAutoScroll] = useState(true);
   const pautasScrollRef = useRef<HTMLDivElement | null>(null);
-  const pautasScrollIndexRef = useRef(0);
+  const pautasScrollFrameRef = useRef<number | null>(null);
+  const pautasScrollLastTsRef = useRef<number | null>(null);
+  const pautasScrollPauseUntilRef = useRef(0);
+  const pautasScrollUserPausedRef = useRef(false);
+  const pautaEditorRef = useRef<HTMLElement | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
@@ -888,27 +892,50 @@ function Dashboard({
   const pautaStatusLabel = loading ? "Sincronizando" : `${source} - ${monthPautas.length} pauta(s)`;
 
   useEffect(() => {
-    pautasScrollIndexRef.current = 0;
+    pautasScrollLastTsRef.current = null;
+    pautasScrollPauseUntilRef.current = window.performance.now() + 900;
     pautasScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }, [filteredPautas.length, pautaFilter, selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (!autoScroll || loading || filteredPautas.length < 4) return undefined;
 
-    const intervalId = window.setInterval(() => {
+    const speedPxPerSecond = 10;
+    let cancelled = false;
+
+    function animate(timestamp: number) {
       const element = pautasScrollRef.current;
-      if (!element || element.scrollHeight <= element.clientHeight + 8) return;
+      if (!element || cancelled) return;
 
-      const rows = Array.from(element.querySelectorAll<HTMLElement>("[data-pauta-row]"));
-      if (rows.length < 4) return;
+      const maxScroll = Math.max(0, element.scrollHeight - element.clientHeight);
+      const previousTimestamp = pautasScrollLastTsRef.current ?? timestamp;
+      const delta = Math.min(timestamp - previousTimestamp, 120);
+      pautasScrollLastTsRef.current = timestamp;
 
-      const nextIndex = (pautasScrollIndexRef.current + 1) % rows.length;
-      pautasScrollIndexRef.current = nextIndex;
-      rows[nextIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 3600);
+      if (maxScroll > 8 && !pautasScrollUserPausedRef.current && timestamp >= pautasScrollPauseUntilRef.current) {
+        if (element.scrollTop >= maxScroll - 1) {
+          element.scrollTo({ top: 0, behavior: "smooth" });
+          pautasScrollPauseUntilRef.current = timestamp + 1800;
+        } else {
+          element.scrollTop = Math.min(maxScroll, element.scrollTop + speedPxPerSecond * (delta / 1000));
+        }
+      }
 
-    return () => window.clearInterval(intervalId);
-  }, [autoScroll, filteredPautas.length, loading]);
+      pautasScrollFrameRef.current = window.requestAnimationFrame(animate);
+    }
+
+    pautasScrollLastTsRef.current = null;
+    pautasScrollPauseUntilRef.current = window.performance.now() + 900;
+    pautasScrollFrameRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      cancelled = true;
+      if (pautasScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(pautasScrollFrameRef.current);
+        pautasScrollFrameRef.current = null;
+      }
+    };
+  }, [autoScroll, filteredPautas.length, loading, pautaFilter, selectedMonth, selectedYear]);
 
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
@@ -934,6 +961,7 @@ function Dashboard({
     clearForm();
     setFormOpen(true);
     setError("");
+    window.requestAnimationFrame(() => pautaEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   function startEditPauta(pauta: Pauta) {
@@ -957,6 +985,7 @@ function Dashboard({
     setSelectedFiles([]);
     setFormOpen(true);
     setError("");
+    window.requestAnimationFrame(() => pautaEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   async function submitPauta(event: FormEvent) {
@@ -1141,7 +1170,26 @@ function Dashboard({
           </div>
         </div>
         {error ? <p className="module-error module-error--compact">{error}</p> : null}
-        <div ref={pautasScrollRef} className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}>
+        <div
+          ref={pautasScrollRef}
+          className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}
+          onBlurCapture={() => {
+            pautasScrollUserPausedRef.current = false;
+            pautasScrollLastTsRef.current = null;
+            pautasScrollPauseUntilRef.current = window.performance.now() + 700;
+          }}
+          onFocusCapture={() => {
+            pautasScrollUserPausedRef.current = true;
+          }}
+          onMouseEnter={() => {
+            pautasScrollUserPausedRef.current = true;
+          }}
+          onMouseLeave={() => {
+            pautasScrollUserPausedRef.current = false;
+            pautasScrollLastTsRef.current = null;
+            pautasScrollPauseUntilRef.current = window.performance.now() + 700;
+          }}
+        >
           {filteredPautas.map((pauta) => (
             <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={pauta.id}>
               <div
@@ -1210,7 +1258,7 @@ function Dashboard({
       </section>
 
       {canManagePautas && formOpen ? (
-        <section className="panel pauta-editor-panel">
+        <section className="panel pauta-editor-panel" ref={pautaEditorRef}>
           <PanelHeader title={editingId ? "Editar pauta" : "Nova pauta"} icon={<ListChecks size={18} />} action={source} />
           <form className="stack-form" onSubmit={submitPauta}>
             <label>
@@ -1316,10 +1364,10 @@ function Dashboard({
             ) : null}
             <div className="form-actions-inline">
               <button className="primary-action" disabled={saving || loading} type="submit">
-                {saving ? "Salvando..." : editingId ? "Atualizar pauta" : "Salvar pauta"}
+                {saving ? "Salvando..." : editingId ? "Salvar edicao da pauta" : "Salvar pauta"}
               </button>
               <button disabled={saving} type="button" onClick={() => { clearForm(); setFormOpen(false); }}>
-                Cancelar
+                {editingId ? "Cancelar edicao" : "Cancelar"}
               </button>
             </div>
           </form>
