@@ -27,19 +27,20 @@ export default async function handler(request) {
 
   try {
     const payload = await parseFormPayload(request);
+    const to = String(payload.to || "").trim().toLowerCase();
     const authorized = await authorizeDispatch({
       supabaseUrl,
       supabaseAnonKey,
       serviceRoleKey,
       token: payload.token,
-      authToken: payload.authToken
+      authToken: payload.authToken,
+      targetEmail: to
     });
 
     if (!authorized.ok) {
       return respond(request, 401, { error: authorized.error || "Envio nao autorizado." });
     }
 
-    const to = String(payload.to || "").trim().toLowerCase();
     const subject = String(payload.subject || "").trim();
     const htmlBody = String(payload.htmlBody || "").trim();
     const textBody = String(payload.body || "").trim();
@@ -75,7 +76,7 @@ export default async function handler(request) {
   }
 }
 
-async function authorizeDispatch({ supabaseUrl, supabaseAnonKey, serviceRoleKey, token, authToken }) {
+async function authorizeDispatch({ supabaseUrl, supabaseAnonKey, serviceRoleKey, token, authToken, targetEmail }) {
   const dispatchToken = getEnv("COORD_EMAIL_TOKEN") || getEnv("EMAIL_DISPATCH_TOKEN");
   const providedToken = String(token || "").trim();
 
@@ -91,8 +92,16 @@ async function authorizeDispatch({ supabaseUrl, supabaseAnonKey, serviceRoleKey,
   const authUser = await verifySession(supabaseUrl, supabaseAnonKey, bearer);
   const profile = await readProfile(supabaseUrl, serviceRoleKey, authUser.id);
 
-  if (!profile?.active || !MANAGER_ROLES.has(profile.role)) {
-    return { ok: false, error: "Apenas administradores ou gestores podem enviar e-mails da Coordenacao Tributaria." };
+  if (!profile?.active) {
+    return { ok: false, error: "Usuario inativo ou sem perfil no HUB." };
+  }
+
+  const profileEmail = String(profile.email || "").trim().toLowerCase();
+  const canSendAsManager = MANAGER_ROLES.has(profile.role);
+  const canSendToSelf = Boolean(targetEmail && profileEmail && profileEmail === String(targetEmail).trim().toLowerCase());
+
+  if (!canSendAsManager && !canSendToSelf) {
+    return { ok: false, error: "Usuarios comuns podem enviar relatorios apenas para o proprio e-mail." };
   }
 
   return { ok: true, userId: authUser.id };
@@ -115,7 +124,7 @@ async function verifySession(supabaseUrl, anonKey, token) {
 
 async function readProfile(supabaseUrl, serviceRoleKey, userId) {
   const rows = await supabaseRequest(
-    `${trimUrl(supabaseUrl)}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role,active&limit=1`,
+    `${trimUrl(supabaseUrl)}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=email,role,active&limit=1`,
     {
       headers: serviceHeaders(serviceRoleKey)
     }
