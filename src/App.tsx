@@ -900,7 +900,7 @@ function Dashboard({
   useEffect(() => {
     if (!autoScroll || loading || filteredPautas.length < 4) return undefined;
 
-    const speedPxPerSecond = 10;
+    const speedPxPerSecond = 6;
     let cancelled = false;
 
     function animate(timestamp: number) {
@@ -1180,14 +1180,6 @@ function Dashboard({
           }}
           onFocusCapture={() => {
             pautasScrollUserPausedRef.current = true;
-          }}
-          onMouseEnter={() => {
-            pautasScrollUserPausedRef.current = true;
-          }}
-          onMouseLeave={() => {
-            pautasScrollUserPausedRef.current = false;
-            pautasScrollLastTsRef.current = null;
-            pautasScrollPauseUntilRef.current = window.performance.now() + 700;
           }}
         >
           {filteredPautas.map((pauta) => (

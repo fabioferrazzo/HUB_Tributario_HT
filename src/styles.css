@@ -3459,18 +3459,25 @@ body {
 }
 
 .pautas-page {
-  height: calc(100vh - 104px);
-  min-height: 560px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: calc(100vh - 104px);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .pautas-page .panel--pautas {
+  flex: 0 0 auto;
   min-height: 0;
-  height: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.pautas-page .panel-head,
+.pautas-page .pautas-monthbar,
+.pautas-page .panel-toolbar {
+  flex: 0 0 auto;
 }
 
 .pautas-monthbar {
@@ -3506,11 +3513,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  height: clamp(390px, calc(100vh - 330px), 500px);
+  min-height: 390px;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px;
+  contain: layout paint;
 }
 
 .pautas-stack--scrolling {
@@ -3523,6 +3532,10 @@ body {
   background: #fff9df;
   box-shadow: 0 8px 22px rgba(154, 108, 29, 0.12);
   padding: 18px;
+}
+
+.pautas-stack .list-row--pauta {
+  flex: 0 0 auto;
 }
 
 .list-row--pauta-featured strong {
@@ -3599,7 +3612,8 @@ body {
 }
 
 .pauta-editor-panel {
-  align-self: start;
+  align-self: stretch;
+  flex: 0 0 auto;
 }
 
 .pauta-editor-panel .stack-form {
@@ -3615,6 +3629,13 @@ body {
   background: rgba(255, 255, 255, 0.96);
   padding: 10px 14px;
   backdrop-filter: blur(8px);
+}
+
+@media (max-height: 720px) {
+  .pautas-stack {
+    height: clamp(320px, calc(100vh - 300px), 430px);
+    min-height: 320px;
+  }
 }
 
 .pauta-format-toolbar {
