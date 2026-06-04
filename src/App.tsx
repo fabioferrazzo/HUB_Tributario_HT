@@ -816,6 +816,8 @@ function Dashboard({
   const [destaque, setDestaque] = useState(false);
   const [responsaveis, setResponsaveis] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [pautasEmailStatus, setPautasEmailStatus] = useState("");
+  const [sendingPautasEmail, setSendingPautasEmail] = useState(false);
   const source = getPautasSource(user);
 
   useEffect(() => {
@@ -939,6 +941,45 @@ function Dashboard({
 
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
+  }
+
+  async function sendPautasByEmail() {
+    setSendingPautasEmail(true);
+    setPautasEmailStatus("");
+    setError("");
+
+    try {
+      const rows = filteredPautas.length ? filteredPautas.map(pautaToReportRow) : [{ Info: "Nenhuma pauta encontrada para o filtro atual." }];
+      const body = rows
+        .map((row) => Object.entries(row).map(([key, value]) => `${key}: ${value}`).join("\n"))
+        .join("\n\n");
+      const authToken = await getSupabaseAccessToken();
+      const response = await fetch("/.netlify/functions/coord-email", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          authToken,
+          to: user.email,
+          subject: "Pautas do HUB Depto Tributario",
+          body,
+          htmlBody: `<p>Segue a lista filtrada de pautas do HUB Depto Tributario.</p><pre>${escapeHtmlText(body)}</pre>`
+        })
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Nao foi possivel enviar as pautas por e-mail.");
+      }
+
+      setPautasEmailStatus(`Pautas enviadas para ${user.email}.`);
+    } catch (emailError) {
+      setError(getErrorMessage(emailError));
+    } finally {
+      setSendingPautasEmail(false);
+    }
   }
 
   function clearForm() {
@@ -1167,9 +1208,13 @@ function Dashboard({
           <div className="panel-export-actions" aria-label="Exportar pautas">
             <button type="button" onClick={() => exportPautas("pdf")}>PDF</button>
             <button type="button" onClick={() => exportPautas("excel")}>XLSX</button>
+            <button disabled={sendingPautasEmail} type="button" onClick={sendPautasByEmail}>
+              {sendingPautasEmail ? "Enviando..." : "E-mail"}
+            </button>
           </div>
         </div>
         {error ? <p className="module-error module-error--compact">{error}</p> : null}
+        {pautasEmailStatus ? <p className="module-notice module-notice--compact">{pautasEmailStatus}</p> : null}
         <div
           ref={pautasScrollRef}
           className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}
