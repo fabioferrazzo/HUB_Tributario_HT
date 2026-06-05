@@ -14,6 +14,7 @@ const requiredFiles = [
   "netlify/functions/email-outbox.mjs",
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
+  "netlify/functions/rfb-agenda.mjs",
   "scripts/diagnose-arquivos-processador.mjs",
   "scripts/ocr-local-agent.mjs",
   "scripts/process-arquivos.mjs",
@@ -31,6 +32,7 @@ const requiredFiles = [
   "supabase/patch_coord_tributaria.sql",
   "supabase/patch_email_outbox.sql",
   "supabase/patch_tarefas.sql",
+  "supabase/patch_tarefas_unificadas_coord.sql",
   "supabase/check_hub_status.sql"
 ];
 
@@ -72,6 +74,11 @@ const commandChecks = [
     label: "Function refresh-updates",
     command: process.execPath,
     args: ["--check", "netlify/functions/refresh-updates.mjs"]
+  },
+  {
+    label: "Function rfb-agenda",
+    command: process.execPath,
+    args: ["--check", "netlify/functions/rfb-agenda.mjs"]
   },
   {
     label: "Processador de arquivos",
