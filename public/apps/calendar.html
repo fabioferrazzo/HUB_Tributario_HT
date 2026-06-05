@@ -129,7 +129,7 @@ button,input,textarea,select{font-family:inherit}
     <div id="view-toggle">
       <button onclick="setView('month')" id="vbtn-month" class="active">Mês</button>
       <button onclick="setView('agenda')" id="vbtn-agenda">Agenda</button>
-      <button onclick="setView('reminders')" id="vbtn-reminders">Lembretes</button>
+      <button onclick="setView('reminders')" id="vbtn-reminders">Lista</button>
     </div>
     <button id="btn-new" onclick="openForm()">+ Novo</button>
     <button id="btn-ico" onclick="downloadIco()" title="Baixar ícone .ico para o atalho">⬇ Ícone</button>
@@ -146,7 +146,7 @@ button,input,textarea,select{font-family:inherit}
       <span id="day-panel-title"></span>
       <div id="day-panel-actions">
         <button style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #ddd;background:none;color:#555;cursor:pointer" onclick="exportICS(getSelEvs())">⬇ .ics</button>
-        <button style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;cursor:pointer" onclick="openFormForDate(selDate)">+ Evento neste dia</button>
+        <button style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;cursor:pointer" onclick="openFormForDate(selDate)">+ Tarefa neste dia</button>
       </div>
     </div>
     <div id="day-events"></div>
@@ -318,7 +318,7 @@ function renderDayPanel(){
   document.getElementById("day-panel-title").textContent=selDate.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
   const container=document.getElementById("day-events");container.innerHTML="";
   const evs=getSelEvs();
-  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhum evento. Clique duplo em qualquer dia para criar.</div>';return;}
+  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa. Clique duplo em qualquer dia para criar.</div>';return;}
   evs.forEach(ev=>container.appendChild(makeEvCard(ev,false)));
 }
 
@@ -350,7 +350,7 @@ function renderAgenda(){
   const lv=document.getElementById("list-view");lv.innerHTML="";
   const future=events.filter(ev=>new Date(ev.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const past=events.filter(ev=>new Date(ev.date)<today).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  if(!events.length){lv.innerHTML='<div style="text-align:center;padding:40px 0;color:#888;font-size:13px">Nenhum evento.</div>';return;}
+  if(!events.length){lv.innerHTML='<div style="text-align:center;padding:40px 0;color:#888;font-size:13px">Nenhuma tarefa.</div>';return;}
   const eb=document.createElement("div");eb.style.cssText="display:flex;justify-content:flex-end;margin-bottom:10px";
   eb.innerHTML='<button onclick="exportICS(events)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #ddd;background:none;color:#555;cursor:pointer">⬇ Exportar todos .ics</button>';
   lv.appendChild(eb);
@@ -376,7 +376,7 @@ async function openForm(evId,defaultDate){
   if(ev&&ev.attachments)pendingFiles=[...ev.attachments];
   const cat=ev?.category||"personal";window._formCat=cat;
   const ps=document.getElementById("panel-screen");ps.style.display="flex";ps.style.flexDirection="column";
-  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>"+(ev?"Editar evento":"Novo evento")+"</h2><span class='form-label'>Título *</span><input class='form-input' id='f-title' value='"+(ev?.title||"")+"' placeholder='Nome do evento'/><span class='form-label'>Data e hora *</span><input class='form-input' id='f-date' type='datetime-local' value='"+(ev?.date?ev.date.slice(0,16):(defaultDate||""))+"'/><span class='form-label'>Categoria</span><div id='cat-btns'>"+Object.entries(CATS).map(([k,v])=>"<button class='cat-btn"+(k===cat?" active":"")+"' style='color:"+(k===cat?v.col:"#666")+";background:"+(k===cat?v.col+"22":"none")+";border-color:"+(k===cat?v.col:"#ddd")+"' onclick='selectCat(\""+k+"\")'>"+ v.label+"</button>").join("")+"</div><span class='form-label'>Descrição</span><textarea class='form-input' id='f-desc' rows='2' placeholder='Detalhes opcionais...'>"+(ev?.description||"")+"</textarea><span class='form-label'>Anexos</span><div id='drop-zone' onclick='document.getElementById(\"file-input\").click()' ondragover='event.preventDefault();this.classList.add(\"dragover\")' ondragleave='this.classList.remove(\"dragover\")' ondrop='handleDrop(event)'><p>Clique ou arraste arquivos aqui</p><span>PDF, Word, Excel, imagens, etc.</span></div><input type='file' id='file-input' multiple style='display:none' onchange='handleFiles(this.files)'/><div id='file-list'></div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='saveEv()'>Salvar evento</button></div>";
+  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>"+(ev?"Editar tarefa":"Nova tarefa")+"</h2><span class='form-label'>Título *</span><input class='form-input' id='f-title' value='"+(ev?.title||"")+"' placeholder='Nome da tarefa'/><span class='form-label'>Data e hora *</span><input class='form-input' id='f-date' type='datetime-local' value='"+(ev?.date?ev.date.slice(0,16):(defaultDate||""))+"'/><span class='form-label'>Categoria</span><div id='cat-btns'>"+Object.entries(CATS).map(([k,v])=>"<button class='cat-btn"+(k===cat?" active":"")+"' style='color:"+(k===cat?v.col:"#666")+";background:"+(k===cat?v.col+"22":"none")+";border-color:"+(k===cat?v.col:"#ddd")+"' onclick='selectCat(\""+k+"\")'>"+ v.label+"</button>").join("")+"</div><span class='form-label'>Descrição</span><textarea class='form-input' id='f-desc' rows='2' placeholder='Detalhes opcionais...'>"+(ev?.description||"")+"</textarea><span class='form-label'>Anexos</span><div id='drop-zone' onclick='document.getElementById(\"file-input\").click()' ondragover='event.preventDefault();this.classList.add(\"dragover\")' ondragleave='this.classList.remove(\"dragover\")' ondrop='handleDrop(event)'><p>Clique ou arraste arquivos aqui</p><span>PDF, Word, Excel, imagens, etc.</span></div><input type='file' id='file-input' multiple style='display:none' onchange='handleFiles(this.files)'/><div id='file-list'></div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='saveEv()'>Salvar tarefa</button></div>";
   renderFileList();
 }
 function selectCat(k){
@@ -411,7 +411,7 @@ async function saveEv(){
   closePanel();notifyParentTasksChanged({action:"saved",event:ev});refresh();
 }
 async function deleteEv(id){
-  if(!confirm("Excluir este evento?"))return;
+  if(!confirm("Excluir esta tarefa?"))return;
   await dbDelete(id);events=events.filter(e=>e.id!==id);notifyParentTasksChanged({action:"deleted",id});refresh();
 }
 

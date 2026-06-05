@@ -535,6 +535,18 @@
       gap: 10px;
     }
 
+    .stack-form .inline-check {
+      display: inline-flex;
+      align-items: center;
+      flex-direction: row;
+      gap: 10px;
+      font-weight: 800;
+    }
+
+    .stack-form .inline-check input {
+      width: auto;
+    }
+
     .wide {
       grid-column: 1 / -1;
     }
@@ -824,6 +836,10 @@
               </select>
             </label>
             <label class="wide">Descricao<textarea id="reminderDescription" placeholder="Contexto da atividade, pauta ou lembrete."></textarea></label>
+            <label class="wide inline-check">
+              <input id="reminderCalendarSync" type="checkbox" />
+              Integrar/repetir no Calendario de Tarefas
+            </label>
             <label class="wide">Anexos<input id="reminderAttachments" type="file" multiple /></label>
             <div id="reminderAttachmentList" class="attachment-list wide">Nenhum anexo salvo.</div>
           </div>
@@ -1019,6 +1035,8 @@
             recurring: ["none", "weekly", "monthly"].includes(item.recurring) ? item.recurring : "none",
             status: item.status === "concluido" ? "concluido" : "aberto",
             pinned: item.pinned === "hidden" ? "hidden" : "main",
+            calendarSync: item.calendarSync === true,
+            taskId: String(item.taskId || ""),
             attachments: Array.isArray(item.attachments)
               ? item.attachments.map((attachment) => ({
                   id: String(attachment.id || cryptoId()),
@@ -1372,6 +1390,7 @@
         refs.reminderPriority.value = item?.priority || "media";
         refs.reminderRecurring.value = item?.recurring || "none";
         refs.reminderDescription.value = item?.description || "";
+        refs.reminderCalendarSync.checked = item?.calendarSync === true || preset.calendarSync === true;
         refs.reminderAttachments.value = "";
         renderReminderAttachmentList(item?.attachments || []);
         syncReminderTypeFields();
@@ -1382,6 +1401,8 @@
         const needsCollaborator = refs.reminderType.value === "colaborador";
         refs.reminderCollaborator.disabled = !needsCollaborator;
         if (!needsCollaborator) refs.reminderCollaborator.value = "";
+        refs.reminderCalendarSync.closest("label").style.display = needsCollaborator ? "inline-flex" : "none";
+        if (!needsCollaborator) refs.reminderCalendarSync.checked = false;
       }
 
       function closeModals() {
@@ -1450,6 +1471,8 @@
           recurring: refs.reminderRecurring.value,
           status: previous?.status || "aberto",
           pinned: previous?.pinned || "main",
+          calendarSync: refs.reminderType.value === "colaborador" && refs.reminderCalendarSync.checked,
+          taskId: previous?.taskId || "",
           attachments: [...(previous?.attachments || []), ...newAttachments],
           createdAt: previous?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString()
