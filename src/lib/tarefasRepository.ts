@@ -11,6 +11,9 @@ type TarefaRow = {
   prazo: string | null;
   prioridade: TaskItem["prioridade"];
   status: TaskItem["status"];
+  destaque: boolean | null;
+  origem: TaskItem["origem"] | null;
+  coord_item_id: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -47,6 +50,9 @@ type CalendarEvent = {
     responsaveis?: string[];
     status?: TaskStatus;
     prioridade?: TaskPriority;
+    destaque?: boolean;
+    origem?: TaskItem["origem"];
+    coordItemId?: string;
     createdAt?: string;
     updatedAt?: string;
   };
@@ -264,6 +270,9 @@ function normalizeCalendarEvent(value: unknown, user: HubUser): CalendarEvent {
       responsaveis: Array.isArray(event.hub?.responsaveis) ? event.hub?.responsaveis : [],
       status: event.hub?.status || "aberta",
       prioridade: event.hub?.prioridade || categoryToPriority(event.category),
+      destaque: event.hub?.destaque === true,
+      origem: event.hub?.origem || "calendario",
+      coordItemId: event.hub?.coordItemId || "",
       createdAt: event.hub?.createdAt || now,
       updatedAt: now
     }
@@ -281,6 +290,9 @@ function calendarEventToTask(event: CalendarEvent): TaskItem {
     prazo: event.date || "",
     prioridade: hub.prioridade || categoryToPriority(event.category),
     status: hub.status || "aberta",
+    destaque: hub.destaque === true,
+    origem: hub.origem || "calendario",
+    coordItemId: hub.coordItemId || "",
     responsaveis: Array.isArray(hub.responsaveis) ? hub.responsaveis : [],
     anexos: (event.attachments || []).map((attachment) => attachment.name),
     createdBy: hub.createdBy || "",
@@ -308,6 +320,9 @@ async function taskToCalendarEvent(
       responsaveis: task.responsaveis,
       status: task.status,
       prioridade: task.prioridade,
+      destaque: task.destaque === true,
+      origem: task.origem || "calendario",
+      coordItemId: task.coordItemId || "",
       createdAt: task.createdAt,
       updatedAt: task.updatedAt
     }
@@ -429,7 +444,7 @@ async function loadSupabaseTasks(): Promise<TaskItem[]> {
   const client = assertSupabase();
   const { data: tasks, error } = await client
     .from("tarefas")
-    .select("id,titulo,descricao,prazo,prioridade,status,created_by,created_at,updated_at")
+    .select("id,titulo,descricao,prazo,prioridade,status,destaque,origem,coord_item_id,created_by,created_at,updated_at")
     .order("prazo", { ascending: true, nullsFirst: false });
 
   if (error) throw error;
@@ -458,6 +473,9 @@ async function loadSupabaseTasks(): Promise<TaskItem[]> {
       prazo: row.prazo || "",
       prioridade: row.prioridade,
       status: row.status,
+      destaque: row.destaque === true,
+      origem: row.origem || "calendario",
+      coordItemId: row.coord_item_id || "",
       responsaveis: ((usuarios || []) as TarefaUsuarioRow[])
         .filter((usuario) => usuario.tarefa_id === row.id)
         .map((usuario) => emailByProfileId.get(usuario.user_id) || usuario.user_id),
@@ -486,6 +504,9 @@ async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isEx
         prazo: task.prazo || null,
         prioridade: task.prioridade,
         status: task.status,
+        destaque: task.destaque === true,
+        origem: task.origem || "calendario",
+        coord_item_id: task.coordItemId || null,
         created_by: options.isExisting ? createdBy : authUserId
       },
       { onConflict: "id" }
@@ -582,6 +603,9 @@ function normalizeTask(value: Partial<TaskItem>): TaskItem {
     prazo: value.prazo || "",
     prioridade: value.prioridade || "normal",
     status: value.status || "aberta",
+    destaque: value.destaque === true,
+    origem: value.origem || "calendario",
+    coordItemId: value.coordItemId || "",
     responsaveis: Array.isArray(value.responsaveis) ? value.responsaveis : [],
     anexos: Array.isArray(value.anexos) ? value.anexos : [],
     createdBy: value.createdBy || "",
