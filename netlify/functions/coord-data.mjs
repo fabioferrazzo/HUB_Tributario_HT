@@ -62,7 +62,7 @@ async function loadState(supabaseUrl, serviceRoleKey) {
       { headers: serviceHeaders(serviceRoleKey) }
     ),
     supabaseRequest(
-      `${trimUrl(supabaseUrl)}/rest/v1/coord_itens?select=id,titulo,descricao,tipo,colaborador_id,prazo,prioridade,recorrencia,status,pinned,anexos,deleted_at,completed_at,created_at,updated_at&order=updated_at.desc`,
+      `${trimUrl(supabaseUrl)}/rest/v1/coord_itens?select=id,titulo,descricao,tipo,colaborador_id,prazo,prioridade,recorrencia,status,pinned,anexos,integrar_calendario,tarefa_id,deleted_at,completed_at,created_at,updated_at&order=updated_at.desc`,
       { headers: serviceHeaders(serviceRoleKey) }
     ),
     supabaseRequest(
@@ -108,6 +108,7 @@ async function saveState(supabaseUrl, serviceRoleKey, state) {
     });
   }
 
+  await syncCalendarTasksFromCoord(supabaseUrl, serviceRoleKey, state.reminders, state.collaborators);
   await saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, state.reminders);
 }
 
@@ -236,6 +237,7 @@ function normalizeItem(item, userId) {
   const status = STATUSES.has(item?.status) ? item.status : "aberto";
   const pinned = PINNED.has(item?.pinned) ? item.pinned : "main";
   const attachments = Array.isArray(item?.attachments) ? item.attachments.map(normalizeAttachment).filter(Boolean) : [];
+  const calendarSync = item?.calendarSync === true || item?.integrar_calendario === true;
 
   return {
     id,
@@ -248,6 +250,8 @@ function normalizeItem(item, userId) {
     recurring,
     status,
     pinned,
+    calendarSync: type === "colaborador" && calendarSync,
+    taskId: isUuid(String(item?.taskId || item?.tarefa_id || "")) ? String(item?.taskId || item?.tarefa_id) : "",
     attachments,
     deletedAt: normalizeDate(item?.deletedAt),
     completedAt: normalizeDate(item?.completedAt),
@@ -297,6 +301,8 @@ function fromItemRow(row) {
     recurring: row.recorrencia || "none",
     status: row.status || "aberto",
     pinned: row.pinned || "main",
+    calendarSync: row.integrar_calendario === true,
+    taskId: row.tarefa_id || "",
     attachments: Array.isArray(row.anexos) ? row.anexos : [],
     deletedAt: row.deleted_at || "",
     completedAt: row.completed_at || "",
@@ -368,6 +374,8 @@ function toItemRow(item) {
     recorrencia: item.recurring,
     status: item.status,
     pinned: item.pinned,
+    integrar_calendario: item.calendarSync === true,
+    tarefa_id: isUuid(item.taskId || "") ? item.taskId : null,
     anexos: item.attachments,
     deleted_at: item.deletedAt || null,
     completed_at: item.completedAt || null,
@@ -460,6 +468,102 @@ async function syncPautaAttachmentsFromCoord(supabaseUrl, serviceRoleKey, pautaI
     existingIds.add(attachmentId);
     existingKeys.add(duplicateKey);
   }
+}
+
+async function syncCalendarTasksFromCoord(supabaseUrl, serviceRoleKey, reminders, collaborators) {
+  const collaboratorById = new Map(collaborators.map((item) => [item.id, item]));
+  const syncItems = reminders.filter((item) => item.type === "colaborador" && item.calendarSync === true && !item.deletedAt);
+  const unsyncItems = reminders.filter((item) => item.type === "colaborador" && item.calendarSync !== true && isUuid(item.taskId || ""));
+
+  for (const item of unsyncItems) {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/tarefas?id=eq.${encodeURIComponent(item.taskId)}`, {
+      method: "DELETE",
+      headers: serviceHeaders(serviceRoleKey)
+    });
+
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/coord_itens?id=eq.${encodeURIComponent(item.id)}`, {
+      method: "PATCH",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ tarefa_id: null })
+    });
+  }
+
+  for (const item of syncItems) {
+    const taskId = isUuid(item.taskId || "") ? item.taskId : randomId();
+    const collaborator = collaboratorById.get(item.collaboratorId);
+    const responsibleEmail = collaborator?.email || "";
+
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/tarefas?on_conflict=id`, {
+      method: "POST",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json",
+        prefer: "resolution=merge-duplicates"
+      },
+      body: JSON.stringify({
+        id: taskId,
+        titulo: item.title,
+        descricao: item.description || "",
+        prazo: item.due || null,
+        prioridade: coordPriorityToTaskPriority(item.priority),
+        status: item.status === "concluido" ? "concluida" : "aberta",
+        destaque: item.priority === "alta",
+        origem: "coord",
+        coord_item_id: item.id,
+        created_by: item.createdBy || null,
+        created_at: item.createdAt || new Date().toISOString(),
+        updated_at: item.updatedAt || new Date().toISOString()
+      })
+    });
+
+    if (taskId !== item.taskId) {
+      item.taskId = taskId;
+      await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/coord_itens?id=eq.${encodeURIComponent(item.id)}`, {
+        method: "PATCH",
+        headers: {
+          ...serviceHeaders(serviceRoleKey),
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({ tarefa_id: taskId })
+      });
+    }
+
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/tarefa_usuarios?tarefa_id=eq.${encodeURIComponent(taskId)}`, {
+      method: "DELETE",
+      headers: serviceHeaders(serviceRoleKey)
+    });
+
+    if (responsibleEmail) {
+      const profileRows = await supabaseRequest(
+        `${trimUrl(supabaseUrl)}/rest/v1/profiles?email=eq.${encodeURIComponent(responsibleEmail.toLowerCase())}&select=id,email,nome&limit=1`,
+        { headers: serviceHeaders(serviceRoleKey) }
+      );
+      const profile = Array.isArray(profileRows) ? profileRows[0] : null;
+      if (profile?.id) {
+        await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/tarefa_usuarios`, {
+          method: "POST",
+          headers: {
+            ...serviceHeaders(serviceRoleKey),
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            tarefa_id: taskId,
+            user_id: profile.id,
+            email: profile.email || responsibleEmail,
+            nome: profile.nome || collaborator?.name || responsibleEmail
+          })
+        });
+      }
+    }
+  }
+}
+
+function coordPriorityToTaskPriority(value) {
+  if (value === "alta" || value === "baixa") return value;
+  return "normal";
 }
 
 async function uploadStorageObject(supabaseUrl, serviceRoleKey, bucket, storagePath, bytes, contentType) {
@@ -610,6 +714,10 @@ function normalizeDate(value) {
 
 function randomId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
 }
 
 function trimUrl(value) {
