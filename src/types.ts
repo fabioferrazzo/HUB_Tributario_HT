@@ -95,6 +95,9 @@ export type TaskItem = {
   prazo: string;
   prioridade: TaskPriority;
   status: TaskStatus;
+  destaque?: boolean;
+  origem?: "calendario" | "coord" | "manual";
+  coordItemId?: string;
   responsaveis: string[];
   anexos: string[];
   createdBy: string;

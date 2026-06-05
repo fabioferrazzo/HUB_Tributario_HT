@@ -1666,9 +1666,12 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
   const [descricao, setDescricao] = useState("");
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState<TaskItem["prioridade"]>("normal");
+  const [destaque, setDestaque] = useState(false);
   const [responsaveis, setResponsaveis] = useState<string[]>([]);
   const [anexos, setAnexos] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [sendingTaskEmail, setSendingTaskEmail] = useState(false);
+  const [taskEmailStatus, setTaskEmailStatus] = useState("");
   const source = getTarefasSource(user);
 
   useEffect(() => {
@@ -1765,9 +1768,11 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     setDescricao("");
     setPrazo("");
     setPrioridade("normal");
+    setDestaque(false);
     setResponsaveis([]);
     setAnexos([]);
     setSelectedFiles([]);
+    setTaskEmailStatus("");
   }
 
   function resetForm() {
@@ -1793,6 +1798,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     setDescricao(task.descricao);
     setPrazo(task.prazo);
     setPrioridade(task.prioridade);
+    setDestaque(task.destaque === true);
     setResponsaveis(task.responsaveis);
     setAnexos(task.anexos);
     setSelectedFiles([]);
@@ -1819,6 +1825,9 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       prazo,
       prioridade,
       status: existing?.status || "aberta",
+      destaque,
+      origem: existing?.origem || "calendario",
+      coordItemId: existing?.coordItemId || "",
       responsaveis,
       anexos,
       createdBy: existing?.createdBy || user.id || user.email,
@@ -1905,6 +1914,51 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     setAnexos(fileList.length ? fileList.map((file) => file.name) : anexos);
   }
 
+  function exportTasks(format: ReportFormat) {
+    exportReport(format, "Calendario de Tarefas - HUB Depto Tributario", filteredTasks.map(taskToReportRow));
+  }
+
+  async function sendTasksByEmail() {
+    setSendingTaskEmail(true);
+    setTaskEmailStatus("");
+    setError("");
+
+    try {
+      const rows = filteredTasks.length ? filteredTasks.map(taskToReportRow) : [{ Info: "Nenhuma tarefa encontrada para o filtro atual." }];
+      const body = rows
+        .map((row) => Object.entries(row).map(([key, value]) => `${key}: ${value}`).join("\n"))
+        .join("\n\n");
+      const authToken = await getSupabaseAccessToken();
+      const taskRecipients = filteredTasks.flatMap((task) => task.responsaveis);
+      const recipients = [...new Set([user.email, ...taskRecipients].filter(Boolean).map((email) => email.toLowerCase()))];
+
+      for (const to of recipients) {
+        const response = await fetch("/.netlify/functions/coord-email", {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            authToken,
+            to,
+            subject: "Calendario de Tarefas - HUB Depto Tributario",
+            body,
+            htmlBody: `<p>Segue o resumo do Calendario de Tarefas do HUB Depto Tributario.</p><pre>${escapeHtmlText(body)}</pre>`
+          })
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error || `Nao foi possivel enviar o calendario para ${to}.`);
+      }
+
+      setTaskEmailStatus(`Resumo enviado para ${recipients.length} destinatario(s).`);
+    } catch (sendError) {
+      setError(getErrorMessage(sendError));
+    } finally {
+      setSendingTaskEmail(false);
+    }
+  }
+
   return (
     <aside className="task-sidebar">
       <header className="task-sidebar-head">
@@ -1954,6 +2008,10 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
               </select>
             </label>
           </div>
+          <label className="inline-check task-featured-check">
+            <input checked={destaque} onChange={(event) => setDestaque(event.target.checked)} type="checkbox" />
+            Destacar esta tarefa no calendario/lista
+          </label>
           <fieldset className="member-picker member-picker--compact">
             <legend>Responsaveis</legend>
             <div>
@@ -2012,20 +2070,34 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
         </label>
       </div>
 
+      <div className="task-export-actions">
+        <button type="button" onClick={() => exportTasks("pdf")}>
+          PDF
+        </button>
+        <button type="button" onClick={() => exportTasks("excel")}>
+          XLSX
+        </button>
+        <button disabled={sendingTaskEmail || loading} type="button" onClick={sendTasksByEmail}>
+          {sendingTaskEmail ? "Enviando..." : "Enviar por e-mail"}
+        </button>
+      </div>
+
       {error ? <p className="module-error module-error--compact">{error}</p> : null}
+      {taskEmailStatus ? <p className="module-notice module-notice--compact">{taskEmailStatus}</p> : null}
 
       <div className="task-list">
         {filteredTasks.map((task) => {
           const canManage = canUserManageTask(task, user);
 
           return (
-            <article className={`task-item task-item--${task.status}`} key={task.id}>
+            <article className={`task-item task-item--${task.status} ${task.destaque ? "task-item--featured" : ""}`} key={task.id}>
               <CheckCircle2 size={17} />
               <div>
                 <strong>{task.titulo}</strong>
                 <span className="task-note-preview">{task.descricao || "Sem notas registradas"}</span>
                 <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
                 <div className="lembrete-tags">
+                  {task.destaque ? <StatusPill label="destaque" /> : null}
                   <StatusPill label={task.status} />
                   <StatusPill label={task.prioridade} />
                   {task.anexos.length ? (
@@ -2061,8 +2133,6 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
         })}
         {!filteredTasks.length ? <div className="empty-state">Nenhuma tarefa encontrada.</div> : null}
       </div>
-
-      <TaskLembretesPanel hubUsers={hubUsers} onNavigate={onNavigate} user={user} />
     </aside>
   );
 }
@@ -5726,6 +5796,20 @@ function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): Report
     Status: lembrete.status,
     Confidencial: lembrete.confidencial ? "Sim" : "Nao",
     Anexos: String(lembrete.anexos.length)
+  };
+}
+
+function taskToReportRow(task: TaskItem): ReportRow {
+  return {
+    Titulo: task.titulo,
+    Descricao: task.descricao || "Sem descricao",
+    Prazo: formatDateTime(task.prazo),
+    Prioridade: task.prioridade,
+    Status: task.status,
+    Destaque: task.destaque ? "Sim" : "Nao",
+    Origem: task.origem || "calendario",
+    Responsaveis: task.responsaveis.join(", ") || "Sem responsavel definido",
+    Anexos: String(task.anexos.length)
   };
 }
 
