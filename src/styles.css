@@ -752,6 +752,7 @@ textarea:focus {
 
 .task-sidebar {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -847,6 +848,7 @@ textarea:focus {
 }
 
 .task-list {
+  flex: 1 1 auto;
   min-height: 0;
   display: grid;
   align-content: start;
@@ -3199,7 +3201,7 @@ body {
 }
 
 .list-row--pauta {
-  min-height: 146px;
+  min-height: 150px;
   grid-template-columns: minmax(0, 1fr) minmax(112px, max-content);
   grid-template-areas:
     "content status"
@@ -3210,6 +3212,7 @@ body {
   row-gap: 12px;
   padding: 16px 18px;
   overflow: visible;
+  contain: layout;
 }
 
 .pauta-content {
@@ -3219,7 +3222,7 @@ body {
   flex-direction: column;
   gap: 5px;
   color: #23344a;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.42;
 }
 
@@ -3228,7 +3231,8 @@ body {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   font-size: 1em;
-  line-height: 1.46;
+  line-height: 1.48;
+  display: block;
 }
 
 .pauta-content--pequena {
@@ -3236,15 +3240,15 @@ body {
 }
 
 .pauta-content--normal {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .pauta-content--grande {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .pauta-content--muito-grande {
-  font-size: 18px;
+  font-size: 22px;
 }
 
 .pauta-content--bold {
@@ -3252,6 +3256,20 @@ body {
 }
 
 .pauta-content--italic {
+  font-style: italic;
+}
+
+.pauta-content--bold .pauta-description,
+.pauta-content--bold .pauta-return,
+.pauta-content--bold em,
+.pauta-content--bold strong {
+  font-weight: 850;
+}
+
+.pauta-content--italic .pauta-description,
+.pauta-content--italic .pauta-return,
+.pauta-content--italic em,
+.pauta-content--italic strong {
   font-style: italic;
 }
 
@@ -3554,18 +3572,63 @@ body {
 .pautas-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex: 0 0 auto;
-  height: clamp(390px, calc(100vh - 330px), 500px);
-  min-height: 390px;
+  flex: 1 1 auto;
+  height: clamp(470px, calc(100vh - 308px), 620px);
+  min-height: 470px;
+  max-height: 620px;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px;
-  contain: layout paint;
+  contain: layout;
+  scroll-behavior: auto;
 }
 
 .pautas-stack--scrolling {
+  overflow: hidden;
   scroll-behavior: auto;
+  scrollbar-width: none;
+}
+
+.pautas-stack--scrolling::-webkit-scrollbar {
+  display: none;
+}
+
+.pautas-scroll-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.pautas-scroll-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.pautas-stack--scrolling .pautas-scroll-track {
+  animation: pautas-continuous-scroll var(--pautas-scroll-duration, 220s) linear infinite;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.pautas-stack--scrolling:hover .pautas-scroll-track,
+.pautas-stack--scrolling:focus-within .pautas-scroll-track {
+  animation-play-state: paused;
+}
+
+@keyframes pautas-continuous-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
 }
 
 .list-row--pauta-featured {
@@ -3576,8 +3639,14 @@ body {
   padding: 18px;
 }
 
+.list-row--pauta-featured .pauta-description {
+  display: block;
+}
+
 .pautas-stack .list-row--pauta {
   flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
 }
 
 .list-row--pauta-featured strong {
@@ -3790,6 +3859,21 @@ body {
   border-radius: 10px;
   background: #fbfaf6;
   padding: 12px;
+  max-height: min(640px, calc(100vh - 255px));
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 12px;
+  scrollbar-gutter: stable;
+}
+
+.task-form--open .form-actions-inline {
+  position: sticky;
+  bottom: -12px;
+  z-index: 3;
+  margin: 8px -2px -12px;
+  padding: 10px 0 12px;
+  background: linear-gradient(180deg, rgba(251, 250, 246, 0.72), #fbfaf6 22%);
 }
 
 .task-form-head {

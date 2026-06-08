@@ -368,6 +368,7 @@ export function App() {
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const [lembretesVersion, setLembretesVersion] = useState(0);
   const [pautasVersion, setPautasVersion] = useState(0);
+  const [tasksVersion, setTasksVersion] = useState(0);
   const [usersVersion, setUsersVersion] = useState(0);
   const [hubUsers, setHubUsers] = useState<HubProfile[]>([]);
   const [notificationItems, setNotificationItems] = useState<HubNotification[]>([]);
@@ -388,6 +389,15 @@ export function App() {
 
     window.addEventListener("hub:pautas", handlePautasChange);
     return () => window.removeEventListener("hub:pautas", handlePautasChange);
+  }, []);
+
+  useEffect(() => {
+    function handleTasksChange() {
+      setTasksVersion((version) => version + 1);
+    }
+
+    window.addEventListener("hub:tasks", handleTasksChange);
+    return () => window.removeEventListener("hub:tasks", handleTasksChange);
   }, []);
 
   useEffect(() => {
@@ -428,11 +438,11 @@ export function App() {
       return;
     }
 
-    Promise.all([listAppLembretes(user), listAppPautas(user)])
-      .then(([lembretes, pautas]) => {
+    Promise.all([listAppLembretes(user), listAppPautas(user), listAppTasks(user)])
+      .then(([lembretes, pautas, tasks]) => {
         if (!active) return undefined;
         const visiblePautas = pautas.filter((pauta) => canUserViewPauta(pauta, user));
-        return syncAppNotifications(user, buildSystemNotifications({ hubUsers, lembretes, pautas: visiblePautas, user }));
+        return syncAppNotifications(user, buildSystemNotifications({ hubUsers, lembretes, pautas: visiblePautas, tasks, user }));
       })
       .then((notifications) => {
         if (active && notifications) setNotificationItems(notifications);
@@ -444,7 +454,7 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [hubUsers, lembretesVersion, pautasVersion, user]);
+  }, [hubUsers, lembretesVersion, pautasVersion, tasksVersion, user]);
 
   if (!user) {
     return <LoginScreen onLogin={setUser} />;
@@ -796,11 +806,6 @@ function Dashboard({
   const [pautaFilter, setPautaFilter] = useState<PautaFilter>("todas");
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [autoScroll, setAutoScroll] = useState(true);
-  const pautasScrollRef = useRef<HTMLDivElement | null>(null);
-  const pautasScrollFrameRef = useRef<number | null>(null);
-  const pautasScrollLastTsRef = useRef<number | null>(null);
-  const pautasScrollPauseUntilRef = useRef(0);
-  const pautasScrollUserPausedRef = useRef(false);
   const pautaEditorRef = useRef<HTMLElement | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -893,51 +898,10 @@ function Dashboard({
   const statusCounts = useMemo(() => countPautaStatus(monthPautas, user), [monthPautas, user]);
   const pautaStatusLabel = loading ? "Sincronizando" : `${source} - ${monthPautas.length} pauta(s)`;
 
-  useEffect(() => {
-    pautasScrollLastTsRef.current = null;
-    pautasScrollPauseUntilRef.current = window.performance.now() + 900;
-    pautasScrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
-  }, [filteredPautas.length, pautaFilter, selectedMonth, selectedYear]);
-
-  useEffect(() => {
-    if (!autoScroll || loading || filteredPautas.length < 4) return undefined;
-
-    const speedPxPerSecond = 6;
-    let cancelled = false;
-
-    function animate(timestamp: number) {
-      const element = pautasScrollRef.current;
-      if (!element || cancelled) return;
-
-      const maxScroll = Math.max(0, element.scrollHeight - element.clientHeight);
-      const previousTimestamp = pautasScrollLastTsRef.current ?? timestamp;
-      const delta = Math.min(timestamp - previousTimestamp, 120);
-      pautasScrollLastTsRef.current = timestamp;
-
-      if (maxScroll > 8 && !pautasScrollUserPausedRef.current && timestamp >= pautasScrollPauseUntilRef.current) {
-        if (element.scrollTop >= maxScroll - 1) {
-          element.scrollTo({ top: 0, behavior: "smooth" });
-          pautasScrollPauseUntilRef.current = timestamp + 1800;
-        } else {
-          element.scrollTop = Math.min(maxScroll, element.scrollTop + speedPxPerSecond * (delta / 1000));
-        }
-      }
-
-      pautasScrollFrameRef.current = window.requestAnimationFrame(animate);
-    }
-
-    pautasScrollLastTsRef.current = null;
-    pautasScrollPauseUntilRef.current = window.performance.now() + 900;
-    pautasScrollFrameRef.current = window.requestAnimationFrame(animate);
-
-    return () => {
-      cancelled = true;
-      if (pautasScrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(pautasScrollFrameRef.current);
-        pautasScrollFrameRef.current = null;
-      }
-    };
-  }, [autoScroll, filteredPautas.length, loading, pautaFilter, selectedMonth, selectedYear]);
+  const shouldAutoScrollPautas = autoScroll && !loading && filteredPautas.length > 3;
+  const pautasScrollStyle = shouldAutoScrollPautas
+    ? ({ "--pautas-scroll-duration": `${Math.max(280, filteredPautas.length * 82)}s` } as CSSProperties)
+    : undefined;
 
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
@@ -1142,6 +1106,68 @@ function Dashboard({
     setMonthCursor((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
   }
 
+  function renderPautaRow(pauta: Pauta, keyPrefix = "") {
+    return (
+      <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={`${keyPrefix}${pauta.id}`}>
+        <div
+          className={`pauta-content pauta-content--${pauta.textSize || "normal"} ${pauta.textBold ? "pauta-content--bold" : ""} ${
+            pauta.textItalic ? "pauta-content--italic" : ""
+          }`}
+          style={getPautaContentStyle(pauta)}
+        >
+          <strong>{pauta.tema}</strong>
+          <span className="pauta-description">{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
+          {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
+          <em>{pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}</em>
+          {pauta.anexos?.length ? (
+            <div className="pauta-attachments">
+              {pauta.anexos.map((anexo) => (
+                <a href={anexo.url} key={anexo.id} rel="noreferrer" target="_blank">
+                  <Paperclip size={12} />
+                  {anexo.name}
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="pauta-row-badges">
+          {pauta.destaque ? <StatusPill label="Destaque" /> : null}
+          <StatusPill label={pauta.status || "Sem status"} />
+          {pauta.prioridade ? <StatusPill label={pauta.prioridade} /> : null}
+        </div>
+        <small className={`pauta-date pauta-date--${getPautaTone(pauta)}`}>
+          <CalendarDays size={12} />
+          {formatDate(pauta.prazo)} - {pauta.origem}
+        </small>
+        <div className="record-actions pauta-actions">
+          {canUserCompletePautaApp(pauta, user) && !hasUserCompletedPauta(pauta, user) ? (
+            <button disabled={saving} type="button" onClick={() => concludePauta(pauta)}>
+              <CheckCircle2 size={14} />
+              Concluir
+            </button>
+          ) : null}
+          {hasUserCompletedPauta(pauta, user) ? <span className="readonly-note">Concluida por voce</span> : null}
+          {canUserManagePautaApp(pauta, user) ? (
+            <>
+              <button disabled={saving} type="button" onClick={() => startEditPauta(pauta)}>
+                <Edit3 size={14} />
+                Editar
+              </button>
+              <button disabled={saving} type="button" onClick={() => toggleDestaque(pauta)}>
+                <Tag size={14} />
+                {pauta.destaque ? "Remover destaque" : "Destacar"}
+              </button>
+              <button className="danger-action" disabled={saving} type="button" onClick={() => removePauta(pauta)}>
+                <Trash2 size={14} />
+                Excluir
+              </button>
+            </>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <div className="pautas-page">
       <section className="panel panel--pautas">
@@ -1216,81 +1242,24 @@ function Dashboard({
         {error ? <p className="module-error module-error--compact">{error}</p> : null}
         {pautasEmailStatus ? <p className="module-notice module-notice--compact">{pautasEmailStatus}</p> : null}
         <div
-          ref={pautasScrollRef}
-          className={`stack-list pautas-stack ${autoScroll ? "pautas-stack--scrolling" : ""}`}
-          onBlurCapture={() => {
-            pautasScrollUserPausedRef.current = false;
-            pautasScrollLastTsRef.current = null;
-            pautasScrollPauseUntilRef.current = window.performance.now() + 700;
-          }}
-          onFocusCapture={() => {
-            pautasScrollUserPausedRef.current = true;
-          }}
+          className={`stack-list pautas-stack ${shouldAutoScrollPautas ? "pautas-stack--scrolling" : ""}`}
+          style={pautasScrollStyle}
         >
-          {filteredPautas.map((pauta) => (
-            <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={pauta.id}>
-              <div
-                className={`pauta-content pauta-content--${pauta.textSize || "normal"} ${pauta.textBold ? "pauta-content--bold" : ""} ${
-                  pauta.textItalic ? "pauta-content--italic" : ""
-                }`}
-                style={getPautaContentStyle(pauta)}
-              >
-                <strong>{pauta.tema}</strong>
-                <span className="pauta-description">{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
-                {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
-                <em>{pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}</em>
-                {pauta.anexos?.length ? (
-                  <div className="pauta-attachments">
-                    {pauta.anexos.map((anexo) => (
-                      <a href={anexo.url} key={anexo.id} rel="noreferrer" target="_blank">
-                        <Paperclip size={12} />
-                        {anexo.name}
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <div className="pauta-row-badges">
-                {pauta.destaque ? <StatusPill label="Destaque" /> : null}
-                <StatusPill label={pauta.status || "Sem status"} />
-                {pauta.prioridade ? <StatusPill label={pauta.prioridade} /> : null}
-              </div>
-              <small className={`pauta-date pauta-date--${getPautaTone(pauta)}`}>
-                <CalendarDays size={12} />
-                {formatDate(pauta.prazo)} - {pauta.origem}
-              </small>
-              <div className="record-actions pauta-actions">
-                {canUserCompletePautaApp(pauta, user) && !hasUserCompletedPauta(pauta, user) ? (
-                  <button disabled={saving} type="button" onClick={() => concludePauta(pauta)}>
-                    <CheckCircle2 size={14} />
-                    Concluir
-                  </button>
-                ) : null}
-                {hasUserCompletedPauta(pauta, user) ? <span className="readonly-note">Concluida por voce</span> : null}
-                {canUserManagePautaApp(pauta, user) ? (
-                  <>
-                    <button disabled={saving} type="button" onClick={() => startEditPauta(pauta)}>
-                      <Edit3 size={14} />
-                      Editar
-                    </button>
-                    <button disabled={saving} type="button" onClick={() => toggleDestaque(pauta)}>
-                      <Tag size={14} />
-                      {pauta.destaque ? "Remover destaque" : "Destacar"}
-                    </button>
-                    <button className="danger-action" disabled={saving} type="button" onClick={() => removePauta(pauta)}>
-                      <Trash2 size={14} />
-                      Excluir
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            </article>
-          ))}
-          {!filteredPautas.length && !loading ? (
-            <div className="empty-state">
-              Nenhuma pauta encontrada para o filtro atual.
+          <div className="pautas-scroll-track" key={`${selectedYear}-${selectedMonth}-${pautaFilter}-${filteredPautas.length}-${autoScroll ? "scroll" : "static"}`}>
+            <div className="pautas-scroll-group">
+              {filteredPautas.map((pauta) => renderPautaRow(pauta))}
+              {!filteredPautas.length && !loading ? (
+                <div className="empty-state">
+                  Nenhuma pauta encontrada para o filtro atual.
+                </div>
+              ) : null}
             </div>
-          ) : null}
+            {shouldAutoScrollPautas ? (
+              <div aria-hidden="true" className="pautas-scroll-group">
+                {filteredPautas.map((pauta) => renderPautaRow(pauta, "copy-"))}
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -1701,8 +1670,31 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       refresh({ silent: true });
     }
 
-    async function syncCalendarMessage(data: { action?: string; event?: unknown; id?: string }) {
+    async function syncCalendarMessage(data: { action?: string; event?: unknown; id?: string; date?: string }) {
       try {
+        if (data.action === "new") {
+          startNewTask(data.date);
+          return;
+        }
+
+        if (data.action === "edit" && data.id) {
+          const latestTasks = await listAppTasks(user);
+          if (active) setTasks(latestTasks);
+          const target = latestTasks.find((task) => task.id === data.id);
+          if (target) startEdit(target);
+          else refresh({ silent: true });
+          return;
+        }
+
+        if (data.action === "delete-request" && data.id) {
+          const latestTasks = await listAppTasks(user);
+          if (active) setTasks(latestTasks);
+          const target = latestTasks.find((task) => task.id === data.id);
+          if (target) await removeTask(target);
+          else refresh({ silent: true });
+          return;
+        }
+
         if (data.action === "saved" && data.event) {
           const items = await saveCalendarEventTask(data.event, user);
           if (active) setTasks(items);
@@ -1780,8 +1772,9 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     setFormOpen(false);
   }
 
-  function startNewTask() {
+  function startNewTask(defaultPrazo = "") {
     clearFormFields();
+    setPrazo(defaultPrazo);
     setResponsaveis(user.email ? [user.email] : []);
     setError("");
     setFormOpen(true);
@@ -1966,7 +1959,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           <h2>Minhas tarefas</h2>
           <small>{loading ? "Carregando..." : `${source} - ${tasks.length} item(ns)`}</small>
         </div>
-        <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={startNewTask}>
+        <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={() => startNewTask()}>
           <Plus size={14} />
           Nova tarefa
         </button>
@@ -6521,11 +6514,21 @@ function canUserViewPauta(pauta: Pauta, user: HubUser) {
 }
 
 function isTaskAssignedToUser(task: TaskItem, user: HubUser) {
-  return (
-    task.createdBy === user.id ||
-    task.createdBy === user.email ||
-    task.responsaveis.some((responsavel) => responsavel.toLowerCase() === user.email.toLowerCase())
-  );
+  const userTokens = [user.id, user.email, user.nome].filter((value): value is string => Boolean(value)).map((value) => normalizeForSearch(value));
+  const owner = normalizeForSearch(task.createdBy || "");
+  const responsaveis = task.responsaveis.map((responsavel) => normalizeForSearch(responsavel));
+
+  return userTokens.some((token) => {
+    if (!token) return false;
+    if (owner === token) return true;
+    return responsaveis.some((responsavel) => responsavel === token);
+  });
+}
+
+function isTaskOwnerForUser(task: TaskItem, user: HubUser) {
+  const userTokens = [user.id, user.email, user.nome].filter((value): value is string => Boolean(value)).map((value) => normalizeForSearch(value));
+  const owner = normalizeForSearch(task.createdBy || "");
+  return userTokens.some((token) => token && owner === token);
 }
 
 function isPautaAlta(pauta: Pauta) {
@@ -6551,9 +6554,17 @@ function getPautaTone(pauta: Pauta) {
 
 function getPautaContentStyle(pauta: Pauta): CSSProperties {
   return {
+    fontSize: getPautaFontSize(pauta.textSize),
     fontWeight: pauta.textBold ? 850 : undefined,
     fontStyle: pauta.textItalic ? "italic" : undefined
   };
+}
+
+function getPautaFontSize(size: Pauta["textSize"]) {
+  if (size === "pequena") return "12px";
+  if (size === "grande") return "18px";
+  if (size === "muito-grande") return "22px";
+  return "14px";
 }
 
 function sortPautasForDashboard(pautas: Pauta[]) {
@@ -6589,14 +6600,20 @@ function buildSystemNotifications({
   hubUsers,
   lembretes,
   pautas,
+  tasks,
   user
 }: {
   hubUsers: HubProfile[];
   lembretes: Lembrete[];
   pautas: Pauta[];
+  tasks: TaskItem[];
   user: HubUser;
 }): HubNotification[] {
-  return [...buildLembreteNotifications(lembretes, hubUsers, user), ...buildPautaNotifications(pautas, user)];
+  return [
+    ...buildLembreteNotifications(lembretes, hubUsers, user),
+    ...buildPautaNotifications(pautas, user),
+    ...buildTaskNotifications(tasks, hubUsers, user)
+  ];
 }
 
 function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubProfile[], user: HubUser): HubNotification[] {
@@ -6692,6 +6709,53 @@ function buildPautaNotifications(pautas: Pauta[], user: HubUser): HubNotificatio
       });
     })
     .sort(sortNotificationsForDisplay);
+}
+
+function buildTaskNotifications(tasks: TaskItem[], profiles: HubProfile[], user: HubUser): HubNotification[] {
+  const eventNotifications = tasks.flatMap((task) => {
+    if (task.status === "concluida") return [];
+    const isOwner = isTaskOwnerForUser(task, user);
+    const isMarked = isTaskAssignedToUser(task, user);
+    if (!isRecentIso(task.createdAt, 7) || !isMarked || isOwner) return [];
+
+    return [
+      createNotification({
+        dedupeKey: `tarefa:${task.id}:assigned:${user.email}`,
+        detail: task.prazo ? `Prazo: ${formatDateTime(task.prazo)}` : "Sem prazo definido",
+        meta: `Criada por ${formatOwner(task.createdBy, profiles)}`,
+        route: "tarefas",
+        targetRef: task.id,
+        targetType: "tarefa",
+        title: `Voce foi marcado em uma tarefa: ${task.titulo}`,
+        tipo: "tarefa_assigned",
+        tone: "info"
+      })
+    ];
+  });
+
+  const dueNotifications = tasks
+    .map((task) => ({ task, tone: getDueTone(task.prazo) }))
+    .filter(
+      (item): item is { task: TaskItem; tone: "danger" | "warning" } =>
+        item.task.status !== "concluida" &&
+        (isTaskAssignedToUser(item.task, user) || user.role === "admin" || user.role === "gestor") &&
+        (item.tone === "danger" || item.tone === "warning")
+    )
+    .map(({ task, tone }) =>
+      createNotification({
+        dedupeKey: `tarefa:${task.id}:${tone}:${user.email}`,
+        detail: tone === "danger" ? `Tarefa vencida: ${formatDateTime(task.prazo)}` : `Tarefa vence em ate 24h: ${formatDateTime(task.prazo)}`,
+        meta: formatResponsaveis(task.responsaveis, profiles),
+        route: "tarefas",
+        targetRef: task.id,
+        targetType: "tarefa",
+        title: task.titulo,
+        tipo: tone === "danger" ? "tarefa_overdue" : "tarefa_due",
+        tone
+      })
+    );
+
+  return [...dueNotifications, ...eventNotifications].sort(sortNotificationsForDisplay);
 }
 
 function createNotification({
