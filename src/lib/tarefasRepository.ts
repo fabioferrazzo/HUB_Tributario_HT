@@ -64,12 +64,10 @@ const CALENDAR_STORE_NAME = "events";
 const STORAGE_BUCKET = "hub-anexos";
 const SUPABASE_MIGRATION_KEY_PREFIX = "hub_tasks_supabase_migrated";
 
-const useTasksSupabase =
-  import.meta.env.VITE_TAREFAS_SUPABASE === "true" ||
-  import.meta.env.VITE_TASKS_SUPABASE_ENABLED === "true";
+const useLocalTasksOnly = import.meta.env.VITE_TAREFAS_LOCAL_ONLY === "true";
 
 export function getTarefasSource(user?: HubUser | null): TarefasSource {
-  if (useTasksSupabase && isSupabaseConfigured && Boolean(user?.id)) return "supabase";
+  if (!useLocalTasksOnly && isSupabaseConfigured && Boolean(user?.id)) return "supabase";
   return canUseCalendarDb() ? "calendario" : "local";
 }
 
@@ -78,13 +76,13 @@ export function canUserViewTask(task: TaskItem, user?: HubUser | null) {
   if (user.role === "admin" || user.role === "gestor") return true;
   if (!task.createdBy && !task.responsaveis.length) return true;
   if (isTaskOwner(task, user)) return true;
-  return task.responsaveis.some((responsavel) => responsavel.toLowerCase() === user.email.toLowerCase());
+  return isTaskResponsible(task, user);
 }
 
 export function canUserManageTask(task: TaskItem, user?: HubUser | null) {
   if (!user) return false;
-  if (!task.createdBy) return true;
-  return user.role === "admin" || user.role === "gestor" || isTaskOwner(task, user);
+  if (user.role === "admin" || user.role === "gestor") return true;
+  return isTaskOwner(task, user);
 }
 
 export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
@@ -105,6 +103,12 @@ export async function saveCalendarEventTask(event: unknown, user: HubUser): Prom
   const calendarEvent = normalizeCalendarEvent(event, user);
 
   if (source === "supabase") {
+    const existingTasks = await loadSupabaseTasks();
+    const existing = existingTasks.find((task) => task.id === calendarEvent.id);
+    if (existing && !canUserManageTask(existing, user)) {
+      throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+    }
+
     await putCalendarEvent(calendarEvent);
     await upsertSupabaseTask(calendarEventToTask(calendarEvent), user, {
       isExisting: true
@@ -120,6 +124,12 @@ export async function deleteCalendarEventTask(id: string, user: HubUser): Promis
   const source = getTarefasSource(user);
 
   if (source === "supabase" && isUuid(id)) {
+    const existingTasks = await loadSupabaseTasks();
+    const existing = existingTasks.find((task) => task.id === id);
+    if (existing && !canUserManageTask(existing, user)) {
+      throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
+    }
+
     const client = assertSupabase();
     const { error } = await client.from("tarefas").delete().eq("id", id);
     if (error) throw error;
@@ -141,10 +151,15 @@ export async function saveAppTask({
   user: HubUser;
 }): Promise<TaskItem[]> {
   const source = getTarefasSource(user);
+  const existingTask = current.find((item) => item.id === task.id);
+
+  if (existingTask && !canUserManageTask(existingTask, user)) {
+    throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+  }
 
   if (source === "supabase") {
     await upsertSupabaseTask(task, user, {
-      isExisting: current.some((item) => item.id === task.id)
+      isExisting: Boolean(existingTask)
     });
 
     for (const file of files) {
@@ -158,6 +173,10 @@ export async function saveAppTask({
   if (source === "calendario") {
     const events = await readCalendarEvents();
     const existing = events.find((event) => event.id === task.id);
+    if (existing && !canUserManageTask(calendarEventToTask(existing), user)) {
+      throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+    }
+
     await putCalendarEvent(await taskToCalendarEvent(task, existing, files));
     notifyTasksChanged();
     return listAppTasks(user);
@@ -184,6 +203,10 @@ export async function deleteAppTask({
   user: HubUser;
 }): Promise<TaskItem[]> {
   const source = getTarefasSource(user);
+
+  if (!canUserManageTask(task, user)) {
+    throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
+  }
 
   if (source === "supabase") {
     const client = assertSupabase();
@@ -517,12 +540,13 @@ async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isEx
   if (error) throw error;
 
   const taskId = data.id as string;
-  const profilesByEmail = await getProfilesByEmail(task.responsaveis);
+  const profilesByIdentity = await getProfilesByIdentity(task.responsaveis);
   await client.from("tarefa_usuarios").delete().eq("tarefa_id", taskId);
 
   const userLinks = task.responsaveis
-    .map((email) => profilesByEmail.get(email)?.id)
+    .map((identity) => profilesByIdentity.get(normalizeIdentity(identity))?.id)
     .filter((id): id is string => Boolean(id))
+    .filter((id, index, ids) => ids.indexOf(id) === index)
     .map((userId) => ({ tarefa_id: taskId, user_id: userId }));
 
   if (userLinks.length) {
@@ -571,15 +595,34 @@ async function getCurrentAuthUserId() {
   return data.user.id;
 }
 
-async function getProfilesByEmail(emails: string[]) {
+async function getProfilesByIdentity(identities: string[]) {
   const client = assertSupabase();
-  const uniqueEmails = [...new Set(emails.filter(Boolean))];
-  if (!uniqueEmails.length) return new Map<string, ProfileRow>();
+  const uniqueIdentities = [...new Set(identities.map(normalizeIdentity).filter(Boolean))];
+  if (!uniqueIdentities.length) return new Map<string, ProfileRow>();
 
-  const { data, error } = await client.from("profiles").select("id,email").in("email", uniqueEmails);
-  if (error) throw error;
+  const emails = uniqueIdentities.filter((identity) => identity.includes("@"));
+  const ids = uniqueIdentities.filter(isUuid);
+  const rows: ProfileRow[] = [];
 
-  return new Map((data || []).map((profile) => [profile.email, profile as ProfileRow]));
+  if (emails.length) {
+    const { data, error } = await client.from("profiles").select("id,email").in("email", emails);
+    if (error) throw error;
+    rows.push(...((data || []) as ProfileRow[]));
+  }
+
+  if (ids.length) {
+    const { data, error } = await client.from("profiles").select("id,email").in("id", ids);
+    if (error) throw error;
+    rows.push(...((data || []) as ProfileRow[]));
+  }
+
+  const profilesByIdentity = new Map<string, ProfileRow>();
+  rows.forEach((profile) => {
+    if (profile.id) profilesByIdentity.set(normalizeIdentity(profile.id), profile);
+    if (profile.email) profilesByIdentity.set(normalizeIdentity(profile.email), profile);
+  });
+
+  return profilesByIdentity;
 }
 
 async function getEmailsByProfileId(ids: string[]) {
@@ -621,7 +664,29 @@ function filterVisibleTasks(tasks: TaskItem[], user: HubUser) {
 }
 
 function isTaskOwner(task: TaskItem, user: HubUser) {
-  return task.createdBy === user.id || task.createdBy === user.email;
+  return getUserIdentityTokens(user).some((token) => token && normalizeIdentity(task.createdBy) === token);
+}
+
+function isTaskResponsible(task: TaskItem, user: HubUser) {
+  const userTokens = getUserIdentityTokens(user);
+  const responsaveis = task.responsaveis.map(normalizeIdentity);
+
+  return userTokens.some((token) => {
+    if (!token) return false;
+    return responsaveis.some((responsavel) => responsavel === token);
+  });
+}
+
+function getUserIdentityTokens(user: HubUser) {
+  return [user.id, user.email, user.nome].filter(Boolean).map((value) => normalizeIdentity(value));
+}
+
+function normalizeIdentity(value?: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 function isUuid(value: string) {
