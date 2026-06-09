@@ -3202,6 +3202,7 @@ body {
 
 .list-row--pauta {
   min-height: 150px;
+  height: auto;
   grid-template-columns: minmax(0, 1fr) minmax(112px, max-content);
   grid-template-areas:
     "content status"
@@ -3212,7 +3213,7 @@ body {
   row-gap: 12px;
   padding: 16px 18px;
   overflow: visible;
-  contain: layout;
+  contain: none;
 }
 
 .pauta-content {
@@ -3579,7 +3580,7 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px;
-  contain: layout;
+  contain: none;
   scroll-behavior: auto;
 }
 
@@ -3599,6 +3600,7 @@ body {
   gap: 0;
   flex: 0 0 auto;
   width: 100%;
+  transform: translate3d(0, 0, 0);
 }
 
 .pautas-scroll-group {
@@ -3610,15 +3612,13 @@ body {
   width: 100%;
 }
 
-.pautas-stack--scrolling .pautas-scroll-track {
-  animation: pautas-continuous-scroll var(--pautas-scroll-duration, 220s) linear infinite;
-  transform: translate3d(0, 0, 0);
-  will-change: transform;
+.pautas-scroll-group--copy {
+  pointer-events: none;
 }
 
-.pautas-stack--scrolling:hover .pautas-scroll-track,
-.pautas-stack--scrolling:focus-within .pautas-scroll-track {
-  animation-play-state: paused;
+.pautas-stack--scrolling .pautas-scroll-track {
+  animation: pautas-continuous-scroll var(--pautas-scroll-duration, 120s) linear infinite;
+  will-change: transform;
 }
 
 @keyframes pautas-continuous-scroll {
@@ -3650,7 +3650,7 @@ body {
 }
 
 .list-row--pauta-featured strong {
-  font-size: 17px;
+  font-size: 1.12em;
 }
 
 .pauta-attachments {

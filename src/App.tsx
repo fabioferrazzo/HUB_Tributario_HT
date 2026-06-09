@@ -807,6 +807,7 @@ function Dashboard({
   const [monthCursor, setMonthCursor] = useState(() => new Date());
   const [autoScroll, setAutoScroll] = useState(true);
   const pautaEditorRef = useRef<HTMLElement | null>(null);
+  const pautasStackRef = useRef<HTMLDivElement | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
@@ -900,8 +901,14 @@ function Dashboard({
 
   const shouldAutoScrollPautas = autoScroll && !loading && filteredPautas.length > 3;
   const pautasScrollStyle = shouldAutoScrollPautas
-    ? ({ "--pautas-scroll-duration": `${Math.max(280, filteredPautas.length * 82)}s` } as CSSProperties)
+    ? ({ "--pautas-scroll-duration": `${Math.max(85, filteredPautas.length * 18)}s` } as CSSProperties)
     : undefined;
+
+  useEffect(() => {
+    const stack = pautasStackRef.current;
+    if (!stack) return;
+    stack.scrollTop = 0;
+  }, [autoScroll, filteredPautas.length, pautaFilter, pautaQuery, selectedMonth, selectedYear]);
 
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
@@ -1107,18 +1114,32 @@ function Dashboard({
   }
 
   function renderPautaRow(pauta: Pauta, keyPrefix = "") {
+    const pautaContentStyle = getPautaContentStyle(pauta);
     return (
       <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={`${keyPrefix}${pauta.id}`}>
         <div
           className={`pauta-content pauta-content--${pauta.textSize || "normal"} ${pauta.textBold ? "pauta-content--bold" : ""} ${
             pauta.textItalic ? "pauta-content--italic" : ""
           }`}
-          style={getPautaContentStyle(pauta)}
+          data-font-bold={pauta.textBold ? "true" : "false"}
+          data-font-size={pauta.textSize || "normal"}
+          data-font-italic={pauta.textItalic ? "true" : "false"}
+          style={pautaContentStyle}
         >
-          <strong>{pauta.tema}</strong>
-          <span className="pauta-description">{pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}</span>
-          {pauta.retorno ? <span className="pauta-return">Retorno: {pauta.retorno}</span> : null}
-          <em>{pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}</em>
+          <strong style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
+            {pauta.tema}
+          </strong>
+          <span className="pauta-description" style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
+            {pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}
+          </span>
+          {pauta.retorno ? (
+            <span className="pauta-return" style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
+              Retorno: {pauta.retorno}
+            </span>
+          ) : null}
+          <em style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
+            {pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}
+          </em>
           {pauta.anexos?.length ? (
             <div className="pauta-attachments">
               {pauta.anexos.map((anexo) => (
@@ -1243,6 +1264,7 @@ function Dashboard({
         {pautasEmailStatus ? <p className="module-notice module-notice--compact">{pautasEmailStatus}</p> : null}
         <div
           className={`stack-list pautas-stack ${shouldAutoScrollPautas ? "pautas-stack--scrolling" : ""}`}
+          ref={pautasStackRef}
           style={pautasScrollStyle}
         >
           <div className="pautas-scroll-track" key={`${selectedYear}-${selectedMonth}-${pautaFilter}-${filteredPautas.length}-${autoScroll ? "scroll" : "static"}`}>
@@ -1255,7 +1277,7 @@ function Dashboard({
               ) : null}
             </div>
             {shouldAutoScrollPautas ? (
-              <div aria-hidden="true" className="pautas-scroll-group">
+              <div aria-hidden="true" className="pautas-scroll-group pautas-scroll-group--copy">
                 {filteredPautas.map((pauta) => renderPautaRow(pauta, "copy-"))}
               </div>
             ) : null}
