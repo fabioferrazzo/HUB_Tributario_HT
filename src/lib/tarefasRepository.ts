@@ -517,13 +517,7 @@ async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isEx
   void options;
 
   const client = assertSupabase();
-  const profilesByIdentity = await getProfilesByIdentity(task.responsaveis);
-  const responsavelIds = task.responsaveis
-    .map((identity) => profilesByIdentity.get(normalizeIdentity(identity))?.id)
-    .filter((id): id is string => Boolean(id))
-    .filter((id, index, ids) => ids.indexOf(id) === index);
-
-  const { data, error } = await client.rpc("save_tarefa", {
+  const payload = {
     p_id: isUuid(task.id) ? task.id : null,
     p_titulo: task.titulo,
     p_descricao: task.descricao,
@@ -532,15 +526,47 @@ async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isEx
     p_status: task.status,
     p_destaque: task.destaque === true,
     p_origem: task.origem || "calendario",
-    p_coord_item_id: task.coordItemId || null,
-    p_responsaveis: responsavelIds
+    p_coord_item_id: task.coordItemId || null
+  };
+
+  const { data, error } = await client.rpc("save_tarefa_v2", {
+    ...payload,
+    p_responsaveis: task.responsaveis.map(normalizeIdentity).filter(Boolean)
   });
+
+  if (error && !isMissingRpcError(error)) throw error;
+
+  if (error) {
+    const responsavelIds = await resolveResponsavelIds(task.responsaveis);
+    const fallback = await client.rpc("save_tarefa", {
+      ...payload,
+      p_responsaveis: responsavelIds
+    });
+    if (fallback.error) throw fallback.error;
+
+    const taskId = typeof fallback.data === "string" && fallback.data ? fallback.data : task.id;
+    if (!taskId) throw new Error("Nao foi possivel identificar a tarefa salva.");
+    return taskId;
+  }
 
   if (error) throw error;
 
   const taskId = typeof data === "string" && data ? data : task.id;
   if (!taskId) throw new Error("Nao foi possivel identificar a tarefa salva.");
   return taskId;
+}
+
+async function resolveResponsavelIds(responsaveis: string[]) {
+  const profilesByIdentity = await getProfilesByIdentity(responsaveis);
+  return responsaveis
+    .map((identity) => profilesByIdentity.get(normalizeIdentity(identity))?.id)
+    .filter((id): id is string => Boolean(id))
+    .filter((id, index, ids) => ids.indexOf(id) === index);
+}
+
+function isMissingRpcError(error: { code?: string; message?: string }) {
+  const message = error.message || "";
+  return error.code === "PGRST202" || message.includes("save_tarefa_v2") || message.includes("Could not find the function");
 }
 
 async function uploadSupabaseTaskAttachment(taskId: string, file: File) {
