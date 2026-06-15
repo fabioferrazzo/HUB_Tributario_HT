@@ -111,7 +111,7 @@ export async function saveCalendarEventTask(event: unknown, user: HubUser): Prom
 
     await putCalendarEvent(calendarEvent);
     await upsertSupabaseTask(calendarEventToTask(calendarEvent), user, {
-      isExisting: true
+      isExisting: Boolean(existing)
     });
     notifyTasksChanged();
     return listAppTasks(user);
@@ -514,28 +514,33 @@ async function loadSupabaseTasks(): Promise<TaskItem[]> {
 
 async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isExisting?: boolean }) {
   const client = assertSupabase();
-  const authUserId = await getCurrentAuthUserId();
-  const createdBy = task.createdBy && task.createdBy.includes("-") ? task.createdBy : authUserId;
+  await getCurrentAuthUserId();
+  const basePayload = {
+    titulo: task.titulo,
+    descricao: task.descricao,
+    prazo: task.prazo || null,
+    prioridade: task.prioridade,
+    status: task.status,
+    destaque: task.destaque === true,
+    origem: task.origem || "calendario",
+    coord_item_id: task.coordItemId || null
+  };
 
-  const { data, error } = await client
-    .from("tarefas")
-    .upsert(
-      {
-        id: task.id,
-        titulo: task.titulo,
-        descricao: task.descricao,
-        prazo: task.prazo || null,
-        prioridade: task.prioridade,
-        status: task.status,
-        destaque: task.destaque === true,
-        origem: task.origem || "calendario",
-        coord_item_id: task.coordItemId || null,
-        created_by: options.isExisting ? createdBy : authUserId
-      },
-      { onConflict: "id" }
-    )
-    .select("id")
-    .single();
+  const { data, error } = options.isExisting
+    ? await client
+        .from("tarefas")
+        .update(basePayload)
+        .eq("id", task.id)
+        .select("id")
+        .single()
+    : await client
+        .from("tarefas")
+        .insert({
+          id: task.id,
+          ...basePayload
+        })
+        .select("id")
+        .single();
 
   if (error) throw error;
 
