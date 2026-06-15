@@ -1640,7 +1640,11 @@ function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
   return (
     <div className="tasks-layout">
       <div className="calendar-shell">
-        <iframe key={calendarVersion} src="/apps/calendar.html" title="Calendario de tarefas" />
+        <iframe
+          key={calendarVersion}
+          src={`/apps/calendar.html?v=tasks-unified-20260615-${calendarVersion}`}
+          title="Calendario de tarefas"
+        />
       </div>
       <TaskSidebar hubUsers={hubUsers} onNavigate={onNavigate} user={user} />
     </div>
@@ -1739,13 +1743,11 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     }
 
     refresh();
-    const interval = window.setInterval(() => refresh({ silent: true }), 3000);
     window.addEventListener("hub:tasks", handleHubTasks);
     window.addEventListener("message", handleMessage);
 
     return () => {
       active = false;
-      window.clearInterval(interval);
       window.removeEventListener("hub:tasks", handleHubTasks);
       window.removeEventListener("message", handleMessage);
     };
