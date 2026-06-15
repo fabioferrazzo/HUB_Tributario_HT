@@ -18,8 +18,8 @@ button,input,textarea,select{font-family:inherit}
 #view-toggle{display:flex;border:1px solid #ddd;border-radius:6px;overflow:hidden}
 #view-toggle button{padding:4px 10px;font-size:12px;border:none;background:none;color:#666;cursor:pointer}
 #view-toggle button.active{background:#f0f0f0;color:#1a1a1a;font-weight:500}
-#btn-new{padding:6px 14px;border-radius:6px;background:#1a1a1a;color:#fff;border:none;font-size:13px;font-weight:500;cursor:pointer}
 #btn-ico{padding:6px 10px;border-radius:6px;border:1px solid #ddd;background:none;font-size:12px;cursor:pointer;color:#666}
+#btn-new{display:none!important}
 #cal-grid{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 #day-names{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid #e5e5e5;flex-shrink:0}
 #day-names div{padding:6px 0;text-align:center;font-size:11px;color:#888;font-weight:500}
@@ -131,7 +131,6 @@ button,input,textarea,select{font-family:inherit}
       <button onclick="setView('agenda')" id="vbtn-agenda">Agenda</button>
       <button onclick="setView('reminders')" id="vbtn-reminders">Lista</button>
     </div>
-    <button id="btn-new" onclick="openForm()">+ Novo</button>
     <button id="btn-ico" onclick="downloadIco()" title="Baixar ícone .ico para o atalho">⬇ Ícone</button>
   </div>
 </div>
@@ -146,7 +145,6 @@ button,input,textarea,select{font-family:inherit}
       <span id="day-panel-title"></span>
       <div id="day-panel-actions">
         <button style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #ddd;background:none;color:#555;cursor:pointer" onclick="exportICS(getSelEvs())">⬇ .ics</button>
-        <button style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;cursor:pointer" onclick="openFormForDate(selDate)">+ Tarefa neste dia</button>
       </div>
     </div>
     <div id="day-events"></div>
@@ -190,6 +188,7 @@ let view="month", notifPerm=("Notification" in window)?Notification.permission:"
 let pendingFiles=[], editingEvId=null;
 let popupEv=null, popupAutoClose=null;
 let alarmInterval=null, audioCtx=null;
+const HUB_EMBEDDED=(()=>{try{return window.parent&&window.parent!==window;}catch(e){return false;}})();
 
 // ---- IndexedDB ----
 let db;
@@ -330,7 +329,8 @@ function makeEvCard(ev,showDate){
     if(isImage(att.name))return"<div class='att-chip' onclick='previewImage(\""+att.dataUrl.replace(/"/g,"&quot;")+"\")'><span>"+fileIcon(att.name)+"</span>"+att.name+"</div>";
     return"<div class='att-chip' onclick='downloadAtt(\""+att.dataUrl.replace(/"/g,"&quot;")+"\",\""+att.name+"\")'><span>"+fileIcon(att.name)+"</span>"+att.name+"</div>";
   }).join("");
-  wrap.innerHTML="<div class='ev-bar' style='background:"+col+"'></div><div class='ev-body'><div class='ev-title'>"+ev.title+"<span class='ev-badge' style='background:"+col+"22;color:"+col+"'>"+(CATS[ev.category]?.label||"Outro")+"</span></div><div class='ev-meta'>"+(showDate?fDateShort(ev.date)+" · ":"")+fTime(ev.date)+(ev.description?" · "+ev.description:"")+"</div>"+(attHtml?"<div class='att-list'>"+attHtml+"</div>":"")+"<div class='ev-actions'>"+((!past)?"<button onclick='openRemind(\""+ev.id+"\")'>\uD83D\uDD14 Lembrar</button>":"")+"<button onclick='openGCal(\""+ev.id+"\")'>\u2197 Google Cal</button><button onclick='openForm(\""+ev.id+"\")'>\u270F Editar</button><button class='danger' onclick='deleteEv(\""+ev.id+"\")'>\uD83D\uDDD1 Excluir</button></div></div>";
+  const manageHtml=HUB_EMBEDDED?"":"<button onclick='openForm(\""+ev.id+"\")'>\u270F Editar</button><button class='danger' onclick='deleteEv(\""+ev.id+"\")'>\uD83D\uDDD1 Excluir</button>";
+  wrap.innerHTML="<div class='ev-bar' style='background:"+col+"'></div><div class='ev-body'><div class='ev-title'>"+ev.title+"<span class='ev-badge' style='background:"+col+"22;color:"+col+"'>"+(CATS[ev.category]?.label||"Outro")+"</span></div><div class='ev-meta'>"+(showDate?fDateShort(ev.date)+" · ":"")+fTime(ev.date)+(ev.description?" · "+ev.description:"")+"</div>"+(attHtml?"<div class='att-list'>"+attHtml+"</div>":"")+"<div class='ev-actions'>"+((!past)?"<button onclick='openRemind(\""+ev.id+"\")'>\uD83D\uDD14 Lembrar</button>":"")+"<button onclick='openGCal(\""+ev.id+"\")'>\u2197 Google Cal</button>"+manageHtml+"</div></div>";
   return wrap;
 }
 
@@ -371,6 +371,10 @@ function renderRemindersList(){
 // ---- Form ----
 function openFormForDate(date){openForm(null,date.toISOString().slice(0,10)+"T09:00");}
 async function openForm(evId,defaultDate){
+  if(HUB_EMBEDDED){
+    notifyParentTasksChanged({action:evId?"edit":"new",id:evId||"",date:defaultDate||selDate.toISOString().slice(0,10)+"T09:00"});
+    return;
+  }
   pendingFiles=[];editingEvId=evId||null;
   let ev=evId?events.find(e=>e.id===evId):null;
   if(ev&&ev.attachments)pendingFiles=[...ev.attachments];
@@ -411,6 +415,10 @@ async function saveEv(){
   closePanel();notifyParentTasksChanged({action:"saved",event:ev});refresh();
 }
 async function deleteEv(id){
+  if(HUB_EMBEDDED){
+    notifyParentTasksChanged({action:"delete-request",id});
+    return;
+  }
   if(!confirm("Excluir esta tarefa?"))return;
   await dbDelete(id);events=events.filter(e=>e.id!==id);notifyParentTasksChanged({action:"deleted",id});refresh();
 }
