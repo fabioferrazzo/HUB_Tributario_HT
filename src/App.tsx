@@ -1621,7 +1621,10 @@ function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
 
     function handleMessage(event: MessageEvent) {
       if (event.origin === window.location.origin && event.data?.type === "hub:tasks") {
-        refreshCalendarFrame();
+        const action = typeof event.data.action === "string" ? event.data.action : "";
+        if (!action || action === "saved" || action === "deleted" || action === "refresh") {
+          refreshCalendarFrame();
+        }
       }
     }
 
