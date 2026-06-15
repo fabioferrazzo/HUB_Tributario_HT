@@ -158,12 +158,12 @@ export async function saveAppTask({
   }
 
   if (source === "supabase") {
-    await upsertSupabaseTask(task, user, {
+    const taskId = await upsertSupabaseTask(task, user, {
       isExisting: Boolean(existingTask)
     });
 
     for (const file of files) {
-      await uploadSupabaseTaskAttachment(task.id, file);
+      await uploadSupabaseTaskAttachment(taskId, file);
     }
 
     notifyTasksChanged();
@@ -513,51 +513,34 @@ async function loadSupabaseTasks(): Promise<TaskItem[]> {
 }
 
 async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isExisting?: boolean }) {
-  const client = assertSupabase();
-  await getCurrentAuthUserId();
-  const basePayload = {
-    titulo: task.titulo,
-    descricao: task.descricao,
-    prazo: task.prazo || null,
-    prioridade: task.prioridade,
-    status: task.status,
-    destaque: task.destaque === true,
-    origem: task.origem || "calendario",
-    coord_item_id: task.coordItemId || null
-  };
+  void user;
+  void options;
 
-  const { data, error } = options.isExisting
-    ? await client
-        .from("tarefas")
-        .update(basePayload)
-        .eq("id", task.id)
-        .select("id")
-        .single()
-    : await client
-        .from("tarefas")
-        .insert({
-          id: task.id,
-          ...basePayload
-        })
-        .select("id")
-        .single();
+  const client = assertSupabase();
+  const profilesByIdentity = await getProfilesByIdentity(task.responsaveis);
+  const responsavelIds = task.responsaveis
+    .map((identity) => profilesByIdentity.get(normalizeIdentity(identity))?.id)
+    .filter((id): id is string => Boolean(id))
+    .filter((id, index, ids) => ids.indexOf(id) === index);
+
+  const { data, error } = await client.rpc("save_tarefa", {
+    p_id: isUuid(task.id) ? task.id : null,
+    p_titulo: task.titulo,
+    p_descricao: task.descricao,
+    p_prazo: task.prazo || null,
+    p_prioridade: task.prioridade,
+    p_status: task.status,
+    p_destaque: task.destaque === true,
+    p_origem: task.origem || "calendario",
+    p_coord_item_id: task.coordItemId || null,
+    p_responsaveis: responsavelIds
+  });
 
   if (error) throw error;
 
-  const taskId = data.id as string;
-  const profilesByIdentity = await getProfilesByIdentity(task.responsaveis);
-  await client.from("tarefa_usuarios").delete().eq("tarefa_id", taskId);
-
-  const userLinks = task.responsaveis
-    .map((identity) => profilesByIdentity.get(normalizeIdentity(identity))?.id)
-    .filter((id): id is string => Boolean(id))
-    .filter((id, index, ids) => ids.indexOf(id) === index)
-    .map((userId) => ({ tarefa_id: taskId, user_id: userId }));
-
-  if (userLinks.length) {
-    const { error: linksError } = await client.from("tarefa_usuarios").insert(userLinks);
-    if (linksError) throw linksError;
-  }
+  const taskId = typeof data === "string" && data ? data : task.id;
+  if (!taskId) throw new Error("Nao foi possivel identificar a tarefa salva.");
+  return taskId;
 }
 
 async function uploadSupabaseTaskAttachment(taskId: string, file: File) {
