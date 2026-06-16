@@ -122,6 +122,51 @@ begin
     )
   on conflict do nothing;
 
+  insert into public.notificacoes (
+    user_id,
+    tipo,
+    titulo,
+    body,
+    meta,
+    target_type,
+    target_ref,
+    dedupe_key,
+    route,
+    tone,
+    active,
+    created_at,
+    updated_at
+  )
+  select
+    tu.user_id,
+    'tarefa_assigned',
+    'Nova tarefa atribuida',
+    t.titulo,
+    coalesce(creator.nome, creator.email, 'HUB Depto Tributario'),
+    'tarefa',
+    t.id::text,
+    'tarefa_assigned:' || t.id::text || ':' || tu.user_id::text,
+    'tasks',
+    'info',
+    true,
+    now(),
+    now()
+  from public.tarefa_usuarios tu
+  join public.tarefas t on t.id = tu.tarefa_id
+  left join public.profiles creator on creator.id = t.created_by
+  where tu.tarefa_id = v_task_id
+    and tu.user_id <> t.created_by
+  on conflict (user_id, dedupe_key) do update
+  set titulo = excluded.titulo,
+      body = excluded.body,
+      meta = excluded.meta,
+      target_type = excluded.target_type,
+      target_ref = excluded.target_ref,
+      route = excluded.route,
+      tone = excluded.tone,
+      active = true,
+      updated_at = now();
+
   return v_task_id;
 end;
 $$;
