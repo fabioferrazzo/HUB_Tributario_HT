@@ -89,7 +89,9 @@ export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
   const source = getTarefasSource(user);
   if (source === "supabase") {
     await migrateCalendarTasksToSupabaseOnce(user);
-    const tasks = await loadSupabaseTasks();
+    const supabaseTasks = await loadSupabaseTasks();
+    const calendarTasks = canUseCalendarDb() ? await loadCalendarTasks(user) : [];
+    const tasks = mergeTasksById(supabaseTasks, calendarTasks, user);
     await syncTasksToCalendar(tasks);
     return tasks;
   }
@@ -683,6 +685,15 @@ function filterVisibleTasks(tasks: TaskItem[], user: HubUser) {
   return tasks
     .filter((task) => canUserViewTask(task, user))
     .sort((a, b) => (a.prazo || "9999").localeCompare(b.prazo || "9999"));
+}
+
+function mergeTasksById(primary: TaskItem[], fallback: TaskItem[], user: HubUser) {
+  const merged = new Map<string, TaskItem>();
+
+  fallback.forEach((task) => merged.set(task.id, task));
+  primary.forEach((task) => merged.set(task.id, task));
+
+  return filterVisibleTasks([...merged.values()], user);
 }
 
 function isTaskOwner(task: TaskItem, user: HubUser) {
