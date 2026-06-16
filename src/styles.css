@@ -3869,6 +3869,28 @@ body {
   scrollbar-gutter: stable;
 }
 
+.task-sidebar--form {
+  overflow: hidden;
+}
+
+.task-sidebar--form .task-sidebar-head {
+  flex: 0 0 auto;
+}
+
+.task-form--full {
+  flex: 1 1 auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  max-height: none;
+  min-height: 0;
+  padding: 16px;
+}
+
+.task-form--full textarea {
+  min-height: 136px;
+}
+
 .task-form--open .form-actions-inline {
   position: sticky;
   bottom: -12px;

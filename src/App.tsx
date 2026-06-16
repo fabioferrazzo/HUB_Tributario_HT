@@ -1979,33 +1979,22 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     }
   }
 
-  return (
-    <aside className="task-sidebar">
-      <header className="task-sidebar-head">
-        <div className="task-sidebar-title">
-          <h2>Minhas tarefas</h2>
-          <small>{loading ? "Carregando..." : `${source} - ${tasks.length} item(ns)`}</small>
-        </div>
-        <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={() => startNewTask()}>
-          <Plus size={14} />
-          Nova tarefa
-        </button>
-      </header>
-
-      <div className="task-sidebar-summary">
-        <span>{minhasTasks.length} minhas</span>
-        <span>{abertasCount} abertas</span>
-      </div>
-
-      {formOpen ? (
-        <form className="task-form task-form--open" onSubmit={handleSubmit}>
-          <div className="task-form-head">
-            <strong>{editingId ? "Editar tarefa" : "Nova tarefa"}</strong>
-            <button disabled={saving} type="button" onClick={resetForm}>
-              <X size={14} />
-              Fechar
-            </button>
+  if (formOpen) {
+    return (
+      <aside className="task-sidebar task-sidebar--form">
+        <header className="task-sidebar-head">
+          <div className="task-sidebar-title">
+            <h2>{editingId ? "Editar tarefa" : "Nova tarefa"}</h2>
+            <small>{editingId ? "Atualize os dados e salve para voltar a lista." : "Preencha a tarefa e salve para voltar a lista."}</small>
           </div>
+          <button className="btn-mini" disabled={saving} type="button" onClick={resetForm}>
+            <X size={14} />
+            Cancelar
+          </button>
+        </header>
+
+        <form className="task-form task-form--open task-form--full" onSubmit={handleSubmit}>
+          {error ? <p className="module-error module-error--compact">{error}</p> : null}
           <label>
             Titulo
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
@@ -2050,11 +2039,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           </fieldset>
           <label>
             Anexos
-            <input
-              multiple
-              onChange={(event) => handleFiles(event.target.files)}
-              type="file"
-            />
+            <input multiple onChange={(event) => handleFiles(event.target.files)} type="file" />
           </label>
           {anexos.length ? (
             <div className="attachment-list">
@@ -2065,14 +2050,34 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           ) : null}
           <div className="form-actions-inline">
             <button className="primary-action" disabled={saving || loading} type="submit">
-              {saving ? "Salvando..." : editingId ? "Atualizar tarefa" : "Salvar tarefa"}
+              {saving ? "Salvando..." : editingId ? "Salvar edicao" : "Salvar tarefa"}
             </button>
             <button disabled={saving} type="button" onClick={resetForm}>
               Cancelar
             </button>
           </div>
         </form>
-      ) : null}
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="task-sidebar">
+      <header className="task-sidebar-head">
+        <div className="task-sidebar-title">
+          <h2>Minhas tarefas</h2>
+          <small>{loading ? "Carregando..." : `${source} - ${tasks.length} item(ns)`}</small>
+        </div>
+        <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={() => startNewTask()}>
+          <Plus size={14} />
+          Nova tarefa
+        </button>
+      </header>
+
+      <div className="task-sidebar-summary">
+        <span>{minhasTasks.length} minhas</span>
+        <span>{abertasCount} abertas</span>
+      </div>
 
       <div className="panel-toolbar task-toolbar">
         <button className={`filter-pill ${filter === "minhas" ? "active" : ""}`} onClick={() => setFilter("minhas")} type="button">
