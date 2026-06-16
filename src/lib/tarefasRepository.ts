@@ -237,7 +237,14 @@ async function syncTasksToCalendar(tasks: TaskItem[]) {
   if (!canUseCalendarDb()) return;
 
   const events = await readCalendarEvents();
+  const taskIds = new Set(tasks.map((task) => task.id));
   const eventById = new Map(events.map((event) => [event.id, event]));
+
+  for (const event of events) {
+    if (!taskIds.has(event.id)) {
+      await deleteCalendarEvent(event.id);
+    }
+  }
 
   for (const task of tasks) {
     await putCalendarEvent(await taskToCalendarEvent(task, eventById.get(task.id), []));
@@ -246,6 +253,7 @@ async function syncTasksToCalendar(tasks: TaskItem[]) {
 
 async function migrateCalendarTasksToSupabaseOnce(user: HubUser) {
   if (!canUseCalendarDb()) return;
+  if (user.role !== "admin" && user.role !== "gestor") return;
 
   const migrationKey = `${SUPABASE_MIGRATION_KEY_PREFIX}:${user.id || user.email}`;
   if (readBrowserFlag(migrationKey)) return;
