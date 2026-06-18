@@ -90,7 +90,13 @@
     <aside id="notes-sidebar" class="fixed right-0 top-0 h-full w-full sm:w-[24rem] bg-white shadow-2xl border-l transform translate-x-full transition-transform duration-300 z-40 flex flex-col">
         <div class="p-4 border-b flex justify-between items-center bg-stone-50">
             <h2 class="font-medium flex items-center gap-2"><i class="ph ph-notepad"></i> Anotações</h2>
-            <button id="close-notes" class="text-stone-400 p-2"><i class="ph ph-x text-xl"></i></button>
+            <div class="flex items-center gap-2">
+                <button id="float-notes" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold flex items-center gap-1" type="button">
+                    <i class="ph ph-arrow-square-out"></i> Flutuar
+                </button>
+                <button id="save-notes" class="text-xs px-3 py-2 rounded-xl bg-stone-900 text-white font-semibold" type="button">Salvar</button>
+                <button id="close-notes" class="text-stone-400 p-2" type="button"><i class="ph ph-x text-xl"></i></button>
+            </div>
         </div>
         <div class="px-4 py-2 border-b flex gap-2 items-center overflow-x-auto no-scrollbar bg-white">
             <button onmousedown="event.preventDefault();" onclick="formatDoc('bold')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-b"></i></button>
@@ -415,8 +421,32 @@
         document.getElementById('editor').oninput = saveData;
         document.getElementById('task-input').oninput = saveData;
 
+        function saveNotesNow() {
+            saveData();
+            const button = document.getElementById('save-notes');
+            if (!button) return;
+            const original = button.textContent || 'Salvar';
+            button.textContent = 'Salvo';
+            window.setTimeout(() => { button.textContent = original; }, 1200);
+        }
+
+        function floatNotesToHub() {
+            saveData();
+            const editor = document.getElementById('editor');
+            window.parent?.postMessage(
+                { type: 'hub:pomodoro-notes-float', notes: editor ? editor.innerHTML : '' },
+                window.location.origin
+            );
+            document.getElementById('notes-sidebar').classList.add('translate-x-full');
+        }
+
         document.getElementById('notes-toggle').onclick = () => document.getElementById('notes-sidebar').classList.remove('translate-x-full');
-        document.getElementById('close-notes').onclick = () => document.getElementById('notes-sidebar').classList.add('translate-x-full');
+        document.getElementById('save-notes').onclick = saveNotesNow;
+        document.getElementById('float-notes').onclick = floatNotesToHub;
+        document.getElementById('close-notes').onclick = () => {
+            saveData();
+            document.getElementById('notes-sidebar').classList.add('translate-x-full');
+        };
         document.getElementById('cancel-settings').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
         document.getElementById('open-reminder-btn').onclick = () => { document.getElementById('create-reminder-modal').classList.remove('hidden'); renderReminders(); };
         document.getElementById('cancel-reminder').onclick = () => document.getElementById('create-reminder-modal').classList.add('hidden');
