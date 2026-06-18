@@ -1642,7 +1642,7 @@ function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       <div className="calendar-shell">
         <iframe
           key={calendarVersion}
-          src={`/apps/calendar.html?v=tasks-unified-20260615-${calendarVersion}`}
+          src={`/apps/calendar.html?v=tasks-unified-20260618-${calendarVersion}`}
           title="Calendario de tarefas"
         />
       </div>
