@@ -854,6 +854,36 @@ function saveToStorage(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(APP.data));
   }catch(e){console.warn("Storage save failed:",e)}
 }
+function applyMonthPayload(obj, sourceFallback){
+  if(!obj || !obj.month || !obj.year || !obj.dates) throw new Error("Agenda sem month/year/dates.");
+  const k = key(obj.year, obj.month);
+  APP.data[k] = {
+    source: obj.source || sourceFallback || "Receita Federal",
+    sourceUrl: obj.sourceUrl || officialUrl(),
+    updated: obj.updated || new Date().toLocaleDateString('pt-BR'),
+    critical: obj.critical || null,
+    dates: obj.dates
+  };
+  APP.currentYear = obj.year;
+  APP.currentMonth = obj.month;
+  saveToStorage();
+}
+async function loadSharedMonth(year, month, options = {}){
+  try{
+    const url = `/api/agenda-tributaria?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`;
+    const response = await fetch(url, {headers:{accept:'application/json'}});
+    if(!response.ok) return false;
+    const obj = await response.json().catch(()=>null);
+    if(!obj || !obj.month || !obj.year || !obj.dates) return false;
+    applyMonthPayload(obj, obj.cached ? "Cache compartilhado" : "Receita Federal");
+    updateMonthDisplay();
+    renderCalendar();
+    return true;
+  }catch(error){
+    if(!options.silent) console.warn("Agenda compartilhada indisponivel:", error);
+    return false;
+  }
+}
 loadFromStorage();
 
 /* ========================================================================
@@ -1094,6 +1124,7 @@ function changeMonth(delta){
   APP.currentYear = y;
   updateMonthDisplay();
   renderCalendar();
+  loadSharedMonth(APP.currentYear, APP.currentMonth, {silent:true});
 }
 document.getElementById('prevMonth').addEventListener('click', ()=>changeMonth(-1));
 document.getElementById('nextMonth').addEventListener('click', ()=>changeMonth(1));
@@ -1193,23 +1224,13 @@ document.getElementById('btnFetchRfbMonth')?.addEventListener('click', async ()=
   button.disabled = true;
 
   try{
-    const url = `/.netlify/functions/rfb-agenda?year=${encodeURIComponent(APP.currentYear)}&month=${encodeURIComponent(APP.currentMonth)}`;
+    const url = `/api/agenda-tributaria?refresh=1&year=${encodeURIComponent(APP.currentYear)}&month=${encodeURIComponent(APP.currentMonth)}`;
     const response = await fetch(url, {headers:{accept:'application/json'}});
     const obj = await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(obj.error || response.statusText || 'Falha na busca.');
     if(!obj.month || !obj.year || !obj.dates) throw new Error('A resposta da RFB nao retornou dados de agenda.');
 
-    const k = key(obj.year, obj.month);
-    APP.data[k] = {
-      source: obj.source || 'Receita Federal',
-      sourceUrl: obj.sourceUrl || officialUrl(),
-      updated: obj.updated || new Date().toLocaleDateString('pt-BR'),
-      critical: obj.critical || null,
-      dates: obj.dates
-    };
-    APP.currentYear = obj.year;
-    APP.currentMonth = obj.month;
-    saveToStorage();
+    applyMonthPayload(obj, 'Receita Federal');
     updateMonthDisplay();
     renderCalendar();
     closeModal('updateModal');
@@ -1228,17 +1249,7 @@ document.getElementById('btnDoImport').addEventListener('click', ()=>{
   try{
     const obj = JSON.parse(txt);
     if(!obj.month || !obj.year || !obj.dates) throw new Error("JSON precisa ter os campos: month, year, dates");
-    const k = key(obj.year, obj.month);
-    APP.data[k] = {
-      source: obj.source || "Importado manualmente",
-      sourceUrl: obj.sourceUrl || officialUrl(),
-      updated: obj.updated || new Date().toLocaleDateString('pt-BR'),
-      critical: obj.critical || null,
-      dates: obj.dates
-    };
-    saveToStorage();
-    APP.currentYear = obj.year;
-    APP.currentMonth = obj.month;
+    applyMonthPayload(obj, "Importado manualmente");
     updateMonthDisplay();
     renderCalendar();
     closeModal('updateModal');
@@ -1302,6 +1313,7 @@ document.getElementById('btnInstall').addEventListener('click', ()=>{
    ======================================================================== */
 updateMonthDisplay();
 renderCalendar();
+loadSharedMonth(APP.currentYear, APP.currentMonth, {silent:true});
 </script>
 </body>
 </html>
