@@ -204,13 +204,44 @@ function dbGetAll(){return new Promise((res,rej)=>{const req=db.transaction("eve
 function dbPut(ev){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").put(ev);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function dbDelete(id){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").delete(id);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function notifyParentTasksChanged(detail){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"hub:tasks",...(detail||{})},window.location.origin);}catch(e){}}
+function normalizeHubSyncedEvent(raw){
+  const hub=raw&&typeof raw.hub==="object"&&raw.hub?raw.hub:{};
+  const attachments=Array.isArray(raw?.attachments)?raw.attachments.map(att=>({
+    name:String(att?.name||"Anexo"),
+    type:typeof att?.type==="string"?att.type:"",
+    dataUrl:typeof att?.dataUrl==="string"?att.dataUrl:"",
+    size:Number(att?.size||0)
+  })):[];
+  return {
+    id:String(raw?.id||uid()),
+    title:String(raw?.title||"Sem titulo"),
+    date:String(raw?.date||new Date().toISOString()),
+    description:String(raw?.description||""),
+    category:String(raw?.category||"personal"),
+    attachments,
+    hub
+  };
+}
+function applyHubSyncedEvents(rawEvents){
+  events=(Array.isArray(rawEvents)?rawEvents:[]).map(normalizeHubSyncedEvent);
+  renderMonth();
+  if(view==="agenda")renderAgenda();
+  if(view==="reminders")renderRemindersList();
+}
+window.addEventListener("message",event=>{
+  if(event.origin!==window.location.origin)return;
+  if(event.data?.type==="hub:tasks-sync"){
+    applyHubSyncedEvents(event.data.events);
+  }
+});
 
 // ---- Init ----
 openDB().then(()=>dbGetAll()).then(evs=>{
-  events=evs||[];
+  events=HUB_EMBEDDED?[]:(evs||[]);
   updateNotifBadge();
   setFavicon();
   renderMonth();
+  if(HUB_EMBEDDED)notifyParentTasksChanged({action:"ready"});
   if("Notification" in window && Notification.permission==="default"){
     Notification.requestPermission().then(p=>{notifPerm=p;updateNotifBadge();});
   }
