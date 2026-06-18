@@ -3977,6 +3977,95 @@ body {
   background: var(--bg-soft);
 }
 
+.pomodoro-floating-notes {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 80;
+  width: min(420px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 22px 70px rgb(15 31 55 / 22%);
+  overflow: hidden;
+}
+
+.pomodoro-floating-notes__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.pomodoro-floating-notes__header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pomodoro-floating-notes__header strong {
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.pomodoro-floating-notes__header span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pomodoro-floating-notes__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pomodoro-floating-notes__actions button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.pomodoro-floating-notes__actions button:first-child {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: white;
+}
+
+.pomodoro-floating-notes__editor {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+  color: var(--text);
+  line-height: 1.55;
+  outline: none;
+}
+
+.pomodoro-floating-notes__editor:empty::before {
+  content: "Escreva aqui...";
+  color: var(--muted);
+}
+
+.pomodoro-floating-notes__status {
+  border-top: 1px solid var(--border);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 10px 14px;
+}
+
 @media (max-width: 1120px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
@@ -4040,5 +4129,11 @@ body {
   .admin-user > .status-pill,
   .admin-user > .record-actions {
     grid-column: 2;
+  }
+
+  .pomodoro-floating-notes {
+    inset: 12px;
+    width: auto;
+    height: auto;
   }
 }

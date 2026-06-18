@@ -346,6 +346,8 @@ const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: s
   coord: { title: "Coordenacao tributaria", src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}` }
 };
 
+const POMODORO_STORAGE_KEY = "pomo_complete_data_v7";
+
 const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: "admin", label: "Administrador" },
   { value: "gestor", label: "Gestor" },
@@ -372,6 +374,9 @@ export function App() {
   const [usersVersion, setUsersVersion] = useState(0);
   const [hubUsers, setHubUsers] = useState<HubProfile[]>([]);
   const [notificationItems, setNotificationItems] = useState<HubNotification[]>([]);
+  const [pomodoroNotesOpen, setPomodoroNotesOpen] = useState(false);
+  const [pomodoroNotes, setPomodoroNotes] = useState("");
+  const [pomodoroNotesStatus, setPomodoroNotesStatus] = useState("");
 
   useEffect(() => {
     function handleLembretesChange() {
@@ -407,6 +412,21 @@ export function App() {
 
     window.addEventListener("hub:users", handleUsersChange);
     return () => window.removeEventListener("hub:users", handleUsersChange);
+  }, []);
+
+  useEffect(() => {
+    function handlePomodoroMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "hub:pomodoro-notes-float") return;
+
+      const incomingNotes = typeof event.data.notes === "string" ? event.data.notes : readPomodoroNotes();
+      setPomodoroNotes(incomingNotes);
+      setPomodoroNotesStatus("");
+      setPomodoroNotesOpen(true);
+    }
+
+    window.addEventListener("message", handlePomodoroMessage);
+    return () => window.removeEventListener("message", handlePomodoroMessage);
   }, []);
 
   useEffect(() => {
@@ -490,6 +510,17 @@ export function App() {
     await markAllAppNotificationsRead(user, ids);
   }
 
+  function handlePomodoroNotesSave() {
+    savePomodoroNotes(pomodoroNotes);
+    setPomodoroNotesStatus("Anotacoes salvas.");
+  }
+
+  function handlePomodoroNotesClose() {
+    savePomodoroNotes(pomodoroNotes);
+    setPomodoroNotesOpen(false);
+    setPomodoroNotesStatus("");
+  }
+
   return (
     <div className={`app-shell ${menuCollapsed ? "app-shell--collapsed" : ""}`}>
       <aside className={`sidebar ${menuOpen ? "sidebar--open" : ""} ${menuCollapsed ? "sidebar--collapsed" : ""}`}>
@@ -564,8 +595,88 @@ export function App() {
         />
         <section className="workspace-body">{renderRoute(route, user, hubUsers, handleRoute)}</section>
       </main>
+      <PomodoroFloatingNotes
+        notes={pomodoroNotes}
+        open={pomodoroNotesOpen}
+        status={pomodoroNotesStatus}
+        onChange={setPomodoroNotes}
+        onClose={handlePomodoroNotesClose}
+        onSave={handlePomodoroNotesSave}
+      />
     </div>
   );
+}
+
+function PomodoroFloatingNotes({
+  notes,
+  open,
+  status,
+  onChange,
+  onClose,
+  onSave
+}: {
+  notes: string;
+  open: boolean;
+  status: string;
+  onChange: (notes: string) => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open || !editorRef.current) return;
+    if (editorRef.current.innerHTML !== notes) {
+      editorRef.current.innerHTML = notes;
+    }
+  }, [notes, open]);
+
+  if (!open) return null;
+
+  return (
+    <section className="pomodoro-floating-notes" aria-label="Anotacoes flutuantes do Pomodoro">
+      <header className="pomodoro-floating-notes__header">
+        <div>
+          <strong>Anotacoes</strong>
+          <span>Pomodoro</span>
+        </div>
+        <div className="pomodoro-floating-notes__actions">
+          <button type="button" onClick={onSave}>
+            Salvar
+          </button>
+          <button type="button" onClick={onClose}>
+            Fechar
+          </button>
+        </div>
+      </header>
+      <div
+        className="pomodoro-floating-notes__editor"
+        contentEditable
+        ref={editorRef}
+        suppressContentEditableWarning
+        onInput={(event) => onChange(event.currentTarget.innerHTML)}
+      />
+      {status ? <div className="pomodoro-floating-notes__status">{status}</div> : null}
+    </section>
+  );
+}
+
+function readPomodoroNotes() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(POMODORO_STORAGE_KEY) || "{}") as { notes?: string };
+    return parsed.notes || "";
+  } catch {
+    return "";
+  }
+}
+
+function savePomodoroNotes(notes: string) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(POMODORO_STORAGE_KEY) || "{}") as Record<string, unknown>;
+    localStorage.setItem(POMODORO_STORAGE_KEY, JSON.stringify({ ...parsed, notes }));
+  } catch {
+    localStorage.setItem(POMODORO_STORAGE_KEY, JSON.stringify({ notes }));
+  }
 }
 
 function LoginScreen({ onLogin }: { onLogin: (user: HubUser) => void }) {
@@ -1613,15 +1724,38 @@ function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[]; kind
 
 function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; onNavigate: (route: HubRoute) => void; user: HubUser }) {
   const [calendarVersion, setCalendarVersion] = useState(0);
+  const calendarFrameRef = useRef<HTMLIFrameElement | null>(null);
+
+  const syncCalendarFrame = useCallback(async () => {
+    try {
+      const items = await listAppTasks(user);
+      calendarFrameRef.current?.contentWindow?.postMessage(
+        {
+          type: "hub:tasks-sync",
+          events: items.map(taskToCalendarFrameEvent)
+        },
+        window.location.origin
+      );
+    } catch {
+      // A sidebar mostra o erro operacional; o iframe apenas deixa de sincronizar.
+    }
+  }, [user]);
 
   useEffect(() => {
     function refreshCalendarFrame() {
       setCalendarVersion((version) => version + 1);
+      window.setTimeout(() => {
+        void syncCalendarFrame();
+      }, 150);
     }
 
     function handleMessage(event: MessageEvent) {
       if (event.origin === window.location.origin && event.data?.type === "hub:tasks") {
         const action = typeof event.data.action === "string" ? event.data.action : "";
+        if (action === "ready") {
+          void syncCalendarFrame();
+          return;
+        }
         if (!action || action === "saved" || action === "deleted" || action === "refresh") {
           refreshCalendarFrame();
         }
@@ -1630,20 +1764,25 @@ function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
 
     window.addEventListener("hub:tasks", refreshCalendarFrame);
     window.addEventListener("message", handleMessage);
+    void syncCalendarFrame();
 
     return () => {
       window.removeEventListener("hub:tasks", refreshCalendarFrame);
       window.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [syncCalendarFrame]);
 
   return (
     <div className="tasks-layout">
       <div className="calendar-shell">
         <iframe
+          ref={calendarFrameRef}
           key={calendarVersion}
           src={`/apps/calendar.html?v=tasks-unified-20260618-${calendarVersion}`}
           title="Calendario de tarefas"
+          onLoad={() => {
+            void syncCalendarFrame();
+          }}
         />
       </div>
       <TaskSidebar hubUsers={hubUsers} onNavigate={onNavigate} user={user} />
@@ -1757,7 +1896,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     const normalizedQuery = normalizeForSearch(query);
     return tasks
       .filter((task) => {
-        if (filter === "minhas") return isTaskAssignedToUser(task, user);
+        if (filter === "minhas") return isTaskAssignedToUser(task, user, hubUsers);
         if (filter === "abertas") return task.status === "aberta";
         if (filter === "concluidas") return task.status === "concluida";
         return true;
@@ -1778,7 +1917,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       });
   }, [filter, hubUsers, query, tasks, user]);
 
-  const minhasTasks = useMemo(() => tasks.filter((task) => isTaskAssignedToUser(task, user)), [tasks, user]);
+  const minhasTasks = useMemo(() => tasks.filter((task) => isTaskAssignedToUser(task, user, hubUsers)), [hubUsers, tasks, user]);
   const abertasCount = tasks.filter((task) => task.status === "aberta").length;
 
   function clearFormFields() {
@@ -1796,6 +1935,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
 
   function resetForm() {
     clearFormFields();
+    setError("");
     setFormOpen(false);
   }
 
@@ -1808,11 +1948,15 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
   }
 
   function startEdit(task: TaskItem) {
+    setTaskEmailStatus("");
+
     if (!canUserManageTask(task, user)) {
+      setFormOpen(false);
       setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
       return;
     }
 
+    setError("");
     setEditingId(task.id);
     setTitulo(task.titulo);
     setDescricao(task.descricao);
@@ -5838,6 +5982,28 @@ function taskToReportRow(task: TaskItem): ReportRow {
   };
 }
 
+function taskToCalendarFrameEvent(task: TaskItem) {
+  return {
+    id: task.id,
+    title: task.titulo,
+    date: task.prazo || task.createdAt || new Date().toISOString(),
+    description: task.descricao,
+    category: task.prioridade === "alta" ? "important" : task.destaque ? "work" : "personal",
+    attachments: task.anexos.map((name) => ({ name })),
+    hub: {
+      createdBy: task.createdBy,
+      responsaveis: task.responsaveis,
+      status: task.status,
+      prioridade: task.prioridade,
+      destaque: Boolean(task.destaque),
+      origem: task.origem,
+      coordItemId: task.coordItemId,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt
+    }
+  };
+}
+
 function noticiaToReportRow(item: Noticia): ReportRow {
   return {
     Data: formatDate(item.data),
@@ -6545,8 +6711,8 @@ function canUserViewPauta(pauta: Pauta, user: HubUser) {
   return canUserViewPautaApp(pauta, user);
 }
 
-function isTaskAssignedToUser(task: TaskItem, user: HubUser) {
-  const userTokens = [user.id, user.email, user.nome].filter((value): value is string => Boolean(value)).map((value) => normalizeForSearch(value));
+function isTaskAssignedToUser(task: TaskItem, user: HubUser, profiles: HubProfile[] = []) {
+  const userTokens = getTaskUserTokens(user, profiles);
   const owner = normalizeForSearch(task.createdBy || "");
   const responsaveis = task.responsaveis.map((responsavel) => normalizeForSearch(responsavel));
 
@@ -6557,10 +6723,24 @@ function isTaskAssignedToUser(task: TaskItem, user: HubUser) {
   });
 }
 
-function isTaskOwnerForUser(task: TaskItem, user: HubUser) {
-  const userTokens = [user.id, user.email, user.nome].filter((value): value is string => Boolean(value)).map((value) => normalizeForSearch(value));
+function isTaskOwnerForUser(task: TaskItem, user: HubUser, profiles: HubProfile[] = []) {
+  const userTokens = getTaskUserTokens(user, profiles);
   const owner = normalizeForSearch(task.createdBy || "");
   return userTokens.some((token) => token && owner === token);
+}
+
+function getTaskUserTokens(user: HubUser, profiles: HubProfile[] = []) {
+  const baseTokens = [user.id, user.email, user.nome];
+  const normalizedEmail = normalizeForSearch(user.email);
+  const normalizedId = normalizeForSearch(user.id || "");
+  const matchedProfile = profiles.find((profile) => {
+    return normalizeForSearch(profile.email) === normalizedEmail || (profile.id && normalizeForSearch(profile.id) === normalizedId);
+  });
+  const profileTokens = matchedProfile
+    ? [matchedProfile.id, matchedProfile.email, matchedProfile.nome, matchedProfile.iniciais]
+    : [];
+
+  return [...new Set([...baseTokens, ...profileTokens].filter((value): value is string => Boolean(value)).map((value) => normalizeForSearch(value)))];
 }
 
 function isPautaAlta(pauta: Pauta) {
@@ -6746,8 +6926,8 @@ function buildPautaNotifications(pautas: Pauta[], user: HubUser): HubNotificatio
 function buildTaskNotifications(tasks: TaskItem[], profiles: HubProfile[], user: HubUser): HubNotification[] {
   const eventNotifications = tasks.flatMap((task) => {
     if (task.status === "concluida") return [];
-    const isOwner = isTaskOwnerForUser(task, user);
-    const isMarked = isTaskAssignedToUser(task, user);
+    const isOwner = isTaskOwnerForUser(task, user, profiles);
+    const isMarked = isTaskAssignedToUser(task, user, profiles);
     if (!isRecentIso(task.createdAt, 7) || !isMarked || isOwner) return [];
 
     return [
@@ -6770,7 +6950,7 @@ function buildTaskNotifications(tasks: TaskItem[], profiles: HubProfile[], user:
     .filter(
       (item): item is { task: TaskItem; tone: "danger" | "warning" } =>
         item.task.status !== "concluida" &&
-        (isTaskAssignedToUser(item.task, user) || user.role === "admin" || user.role === "gestor") &&
+        (isTaskAssignedToUser(item.task, user, profiles) || user.role === "admin" || user.role === "gestor") &&
         (item.tone === "danger" || item.tone === "warning")
     )
     .map(({ task, tone }) =>
