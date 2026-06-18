@@ -3870,6 +3870,8 @@ body {
 }
 
 .task-sidebar--form {
+  height: calc(100vh - 126px);
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -3885,6 +3887,9 @@ body {
   max-height: none;
   min-height: 0;
   padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .task-form--full textarea {
