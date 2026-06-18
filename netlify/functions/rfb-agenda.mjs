@@ -44,62 +44,68 @@ export default async function handler(request) {
   const url = new URL(request.url);
   const year = clampInteger(url.searchParams.get("year"), 2020, 2035, new Date().getFullYear());
   const month = clampInteger(url.searchParams.get("month"), 1, 12, new Date().getMonth() + 1);
-  const sourceUrl = buildSourceUrl(year, month);
 
   try {
-    const response = await fetch(sourceUrl, {
-      headers: {
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "user-agent": "HUB-Depto-Tributario/1.0 (+https://hub-depto-tributario-ht.netlify.app)"
-      }
+    return json(200, await fetchRfbAgenda(year, month));
+  } catch (error) {
+    return json(502, {
+      error: error?.message || "Nao foi possivel consultar a Receita Federal.",
+      sourceUrl: error?.sourceUrl || buildSourceUrl(year, month)
     });
+  }
+}
 
-    if (!response.ok) {
-      return json(response.status, { error: `Receita Federal respondeu ${response.status}.`, sourceUrl });
+export async function fetchRfbAgenda(year, month) {
+  const sourceUrl = buildSourceUrl(year, month);
+  const response = await fetch(sourceUrl, {
+    headers: {
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "user-agent": "HUB-Depto-Tributario/1.0 (+https://hub-depto-tributario-ht.netlify.app)"
     }
+  });
 
-    const html = await response.text();
-    const dates = parseAgendaHtml(html, year, month);
+  if (!response.ok) {
+    const error = new Error(`Receita Federal respondeu ${response.status}.`);
+    error.sourceUrl = sourceUrl;
+    throw error;
+  }
 
-    if (!Object.keys(dates).length) {
-      return json(200, {
-        year,
-        month,
-        source: "Receita Federal",
-        sourceUrl,
-        updated: new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
-        critical: null,
-        dates: {
-          1: [
-            {
-              cat: "pj-fed",
-              title: "Agenda Tributaria RFB - consultar fonte oficial",
-              periodo: `${MONTH_SLUGS[month]}/${year}`,
-              doc: "Receita Federal",
-              base: "Fonte oficial",
-              desc: "A pagina oficial foi acessada, mas o parser nao identificou vencimentos estruturados. Abra a fonte oficial para conferir e use a importacao manual se necessario."
-            }
-          ]
-        },
-        warning: "Parser nao encontrou eventos estruturados na pagina oficial."
-      });
-    }
+  const html = await response.text();
+  const dates = parseAgendaHtml(html, year, month);
 
-    return json(200, {
+  if (!Object.keys(dates).length) {
+    return {
       year,
       month,
       source: "Receita Federal",
       sourceUrl,
       updated: new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
-      critical: buildCritical(dates),
-      dates
-    });
-  } catch (error) {
-    return json(502, {
-      error: error?.message || "Nao foi possivel consultar a Receita Federal.",
-      sourceUrl
-    });
+      critical: null,
+      dates: {
+        1: [
+          {
+            cat: "pj-fed",
+            title: "Agenda Tributaria RFB - consultar fonte oficial",
+            periodo: `${MONTH_SLUGS[month]}/${year}`,
+            doc: "Receita Federal",
+            base: "Fonte oficial",
+            desc: "A pagina oficial foi acessada, mas o parser nao identificou vencimentos estruturados. Abra a fonte oficial para conferir e use a importacao manual se necessario."
+          }
+        ]
+      },
+      warning: "Parser nao encontrou eventos estruturados na pagina oficial."
+    };
   }
+
+  return {
+    year,
+    month,
+    source: "Receita Federal",
+    sourceUrl,
+    updated: new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+    critical: buildCritical(dates),
+    dates
+  };
 }
 
 function parseAgendaHtml(html, year, month) {
