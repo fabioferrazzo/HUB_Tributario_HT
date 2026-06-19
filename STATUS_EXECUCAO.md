@@ -315,3 +315,9 @@
 - Homologacao final: em 28/05/2026, roteiro/checklist/manual foram alinhados com Pautas nativas, Calendario de Tarefas, Coordenacao espelhada e ausencia de dependencia ativa do Sheets.
 - Agenda Tributaria: em 19/06/2026, preparada integracao Make/RFB com cache Supabase `agenda_tributaria_cache`, endpoint Netlify `/api/agenda-tributaria`, token `AGENDA_SYNC_TOKEN` e guia operacional para atualizacao mensal automatizada.
 - Supabase: em 19/06/2026, `supabase/check_hub_status.sql` passou a validar a tabela/cache da Agenda Tributaria, colunas essenciais e trigger de `updated_at`.
+- Saude operacional: em 19/06/2026, painel de Configuracoes atualizado com versao `2026-06-19-agenda-make-pomodoro`, checklist de Agenda Tributaria/Make e cartao operacional especifico para o endpoint `/api/agenda-tributaria`.
+- Pomodoro: em 19/06/2026, janela flutuante de anotacoes ajustada para fundo branco opaco, sem translucidez sobre os demais menus do HUB.
+- Manual operacional: em 19/06/2026, rotina diaria/semanal atualizada com verificacao da Agenda Tributaria, cenario Make mensal e notas flutuantes do Pomodoro.
+- Homologacao: em 19/06/2026, roteiro externo e checklist interno em Configuracoes alinhados com Agenda Tributaria/Make e Pomodoro flutuante.
+- `npm.cmd run typecheck`: OK em 19/06/2026 apos checklist Pomodoro/Agenda.
+- `npm.cmd run build`: OK em 19/06/2026 apos checklist Pomodoro/Agenda.

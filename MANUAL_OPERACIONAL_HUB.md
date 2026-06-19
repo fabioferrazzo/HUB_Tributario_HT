@@ -23,7 +23,12 @@ Este manual resume a rotina de administracao do HUB sem substituir o checklist d
    - Enfileirar vencimentos, se necessario.
    - Processar pendentes quando a fila estiver validada.
 
-5. Registrar a rodada.
+5. Conferir Agenda Tributaria.
+   - Abrir `Agenda tributaria`.
+   - Confirmar se o mes atual carregou do cache compartilhado.
+   - Usar o botao de atualizacao manual apenas quando for necessario recarregar a base da RFB.
+
+6. Registrar a rodada.
    - Usar `Configuracoes > Checklist funcional`.
    - Marcar cada item como `OK`, `Ajustar`, `Falhou` ou `Pendente`.
    - Copiar o resumo ao final.
@@ -48,6 +53,16 @@ Este manual resume a rotina de administracao do HUB sem substituir o checklist d
 4. Rodapes.
    - Conferir noticias tributarias.
    - Conferir legislacoes da Reforma Tributaria.
+
+5. Agenda Tributaria e Make.
+   - Conferir se o cenario mensal do Make esta ativo.
+   - Confirmar que ele chama `/api/agenda-tributaria` com `AGENDA_SYNC_TOKEN`.
+   - Depois da execucao, abrir a Agenda no HUB e validar o mes atualizado.
+
+6. Pomodoro.
+   - Testar a sidebar de anotacoes dentro do Pomodoro.
+   - Acionar a janela flutuante, navegar por outro menu e confirmar que a anotacao permanece visivel, opaca e editavel.
+   - Salvar, fechar e reabrir para confirmar persistencia.
 
 ## Antes do deploy final
 

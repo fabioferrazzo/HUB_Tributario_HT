@@ -20,6 +20,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 - `supabase/check_hub_status.sql`: `OK`
 - Netlify builds pausados para economia de creditos: confirmar visualmente no Netlify
 - Apos o deploy final, o menu lateral deve exibir `Pautas` e `Calendario de Tarefas`, com Pautas nativas sem dependencia ativa do Sheets.
+- Agenda Tributaria deve ter `AGENDA_SYNC_TOKEN` configurado no Netlify e no Make, quando a automacao mensal for ativada.
 
 ## Bloco 1 - Login e perfis
 
@@ -130,7 +131,29 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Colaborador cria link pessoal | Pendente |
 | Colaborador edita/exclui apenas link pessoal | Pendente |
 
-## Bloco 8 - Rodapes
+## Bloco 8 - Agenda Tributaria
+
+| Teste | Resultado |
+| --- | --- |
+| Menu Agenda tributaria abre sem erro | Pendente |
+| Mes atual carrega dados do cache compartilhado quando disponivel | Pendente |
+| Botao de atualizar mes chama a Function da RFB | Pendente |
+| Falha da Function preserva fallback/local sem quebrar a tela | Pendente |
+| Make mensal chama `/api/agenda-tributaria` com `AGENDA_SYNC_TOKEN` | Pendente |
+| Depois do Make, agenda abre com dados atualizados para o mes sincronizado | Pendente |
+
+## Bloco 9 - Pomodoro
+
+| Teste | Resultado |
+| --- | --- |
+| Pomodoro abre sem erro | Pendente |
+| Sidebar de anotacoes abre dentro do Pomodoro | Pendente |
+| Botao flutuante abre anotacoes sobre outros menus | Pendente |
+| Janela flutuante fica opaca, legivel e sem transparencia | Pendente |
+| Botao salvar persiste o texto editado | Pendente |
+| Botao fechar recolhe a janela e preserva anotacoes | Pendente |
+
+## Bloco 10 - Rodapes
 
 | Teste | Resultado |
 | --- | --- |
@@ -145,7 +168,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Titulos de legislacoes mostram norma/data | Pendente |
 | Sidebar de legislacoes exporta PDF/XLSX | Pendente |
 
-## Bloco 9 - Notificacoes
+## Bloco 11 - Notificacoes
 
 | Teste | Resultado |
 | --- | --- |
@@ -159,7 +182,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Enviar notificacoes por e-mail | Pendente |
 | Notificacoes antigas sao removidas apos 5 dias pela rotina de sincronizacao | Pendente |
 
-## Bloco 10 - E-mails
+## Bloco 12 - E-mails
 
 | Teste | Resultado |
 | --- | --- |
@@ -172,7 +195,7 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Consultar/processar fila tambem funciona com `EMAIL_DISPATCH_TOKEN` colado | Pendente |
 | `email_outbox` registra `sent` em modo teste | Pendente |
 
-## Bloco 11 - Coordenacao Tributaria
+## Bloco 13 - Coordenacao Tributaria
 
 | Teste | Resultado |
 | --- | --- |
