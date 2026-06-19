@@ -206,8 +206,8 @@ type HomologationBlock = {
 };
 
 const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
-const APP_RELEASE_LABEL = "2026-05-21-ajustes-homologacao";
-const APP_RELEASE_DATE = "21/05/2026";
+const APP_RELEASE_LABEL = "2026-06-19-agenda-make-pomodoro";
+const APP_RELEASE_DATE = "19/06/2026";
 
 const dailyOperationalGuide = [
   {
@@ -221,6 +221,10 @@ const dailyOperationalGuide = [
   {
     title: "Rodar e-mails do dia",
     detail: "No console de Lembretes e e-mails, consultar fila, enfileirar vencimentos e processar pendentes quando necessario."
+  },
+  {
+    title: "Conferir Agenda Tributaria",
+    detail: "Abrir Agenda tributaria e confirmar se o mes atual foi carregado do cache compartilhado ou atualizado pela RFB."
   },
   {
     title: "Registrar homologacao",
@@ -240,6 +244,10 @@ const weeklyOperationalGuide = [
   {
     title: "Revisar Coordenacao",
     detail: "Atualizar colaboradores, atividades, pautas e usar os botoes manuais de e-mail quando a comunicacao estiver pronta."
+  },
+  {
+    title: "Conferir Make da Agenda",
+    detail: "Verificar se o cenario mensal esta ativo e chamando /api/agenda-tributaria com o AGENDA_SYNC_TOKEN."
   },
   {
     title: "Preflight antes de deploy",
@@ -298,6 +306,15 @@ const homologationBlocks: HomologationBlock[] = [
       { id: "email-fila", title: "Fila email_outbox", detail: "Consultar, enfileirar vencimentos e processar fila." },
       { id: "email-manual", title: "Envio manual", detail: "Disparo pontual pelo console operacional." },
       { id: "notificacoes", title: "Sino", detail: "Contador, marcar lida e visibilidade por usuario." }
+    ]
+  },
+  {
+    id: "agenda-tributaria",
+    title: "Agenda Tributaria",
+    items: [
+      { id: "agenda-cache", title: "Cache compartilhado", detail: "Mes abre com dados persistidos em agenda_tributaria_cache quando disponivel." },
+      { id: "agenda-rfb", title: "Atualizacao RFB", detail: "Botao de atualizar busca RFB e preserva fallback local se a Function falhar." },
+      { id: "agenda-make", title: "Make mensal", detail: "Cenario mensal chama /api/agenda-tributaria com AGENDA_SYNC_TOKEN configurado." }
     ]
   },
   {
@@ -5915,6 +5932,12 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordH
       area: "Rodapes",
       status: "Automacao ativa",
       detail: "Noticias tributarias e legislacoes oficiais sao atualizadas pela funcao refresh-updates e exibidas nos rodapes/sidebars.",
+      tone: "info"
+    },
+    {
+      area: "Agenda Tributaria",
+      status: "Make/RFB preparado",
+      detail: "Agenda usa o endpoint /api/agenda-tributaria e o cache agenda_tributaria_cache; configure AGENDA_SYNC_TOKEN no Netlify e no Make.",
       tone: "info"
     },
     {
