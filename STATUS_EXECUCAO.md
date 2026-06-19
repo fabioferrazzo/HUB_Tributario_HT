@@ -313,3 +313,5 @@
 - `npm.cmd run preflight`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
 - `npm.cmd run build`: OK em 28/05/2026 apos sincronizacao de anexos Coordenacao/Pautas.
 - Homologacao final: em 28/05/2026, roteiro/checklist/manual foram alinhados com Pautas nativas, Calendario de Tarefas, Coordenacao espelhada e ausencia de dependencia ativa do Sheets.
+- Agenda Tributaria: em 19/06/2026, preparada integracao Make/RFB com cache Supabase `agenda_tributaria_cache`, endpoint Netlify `/api/agenda-tributaria`, token `AGENDA_SYNC_TOKEN` e guia operacional para atualizacao mensal automatizada.
+- Supabase: em 19/06/2026, `supabase/check_hub_status.sql` passou a validar a tabela/cache da Agenda Tributaria, colunas essenciais e trigger de `updated_at`.
