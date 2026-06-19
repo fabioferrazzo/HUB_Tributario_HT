@@ -3988,9 +3988,12 @@ body {
   flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--panel);
+  background: #ffffff;
+  isolation: isolate;
   box-shadow: 0 22px 70px rgb(15 31 55 / 22%);
   overflow: hidden;
+  opacity: 1;
+  backdrop-filter: none;
 }
 
 .pomodoro-floating-notes__header {
@@ -4000,7 +4003,7 @@ body {
   gap: 12px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-soft);
+  background: #f8f6f0;
 }
 
 .pomodoro-floating-notes__header > div:first-child {
@@ -4029,7 +4032,7 @@ body {
 .pomodoro-floating-notes__actions button {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--panel);
+  background: #ffffff;
   color: var(--navy);
   cursor: pointer;
   font-size: 12px;
@@ -4048,6 +4051,7 @@ body {
   min-height: 0;
   overflow: auto;
   padding: 18px;
+  background: #ffffff;
   color: var(--text);
   line-height: 1.55;
   outline: none;
@@ -4060,6 +4064,7 @@ body {
 
 .pomodoro-floating-notes__status {
   border-top: 1px solid var(--border);
+  background: #ffffff;
   color: var(--success);
   font-size: 12px;
   font-weight: 800;
