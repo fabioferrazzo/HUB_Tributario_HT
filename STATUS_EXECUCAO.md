@@ -321,3 +321,10 @@
 - Homologacao: em 19/06/2026, roteiro externo e checklist interno em Configuracoes alinhados com Agenda Tributaria/Make e Pomodoro flutuante.
 - `npm.cmd run typecheck`: OK em 19/06/2026 apos checklist Pomodoro/Agenda.
 - `npm.cmd run build`: OK em 19/06/2026 apos checklist Pomodoro/Agenda.
+- GitHub: em 19/06/2026, usuario informou upload dos arquivos do bloco Pomodoro/Agenda; `.gitignore` e `.env.example` ficaram monitorados porque o upload web do GitHub bloqueou arquivos ocultos, mas ambos existem no workspace local e ja constavam em versoes anteriores.
+- Sanidade: em 19/06/2026, busca local nao encontrou referencias ativas antigas a `tasks`, `Sheets HUB`, `CSV HUB` ou `SHEETS` em `src`, `public`, `netlify` e `supabase`.
+- `npm.cmd run typecheck`: OK em 19/06/2026 apos conferencia de upload/arquivos ocultos.
+- Saude operacional: em 19/06/2026, painel de Configuracoes passou a exibir o host Supabase ativo e alertar se o HUB nao estiver apontando para `kgorlrpparhcrprwamlc.supabase.co`.
+- `npm.cmd run typecheck`: OK em 19/06/2026 apos indicador de projeto Supabase ativo.
+- `npm.cmd run preflight`: OK em 19/06/2026 apos indicador de projeto Supabase ativo.
+- `npm.cmd run build`: OK em 19/06/2026 apos indicador de projeto Supabase ativo.
