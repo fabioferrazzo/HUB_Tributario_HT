@@ -204,6 +204,7 @@ function dbGetAll(){return new Promise((res,rej)=>{const req=db.transaction("eve
 function dbPut(ev){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").put(ev);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function dbDelete(id){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").delete(id);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function notifyParentTasksChanged(detail){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"hub:tasks",...(detail||{})},window.location.origin);}catch(e){}}
+function requestHubSync(){if(HUB_EMBEDDED)notifyParentTasksChanged({action:"ready"});}
 function normalizeHubSyncedEvent(raw){
   const hub=raw&&typeof raw.hub==="object"&&raw.hub?raw.hub:{};
   const attachments=Array.isArray(raw?.attachments)?raw.attachments.map(att=>({
@@ -234,6 +235,8 @@ window.addEventListener("message",event=>{
     applyHubSyncedEvents(event.data.events);
   }
 });
+window.addEventListener("focus",requestHubSync);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)requestHubSync();});
 
 // ---- Init ----
 openDB().then(()=>dbGetAll()).then(evs=>{
@@ -241,7 +244,7 @@ openDB().then(()=>dbGetAll()).then(evs=>{
   updateNotifBadge();
   setFavicon();
   renderMonth();
-  if(HUB_EMBEDDED)notifyParentTasksChanged({action:"ready"});
+  requestHubSync();
   if("Notification" in window && Notification.permission==="default"){
     Notification.requestPermission().then(p=>{notifPerm=p;updateNotifBadge();});
   }
@@ -348,7 +351,7 @@ function renderDayPanel(){
   document.getElementById("day-panel-title").textContent=selDate.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
   const container=document.getElementById("day-events");container.innerHTML="";
   const evs=getSelEvs();
-  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa. Clique duplo em qualquer dia para criar.</div>';return;}
+  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa neste dia. Use duplo clique no calendario ou + Nova tarefa na sidebar.</div>';return;}
   evs.forEach(ev=>container.appendChild(makeEvCard(ev,false)));
 }
 
