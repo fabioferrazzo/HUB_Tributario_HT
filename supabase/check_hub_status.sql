@@ -14,6 +14,7 @@ with required_objects as (
       ('table', 'arquivo_anotacoes', 'Tabela public.arquivo_anotacoes'),
       ('table', 'links_uteis', 'Tabela public.links_uteis'),
       ('table', 'noticias', 'Tabela public.noticias'),
+      ('table', 'agenda_tributaria_cache', 'Tabela public.agenda_tributaria_cache'),
       ('table', 'notificacoes', 'Tabela public.notificacoes'),
       ('table', 'email_outbox', 'Tabela public.email_outbox'),
       ('table', 'tarefas', 'Tabela public.tarefas'),
@@ -33,6 +34,8 @@ with required_objects as (
       ('column', 'tarefas.coord_item_id', 'Coluna public.tarefas.coord_item_id'),
       ('column', 'coord_itens.integrar_calendario', 'Coluna public.coord_itens.integrar_calendario'),
       ('column', 'coord_itens.tarefa_id', 'Coluna public.coord_itens.tarefa_id'),
+      ('column', 'agenda_tributaria_cache.dates', 'Coluna public.agenda_tributaria_cache.dates'),
+      ('column', 'agenda_tributaria_cache.synced_at', 'Coluna public.agenda_tributaria_cache.synced_at'),
       ('function', 'is_admin', 'Funcao public.is_admin'),
       ('function', 'is_manager', 'Funcao public.is_manager'),
       ('function', 'is_active_user', 'Funcao public.is_active_user'),
@@ -53,6 +56,7 @@ with required_objects as (
       ('function', 'can_complete_pauta', 'Funcao public.can_complete_pauta'),
       ('function', 'notify_pauta_conclusion', 'Funcao public.notify_pauta_conclusion'),
       ('function', 'purge_old_notifications', 'Funcao public.purge_old_notifications'),
+      ('function', 'touch_agenda_tributaria_cache_updated_at', 'Funcao public.touch_agenda_tributaria_cache_updated_at'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
