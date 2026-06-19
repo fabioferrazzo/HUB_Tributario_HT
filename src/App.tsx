@@ -318,6 +318,16 @@ const homologationBlocks: HomologationBlock[] = [
     ]
   },
   {
+    id: "pomodoro",
+    title: "Pomodoro",
+    items: [
+      { id: "pomodoro-open", title: "App Pomodoro", detail: "Menu Pomodoro abre sem erro dentro do HUB." },
+      { id: "pomodoro-notes", title: "Anotacoes", detail: "Sidebar de anotacoes abre, edita e salva o conteudo." },
+      { id: "pomodoro-floating", title: "Janela flutuante", detail: "Anotacoes ficam flutuantes, opacas e acessiveis ao navegar por outros menus." },
+      { id: "pomodoro-return", title: "Retorno ao painel", detail: "Fechar a janela flutuante recolhe para o Pomodoro preservando o texto salvo." }
+    ]
+  },
+  {
     id: "coordenacao",
     title: "Coordenacao Tributaria",
     items: [
