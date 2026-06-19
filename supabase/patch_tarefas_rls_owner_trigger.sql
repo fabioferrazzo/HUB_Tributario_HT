@@ -303,7 +303,7 @@ begin
     'tarefa',
     t.id::text,
     'tarefa_assigned:' || t.id::text || ':' || new.user_id::text,
-    'tasks',
+    'tarefas',
     'info',
     true,
     now(),

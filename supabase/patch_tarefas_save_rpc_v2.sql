@@ -146,7 +146,7 @@ begin
     'tarefa',
     t.id::text,
     'tarefa_assigned:' || t.id::text || ':' || tu.user_id::text,
-    'tasks',
+    'tarefas',
     'info',
     true,
     now(),
