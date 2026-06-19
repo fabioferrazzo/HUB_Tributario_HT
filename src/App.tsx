@@ -76,6 +76,7 @@ import {
 } from "./lib/tarefasRepository";
 import { listAppUpdates } from "./lib/updatesRepository";
 import { getUsersSource, listAppUsers, resetAppUserPassword, saveAppUserWithOptions, setAppUserActive } from "./lib/usersRepository";
+import { configuredSupabaseHost } from "./lib/supabase";
 import type {
   FileFolder,
   FileResource,
@@ -208,6 +209,7 @@ type HomologationBlock = {
 const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
 const APP_RELEASE_LABEL = "2026-06-19-agenda-make-pomodoro";
 const APP_RELEASE_DATE = "19/06/2026";
+const HUB_SUPABASE_HOST = "kgorlrpparhcrprwamlc.supabase.co";
 
 const dailyOperationalGuide = [
   {
@@ -5890,6 +5892,15 @@ function buildOperationalHealthChecks(user: HubUser, users: HubProfile[], coordH
       status: APP_RELEASE_LABEL,
       detail: `Pacote preparado em ${APP_RELEASE_DATE}; use esta etiqueta para confirmar se o navegador/Netlify carregou a versao correta.`,
       tone: "info"
+    },
+    {
+      area: "Projeto Supabase",
+      status: configuredSupabaseHost,
+      detail:
+        configuredSupabaseHost === HUB_SUPABASE_HOST
+          ? "Conectado ao projeto correto do HUB Depto Tributario."
+          : `Revise o Netlify: este HUB deve usar ${HUB_SUPABASE_HOST}, nao o projeto futuro do app substituto do Sheets.`,
+      tone: configuredSupabaseHost === HUB_SUPABASE_HOST ? "ok" : "warning"
     },
     {
       area: "Usuarios e perfis",
