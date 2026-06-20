@@ -789,11 +789,11 @@
             <div class="panel-body">
               <form id="emailForm" class="stack-form">
                 <label>Destinatario<input id="emailTo" type="email" required /></label>
-                <label>Token de envio<input id="emailToken" type="password" placeholder="EMAIL_DISPATCH_TOKEN" /></label>
+                <label>Token de envio opcional<input id="emailToken" type="password" placeholder="EMAIL_DISPATCH_TOKEN, se nao houver sessao" /></label>
                 <button type="button" class="primary" id="sendAgendaEmail">Enviar pauta por e-mail</button>
                 <button type="button" id="sendEvaluationEmail">Enviar avaliacoes por e-mail</button>
               </form>
-              <p class="subtitle">O envio usa a funcao interna <strong>coord-email</strong> e a fila <strong>email_outbox</strong>.</p>
+              <p class="subtitle">O envio usa a sessao do HUB quando disponivel. O token fica apenas como contingencia operacional.</p>
             </div>
           </aside>
         </div>
@@ -1627,11 +1627,12 @@
 
       async function sendEmail(kind) {
         const to = refs.emailTo.value.trim();
+        syncState.token = syncState.token || readStoredAuthToken();
         const token = refs.emailToken.value.trim() || localStorage.getItem(EMAIL_TOKEN_KEY) || "";
         if (!to) return showNotice("Informe o destinatario do e-mail.", true);
-        if (!token) return showNotice("Informe o EMAIL_DISPATCH_TOKEN para envio manual.", true);
+        if (!token && !syncState.token) return showNotice("Sessao do HUB nao encontrada. Informe o EMAIL_DISPATCH_TOKEN apenas se precisar usar a contingencia.", true);
 
-        localStorage.setItem(EMAIL_TOKEN_KEY, token);
+        if (token) localStorage.setItem(EMAIL_TOKEN_KEY, token);
         const report = buildReportText();
         const subject = kind === "pautas" ? "Pautas da Coordenacao Tributaria" : "Avaliacoes da Coordenacao Tributaria";
         const body =
