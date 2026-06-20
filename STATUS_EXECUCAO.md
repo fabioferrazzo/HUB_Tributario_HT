@@ -328,3 +328,7 @@
 - `npm.cmd run typecheck`: OK em 19/06/2026 apos indicador de projeto Supabase ativo.
 - `npm.cmd run preflight`: OK em 19/06/2026 apos indicador de projeto Supabase ativo.
 - `npm.cmd run build`: OK em 19/06/2026 apos indicador de projeto Supabase ativo.
+- Coordenacao/e-mails: em 19/06/2026, o app standalone da Coordenacao passou a usar a sessao Supabase do HUB para envio manual de e-mails quando disponivel; `EMAIL_DISPATCH_TOKEN` permanece apenas como contingencia operacional.
+- `npm.cmd run typecheck`: OK em 19/06/2026 apos ajuste de envio manual por sessao na Coordenacao.
+- `npm.cmd run preflight`: OK em 19/06/2026 apos ajuste de envio manual por sessao na Coordenacao.
+- `npm.cmd run build`: OK em 19/06/2026 apos ajuste de envio manual por sessao na Coordenacao.
