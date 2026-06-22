@@ -332,3 +332,15 @@
 - `npm.cmd run typecheck`: OK em 19/06/2026 apos ajuste de envio manual por sessao na Coordenacao.
 - `npm.cmd run preflight`: OK em 19/06/2026 apos ajuste de envio manual por sessao na Coordenacao.
 - `npm.cmd run build`: OK em 19/06/2026 apos ajuste de envio manual por sessao na Coordenacao.
+- Planejamento: adicionado bloco futuro para Coordenacao gerar relatorio XLSX de bonificacao por template, com botao `Preencher avaliacoes`, upload do XLSX do colaborador, edicao em espelho da planilha, notas/recomendacoes e exportacao final.
+- Pautas: em 22/06/2026, ajustada regra de conclusao para impedir usuario comum de concluir pauta geral; usuario comum so conclui quando estiver marcado, e pautas ja concluidas por ele saem da sua visualizacao ativa.
+- Supabase: em 22/06/2026, criado `supabase/patch_pautas_completion_permissions.sql` para alinhar `can_complete_pauta` e a policy de insercao em `pauta_conclusoes` a regra de conclusao por usuario marcado.
+- `npm.cmd run typecheck`: OK em 22/06/2026 apos regra de conclusao de Pautas.
+- `npm.cmd run build`: OK em 22/06/2026 apos regra de conclusao de Pautas.
+- Pautas: em 22/06/2026, e-mails e relatorios exportados passaram a usar base Arial 12pt, preservando estilo global da pauta (fonte, negrito e italico) no corpo do e-mail; formulario ganhou previa visual da formatacao antes de salvar.
+- `npm.cmd run typecheck`: OK em 22/06/2026 apos ajuste de fonte/estilo de Pautas.
+- `npm.cmd run build`: OK em 22/06/2026 apos ajuste de fonte/estilo de Pautas.
+- Calendario de Tarefas: em 22/06/2026, Bloco 01 ajustou a exclusao da sidebar `Minhas tarefas` para arquivar a tarefa no Supabase via RPC `archive_tarefa` e arquivar tambem o espelho do calendario, removendo a tarefa da lista ativa sem apagar o historico.
+- Supabase: em 22/06/2026, criado `supabase/patch_tarefas_archive_rpc.sql` para permitir exclusao logica segura de tarefas por criador, admin ou gestor.
+- `npm.cmd run typecheck`: OK em 22/06/2026 apos ajuste de exclusao de tarefas.
+- `npm.cmd run build`: OK em 22/06/2026 apos ajuste de exclusao de tarefas.
