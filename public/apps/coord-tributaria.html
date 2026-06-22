@@ -672,8 +672,8 @@
           <select id="collaboratorFilter"></select>
         </label>
         <div class="top-actions">
-          <button type="button" id="addReminderButton" class="primary">Adicionar lembrete</button>
-          <button type="button" id="addPautaButton">Criar pauta</button>
+          <button type="button" id="addReminderButton" class="primary">Criar lembrete colaborador</button>
+          <button type="button" id="addPautaButton">Criar item de pauta</button>
           <button type="button" id="historyButton">Historico</button>
           <button type="button" id="reportButton">Gerar relatorio</button>
         </div>
@@ -683,7 +683,7 @@
     <nav class="tabs" aria-label="Navegacao">
       <button class="tab-button active" type="button" data-tab="resumo">Resumo geral</button>
       <button class="tab-button" type="button" data-tab="colaboradores">Lembretes avaliacao</button>
-      <button class="tab-button" type="button" data-tab="atividades">Pautas e lembretes</button>
+      <button class="tab-button" type="button" data-tab="atividades">Itens de pauta e lembretes</button>
       <button class="tab-button" type="button" data-tab="relatorios">Relatorios e e-mails</button>
     </nav>
 
@@ -749,7 +749,7 @@
         <div class="agenda-layout">
           <section class="panel">
             <div class="panel-header">
-              <h2>Pautas e lembretes</h2>
+              <h2>Itens de pauta e lembretes</h2>
               <span class="chip" id="agendaCount">0 itens</span>
             </div>
             <div class="panel-body">
@@ -761,8 +761,8 @@
               <h2>Acoes rapidas</h2>
             </div>
             <div class="panel-body">
-              <button type="button" class="primary" id="quickAddReminder">Adicionar lembrete</button>
-              <button type="button" id="quickAddPauta">Criar pauta</button>
+              <button type="button" class="primary" id="quickAddReminder">Criar lembrete colaborador</button>
+              <button type="button" id="quickAddPauta">Criar item de pauta</button>
               <button type="button" id="quickHistory">Historico dos ultimos 30 dias</button>
               <button type="button" id="quickReport">Gerar relatorio filtrado</button>
               <p class="subtitle">Use os filtros superiores para localizar por texto ou colaborador.</p>
@@ -804,7 +804,7 @@
   <div id="reminderModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="reminderModalTitle">
     <section class="modal">
       <div class="modal-header">
-        <h2 id="reminderModalTitle">Adicionar lembrete</h2>
+        <h2 id="reminderModalTitle">Criar lembrete colaborador</h2>
         <button type="button" data-close-modal>Fechar</button>
       </div>
       <div class="modal-content">
@@ -814,9 +814,9 @@
             <label class="wide">Titulo<input id="reminderTitle" required /></label>
             <label>Tipo
               <select id="reminderType">
-                <option value="colaborador">Colaborador</option>
-                <option value="coordenacao">Pautas</option>
-                <option value="pauta">Pauta</option>
+                <option value="colaborador">Lembrete colaborador</option>
+                <option value="coordenacao">Item de pauta</option>
+                <option value="pauta">Item de pauta</option>
               </select>
             </label>
             <label>Colaborador<select id="reminderCollaborator"></select></label>
@@ -1241,9 +1241,14 @@
       }
 
       function itemTypeLabel(type) {
-        if (type === "pauta") return "Pauta";
-        if (type === "coordenacao") return "Pauta";
+        if (type === "pauta") return "Item de pauta";
+        if (type === "coordenacao") return "Item de pauta";
         return "Lembrete avaliacao";
+      }
+
+      function itemCreateLabel(type) {
+        if (type === "pauta" || type === "coordenacao") return "Criar item de pauta";
+        return "Criar lembrete colaborador";
       }
 
       function renderCollaborators() {
@@ -1381,7 +1386,7 @@
       function openReminderModal(id, preset = {}) {
         const item = id ? state.reminders.find((reminder) => reminder.id === id) : null;
         const selectedType = item?.type || preset.type || "colaborador";
-        refs.reminderModalTitle.textContent = item ? `Editar ${itemTypeLabel(selectedType).toLowerCase()}` : selectedType === "pauta" ? "Criar pauta" : "Adicionar lembrete";
+        refs.reminderModalTitle.textContent = item ? `Editar ${itemTypeLabel(selectedType).toLowerCase()}` : itemCreateLabel(selectedType);
         refs.reminderId.value = item?.id || "";
         refs.reminderTitle.value = item?.title || preset.title || "";
         refs.reminderType.value = selectedType;
@@ -1489,7 +1494,7 @@
         saveState();
         closeModals();
         render();
-        showNotice(previous ? "Registro atualizado." : refs.reminderType.value === "pauta" ? "Pauta criada." : "Lembrete criado.");
+        showNotice(previous ? "Registro atualizado." : refs.reminderType.value === "pauta" ? "Item de pauta criado." : "Lembrete colaborador criado.");
       }
 
       function toggleReminder(id) {
@@ -1686,9 +1691,9 @@
       });
 
       refs.addReminderButton.addEventListener("click", () => openReminderModal());
-      refs.addPautaButton.addEventListener("click", () => openReminderModal("", { type: "pauta", title: "Pauta - " }));
+      refs.addPautaButton.addEventListener("click", () => openReminderModal("", { type: "pauta", title: "Item de pauta - " }));
       refs.quickAddReminder.addEventListener("click", () => openReminderModal());
-      refs.quickAddPauta.addEventListener("click", () => openReminderModal("", { type: "pauta", title: "Pauta - " }));
+      refs.quickAddPauta.addEventListener("click", () => openReminderModal("", { type: "pauta", title: "Item de pauta - " }));
       refs.historyButton.addEventListener("click", openHistory);
       refs.quickHistory.addEventListener("click", openHistory);
       refs.reportButton.addEventListener("click", openReport);
