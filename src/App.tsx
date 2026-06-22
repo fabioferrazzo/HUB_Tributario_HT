@@ -1076,7 +1076,7 @@ function Dashboard({
           to: user.email,
           subject: "Pautas do HUB Depto Tributario",
           body,
-          htmlBody: `<p>Segue a lista filtrada de pautas do HUB Depto Tributario.</p><pre>${escapeHtmlText(body)}</pre>`
+          htmlBody: buildPautasEmailHtml(filteredPautas, hubUsers)
         })
       });
       const data = await response.json().catch(() => null);
@@ -1464,6 +1464,20 @@ function Dashboard({
                 <em>I</em>
               </button>
             </div>
+            {titulo.trim() || descricao.trim() ? (
+              <div
+                className="pauta-format-preview"
+                style={{
+                  fontSize: getPautaFontSize(pautaTextSize),
+                  fontStyle: pautaTextItalic ? "italic" : undefined,
+                  fontWeight: pautaTextBold ? 850 : undefined
+                }}
+              >
+                <span>Previa da formatacao</span>
+                {titulo.trim() ? <strong>{titulo}</strong> : null}
+                {descricao.trim() ? <p>{descricao}</p> : null}
+              </div>
+            ) : null}
             <div className="form-row">
               <label>
                 Prazo
@@ -1921,9 +1935,11 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     };
   }, [user]);
 
+  const activeTasks = useMemo(() => tasks.filter((task) => !task.archivedAt), [tasks]);
+
   const filteredTasks = useMemo(() => {
     const normalizedQuery = normalizeForSearch(query);
-    return tasks
+    return activeTasks
       .filter((task) => {
         if (filter === "minhas") return isTaskAssignedToUser(task, user, hubUsers);
         if (filter === "abertas") return task.status === "aberta";
@@ -1944,10 +1960,10 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           .toLowerCase()
           .includes(normalizedQuery);
       });
-  }, [filter, hubUsers, query, tasks, user]);
+  }, [activeTasks, filter, hubUsers, query, user]);
 
-  const minhasTasks = useMemo(() => tasks.filter((task) => isTaskAssignedToUser(task, user, hubUsers)), [hubUsers, tasks, user]);
-  const abertasCount = tasks.filter((task) => task.status === "aberta").length;
+  const minhasTasks = useMemo(() => activeTasks.filter((task) => isTaskAssignedToUser(task, user, hubUsers)), [activeTasks, hubUsers, user]);
+  const abertasCount = activeTasks.filter((task) => task.status === "aberta").length;
 
   function clearFormFields() {
     setEditingId(null);
@@ -2239,7 +2255,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       <header className="task-sidebar-head">
         <div className="task-sidebar-title">
           <h2>Minhas tarefas</h2>
-          <small>{loading ? "Carregando..." : `${source} - ${tasks.length} item(ns)`}</small>
+          <small>{loading ? "Carregando..." : `${source} - ${activeTasks.length} item(ns)`}</small>
         </div>
         <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={() => startNewTask()}>
           <Plus size={14} />
@@ -2257,7 +2273,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           Minhas ({minhasTasks.length})
         </button>
         <button className={`filter-pill ${filter === "todas" ? "active" : ""}`} onClick={() => setFilter("todas")} type="button">
-          Todas ({tasks.length})
+          Todas ({activeTasks.length})
         </button>
         <button className={`filter-pill ${filter === "abertas" ? "active" : ""}`} onClick={() => setFilter("abertas")} type="button">
           Abertas ({abertasCount})
@@ -5999,6 +6015,53 @@ function pautaToReportRow(pauta: Pauta): ReportRow {
   };
 }
 
+function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
+  const generatedAt = new Date().toLocaleString("pt-BR");
+  const content = pautas.length
+    ? pautas
+        .map((pauta) => {
+          const fontSize = getPautaEmailFontSize(pauta.textSize);
+          const fontWeight = pauta.textBold ? "700" : "400";
+          const fontStyle = pauta.textItalic ? "italic" : "normal";
+          const description = pauta.acoes || pauta.pendenciasObs || "Sem acao registrada";
+          const responsaveis = pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], profiles) : "Todos os usuarios";
+
+          return `
+            <article style="border:1px solid #d8cdb6;border-radius:8px;padding:14px 16px;margin:0 0 12px;background:#fffdf8;">
+              <h2 style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.35;margin:0 0 8px;color:#10233d;font-weight:700;font-style:${fontStyle};">
+                ${escapeHtmlText(pauta.tema)}
+              </h2>
+              <div style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.45;color:#243955;font-weight:${fontWeight};font-style:${fontStyle};white-space:pre-wrap;">
+                ${escapeHtmlText(description)}
+              </div>
+              <p style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;margin:10px 0 0;color:#10233d;">
+                <strong>Responsaveis:</strong> ${escapeHtmlText(responsaveis)}<br/>
+                <strong>Prazo:</strong> ${escapeHtmlText(formatDate(pauta.prazo))}<br/>
+                <strong>Status:</strong> ${escapeHtmlText(pauta.status || "Sem status")}<br/>
+                <strong>Prioridade:</strong> ${escapeHtmlText(pauta.prioridade || "Normal")}
+              </p>
+            </article>
+          `;
+        })
+        .join("")
+    : `<p style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;color:#243955;">Nenhuma pauta encontrada para o filtro atual.</p>`;
+
+  return `
+    <div style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;color:#17211c;">
+      <p style="margin:0 0 12px;">Segue a lista filtrada de pautas do HUB Depto Tributario.</p>
+      <p style="margin:0 0 16px;color:#64716b;">Gerado em ${escapeHtmlText(generatedAt)}.</p>
+      ${content}
+    </div>
+  `;
+}
+
+function getPautaEmailFontSize(size: Pauta["textSize"]) {
+  if (size === "pequena") return "10.5pt";
+  if (size === "grande") return "14pt";
+  if (size === "muito-grande") return "16pt";
+  return "12pt";
+}
+
 function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): ReportRow {
   return {
     Titulo: lembrete.titulo,
@@ -6043,7 +6106,8 @@ function taskToCalendarFrameEvent(task: TaskItem) {
       origem: task.origem,
       coordItemId: task.coordItemId,
       createdAt: task.createdAt,
-      updatedAt: task.updatedAt
+      updatedAt: task.updatedAt,
+      archivedAt: task.archivedAt || ""
     }
   };
 }
@@ -6395,11 +6459,11 @@ function buildReportHtml(title: string, rows: ReportRow[], printable: boolean) {
   <meta charset="utf-8" />
   <title>${escapeHtmlText(title)}</title>
   <style>
-    body { font-family: Arial, sans-serif; color: #17211c; margin: 24px; }
-    h1 { font-size: 20px; margin: 0 0 6px; }
+    body { font-family: Arial, sans-serif; color: #17211c; margin: 24px; font-size: 12pt; line-height: 1.45; }
+    h1 { font-size: 18pt; margin: 0 0 6px; }
     p { color: #64716b; margin: 0 0 18px; }
-    table { border-collapse: collapse; width: 100%; font-size: 12px; }
-    th, td { border: 1px solid #dce3dd; padding: 8px; text-align: left; vertical-align: top; }
+    table { border-collapse: collapse; width: 100%; font-size: 11pt; line-height: 1.35; }
+    th, td { border: 1px solid #dce3dd; padding: 8px; text-align: left; vertical-align: top; white-space: pre-wrap; }
     th { background: #eef2ed; }
     ${printable ? "@page { size: A4 landscape; margin: 14mm; }" : ""}
   </style>
