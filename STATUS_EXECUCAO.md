@@ -344,3 +344,6 @@
 - Supabase: em 22/06/2026, criado `supabase/patch_tarefas_archive_rpc.sql` para permitir exclusao logica segura de tarefas por criador, admin ou gestor.
 - `npm.cmd run typecheck`: OK em 22/06/2026 apos ajuste de exclusao de tarefas.
 - `npm.cmd run build`: OK em 22/06/2026 apos ajuste de exclusao de tarefas.
+- Coordenacao: em 22/06/2026, Bloco 02 limpou a linguagem do standalone para reduzir ambiguidade: criacao passou a usar `Criar lembrete colaborador` e `Criar item de pauta`, mantendo os tipos internos existentes para preservar compatibilidade dos dados.
+- `npm.cmd run typecheck`: OK em 22/06/2026 apos ajuste de linguagem da Coordenacao.
+- `npm.cmd run build`: OK em 22/06/2026 apos ajuste de linguagem da Coordenacao.
