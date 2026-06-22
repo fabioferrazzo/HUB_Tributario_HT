@@ -17,6 +17,7 @@ type TarefaRow = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  archived_at: string | null;
 };
 
 type TarefaUsuarioRow = {
@@ -55,6 +56,7 @@ type CalendarEvent = {
     coordItemId?: string;
     createdAt?: string;
     updatedAt?: string;
+    archivedAt?: string;
   };
 };
 
@@ -132,9 +134,9 @@ export async function deleteCalendarEventTask(id: string, user: HubUser): Promis
       throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
     }
 
-    const client = assertSupabase();
-    const { error } = await client.from("tarefas").delete().eq("id", id);
-    if (error) throw error;
+    const archivedAt = new Date().toISOString();
+    await archiveSupabaseTask(id, archivedAt);
+    await archiveCalendarMirror(id, existing, archivedAt);
     notifyTasksChanged();
   }
 
@@ -211,20 +213,24 @@ export async function deleteAppTask({
   }
 
   if (source === "supabase") {
-    const client = assertSupabase();
-    const { error } = await client.from("tarefas").delete().eq("id", task.id);
-    if (error) throw error;
+    const archivedAt = new Date().toISOString();
+    await archiveSupabaseTask(task.id, archivedAt);
+    await archiveCalendarMirror(task.id, task, archivedAt);
     notifyTasksChanged();
     return listAppTasks(user);
   }
 
   if (source === "calendario") {
-    await deleteCalendarEvent(task.id);
+    const events = await readCalendarEvents();
+    const existing = events.find((event) => event.id === task.id);
+    const archivedTask = normalizeTask({ ...task, archivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    await putCalendarEvent(await taskToCalendarEvent(archivedTask, existing, []));
     notifyTasksChanged();
     return listAppTasks(user);
   }
 
-  const next = current.filter((item) => item.id !== task.id);
+  const archivedTask = normalizeTask({ ...task, archivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  const next = current.map((item) => (item.id === task.id ? archivedTask : item));
   writeStorage(TASKS_STORAGE_KEY, next);
   notifyTasksChanged();
   return filterVisibleTasks(next, user);
@@ -251,6 +257,18 @@ async function syncTasksToCalendar(tasks: TaskItem[]) {
   for (const task of tasks) {
     await putCalendarEvent(await taskToCalendarEvent(task, eventById.get(task.id), []));
   }
+}
+
+async function archiveCalendarMirror(id: string, task: TaskItem | undefined, archivedAt: string) {
+  if (!canUseCalendarDb()) return;
+
+  const events = await readCalendarEvents();
+  const existing = events.find((event) => event.id === id);
+  const sourceTask = task || (existing ? calendarEventToTask(existing) : undefined);
+  if (!sourceTask) return;
+
+  const archivedTask = normalizeTask({ ...sourceTask, archivedAt, updatedAt: archivedAt });
+  await putCalendarEvent(await taskToCalendarEvent(archivedTask, existing, []));
 }
 
 async function migrateCalendarTasksToSupabaseOnce(user: HubUser) {
@@ -330,7 +348,8 @@ function calendarEventToTask(event: CalendarEvent): TaskItem {
     anexos: (event.attachments || []).map((attachment) => attachment.name),
     createdBy: hub.createdBy || "",
     createdAt,
-    updatedAt: hub.updatedAt || createdAt
+    updatedAt: hub.updatedAt || createdAt,
+    archivedAt: hub.archivedAt || ""
   });
 }
 
@@ -357,7 +376,8 @@ async function taskToCalendarEvent(
       origem: task.origem || "calendario",
       coordItemId: task.coordItemId || "",
       createdAt: task.createdAt,
-      updatedAt: task.updatedAt
+      updatedAt: task.updatedAt,
+      archivedAt: task.archivedAt || ""
     }
   };
 }
@@ -477,7 +497,7 @@ async function loadSupabaseTasks(): Promise<TaskItem[]> {
   const client = assertSupabase();
   const { data: tasks, error } = await client
     .from("tarefas")
-    .select("id,titulo,descricao,prazo,prioridade,status,destaque,origem,coord_item_id,created_by,created_at,updated_at")
+    .select("id,titulo,descricao,prazo,prioridade,status,destaque,origem,coord_item_id,created_by,created_at,updated_at,archived_at")
     .order("prazo", { ascending: true, nullsFirst: false });
 
   if (error) throw error;
@@ -517,7 +537,8 @@ async function loadSupabaseTasks(): Promise<TaskItem[]> {
         .map((anexo) => anexo.file_name),
       createdBy: row.created_by,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      archivedAt: row.archived_at || ""
     })
   );
 }
@@ -566,6 +587,30 @@ async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isEx
   return taskId;
 }
 
+async function archiveSupabaseTask(taskId: string, archivedAt: string) {
+  const client = assertSupabase();
+  const rpcResult = await client.rpc("archive_tarefa", {
+    p_id: taskId
+  });
+
+  if (rpcResult.error && !isMissingArchiveRpcError(rpcResult.error)) {
+    throw rpcResult.error;
+  }
+
+  if (!rpcResult.error) return;
+
+  const { data, error } = await client
+    .from("tarefas")
+    .update({ archived_at: archivedAt, updated_at: archivedAt })
+    .eq("id", taskId)
+    .select("id,archived_at")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.archived_at) {
+    throw new Error("Sem permissao para excluir esta tarefa ou tarefa nao encontrada.");
+  }
+}
+
 async function resolveResponsavelIds(responsaveis: string[]) {
   const profilesByIdentity = await getProfilesByIdentity(responsaveis);
   return responsaveis
@@ -577,6 +622,11 @@ async function resolveResponsavelIds(responsaveis: string[]) {
 function isMissingRpcError(error: { code?: string; message?: string }) {
   const message = error.message || "";
   return error.code === "PGRST202" || message.includes("save_tarefa_v2") || message.includes("Could not find the function");
+}
+
+function isMissingArchiveRpcError(error: { code?: string; message?: string }) {
+  const message = error.message || "";
+  return error.code === "PGRST202" || message.includes("archive_tarefa") || message.includes("Could not find the function");
 }
 
 async function uploadSupabaseTaskAttachment(taskId: string, file: File) {
@@ -677,7 +727,8 @@ function normalizeTask(value: Partial<TaskItem>): TaskItem {
     anexos: Array.isArray(value.anexos) ? value.anexos : [],
     createdBy: value.createdBy || "",
     createdAt: value.createdAt || now,
-    updatedAt: value.updatedAt || now
+    updatedAt: value.updatedAt || now,
+    archivedAt: value.archivedAt || ""
   };
 }
 
