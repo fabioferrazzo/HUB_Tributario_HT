@@ -3238,6 +3238,10 @@ body {
   display: block;
 }
 
+.pauta-description > span {
+  line-height: inherit;
+}
+
 .pauta-content--pequena {
   font-size: 12px;
 }
@@ -3274,6 +3278,12 @@ body {
 .pauta-content--italic em,
 .pauta-content--italic strong {
   font-style: italic;
+}
+
+.pauta-content .pauta-description,
+.pauta-content .pauta-return,
+.pauta-content em {
+  font-size: inherit;
 }
 
 .list-row--pauta .pauta-content strong {
@@ -3786,6 +3796,56 @@ body {
   color: #fff;
 }
 
+.pauta-format-toolbar button.highlight-active {
+  border-color: #d7a214;
+  background: #fff3a3;
+  color: #182f50;
+}
+
+.pauta-description-input {
+  line-height: 1.5;
+  transition: background 0.16s ease, font-size 0.16s ease;
+}
+
+.pauta-description-input--highlight {
+  background: #fff8c6;
+}
+
+.pauta-format-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px dashed #d8cdb6;
+  border-radius: 8px;
+  background: #fffdf1;
+  color: #23344a;
+  padding: 10px 12px;
+}
+
+.pauta-format-preview > span {
+  color: #6b7790;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.pauta-format-preview strong {
+  font-size: 1.05em;
+  line-height: 1.3;
+}
+
+.pauta-format-preview p {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 .form-actions-inline {
   display: flex;
   flex-wrap: wrap;
@@ -3979,8 +4039,6 @@ body {
 
 .pomodoro-floating-notes {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
   z-index: 80;
   width: min(420px, calc(100vw - 32px));
   height: min(520px, calc(100vh - 48px));
@@ -3996,6 +4054,11 @@ body {
   backdrop-filter: none;
 }
 
+.pomodoro-floating-notes--minimized {
+  width: min(300px, calc(100vw - 32px));
+  height: auto;
+}
+
 .pomodoro-floating-notes__header {
   display: flex;
   align-items: center;
@@ -4004,6 +4067,9 @@ body {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   background: #f8f6f0;
+  cursor: move;
+  user-select: none;
+  touch-action: none;
 }
 
 .pomodoro-floating-notes__header > div:first-child {
@@ -4137,8 +4203,9 @@ body {
   }
 
   .pomodoro-floating-notes {
-    inset: 12px;
     width: auto;
     height: auto;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
   }
 }

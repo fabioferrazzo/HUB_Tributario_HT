@@ -43,6 +43,7 @@ export type Pauta = {
   textSize?: PautaTextSize;
   textBold?: boolean;
   textItalic?: boolean;
+  textHighlight?: boolean;
   responsaveis?: string[];
   anexos?: PautaAttachment[];
   conclusoes?: PautaCompletion[];
@@ -103,6 +104,7 @@ export type TaskItem = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  archivedAt?: string;
 };
 
 export type FileResourceCategory = "drive" | "modelo" | "guia" | "anexo" | "outro";
