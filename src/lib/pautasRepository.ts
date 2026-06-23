@@ -58,6 +58,7 @@ export function getPautasSource(user?: HubUser | null): PautasSource {
 export function canUserViewPautaApp(pauta: Pauta, user?: HubUser | null) {
   if (!user) return false;
   if (user.role === "admin" || user.role === "gestor") return true;
+  if (hasUserCompletedPauta(pauta, user)) return false;
   if ((pauta.createdBy || "").toLowerCase() === user.email.toLowerCase() || pauta.createdBy === user.id) return true;
   if ((pauta.scope || "todos") === "todos") return true;
   return (pauta.responsaveis || []).some((email) => email.toLowerCase() === user.email.toLowerCase());
@@ -70,7 +71,6 @@ export function canUserManagePautaApp(_pauta: Pauta, user?: HubUser | null) {
 export function canUserCompletePautaApp(pauta: Pauta, user?: HubUser | null) {
   if (!user) return false;
   if (user.role === "admin") return true;
-  if ((pauta.scope || "todos") === "todos") return true;
   return (pauta.responsaveis || []).some((email) => email.toLowerCase() === user.email.toLowerCase());
 }
 
@@ -314,6 +314,7 @@ function mapPautaRow(row: PautaRow, usuarios: PautaUsuarioRow[], anexos: PautaAn
     textSize: descricao.textSize,
     textBold: descricao.textBold,
     textItalic: descricao.textItalic,
+    textHighlight: descricao.textHighlight,
     responsaveis,
     anexos: anexos.map(mapPautaAnexoRow),
     conclusoes: conclusoes.map(mapPautaConclusaoRow),
@@ -371,6 +372,7 @@ function normalizePauta(value: Partial<Pauta>): Pauta {
     textSize: normalizePautaTextSize(value.textSize),
     textBold: Boolean(value.textBold),
     textItalic: Boolean(value.textItalic),
+    textHighlight: Boolean(value.textHighlight),
     responsaveis,
     anexos: Array.isArray(value.anexos) ? value.anexos : [],
     conclusoes: Array.isArray(value.conclusoes) ? value.conclusoes : [],
@@ -384,7 +386,8 @@ function encodePautaDescricao(pauta: Pauta) {
   const meta = {
     textSize: normalizePautaTextSize(pauta.textSize),
     textBold: Boolean(pauta.textBold),
-    textItalic: Boolean(pauta.textItalic)
+    textItalic: Boolean(pauta.textItalic),
+    textHighlight: Boolean(pauta.textHighlight)
   };
 
   return `<!--hub:pauta-style:${JSON.stringify(meta)}-->\n${pauta.acoes || ""}`;
@@ -395,6 +398,7 @@ function decodePautaDescricao(value: string): {
   textSize: PautaTextSize;
   textBold: boolean;
   textItalic: boolean;
+  textHighlight: boolean;
 } {
   const match = value.match(PAUTA_STYLE_META_RE);
   if (!match) {
@@ -402,24 +406,27 @@ function decodePautaDescricao(value: string): {
       text: value,
       textSize: "normal",
       textBold: false,
-      textItalic: false
+      textItalic: false,
+      textHighlight: false
     };
   }
 
   try {
-    const meta = JSON.parse(match[1] || "{}") as Partial<Pick<Pauta, "textSize" | "textBold" | "textItalic">>;
+    const meta = JSON.parse(match[1] || "{}") as Partial<Pick<Pauta, "textSize" | "textBold" | "textItalic" | "textHighlight">>;
     return {
       text: value.replace(PAUTA_STYLE_META_RE, ""),
       textSize: normalizePautaTextSize(meta.textSize),
       textBold: Boolean(meta.textBold),
-      textItalic: Boolean(meta.textItalic)
+      textItalic: Boolean(meta.textItalic),
+      textHighlight: Boolean(meta.textHighlight)
     };
   } catch {
     return {
       text: value.replace(PAUTA_STYLE_META_RE, ""),
       textSize: "normal",
       textBold: false,
-      textItalic: false
+      textItalic: false,
+      textHighlight: false
     };
   }
 }
