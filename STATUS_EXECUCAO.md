@@ -347,3 +347,9 @@
 - Coordenacao: em 22/06/2026, Bloco 02 limpou a linguagem do standalone para reduzir ambiguidade: criacao passou a usar `Criar lembrete colaborador` e `Criar item de pauta`, mantendo os tipos internos existentes para preservar compatibilidade dos dados.
 - `npm.cmd run typecheck`: OK em 22/06/2026 apos ajuste de linguagem da Coordenacao.
 - `npm.cmd run build`: OK em 22/06/2026 apos ajuste de linguagem da Coordenacao.
+- Pautas: em 22/06/2026, Bloco 03 consolidou a formatacao visual dos itens: tamanho de fonte, negrito, italico e grifo amarelo passam a ser preservados na descricao, refletidos no campo de edicao, exibidos no card e mantidos nos e-mails/relatorios por metadados embutidos.
+- `npm.cmd run typecheck`: OK em 22/06/2026 apos consolidacao da formatacao de Pautas.
+- `npm.cmd run build`: OK em 22/06/2026 apos consolidacao da formatacao de Pautas.
+- Pomodoro: em 22/06/2026, Bloco 04 ajustou a janela flutuante de anotacoes para permitir arrastar pelo cabecalho, minimizar/reabrir e manter fundo branco opaco sobre qualquer menu do HUB.
+- `npm.cmd run typecheck`: OK em 22/06/2026 apos janela flutuante arrastavel/minimizavel do Pomodoro.
+- `npm.cmd run build`: OK em 22/06/2026 apos janela flutuante arrastavel/minimizavel do Pomodoro.
