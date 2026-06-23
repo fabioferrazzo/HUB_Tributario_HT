@@ -8,6 +8,7 @@
   Edit3,
   FileArchive,
   Filter,
+  Highlighter,
   Home,
   Link2,
   ListChecks,
@@ -652,6 +653,9 @@ function PomodoroFloatingNotes({
   onSave: () => void;
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const dragStartRef = useRef<{ pointerId: number; x: number; y: number; left: number; top: number } | null>(null);
+  const [minimized, setMinimized] = useState(false);
+  const [position, setPosition] = useState(() => ({ left: Math.max(16, window.innerWidth - 460), top: Math.max(16, window.innerHeight - 560) }));
 
   useEffect(() => {
     if (!open || !editorRef.current) return;
@@ -662,30 +666,80 @@ function PomodoroFloatingNotes({
 
   if (!open) return null;
 
+  function startDrag(event: React.PointerEvent<HTMLElement>) {
+    const target = event.target as HTMLElement;
+    if (target.closest("button")) return;
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      left: position.left,
+      top: position.top
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: React.PointerEvent<HTMLElement>) {
+    const drag = dragStartRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const width = minimized ? 280 : Math.min(420, window.innerWidth - 32);
+    const height = minimized ? 58 : Math.min(520, window.innerHeight - 48);
+    const nextLeft = Math.min(Math.max(8, drag.left + event.clientX - drag.x), Math.max(8, window.innerWidth - width - 8));
+    const nextTop = Math.min(Math.max(8, drag.top + event.clientY - drag.y), Math.max(8, window.innerHeight - height - 8));
+    setPosition({ left: nextLeft, top: nextTop });
+  }
+
+  function stopDrag(event: React.PointerEvent<HTMLElement>) {
+    const drag = dragStartRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    dragStartRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
   return (
-    <section className="pomodoro-floating-notes" aria-label="Anotacoes flutuantes do Pomodoro">
-      <header className="pomodoro-floating-notes__header">
+    <section
+      className={`pomodoro-floating-notes ${minimized ? "pomodoro-floating-notes--minimized" : ""}`}
+      style={{ left: position.left, top: position.top }}
+      aria-label="Anotacoes flutuantes do Pomodoro"
+    >
+      <header
+        className="pomodoro-floating-notes__header"
+        onPointerDown={startDrag}
+        onPointerMove={moveDrag}
+        onPointerUp={stopDrag}
+        onPointerCancel={stopDrag}
+      >
         <div>
           <strong>Anotacoes</strong>
           <span>Pomodoro</span>
         </div>
         <div className="pomodoro-floating-notes__actions">
-          <button type="button" onClick={onSave}>
-            Salvar
+          {!minimized ? (
+            <button type="button" onClick={onSave}>
+              Salvar
+            </button>
+          ) : null}
+          <button type="button" onClick={() => setMinimized((current) => !current)}>
+            {minimized ? "Abrir" : "Minimizar"}
           </button>
           <button type="button" onClick={onClose}>
             Fechar
           </button>
         </div>
       </header>
-      <div
-        className="pomodoro-floating-notes__editor"
-        contentEditable
-        ref={editorRef}
-        suppressContentEditableWarning
-        onInput={(event) => onChange(event.currentTarget.innerHTML)}
-      />
-      {status ? <div className="pomodoro-floating-notes__status">{status}</div> : null}
+      {!minimized ? (
+        <>
+          <div
+            className="pomodoro-floating-notes__editor"
+            contentEditable
+            ref={editorRef}
+            suppressContentEditableWarning
+            onInput={(event) => onChange(event.currentTarget.innerHTML)}
+          />
+          {status ? <div className="pomodoro-floating-notes__status">{status}</div> : null}
+        </>
+      ) : null}
     </section>
   );
 }
@@ -955,6 +1009,7 @@ function Dashboard({
   const [pautaTextSize, setPautaTextSize] = useState<NonNullable<Pauta["textSize"]>>("normal");
   const [pautaTextBold, setPautaTextBold] = useState(false);
   const [pautaTextItalic, setPautaTextItalic] = useState(false);
+  const [pautaTextHighlight, setPautaTextHighlight] = useState(false);
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState("normal");
   const [status, setStatus] = useState("aberta");
@@ -1100,6 +1155,7 @@ function Dashboard({
     setPautaTextSize("normal");
     setPautaTextBold(false);
     setPautaTextItalic(false);
+    setPautaTextHighlight(false);
     setPrazo("");
     setPrioridade("normal");
     setStatus("aberta");
@@ -1128,6 +1184,7 @@ function Dashboard({
     setPautaTextSize(pauta.textSize || "normal");
     setPautaTextBold(Boolean(pauta.textBold));
     setPautaTextItalic(Boolean(pauta.textItalic));
+    setPautaTextHighlight(Boolean(pauta.textHighlight));
     setPrazo(toDatetimeLocalValue(pauta.prazo));
     setPrioridade(pauta.prioridade || "normal");
     setStatus(pauta.status || "aberta");
@@ -1170,6 +1227,7 @@ function Dashboard({
       textSize: pautaTextSize,
       textBold: pautaTextBold,
       textItalic: pautaTextItalic,
+      textHighlight: pautaTextHighlight,
       responsaveis: scope === "usuarios" ? responsaveis : [],
       anexos: existing?.anexos || [],
       conclusoes: existing?.conclusoes || [],
@@ -1255,6 +1313,7 @@ function Dashboard({
 
   function renderPautaRow(pauta: Pauta, keyPrefix = "") {
     const pautaContentStyle = getPautaContentStyle(pauta);
+    const pautaDescriptionStyle = getPautaDescriptionStyle(pauta);
     return (
       <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={`${keyPrefix}${pauta.id}`}>
         <div
@@ -1270,7 +1329,9 @@ function Dashboard({
             {pauta.tema}
           </strong>
           <span className="pauta-description" style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
-            {pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}
+            <span style={pautaDescriptionStyle}>
+              {pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}
+            </span>
           </span>
           {pauta.retorno ? (
             <span className="pauta-return" style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
@@ -1435,7 +1496,16 @@ function Dashboard({
             </label>
             <label>
               Descricao / orientacao
-              <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
+              <textarea
+                className={pautaTextHighlight ? "pauta-description-input pauta-description-input--highlight" : "pauta-description-input"}
+                style={{
+                  fontSize: getPautaFontSize(pautaTextSize),
+                  fontStyle: pautaTextItalic ? "italic" : undefined,
+                  fontWeight: pautaTextBold ? 850 : undefined
+                }}
+                value={descricao}
+                onChange={(event) => setDescricao(event.target.value)}
+              />
             </label>
             <div className="pauta-format-toolbar" aria-label="Formatacao da descricao da pauta">
               <label>
@@ -1463,6 +1533,14 @@ function Dashboard({
               >
                 <em>I</em>
               </button>
+              <button
+                className={pautaTextHighlight ? "active highlight-active" : ""}
+                onClick={() => setPautaTextHighlight((current) => !current)}
+                type="button"
+                title="Grifo amarelo"
+              >
+                <Highlighter size={15} />
+              </button>
             </div>
             {titulo.trim() || descricao.trim() ? (
               <div
@@ -1470,7 +1548,8 @@ function Dashboard({
                 style={{
                   fontSize: getPautaFontSize(pautaTextSize),
                   fontStyle: pautaTextItalic ? "italic" : undefined,
-                  fontWeight: pautaTextBold ? 850 : undefined
+                  fontWeight: pautaTextBold ? 850 : undefined,
+                  background: pautaTextHighlight ? "#fff3a3" : undefined
                 }}
               >
                 <span>Previa da formatacao</span>
@@ -6023,6 +6102,7 @@ function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
           const fontSize = getPautaEmailFontSize(pauta.textSize);
           const fontWeight = pauta.textBold ? "700" : "400";
           const fontStyle = pauta.textItalic ? "italic" : "normal";
+          const descriptionBackground = pauta.textHighlight ? "#fff3a3" : "transparent";
           const description = pauta.acoes || pauta.pendenciasObs || "Sem acao registrada";
           const responsaveis = pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], profiles) : "Todos os usuarios";
 
@@ -6031,7 +6111,7 @@ function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
               <h2 style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.35;margin:0 0 8px;color:#10233d;font-weight:700;font-style:${fontStyle};">
                 ${escapeHtmlText(pauta.tema)}
               </h2>
-              <div style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.45;color:#243955;font-weight:${fontWeight};font-style:${fontStyle};white-space:pre-wrap;">
+              <div style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.45;color:#243955;font-weight:${fontWeight};font-style:${fontStyle};white-space:pre-wrap;background:${descriptionBackground};padding:${pauta.textHighlight ? "2px 4px" : "0"};">
                 ${escapeHtmlText(description)}
               </div>
               <p style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;margin:10px 0 0;color:#10233d;">
@@ -6877,6 +6957,17 @@ function getPautaContentStyle(pauta: Pauta): CSSProperties {
     fontSize: getPautaFontSize(pauta.textSize),
     fontWeight: pauta.textBold ? 850 : undefined,
     fontStyle: pauta.textItalic ? "italic" : undefined
+  };
+}
+
+function getPautaDescriptionStyle(pauta: Pauta): CSSProperties {
+  if (!pauta.textHighlight) return {};
+  return {
+    background: "#fff3a3",
+    borderRadius: "4px",
+    boxDecorationBreak: "clone",
+    WebkitBoxDecorationBreak: "clone",
+    padding: "1px 3px"
   };
 }
 
