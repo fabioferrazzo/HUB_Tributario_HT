@@ -6901,20 +6901,20 @@ function canUserViewPauta(pauta: Pauta, user: HubUser) {
 
 function isTaskAssignedToUser(task: TaskItem, user: HubUser, profiles: HubProfile[] = []) {
   const userTokens = getTaskUserTokens(user, profiles);
-  const owner = normalizeForSearch(task.createdBy || "");
-  const responsaveis = task.responsaveis.map((responsavel) => normalizeForSearch(responsavel));
+  const ownerTokens = getProfileIdentityTokens(task.createdBy || "", profiles);
+  const responsavelTokens = new Set(task.responsaveis.flatMap((responsavel) => [...getProfileIdentityTokens(responsavel, profiles)]));
 
   return userTokens.some((token) => {
     if (!token) return false;
-    if (owner === token) return true;
-    return responsaveis.some((responsavel) => responsavel === token);
+    if (ownerTokens.has(token)) return true;
+    return responsavelTokens.has(token);
   });
 }
 
 function isTaskOwnerForUser(task: TaskItem, user: HubUser, profiles: HubProfile[] = []) {
   const userTokens = getTaskUserTokens(user, profiles);
-  const owner = normalizeForSearch(task.createdBy || "");
-  return userTokens.some((token) => token && owner === token);
+  const ownerTokens = getProfileIdentityTokens(task.createdBy || "", profiles);
+  return userTokens.some((token) => token && ownerTokens.has(token));
 }
 
 function getTaskUserTokens(user: HubUser, profiles: HubProfile[] = []) {
@@ -6929,6 +6929,26 @@ function getTaskUserTokens(user: HubUser, profiles: HubProfile[] = []) {
     : [];
 
   return [...new Set([...baseTokens, ...profileTokens].filter((value): value is string => Boolean(value)).map((value) => normalizeForSearch(value)))];
+}
+
+function getProfileIdentityTokens(value: string, profiles: HubProfile[] = []) {
+  const normalizedValue = normalizeForSearch(value);
+  const tokens = new Set<string>();
+  if (normalizedValue) tokens.add(normalizedValue);
+
+  profiles
+    .filter((profile) =>
+      [profile.id, profile.email, profile.nome, profile.iniciais]
+        .filter(Boolean)
+        .some((token) => normalizeForSearch(String(token)) === normalizedValue)
+    )
+    .forEach((profile) => {
+      [profile.id, profile.email, profile.nome, profile.iniciais]
+        .filter(Boolean)
+        .forEach((token) => tokens.add(normalizeForSearch(String(token))));
+    });
+
+  return tokens;
 }
 
 function isPautaAlta(pauta: Pauta) {
