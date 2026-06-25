@@ -356,3 +356,9 @@
 - Calendario de Tarefas: em 25/06/2026, Bloco 05 reforcou a identificacao de tarefas do usuario para que `Minhas tarefas` considere criador e responsaveis por ID, e-mail, nome ou iniciais vindos dos perfis.
 - `npm.cmd run typecheck`: OK em 25/06/2026 apos reforco do filtro `Minhas tarefas`.
 - `npm.cmd run build`: OK em 25/06/2026 apos reforco do filtro `Minhas tarefas`.
+- Calendario de Tarefas: em 25/06/2026, Bloco 06 consolidou o fluxo unico de criacao/edicao: duplo clique no calendario aciona a sidebar principal do HUB, com data local estavel, e o iframe recebeu nova versao para evitar cache antigo.
+- `npm.cmd run typecheck`: OK em 25/06/2026 apos consolidacao do fluxo unico do Calendario de Tarefas.
+- `npm.cmd run build`: OK em 25/06/2026 apos consolidacao do fluxo unico do Calendario de Tarefas.
+- Coordenacao: em 25/06/2026, Bloco 07 iniciou o fluxo de bonificacao por template XLSX: upload do XLSX do colaborador, espelho editavel em tabela, botao `Preencher avaliacoes`, campos de colaborador/periodo/recomendacoes e exportacao final em XLSX.
+- `npm.cmd run typecheck`: OK em 25/06/2026 apos painel de template XLSX de bonificacao na Coordenacao.
+- `npm.cmd run build`: OK em 25/06/2026 apos painel de template XLSX de bonificacao na Coordenacao.
