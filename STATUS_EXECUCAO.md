@@ -353,3 +353,6 @@
 - Pomodoro: em 22/06/2026, Bloco 04 ajustou a janela flutuante de anotacoes para permitir arrastar pelo cabecalho, minimizar/reabrir e manter fundo branco opaco sobre qualquer menu do HUB.
 - `npm.cmd run typecheck`: OK em 22/06/2026 apos janela flutuante arrastavel/minimizavel do Pomodoro.
 - `npm.cmd run build`: OK em 22/06/2026 apos janela flutuante arrastavel/minimizavel do Pomodoro.
+- Calendario de Tarefas: em 25/06/2026, Bloco 05 reforcou a identificacao de tarefas do usuario para que `Minhas tarefas` considere criador e responsaveis por ID, e-mail, nome ou iniciais vindos dos perfis.
+- `npm.cmd run typecheck`: OK em 25/06/2026 apos reforco do filtro `Minhas tarefas`.
+- `npm.cmd run build`: OK em 25/06/2026 apos reforco do filtro `Minhas tarefas`.
