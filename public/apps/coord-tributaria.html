@@ -502,6 +502,83 @@
       gap: 10px;
     }
 
+    .bonus-panel {
+      grid-column: 1 / -1;
+    }
+
+    .bonus-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .file-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fffefa;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 800;
+      padding: 9px 12px;
+    }
+
+    .file-button input {
+      display: none;
+    }
+
+    .bonus-meta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .bonus-table-wrap {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    .bonus-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 12px;
+    }
+
+    .bonus-table th,
+    .bonus-table td {
+      border: 1px solid #e7ddca;
+      padding: 7px 8px;
+      min-width: 110px;
+      vertical-align: top;
+    }
+
+    .bonus-table th {
+      position: sticky;
+      top: 0;
+      background: #f5efe2;
+      z-index: 1;
+      text-align: left;
+    }
+
+    .bonus-table td[contenteditable="true"] {
+      background: #fffefa;
+      outline: none;
+    }
+
+    .bonus-table td[contenteditable="true"]:focus {
+      background: #fff6cf;
+      box-shadow: inset 0 0 0 2px rgba(217, 161, 47, 0.35);
+    }
+
     .collab-card {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
@@ -796,6 +873,30 @@
               <p class="subtitle">O envio usa a sessao do HUB quando disponivel. O token fica apenas como contingencia operacional.</p>
             </div>
           </aside>
+          <section class="panel bonus-panel">
+            <div class="panel-header">
+              <h2>Template - bonificacao</h2>
+              <span class="sync-pill">XLSX</span>
+            </div>
+            <div class="panel-body">
+              <div class="bonus-actions">
+                <label class="file-button">
+                  Upload XLSX do colaborador
+                  <input id="bonusTemplateFile" type="file" accept=".xlsx,.xls" />
+                </label>
+                <button type="button" class="primary" id="bonusFillButton">Preencher avaliacoes</button>
+                <button type="button" id="bonusExportButton">Exportar XLSX</button>
+                <button type="button" id="bonusClearButton">Limpar</button>
+              </div>
+              <div class="bonus-meta">
+                <label>Colaborador<input id="bonusCollaborator" placeholder="Nome do colaborador" /></label>
+                <label>Periodo<input id="bonusPeriod" placeholder="Ex.: Junho/2026" /></label>
+                <label class="wide">Recomendacoes<textarea id="bonusRecommendations" placeholder="Recomendacoes, observacoes e pontos de acompanhamento."></textarea></label>
+              </div>
+              <p id="bonusTemplateNotice" class="subtitle">Envie um XLSX para abrir um espelho editavel ou use Preencher avaliacoes para criar uma base.</p>
+              <div id="bonusTableWrap" class="bonus-table-wrap"></div>
+            </div>
+          </section>
         </div>
       </section>
     </main>
@@ -861,6 +962,7 @@
     </section>
   </div>
 
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script>
     (() => {
       const STORAGE_KEY = "hub_coord_simplificado_v1";
@@ -913,6 +1015,7 @@
       let filters = { query: "", collaboratorId: "todos" };
       let syncState = { token: "", remoteReady: false, saving: false };
       let syncSaveTimer = 0;
+      let bonusTemplate = { fileName: "", sheetName: "", rows: [] };
 
       const refs = {};
       document.querySelectorAll("[id]").forEach((element) => {
@@ -1287,6 +1390,7 @@
 
       function renderReport() {
         refs.reportOutput.textContent = buildReportText();
+        renderBonusTemplate();
       }
 
       function buildReportText() {
@@ -1321,6 +1425,165 @@
         });
 
         return lines.join("\n");
+      }
+
+      function renderBonusTemplate() {
+        if (!refs.bonusTableWrap) return;
+        const rowCount = bonusTemplate.rows.length;
+        refs.bonusTemplateNotice.textContent = rowCount
+          ? `${bonusTemplate.fileName || "Template"} - ${bonusTemplate.sheetName || "Planilha"} - ${rowCount} linha(s) editaveis.`
+          : "Envie um XLSX para abrir um espelho editavel ou use Preencher avaliacoes para criar uma base.";
+
+        if (!rowCount) {
+          refs.bonusTableWrap.innerHTML = empty("Nenhum template carregado.");
+          return;
+        }
+
+        const maxColumns = Math.max(1, ...bonusTemplate.rows.map((row) => row.length));
+        const headers = Array.from({ length: maxColumns }, (_, index) => columnName(index));
+        const body = bonusTemplate.rows
+          .map(
+            (row, rowIndex) =>
+              `<tr><th>${rowIndex + 1}</th>${headers
+                .map((_, colIndex) => `<td contenteditable="true" data-row="${rowIndex}" data-col="${colIndex}">${escapeHtml(row[colIndex] ?? "")}</td>`)
+                .join("")}</tr>`
+          )
+          .join("");
+        refs.bonusTableWrap.innerHTML = `<table class="bonus-table"><thead><tr><th>#</th>${headers.map((name) => `<th>${name}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>`;
+      }
+
+      function columnName(index) {
+        let number = index + 1;
+        let name = "";
+        while (number > 0) {
+          const remainder = (number - 1) % 26;
+          name = String.fromCharCode(65 + remainder) + name;
+          number = Math.floor((number - 1) / 26);
+        }
+        return name;
+      }
+
+      function handleBonusCellInput(event) {
+        const cell = event.target.closest("td[data-row][data-col]");
+        if (!cell) return;
+        const rowIndex = Number(cell.dataset.row);
+        const colIndex = Number(cell.dataset.col);
+        if (!bonusTemplate.rows[rowIndex]) bonusTemplate.rows[rowIndex] = [];
+        bonusTemplate.rows[rowIndex][colIndex] = cell.textContent || "";
+      }
+
+      async function handleBonusTemplateUpload(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!window.XLSX) return showNotice("Biblioteca XLSX nao carregada. Verifique a conexao e tente novamente.", true);
+        try {
+          const buffer = await file.arrayBuffer();
+          const workbook = window.XLSX.read(buffer, { type: "array", cellDates: true });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const rows = window.XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: true, defval: "" });
+          bonusTemplate = {
+            fileName: file.name,
+            sheetName,
+            rows: normalizeBonusRows(rows)
+          };
+          renderBonusTemplate();
+          showNotice("Template XLSX carregado para edicao.");
+        } catch (error) {
+          showNotice(error.message || "Nao foi possivel ler o XLSX.", true);
+        } finally {
+          event.target.value = "";
+        }
+      }
+
+      function normalizeBonusRows(rows) {
+        return rows
+          .map((row) => (Array.isArray(row) ? row.map((cell) => formatBonusCell(cell)) : []))
+          .filter((row, index, list) => row.some((cell) => String(cell).trim()) || index < list.length - 1);
+      }
+
+      function formatBonusCell(value) {
+        if (value instanceof Date) return value.toLocaleDateString("pt-BR");
+        if (value == null) return "";
+        return String(value);
+      }
+
+      function fillBonusEvaluationBlock() {
+        const collaborator = refs.bonusCollaborator.value.trim() || "Colaborador";
+        const period = refs.bonusPeriod.value.trim() || new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+        const recommendations = refs.bonusRecommendations.value.trim();
+        if (!bonusTemplate.rows.length) {
+          bonusTemplate = {
+            fileName: "template-bonificacao.xlsx",
+            sheetName: "Avaliacao",
+            rows: [
+              ["Template de bonificacao - HUB Depto Tributario"],
+              ["Colaborador", collaborator],
+              ["Periodo", period],
+              ["Gerado em", new Date().toLocaleString("pt-BR")],
+              [],
+              ["Criterio", "Nota", "Recomendacao", "Observacao"],
+              ["Qualidade tecnica", "", "", ""],
+              ["Prazos e organizacao", "", "", ""],
+              ["Comunicacao", "", "", ""],
+              ["Proatividade", "", "", ""],
+              ["Resultado geral", "", recommendations, ""]
+            ]
+          };
+        } else {
+          bonusTemplate.rows.push(
+            [],
+            ["Avaliacao HUB Depto Tributario"],
+            ["Colaborador", collaborator],
+            ["Periodo", period],
+            ["Gerado em", new Date().toLocaleString("pt-BR")],
+            ["Recomendacoes", recommendations]
+          );
+        }
+        renderBonusTemplate();
+        showNotice("Campos de avaliacao adicionados ao espelho do template.");
+      }
+
+      function exportBonusTemplate() {
+        if (!bonusTemplate.rows.length) return showNotice("Carregue ou preencha um template antes de exportar.", true);
+        if (!window.XLSX) return showNotice("Biblioteca XLSX nao carregada. Verifique a conexao e tente novamente.", true);
+        const worksheet = window.XLSX.utils.aoa_to_sheet(bonusTemplate.rows);
+        const workbook = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(workbook, worksheet, "Avaliacao");
+        const output = window.XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        downloadCoordBlob(
+          new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+          toSafeFileName(`bonificacao-${refs.bonusCollaborator.value || bonusTemplate.fileName || "avaliacao"}.xlsx`)
+        );
+      }
+
+      function clearBonusTemplate() {
+        bonusTemplate = { fileName: "", sheetName: "", rows: [] };
+        refs.bonusCollaborator.value = "";
+        refs.bonusPeriod.value = "";
+        refs.bonusRecommendations.value = "";
+        renderBonusTemplate();
+      }
+
+      function downloadCoordBlob(blob, fileName) {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.rel = "noopener";
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+      }
+
+      function toSafeFileName(value) {
+        return String(value || "arquivo.xlsx")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9._-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          || "arquivo.xlsx";
       }
 
       function renderActiveTab() {
@@ -1705,6 +1968,11 @@
       refs.resetCollabForm.addEventListener("click", resetCollaboratorForm);
       refs.sendAgendaEmail.addEventListener("click", () => sendEmail("pautas"));
       refs.sendEvaluationEmail.addEventListener("click", () => sendEmail("avaliacoes"));
+      refs.bonusTemplateFile.addEventListener("change", handleBonusTemplateUpload);
+      refs.bonusFillButton.addEventListener("click", fillBonusEvaluationBlock);
+      refs.bonusExportButton.addEventListener("click", exportBonusTemplate);
+      refs.bonusClearButton.addEventListener("click", clearBonusTemplate);
+      refs.bonusTableWrap.addEventListener("input", handleBonusCellInput);
 
       ["searchInput", "collaboratorFilter"].forEach((id) => {
         refs[id].addEventListener("input", () => {
