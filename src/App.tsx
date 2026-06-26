@@ -1049,6 +1049,8 @@ function Dashboard({
   const canManagePautas = user.role === "admin";
   const selectedYear = monthCursor.getFullYear();
   const selectedMonth = monthCursor.getMonth();
+  const pautaDescriptionEditorRef = useRef<HTMLDivElement | null>(null);
+  const pautaSelectionRef = useRef<Range | null>(null);
 
   const visiblePautas = useMemo(() => {
     const allowed = pautas.filter((pauta) => canUserViewPauta(pauta, user));
@@ -1079,7 +1081,7 @@ function Dashboard({
       return normalizeForSearch(
         [
           pauta.tema,
-          pauta.acoes,
+          pautaRichTextToPlain(pauta.acoes),
           pauta.responsavel,
           pauta.email,
           pauta.status,
@@ -1104,6 +1106,88 @@ function Dashboard({
     if (!stack) return;
     stack.scrollTop = 0;
   }, [autoScroll, filteredPautas.length, pautaFilter, pautaQuery, selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    const editor = pautaDescriptionEditorRef.current;
+    if (!formOpen || !editor) return;
+    editor.innerHTML = sanitizePautaRichHtml(descricao);
+    pautaSelectionRef.current = null;
+  }, [editingId, formOpen]);
+
+  function rememberPautaSelection() {
+    const editor = pautaDescriptionEditorRef.current;
+    const selection = window.getSelection();
+    if (!editor || !selection || selection.rangeCount === 0) return;
+    const anchor = selection.anchorNode;
+    const focus = selection.focusNode;
+    if ((anchor && editor.contains(anchor)) || (focus && editor.contains(focus))) {
+      pautaSelectionRef.current = selection.getRangeAt(0).cloneRange();
+    }
+  }
+
+  function restorePautaSelection() {
+    const editor = pautaDescriptionEditorRef.current;
+    if (!editor) return false;
+    editor.focus();
+    const selection = window.getSelection();
+    if (!selection) return false;
+
+    selection.removeAllRanges();
+    const savedRange = pautaSelectionRef.current;
+    if (savedRange) {
+      selection.addRange(savedRange);
+      return true;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    selection.addRange(range);
+    pautaSelectionRef.current = range.cloneRange();
+    return true;
+  }
+
+  function syncPautaDescriptionFromEditor() {
+    const editor = pautaDescriptionEditorRef.current;
+    if (!editor) return;
+    const sanitized = sanitizePautaRichHtml(editor.innerHTML);
+    setDescricao(sanitized);
+    rememberPautaSelection();
+  }
+
+  function normalizePautaEditorAfterCommand() {
+    const editor = pautaDescriptionEditorRef.current;
+    if (!editor) return;
+    const sanitized = sanitizePautaRichHtml(editor.innerHTML);
+    if (editor.innerHTML !== sanitized) {
+      editor.innerHTML = sanitized;
+    }
+    setDescricao(sanitized);
+    rememberPautaSelection();
+  }
+
+  function applyPautaTextSize(nextSize: NonNullable<Pauta["textSize"]>) {
+    setPautaTextSize(nextSize);
+    restorePautaSelection();
+    document.execCommand("fontSize", false, getPautaExecFontSize(nextSize));
+    normalizePautaEditorAfterCommand();
+  }
+
+  function applyPautaInlineCommand(command: "bold" | "italic") {
+    restorePautaSelection();
+    document.execCommand(command);
+    normalizePautaEditorAfterCommand();
+    if (command === "bold") setPautaTextBold(document.queryCommandState("bold"));
+    if (command === "italic") setPautaTextItalic(document.queryCommandState("italic"));
+  }
+
+  function applyPautaHighlight() {
+    restorePautaSelection();
+    const applied = document.execCommand("hiliteColor", false, "#fff3a3");
+    if (!applied) document.execCommand("backColor", false, "#fff3a3");
+    setPautaTextHighlight(true);
+    normalizePautaEditorAfterCommand();
+  }
 
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
@@ -1205,12 +1289,13 @@ function Dashboard({
       return;
     }
 
+    const richDescricao = sanitizePautaRichHtml(descricao);
     const now = new Date().toISOString();
     const existing = pautas.find((pauta) => pauta.id === editingId);
     const nextPauta: Pauta = {
       id: existing?.id || crypto.randomUUID(),
       tema: titulo.trim(),
-      acoes: descricao.trim(),
+      acoes: richDescricao,
       prazo,
       prioridade,
       responsavel: scope === "todos" ? "Todos" : formatResponsaveis(responsaveis, hubUsers),
@@ -1313,7 +1398,7 @@ function Dashboard({
 
   function renderPautaRow(pauta: Pauta, keyPrefix = "") {
     const pautaContentStyle = getPautaContentStyle(pauta);
-    const pautaDescriptionStyle = getPautaDescriptionStyle(pauta);
+    const pautaDescriptionHtml = sanitizePautaRichHtml(pauta.acoes || pauta.pendenciasObs || "Sem acao registrada");
     return (
       <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={`${keyPrefix}${pauta.id}`}>
         <div
@@ -1328,11 +1413,11 @@ function Dashboard({
           <strong style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
             {pauta.tema}
           </strong>
-          <span className="pauta-description" style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
-            <span style={pautaDescriptionStyle}>
-              {pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"}
-            </span>
-          </span>
+          <span
+            className="pauta-description pauta-rich-text"
+            dangerouslySetInnerHTML={{ __html: pautaDescriptionHtml }}
+            style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}
+          />
           {pauta.retorno ? (
             <span className="pauta-return" style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
               Retorno: {pauta.retorno}
@@ -1494,23 +1579,29 @@ function Dashboard({
               Titulo
               <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
             </label>
-            <label>
-              Descricao / orientacao
-              <textarea
-                className={pautaTextHighlight ? "pauta-description-input pauta-description-input--highlight" : "pauta-description-input"}
-                style={{
-                  fontSize: getPautaFontSize(pautaTextSize),
-                  fontStyle: pautaTextItalic ? "italic" : undefined,
-                  fontWeight: pautaTextBold ? 850 : undefined
-                }}
-                value={descricao}
-                onChange={(event) => setDescricao(event.target.value)}
+            <div className="rich-editor-field">
+              <span>Descricao / orientacao</span>
+              <div
+                aria-label="Descricao / orientacao"
+                className="pauta-description-input pauta-rich-text"
+                contentEditable
+                data-placeholder="Escreva a orientacao da pauta..."
+                onBlur={rememberPautaSelection}
+                onInput={syncPautaDescriptionFromEditor}
+                onKeyUp={rememberPautaSelection}
+                onMouseUp={rememberPautaSelection}
+                ref={pautaDescriptionEditorRef}
+                suppressContentEditableWarning
               />
-            </label>
+            </div>
             <div className="pauta-format-toolbar" aria-label="Formatacao da descricao da pauta">
               <label>
                 Fonte
-                <select value={pautaTextSize} onChange={(event) => setPautaTextSize(event.target.value as NonNullable<Pauta["textSize"]>)}>
+                <select
+                  value={pautaTextSize}
+                  onMouseDown={rememberPautaSelection}
+                  onChange={(event) => applyPautaTextSize(event.target.value as NonNullable<Pauta["textSize"]>)}
+                >
                   <option value="pequena">Pequena</option>
                   <option value="normal">Normal</option>
                   <option value="grande">Grande</option>
@@ -1519,7 +1610,10 @@ function Dashboard({
               </label>
               <button
                 className={pautaTextBold ? "active" : ""}
-                onClick={() => setPautaTextBold((current) => !current)}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  applyPautaInlineCommand("bold");
+                }}
                 type="button"
                 title="Negrito"
               >
@@ -1527,7 +1621,10 @@ function Dashboard({
               </button>
               <button
                 className={pautaTextItalic ? "active" : ""}
-                onClick={() => setPautaTextItalic((current) => !current)}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  applyPautaInlineCommand("italic");
+                }}
                 type="button"
                 title="Italico"
               >
@@ -1535,26 +1632,23 @@ function Dashboard({
               </button>
               <button
                 className={pautaTextHighlight ? "active highlight-active" : ""}
-                onClick={() => setPautaTextHighlight((current) => !current)}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  applyPautaHighlight();
+                }}
                 type="button"
                 title="Grifo amarelo"
               >
                 <Highlighter size={15} />
               </button>
             </div>
-            {titulo.trim() || descricao.trim() ? (
-              <div
-                className="pauta-format-preview"
-                style={{
-                  fontSize: getPautaFontSize(pautaTextSize),
-                  fontStyle: pautaTextItalic ? "italic" : undefined,
-                  fontWeight: pautaTextBold ? 850 : undefined,
-                  background: pautaTextHighlight ? "#fff3a3" : undefined
-                }}
-              >
+            {titulo.trim() || hasPautaRichContent(descricao) ? (
+              <div className="pauta-format-preview">
                 <span>Previa da formatacao</span>
                 {titulo.trim() ? <strong>{titulo}</strong> : null}
-                {descricao.trim() ? <p>{descricao}</p> : null}
+                {hasPautaRichContent(descricao) ? (
+                  <div className="pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(descricao) }} />
+                ) : null}
               </div>
             ) : null}
             <div className="form-row">
@@ -1900,7 +1994,7 @@ function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
         <iframe
           ref={calendarFrameRef}
           key={calendarVersion}
-          src={`/apps/calendar.html?v=tasks-unified-20260618-${calendarVersion}`}
+          src={`/apps/calendar.html?v=tasks-unified-20260625-${calendarVersion}`}
           title="Calendario de tarefas"
           onLoad={() => {
             void syncCalendarFrame();
@@ -6084,7 +6178,7 @@ function formatFileCategory(category: FileResourceCategory) {
 function pautaToReportRow(pauta: Pauta): ReportRow {
   return {
     Tema: pauta.tema,
-    Acao: pauta.acoes || pauta.pendenciasObs || "Sem acao registrada",
+    Acao: pautaRichTextToPlain(pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"),
     Responsavel: pauta.responsavel || "Sem responsavel definido",
     Email: pauta.email || "",
     Prazo: formatDate(pauta.prazo),
@@ -6102,7 +6196,6 @@ function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
           const fontSize = getPautaEmailFontSize(pauta.textSize);
           const fontWeight = pauta.textBold ? "700" : "400";
           const fontStyle = pauta.textItalic ? "italic" : "normal";
-          const descriptionBackground = pauta.textHighlight ? "#fff3a3" : "transparent";
           const description = pauta.acoes || pauta.pendenciasObs || "Sem acao registrada";
           const responsaveis = pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], profiles) : "Todos os usuarios";
 
@@ -6111,8 +6204,8 @@ function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
               <h2 style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.35;margin:0 0 8px;color:#10233d;font-weight:700;font-style:${fontStyle};">
                 ${escapeHtmlText(pauta.tema)}
               </h2>
-              <div style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.45;color:#243955;font-weight:${fontWeight};font-style:${fontStyle};white-space:pre-wrap;background:${descriptionBackground};padding:${pauta.textHighlight ? "2px 4px" : "0"};">
-                ${escapeHtmlText(description)}
+              <div style="font-family:Arial,sans-serif;font-size:${fontSize};line-height:1.45;color:#243955;font-weight:${fontWeight};font-style:${fontStyle};white-space:pre-wrap;">
+                ${renderPautaRichHtmlForEmail(description)}
               </div>
               <p style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;margin:10px 0 0;color:#10233d;">
                 <strong>Responsaveis:</strong> ${escapeHtmlText(responsaveis)}<br/>
@@ -6848,6 +6941,148 @@ function escapeHtmlText(value: string) {
     .replace(/'/g, "&#039;");
 }
 
+const pautaTextSizeClassMap: Record<NonNullable<Pauta["textSize"]>, string> = {
+  pequena: "pauta-text-small",
+  normal: "pauta-text-normal",
+  grande: "pauta-text-large",
+  "muito-grande": "pauta-text-xlarge"
+};
+
+const pautaAllowedTextSizeClasses = new Set(Object.values(pautaTextSizeClassMap));
+
+function sanitizePautaRichHtml(value: string) {
+  const source = String(value || "");
+  if (!source.trim()) return "";
+  if (typeof document === "undefined") {
+    return escapeHtmlText(stripHtmlTagsForPauta(source)).replace(/\n/g, "<br>");
+  }
+
+  const template = document.createElement("template");
+  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(source);
+  template.innerHTML = hasHtml ? source : escapeHtmlText(source).replace(/\n/g, "<br>");
+  const output = document.createElement("div");
+
+  const appendCleanChildren = (node: Node, parent: Node) => {
+    Array.from(node.childNodes).forEach((child) => appendCleanNode(child, parent));
+  };
+
+  const appendCleanNode = (node: Node, parent: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parent.appendChild(document.createTextNode(node.textContent || ""));
+      return;
+    }
+
+    if (!(node instanceof HTMLElement)) return;
+
+    const tagName = node.tagName.toLowerCase();
+
+    if (tagName === "br") {
+      parent.appendChild(document.createElement("br"));
+      return;
+    }
+
+    if (tagName === "b" || tagName === "strong") {
+      const strong = document.createElement("strong");
+      appendCleanChildren(node, strong);
+      parent.appendChild(strong);
+      return;
+    }
+
+    if (tagName === "i" || tagName === "em") {
+      const emphasis = document.createElement("em");
+      appendCleanChildren(node, emphasis);
+      parent.appendChild(emphasis);
+      return;
+    }
+
+    if (tagName === "mark" || hasYellowBackground(node)) {
+      const mark = document.createElement("mark");
+      appendCleanChildren(node, mark);
+      parent.appendChild(mark);
+      return;
+    }
+
+    if (tagName === "font") {
+      const span = document.createElement("span");
+      span.className = getPautaFontClassFromLegacySize(node.getAttribute("size"));
+      appendCleanChildren(node, span);
+      parent.appendChild(span);
+      return;
+    }
+
+    if (tagName === "span") {
+      const className = Array.from(node.classList).find((item) => pautaAllowedTextSizeClasses.has(item));
+      if (className) {
+        const span = document.createElement("span");
+        span.className = className;
+        appendCleanChildren(node, span);
+        parent.appendChild(span);
+        return;
+      }
+    }
+
+    if (tagName === "div" || tagName === "p") {
+      appendCleanChildren(node, parent);
+      parent.appendChild(document.createElement("br"));
+      return;
+    }
+
+    appendCleanChildren(node, parent);
+  };
+
+  appendCleanChildren(template.content, output);
+  return output.innerHTML.replace(/(<br>\s*){3,}/g, "<br><br>").replace(/(<br>\s*)+$/g, "").trim();
+}
+
+function hasYellowBackground(element: HTMLElement) {
+  const background = `${element.style.backgroundColor} ${element.style.background}`.toLowerCase();
+  return background.includes("255, 243, 163") || background.includes("255, 248") || background.includes("yellow") || background.includes("#fff3a3");
+}
+
+function getPautaFontClassFromLegacySize(size: string | null) {
+  if (size === "1" || size === "2") return pautaTextSizeClassMap.pequena;
+  if (size === "5" || size === "6") return pautaTextSizeClassMap.grande;
+  if (size === "7") return pautaTextSizeClassMap["muito-grande"];
+  return pautaTextSizeClassMap.normal;
+}
+
+function pautaRichTextToPlain(value: string) {
+  const source = String(value || "");
+  if (!source.trim()) return "";
+  if (typeof document === "undefined") return stripHtmlTagsForPauta(source);
+
+  const container = document.createElement("div");
+  container.innerHTML = sanitizePautaRichHtml(source);
+  container.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+  return (container.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function stripHtmlTagsForPauta(value: string) {
+  return String(value || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .trim();
+}
+
+function hasPautaRichContent(value: string) {
+  return pautaRichTextToPlain(value).trim().length > 0;
+}
+
+function renderPautaRichHtmlForEmail(value: string) {
+  return sanitizePautaRichHtml(value || "Sem acao registrada")
+    .replace(/<span class="pauta-text-small">/g, '<span style="font-size:10.5pt;">')
+    .replace(/<span class="pauta-text-normal">/g, '<span style="font-size:12pt;">')
+    .replace(/<span class="pauta-text-large">/g, '<span style="font-size:14pt;">')
+    .replace(/<span class="pauta-text-xlarge">/g, '<span style="font-size:16pt;">')
+    .replace(/<mark>/g, '<mark style="background:#fff3a3;padding:0 2px;border-radius:3px;">');
+}
+
 function toReportFileName(title: string) {
   return normalizeForSearch(title).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "relatorio";
 }
@@ -6996,6 +7231,13 @@ function getPautaFontSize(size: Pauta["textSize"]) {
   if (size === "grande") return "18px";
   if (size === "muito-grande") return "22px";
   return "14px";
+}
+
+function getPautaExecFontSize(size: Pauta["textSize"]) {
+  if (size === "pequena") return "2";
+  if (size === "grande") return "5";
+  if (size === "muito-grande") return "7";
+  return "3";
 }
 
 function sortPautasForDashboard(pautas: Pauta[]) {
