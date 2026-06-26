@@ -8,10 +8,17 @@ create table if not exists public.tarefas (
   prazo timestamptz,
   prioridade text not null default 'normal' check (prioridade in ('alta', 'normal', 'baixa')),
   status text not null default 'aberta' check (status in ('aberta', 'concluida')),
+  archived_at timestamptz,
   created_by uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.tarefas
+  add column if not exists archived_at timestamptz;
+
+create index if not exists tarefas_archived_at_idx
+  on public.tarefas (archived_at);
 
 create table if not exists public.tarefa_usuarios (
   tarefa_id uuid not null references public.tarefas(id) on delete cascade,

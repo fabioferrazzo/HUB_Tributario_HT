@@ -32,6 +32,7 @@ with required_objects as (
       ('column', 'tarefas.destaque', 'Coluna public.tarefas.destaque'),
       ('column', 'tarefas.origem', 'Coluna public.tarefas.origem'),
       ('column', 'tarefas.coord_item_id', 'Coluna public.tarefas.coord_item_id'),
+      ('column', 'tarefas.archived_at', 'Coluna public.tarefas.archived_at'),
       ('column', 'coord_itens.integrar_calendario', 'Coluna public.coord_itens.integrar_calendario'),
       ('column', 'coord_itens.tarefa_id', 'Coluna public.coord_itens.tarefa_id'),
       ('column', 'agenda_tributaria_cache.dates', 'Coluna public.agenda_tributaria_cache.dates'),
