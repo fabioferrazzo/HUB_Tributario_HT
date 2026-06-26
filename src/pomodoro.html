@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pomodoro Minimalista</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f5f5f4">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.5s ease; overflow-x: hidden; }
+        button, input { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        #editor[contenteditable="true"]:empty:before { content: attr(placeholder); color: #a8a29e; pointer-events: none; display: block; }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+
+        /* DESTAQUE DO TÍTULO (80% do tamanho do timer: 5.6rem) */
+        .title-active {
+            font-size: 5.6rem !important;
+            font-weight: 800 !important;
+            color: var(--timer-color, #1c1917) !important;
+            opacity: 1 !important;
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            text-align: center;
+            transform: scale(1);
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body class="bg-stone-100 min-h-screen flex items-center justify-center text-stone-800 transition-colors duration-500" id="app-body">
+
+    <main id="main-card" class="bg-white p-8 sm:p-10 rounded-[3rem] shadow-2xl border border-stone-100 w-full max-w-md mx-4 flex flex-col items-center z-10 relative">
+        
+        <header class="w-full flex justify-between items-center mb-8">
+            <h1 class="text-lg font-semibold flex items-center gap-2 text-stone-500">
+                <i class="ph ph-timer text-2xl"></i> Pomodoro
+            </h1>
+            
+            <div class="flex gap-1.5">
+                <div class="relative flex items-center shrink-0" title="Cor de Fundo">
+                    <input type="color" id="color-picker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#f5f5f4">
+                    <button class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-paint-bucket text-lg"></i></button>
+                </div>
+                <div class="relative flex items-center shrink-0" title="Cor do Cartão">
+                    <input type="color" id="card-color-picker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#ffffff">
+                    <button class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-square text-lg"></i></button>
+                </div>
+                <div class="relative flex items-center shrink-0" title="Cor do Timer">
+                    <input type="color" id="text-color-picker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#292524">
+                    <button class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-text-t text-lg"></i></button>
+                </div>
+                <button id="notes-toggle" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-notepad text-lg"></i></button>
+                <button id="settings-toggle" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-gear text-lg"></i></button>
+            </div>
+        </header>
+
+        <div class="flex p-1 bg-stone-100 rounded-full mb-10 w-full relative">
+            <div id="mode-indicator" class="absolute top-1 bottom-1 left-1 bg-white rounded-full shadow-sm transition-all duration-300" style="width: calc(33.33% - 6px); transform: translateX(0%);"></div>
+            <button class="mode-btn relative z-10 flex-1 py-2 text-xs font-bold rounded-full text-stone-800" data-mode="pomodoro">Foco</button>
+            <button class="mode-btn relative z-10 flex-1 py-2 text-xs font-bold rounded-full text-stone-500" data-mode="shortBreak">Pausa</button>
+            <button class="mode-btn relative z-10 flex-1 py-2 text-xs font-bold rounded-full text-stone-500" data-mode="longBreak">Longa</button>
+        </div>
+
+        <div class="flex flex-col items-center justify-center mb-10 w-full">
+            <input type="text" id="task-input" placeholder="Em que vais focar?" class="w-full bg-transparent border-none text-center focus:outline-none opacity-60 transition-all font-medium text-sm">
+            <div class="text-[7rem] leading-none font-light tracking-tighter tabular-nums text-stone-800 transition-colors duration-500" id="time-display">25:00</div>
+        </div>
+
+        <div class="flex items-center gap-4 w-full mb-8">
+            <button id="reset-btn" class="w-14 h-14 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center active:scale-95"><i class="ph ph-arrow-counter-clockwise text-2xl"></i></button>
+            <button id="main-btn" class="flex-1 h-16 rounded-full bg-stone-900 text-white font-bold shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
+                <i class="ph-fill ph-play text-xl" id="main-btn-icon"></i> <span id="main-btn-text">INICIAR</span>
+            </button>
+            <button id="open-reminder-btn" class="w-14 h-14 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center active:scale-95"><i class="ph ph-microphone text-2xl"></i></button>
+        </div>
+
+        <button id="pip-toggle" class="text-xs text-stone-400 font-medium hover:text-stone-600 flex items-center gap-1">
+            <i class="ph ph-browsers"></i> Abrir Mini Player
+        </button>
+    </main>
+
+    <aside id="notes-sidebar" class="fixed right-0 top-0 h-full w-full sm:w-[24rem] bg-white shadow-2xl border-l transform translate-x-full transition-transform duration-300 z-40 flex flex-col">
+        <div class="p-4 border-b flex justify-between items-center bg-stone-50">
+            <h2 class="font-medium flex items-center gap-2"><i class="ph ph-notepad"></i> Anotações</h2>
+            <div class="flex items-center gap-2">
+                <button id="float-notes" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold flex items-center gap-1" type="button">
+                    <i class="ph ph-arrow-square-out"></i> Flutuar
+                </button>
+                <button id="archive-note" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Arquivar</button>
+                <button id="open-notes-archive" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Arquivo</button>
+                <button id="save-notes" class="text-xs px-3 py-2 rounded-xl bg-stone-900 text-white font-semibold" type="button">Salvar</button>
+                <button id="close-notes" class="text-stone-400 p-2" type="button"><i class="ph ph-x text-xl"></i></button>
+            </div>
+        </div>
+        <div class="px-4 py-2 border-b flex gap-2 items-center overflow-x-auto no-scrollbar bg-white">
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('bold')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-b"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('italic')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-italic"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('strikeThrough')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-strikethrough"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('backColor', '#fef08a')" class="p-1.5 hover:bg-yellow-100 rounded text-yellow-600"><i class="ph-fill ph-highlighter"></i></button>
+            <div class="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
+            <input type="color" title="Cor do texto" onchange="formatDoc('foreColor', this.value)" class="w-6 h-6 border-0 p-0 rounded cursor-pointer">
+            <select onchange="formatDoc('fontSize', this.value)" class="text-sm bg-transparent border rounded p-1 text-stone-600">
+                <option value="5">Normal</option><option value="6">Grande</option><option value="7">Enorme</option>
+            </select>
+        </div>
+        <div id="notes-archive-panel" class="hidden border-b bg-stone-50 p-4">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <div>
+                    <strong class="text-sm text-stone-700">Arquivo de notas</strong>
+                    <p class="text-[11px] text-stone-500">Abra, edite, salve ou exclua anotacoes arquivadas.</p>
+                </div>
+                <button id="close-notes-archive" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Fechar</button>
+            </div>
+            <div id="notes-archive-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
+        </div>
+        <div id="editor" contenteditable="true" placeholder="Escreva aqui..." class="flex-1 p-6 outline-none overflow-y-auto text-stone-700 text-2xl"></div>
+        <div class="p-4 border-t bg-stone-50">
+            <div id="attachments-list" class="flex flex-col gap-2 mb-3"></div>
+            <input type="file" id="file-input" multiple class="hidden">
+            <button id="attach-btn" class="w-full py-2.5 rounded-xl border border-stone-200 bg-white flex items-center justify-center gap-2 text-sm text-stone-600 font-medium"><i class="ph ph-paperclip"></i> Anexar Ficheiros</button>
+        </div>
+    </aside>
+
+    <div id="settings-modal" class="hidden fixed inset-0 bg-stone-900/50 z-50 flex items-center justify-center backdrop-blur-sm px-4">
+        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-sm shadow-xl">
+            <h2 class="text-xl font-bold mb-6 text-stone-700">Ajustar Tempos</h2>
+            <div class="space-y-4 mb-8">
+                <div class="flex justify-between items-center"><label class="text-sm font-medium">Foco</label><input type="number" id="input-pomodoro" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="25"></div>
+                <div class="flex justify-between items-center"><label class="text-sm font-medium">Pausa Curta</label><input type="number" id="input-shortBreak" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="5"></div>
+                <div class="flex justify-between items-center"><label class="text-sm font-medium">Pausa Longa</label><input type="number" id="input-longBreak" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="15"></div>
+            </div>
+            <div class="flex gap-3">
+                <button id="cancel-settings" class="flex-1 py-3 rounded-xl bg-stone-100 font-bold">Sair</button>
+                <button id="save-settings" class="flex-1 py-3 rounded-xl bg-stone-900 text-white font-bold">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-reminder-modal" class="hidden fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-xl font-bold mb-6 text-purple-700 flex items-center gap-2"><i class="ph ph-microphone-stage text-2xl"></i> Novo Lembrete</h2>
+            <input type="text" id="reminder-title" placeholder="Título do lembrete..." class="w-full bg-stone-50 border rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-purple-400 font-medium">
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div><label class="text-[10px] uppercase font-bold text-stone-400 block mb-1">Minutos:</label><input type="number" id="reminder-minutes" value="5" class="w-full bg-stone-50 border rounded-xl px-4 py-2 text-center font-bold" oninput="document.getElementById('reminder-datetime').value=''"></div>
+                <div><label class="text-[10px] uppercase font-bold text-stone-400 block mb-1">Ou Data/Hora:</label><input type="datetime-local" id="reminder-datetime" class="w-full bg-stone-50 border rounded-xl px-2 py-2 text-[10px] font-bold" oninput="document.getElementById('reminder-minutes').value=''"></div>
+            </div>
+            <div class="bg-purple-50 p-6 rounded-3xl text-center mb-6 border border-purple-100">
+                <button id="record-action-btn" class="bg-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg active:scale-90"><i id="record-icon-main" class="ph-fill ph-microphone text-3xl"></i></button>
+                <p id="record-status" class="text-xs font-medium text-purple-800">Toque para gravar</p>
+            </div>
+            <div class="flex gap-3 mb-6">
+                <button id="cancel-reminder" class="flex-1 py-3 rounded-xl bg-stone-100 font-bold">Sair</button>
+                <button id="save-reminder" class="flex-1 py-3 rounded-xl bg-purple-600 text-white font-bold disabled:opacity-50" disabled>Agendar</button>
+            </div>
+            <div class="border-t pt-4">
+                <label class="text-[10px] uppercase font-bold text-stone-400 block mb-2">Agendamentos Ativos:</label>
+                <div id="active-rem-list" class="space-y-2 mb-4"></div>
+                <label class="text-[10px] uppercase font-bold text-stone-400 block mb-2">Histórico (Últimas 24h):</label>
+                <div id="history-rem-list" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="time-up-modal" class="hidden fixed inset-0 bg-red-600/95 z-[130] flex items-center justify-center text-white p-6">
+        <div class="text-center flex flex-col items-center max-w-sm">
+            <i class="ph ph-bell-ringing text-8xl mb-6 animate-bounce text-red-200"></i>
+            <h2 id="time-up-title" class="text-4xl font-bold mb-4">Tempo Esgotado!</h2>
+            <button id="close-time-up" class="bg-white text-red-600 px-10 py-4 rounded-2xl font-bold w-full shadow-2xl mt-4">Continuar</button>
+        </div>
+    </div>
+
+    <div id="trigger-reminder-modal" class="hidden fixed inset-0 bg-purple-900/95 z-[120] flex items-center justify-center text-white p-6">
+        <div class="text-center flex flex-col items-center max-w-sm">
+            <i class="ph ph-bell-ringing text-8xl mb-6 animate-bounce text-purple-200"></i>
+            <h2 id="trigger-reminder-title" class="text-3xl font-bold mb-4">Título</h2>
+            <audio id="trigger-reminder-audio" controls class="w-full mb-8"></audio>
+            <button id="close-trigger-reminder" class="bg-white text-purple-900 px-10 py-4 rounded-2xl font-bold w-full shadow-2xl mt-4">Entendido</button>
+        </div>
+    </div>
+
+    <canvas id="pip-canvas" width="300" height="300" class="hidden"></canvas>
+    <video id="pip-video" class="hidden" muted autoplay playsinline></video>
+
+    <script>
+        if ('serviceWorker' in navigator) { 
+            navigator.serviceWorker.register('./sw.js').catch(() => {}); 
+            Notification.requestPermission();
+        }
+
+        const MODES = { pomodoro: 25, shortBreak: 5, longBreak: 15 };
+        let currentMode = 'pomodoro', timeLeft = MODES[currentMode] * 60, isRunning = false;
+        let audioReminders = JSON.parse(localStorage.getItem('pomo_complete_reminders_v7')) || [];
+        const NOTES_ARCHIVE_KEY = 'pomo_notes_archive_v1';
+        let activeArchiveId = null;
+        let notesArchive = readNotesArchive();
+
+        const timeDisplay = document.getElementById('time-display'), mainBtn = document.getElementById('main-btn');
+        const taskInput = document.getElementById('task-input'), appBody = document.getElementById('app-body');
+        const mainCard = document.getElementById('main-card'), inputPomo = document.getElementById('input-pomodoro');
+        const inputShort = document.getElementById('input-shortBreak'), inputLong = document.getElementById('input-longBreak');
+        const colorPicker = document.getElementById('color-picker'), cardColorPicker = document.getElementById('card-color-picker'), textColorPicker = document.getElementById('text-color-picker');
+
+        // Worker Timer
+        let timerWorker = null;
+        function initWorker() {
+            const blob = new Blob([`let i=null; self.onmessage=e=>{if(e.data==='s'){if(!i)i=setInterval(()=>self.postMessage('t'),1000);}else{clearInterval(i);i=null;}};`], {type:'text/javascript'});
+            timerWorker = new Worker(URL.createObjectURL(blob));
+            timerWorker.onmessage = () => { 
+                if(isRunning){ 
+                    timeLeft--; 
+                    updateDisplay(); 
+                    if(timeLeft <= 0){ 
+                        isRunning=false; 
+                        timerWorker.postMessage('p'); 
+                        setTimeout(() => { triggerTimeUp(); }, 150); 
+                    } 
+                } 
+            };
+        }
+        initWorker();
+
+        function triggerTimeUp() {
+            taskInput.classList.remove('title-active');
+            document.getElementById('main-btn-icon').className = "ph-fill ph-play text-xl";
+            document.getElementById('main-btn-text').textContent = "INICIAR";
+            drawPiP("FIM!");
+
+            const msg = currentMode === 'pomodoro' ? "Sessão Concluída!" : "Pausa Terminada!";
+            if (Notification.permission === "granted" && navigator.serviceWorker) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(msg, { 
+                        body: taskInput.value || "O seu tempo esgotou.", 
+                        vibrate: [300, 100, 300], 
+                        requireInteraction: true,
+                        tag: 'pomo-timer-end'
+                    });
+                });
+            }
+
+            document.getElementById('time-up-title').textContent = msg;
+            document.getElementById('time-up-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('close-time-up').onclick = () => {
+            document.getElementById('time-up-modal').classList.add('hidden');
+            resetTimer();
+        };
+
+        function saveData() {
+            const editor = document.getElementById('editor');
+            const data = {
+                bgColor: colorPicker.value, cardColor: cardColorPicker.value, textColor: textColorPicker.value,
+                modes: MODES, notes: editor ? editor.innerHTML : "",
+                task: taskInput.value, attachments: document.getElementById('attachments-list').innerHTML
+            };
+            localStorage.setItem('pomo_complete_data_v7', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('pomo_complete_data_v7');
+            if(saved) {
+                const d = JSON.parse(saved);
+                appBody.style.backgroundColor = d.bgColor; colorPicker.value = d.bgColor;
+                mainCard.style.backgroundColor = d.cardColor; cardColorPicker.value = d.cardColor;
+                timeDisplay.style.color = d.textColor; textColorPicker.value = d.textColor;
+                appBody.style.setProperty('--timer-color', d.textColor);
+                Object.assign(MODES, d.modes);
+                document.getElementById('editor').innerHTML = d.notes || "";
+                document.getElementById('attachments-list').innerHTML = d.attachments || "";
+                taskInput.value = d.task || "";
+                timeLeft = MODES[currentMode] * 60; updateDisplay();
+            }
+            renderNotesArchive();
+        }
+
+        function readNotesArchive() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(NOTES_ARCHIVE_KEY) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function persistNotesArchive() {
+            localStorage.setItem(NOTES_ARCHIVE_KEY, JSON.stringify(notesArchive));
+        }
+
+        function textFromHtml(html) {
+            const div = document.createElement('div');
+            div.innerHTML = html || '';
+            return (div.textContent || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
+
+        function renderNotesArchive() {
+            const list = document.getElementById('notes-archive-list');
+            if (!list) return;
+
+            if (!notesArchive.length) {
+                list.innerHTML = '<div class="text-xs text-stone-500 border border-dashed rounded-xl p-3 bg-white">Nenhuma nota arquivada.</div>';
+                return;
+            }
+
+            list.innerHTML = notesArchive.map(note => `
+                <div class="rounded-xl border p-3 text-xs ${note.id === activeArchiveId ? 'border-amber-300 bg-amber-50' : 'border-stone-200 bg-white'}">
+                    <div class="flex justify-between gap-3">
+                        <div class="min-w-0">
+                            <strong class="block truncate text-stone-700">${escapeHtml(note.title || 'Nota sem titulo')}</strong>
+                            <span class="text-[10px] text-stone-400">${new Date(note.updatedAt || note.createdAt).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div class="flex gap-1 shrink-0">
+                            <button onclick="openArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Abrir</button>
+                            <button onclick="saveArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Salvar edicao</button>
+                            <button onclick="deleteArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-red-100 bg-white font-semibold text-red-600" type="button">Excluir</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function archiveCurrentNote() {
+            const editor = document.getElementById('editor');
+            const html = editor ? editor.innerHTML : '';
+            const text = textFromHtml(html);
+            if (!text) {
+                alert('Escreva uma anotacao antes de arquivar.');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            const note = {
+                id: Date.now(),
+                title: text.slice(0, 58) || 'Nota arquivada',
+                html,
+                createdAt: now,
+                updatedAt: now
+            };
+
+            notesArchive.unshift(note);
+            activeArchiveId = note.id;
+            persistNotesArchive();
+            renderNotesArchive();
+            document.getElementById('notes-archive-panel').classList.remove('hidden');
+            saveData();
+        }
+
+        window.openArchivedNote = (id) => {
+            const note = notesArchive.find(item => item.id === id);
+            const editor = document.getElementById('editor');
+            if (!note || !editor) return;
+            activeArchiveId = id;
+            editor.innerHTML = note.html || '';
+            saveData();
+            renderNotesArchive();
+        };
+
+        window.saveArchivedNote = (id) => {
+            const note = notesArchive.find(item => item.id === id);
+            const editor = document.getElementById('editor');
+            if (!note || !editor) return;
+            const html = editor.innerHTML;
+            const text = textFromHtml(html);
+            note.html = html;
+            note.title = text.slice(0, 58) || note.title || 'Nota arquivada';
+            note.updatedAt = new Date().toISOString();
+            activeArchiveId = id;
+            persistNotesArchive();
+            renderNotesArchive();
+            saveData();
+        };
+
+        window.deleteArchivedNote = (id) => {
+            if (!confirm('Excluir esta nota arquivada?')) return;
+            notesArchive = notesArchive.filter(note => note.id !== id);
+            if (activeArchiveId === id) activeArchiveId = null;
+            persistNotesArchive();
+            renderNotesArchive();
+        };
+
+        function updateDisplay() {
+            const m = Math.floor(timeLeft/60).toString().padStart(2,'0'), s = (timeLeft%60).toString().padStart(2,'0');
+            const str = `${m}:${s}`;
+            timeDisplay.textContent = str;
+            document.title = str + " - Pomodoro";
+            drawPiP(str);
+        }
+
+        // --- LEMBRETES DE ÁUDIO ---
+        let mediaRec, chunks = [], audioBase64 = null;
+        document.getElementById('record-action-btn').onclick = async () => {
+            if (!mediaRec || mediaRec.state === 'inactive') {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRec = new MediaRecorder(stream); chunks = [];
+                mediaRec.ondataavailable = e => chunks.push(e.data);
+                mediaRec.onstop = () => {
+                    const blobType = mediaRec.mimeType || 'audio/webm';
+                    const reader = new FileReader();
+                    reader.readAsDataURL(new Blob(chunks, { type: blobType }));
+                    reader.onloadend = () => { audioBase64 = reader.result; document.getElementById('save-reminder').disabled = false; };
+                };
+                mediaRec.start(); 
+                document.getElementById('record-icon-main').className = "ph-fill ph-stop text-3xl";
+                document.getElementById('record-status').textContent = "A gravar...";
+            } else {
+                mediaRec.stop(); 
+                document.getElementById('record-icon-main').className = "ph-fill ph-microphone text-3xl";
+                document.getElementById('record-status').textContent = "Pronto!";
+                mediaRec.stream.getTracks().forEach(t => t.stop());
+            }
+        };
+
+        function renderReminders() {
+            const now = Date.now();
+            audioReminders = audioReminders.filter(r => !r.completed || (now - r.time <= 24 * 60 * 60 * 1000));
+            const ativos = audioReminders.filter(r => !r.completed);
+            const historico = audioReminders.filter(r => r.completed);
+
+            document.getElementById('active-rem-list').innerHTML = ativos.map(r => `
+                <div class="flex justify-between items-center bg-stone-50 p-2 rounded-lg border text-[10px]">
+                    <span class="font-bold truncate w-24 text-stone-600">${r.title}</span>
+                    <span>${new Date(r.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    <button onclick="deleteRem(${r.id})" class="text-red-500"><i class="ph ph-trash"></i></button>
+                </div>
+            `).join('');
+
+            document.getElementById('history-rem-list').innerHTML = historico.map(r => `
+                <div class="flex justify-between items-center bg-stone-100 p-2 rounded-lg border text-[10px] opacity-75">
+                    <span class="font-bold truncate w-20 text-stone-500">${r.title}</span>
+                    <span>${new Date(r.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    <div class="flex gap-2">
+                        <button onclick="playHistRem(${r.id})" class="text-purple-600"><i class="ph-fill ph-play-circle text-lg"></i></button>
+                        <button onclick="deleteRem(${r.id})" class="text-red-500"><i class="ph ph-trash text-lg"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.deleteRem = id => { audioReminders = audioReminders.filter(r => r.id !== id); localStorage.setItem('pomo_complete_reminders_v7', JSON.stringify(audioReminders)); renderReminders(); };
+        window.playHistRem = id => {
+            const rem = audioReminders.find(r => r.id === id);
+            if(rem && rem.audio) { const a = new Audio(rem.audio); a.play(); }
+        };
+
+        document.getElementById('save-reminder').onclick = () => {
+            const title = document.getElementById('reminder-title').value || "Lembrete";
+            const dt = document.getElementById('reminder-datetime').value;
+            const triggerTime = dt ? new Date(dt).getTime() : Date.now() + (parseInt(document.getElementById('reminder-minutes').value) * 60000);
+            audioReminders.push({ id: Date.now(), title, audio: audioBase64, time: triggerTime, completed: false });
+            localStorage.setItem('pomo_complete_reminders_v7', JSON.stringify(audioReminders));
+            audioBase64 = null; document.getElementById('create-reminder-modal').classList.add('hidden');
+            renderReminders();
+        };
+
+        // AJUSTADO: Lógica de Notificação do Lembrete de Áudio igual à do Timer
+        setInterval(() => {
+            const now = Date.now();
+            const toTriggerIndex = audioReminders.findIndex(rem => !rem.completed && now >= rem.time);
+
+            if (toTriggerIndex !== -1) {
+                const rem = audioReminders[toTriggerIndex];
+                rem.completed = true;
+                localStorage.setItem('pomo_complete_reminders_v7', JSON.stringify(audioReminders));
+                renderReminders();
+
+                // Notificação Forçada via Service Worker com Vibração (Igual ao Timer)
+                if (Notification.permission === "granted" && navigator.serviceWorker) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("🎤 " + rem.title, { 
+                            body: "Novo lembrete de áudio disponível. Toque para ouvir.", 
+                            vibrate: [300, 100, 300], 
+                            requireInteraction: true,
+                            tag: 'pomo-audio-reminder',
+                            renotify: true
+                        });
+                    });
+                }
+
+                const audioEl = document.getElementById('trigger-reminder-audio');
+                document.getElementById('trigger-reminder-title').textContent = rem.title;
+                audioEl.src = rem.audio;
+                audioEl.load();
+                document.getElementById('trigger-reminder-modal').classList.remove('hidden');
+            }
+        }, 2000);
+
+        document.getElementById('close-trigger-reminder').onclick = () => {
+            document.getElementById('trigger-reminder-modal').classList.add('hidden');
+            const audioEl = document.getElementById('trigger-reminder-audio');
+            audioEl.pause(); audioEl.src = ""; 
+        };
+
+        // --- UI CORE ---
+        mainBtn.onclick = () => {
+            if (isRunning) { 
+                isRunning = false; timerWorker.postMessage('p'); 
+                taskInput.classList.remove('title-active');
+            } else { 
+                isRunning = true; timerWorker.postMessage('s'); 
+                if(taskInput.value.trim() !== "") taskInput.classList.add('title-active');
+            }
+            document.getElementById('main-btn-icon').className = isRunning ? "ph-fill ph-pause text-xl" : "ph-fill ph-play text-xl";
+            document.getElementById('main-btn-text').textContent = isRunning ? "PAUSAR" : "INICIAR";
+            saveData();
+        };
+
+        function resetTimer() { isRunning = false; timerWorker.postMessage('p'); timeLeft = MODES[currentMode] * 60; updateDisplay(); taskInput.classList.remove('title-active'); saveData(); }
+        document.getElementById('reset-btn').onclick = resetTimer;
+
+        document.querySelectorAll('.mode-btn').forEach((btn, i) => btn.onclick = () => {
+            currentMode = btn.dataset.mode;
+            document.getElementById('mode-indicator').style.transform = `translateX(${i * 100}%)`;
+            resetTimer();
+        });
+
+        document.getElementById('settings-toggle').onclick = () => {
+            inputPomo.value = MODES.pomodoro; inputShort.value = MODES.shortBreak; inputLong.value = MODES.longBreak;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        };
+
+        document.getElementById('save-settings').onclick = () => {
+            MODES.pomodoro = parseInt(inputPomo.value); MODES.shortBreak = parseInt(inputShort.value); MODES.longBreak = parseInt(inputLong.value);
+            saveData(); document.getElementById('settings-modal').classList.add('hidden'); resetTimer();
+        };
+
+        colorPicker.oninput = (e) => { appBody.style.backgroundColor = e.target.value; saveData(); };
+        cardColorPicker.oninput = (e) => { mainCard.style.backgroundColor = e.target.value; saveData(); };
+        textColorPicker.oninput = (e) => {
+            timeDisplay.style.color = e.target.value;
+            appBody.style.setProperty('--timer-color', e.target.value);
+            saveData();
+        };
+
+        function formatDoc(cmd, val = null) { document.execCommand(cmd, false, val); saveData(); }
+        document.getElementById('editor').oninput = saveData;
+        document.getElementById('task-input').oninput = saveData;
+
+        function saveNotesNow() {
+            saveData();
+            const button = document.getElementById('save-notes');
+            if (!button) return;
+            const original = button.textContent || 'Salvar';
+            button.textContent = 'Salvo';
+            window.setTimeout(() => { button.textContent = original; }, 1200);
+        }
+
+        function floatNotesToHub() {
+            saveData();
+            const editor = document.getElementById('editor');
+            window.parent?.postMessage(
+                { type: 'hub:pomodoro-notes-float', notes: editor ? editor.innerHTML : '' },
+                window.location.origin
+            );
+            document.getElementById('notes-sidebar').classList.add('translate-x-full');
+        }
+
+        document.getElementById('notes-toggle').onclick = () => {
+            loadData();
+            document.getElementById('notes-sidebar').classList.remove('translate-x-full');
+        };
+        document.getElementById('save-notes').onclick = saveNotesNow;
+        document.getElementById('archive-note').onclick = archiveCurrentNote;
+        document.getElementById('open-notes-archive').onclick = () => {
+            renderNotesArchive();
+            document.getElementById('notes-archive-panel').classList.toggle('hidden');
+        };
+        document.getElementById('close-notes-archive').onclick = () => document.getElementById('notes-archive-panel').classList.add('hidden');
+        document.getElementById('float-notes').onclick = floatNotesToHub;
+        document.getElementById('close-notes').onclick = () => {
+            saveData();
+            document.getElementById('notes-sidebar').classList.add('translate-x-full');
+        };
+        document.getElementById('cancel-settings').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
+        document.getElementById('open-reminder-btn').onclick = () => { document.getElementById('create-reminder-modal').classList.remove('hidden'); renderReminders(); };
+        document.getElementById('cancel-reminder').onclick = () => document.getElementById('create-reminder-modal').classList.add('hidden');
+        document.getElementById('attach-btn').onclick = () => document.getElementById('file-input').click();
+        
+        document.getElementById('file-input').onchange = function() {
+            const list = document.getElementById('attachments-list');
+            Array.from(this.files).forEach(f => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-2 bg-white border rounded-lg text-[10px]";
+                div.innerHTML = `<span class="truncate w-32 font-bold">${f.name}</span><button onclick="this.parentElement.remove(); saveData();" class="text-red-500"><i class="ph ph-trash"></i></button>`;
+                list.appendChild(div);
+            });
+            saveData();
+        };
+
+        const canvas = document.getElementById('pip-canvas'), ctx = canvas.getContext('2d'), video = document.getElementById('pip-video');
+        function drawPiP(text) {
+            ctx.fillStyle = mainCard.style.backgroundColor || "#ffffff"; ctx.fillRect(0,0,300,300);
+            ctx.fillStyle = timeDisplay.style.color || "#292524"; ctx.font = "bold 80px Inter"; ctx.textAlign = "center";
+            ctx.fillText(text, 150, 165);
+        }
+        document.getElementById('pip-toggle').onclick = async () => {
+            try { video.srcObject = canvas.captureStream(); await video.play(); await video.requestPictureInPicture(); } catch(e) {}
+        };
+
+        loadData(); updateDisplay(); renderReminders();
+    </script>
+</body>
+</html>
