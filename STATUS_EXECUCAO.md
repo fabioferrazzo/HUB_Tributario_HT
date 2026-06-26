@@ -366,3 +366,7 @@
 - `npm.cmd run typecheck`: OK em 26/06/2026 apos atualizacao do roteiro/checklist/manual de homologacao.
 - `npm.cmd run preflight`: OK em 26/06/2026 apos atualizacao do roteiro/checklist/manual de homologacao.
 - `npm.cmd run build`: OK em 26/06/2026 apos atualizacao do roteiro/checklist/manual de homologacao.
+- Limpeza: em 26/06/2026, Bloco 09 removeu o CSV legado `public/data/pautas-hub.csv` e criou `GUIA_LIMPEZA_NETLIFY_SUPABASE.md` para orientar a remocao das variaveis antigas de Sheets e confirmar o projeto Supabase correto do HUB.
+- `npm.cmd run typecheck`: OK em 26/06/2026 apos limpeza final de variaveis/artefatos legados do Sheets.
+- `npm.cmd run preflight`: OK em 26/06/2026 apos limpeza final de variaveis/artefatos legados do Sheets.
+- `npm.cmd run build`: OK em 26/06/2026 apos limpeza final de variaveis/artefatos legados do Sheets.
