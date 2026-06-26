@@ -2108,15 +2108,16 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
     };
   }, [user]);
 
+  const sidebarTasks = useMemo(() => tasks.filter(shouldKeepTaskInSidebarHistory), [tasks]);
   const activeTasks = useMemo(() => tasks.filter((task) => !task.archivedAt), [tasks]);
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = normalizeForSearch(query);
-    return activeTasks
+    return sidebarTasks
       .filter((task) => {
         if (filter === "minhas") return isTaskAssignedToUser(task, user, hubUsers);
-        if (filter === "abertas") return task.status === "aberta";
-        if (filter === "concluidas") return task.status === "concluida";
+        if (filter === "abertas") return !task.archivedAt && task.status === "aberta";
+        if (filter === "concluidas") return !task.archivedAt && task.status === "concluida";
         return true;
       })
       .filter((task) => {
@@ -2133,9 +2134,9 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           .toLowerCase()
           .includes(normalizedQuery);
       });
-  }, [activeTasks, filter, hubUsers, query, user]);
+  }, [filter, hubUsers, query, sidebarTasks, user]);
 
-  const minhasTasks = useMemo(() => activeTasks.filter((task) => isTaskAssignedToUser(task, user, hubUsers)), [activeTasks, hubUsers, user]);
+  const minhasTasks = useMemo(() => sidebarTasks.filter((task) => isTaskAssignedToUser(task, user, hubUsers)), [hubUsers, sidebarTasks, user]);
   const abertasCount = activeTasks.filter((task) => task.status === "aberta").length;
 
   function clearFormFields() {
@@ -2428,7 +2429,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       <header className="task-sidebar-head">
         <div className="task-sidebar-title">
           <h2>Minhas tarefas</h2>
-          <small>{loading ? "Carregando..." : `${source} - ${activeTasks.length} item(ns)`}</small>
+          <small>{loading ? "Carregando..." : `${source} - ${sidebarTasks.length} item(ns)`}</small>
         </div>
         <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={() => startNewTask()}>
           <Plus size={14} />
@@ -2446,7 +2447,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
           Minhas ({minhasTasks.length})
         </button>
         <button className={`filter-pill ${filter === "todas" ? "active" : ""}`} onClick={() => setFilter("todas")} type="button">
-          Todas ({activeTasks.length})
+          Todas ({sidebarTasks.length})
         </button>
         <button className={`filter-pill ${filter === "abertas" ? "active" : ""}`} onClick={() => setFilter("abertas")} type="button">
           Abertas ({abertasCount})
@@ -2475,15 +2476,22 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       <div className="task-list">
         {filteredTasks.map((task) => {
           const canManage = canUserManageTask(task, user);
+          const isHistoryTask = isTaskSidebarHistoryRecord(task);
 
           return (
-            <article className={`task-item task-item--${task.status} ${task.destaque ? "task-item--featured" : ""}`} key={task.id}>
+            <article
+              className={`task-item task-item--${task.status} ${task.destaque ? "task-item--featured" : ""} ${
+                isHistoryTask ? "task-item--history" : ""
+              }`}
+              key={task.id}
+            >
               <CheckCircle2 size={17} />
               <div>
                 <strong>{task.titulo}</strong>
                 <span className="task-note-preview">{task.descricao || "Sem notas registradas"}</span>
                 <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
                 <div className="lembrete-tags">
+                  {isHistoryTask ? <StatusPill label="historico" /> : null}
                   {task.destaque ? <StatusPill label="destaque" /> : null}
                   <StatusPill label={task.status} />
                   <StatusPill label={task.prioridade} />
@@ -6260,6 +6268,27 @@ function taskToReportRow(task: TaskItem): ReportRow {
     Responsaveis: task.responsaveis.join(", ") || "Sem responsavel definido",
     Anexos: String(task.anexos.length)
   };
+}
+
+const TASK_SIDEBAR_HISTORY_DAYS = 7;
+const TASK_SIDEBAR_HISTORY_MS = TASK_SIDEBAR_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+
+function shouldKeepTaskInSidebarHistory(task: TaskItem) {
+  const referenceDate = task.archivedAt || task.prazo;
+  if (!referenceDate) return true;
+
+  const timestamp = Date.parse(referenceDate);
+  if (!Number.isFinite(timestamp)) return true;
+
+  return Date.now() - timestamp <= TASK_SIDEBAR_HISTORY_MS;
+}
+
+function isTaskSidebarHistoryRecord(task: TaskItem) {
+  if (task.archivedAt) return true;
+  if (!task.prazo) return false;
+
+  const timestamp = Date.parse(task.prazo);
+  return Number.isFinite(timestamp) && timestamp < Date.now();
 }
 
 function taskToCalendarFrameEvent(task: TaskItem) {

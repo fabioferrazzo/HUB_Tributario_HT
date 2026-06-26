@@ -882,6 +882,15 @@ textarea:focus {
   opacity: 0.58;
 }
 
+.task-item--history {
+  background: #fbf8ef;
+  opacity: 0.62;
+}
+
+.task-item--history.task-item--featured {
+  background: #fff5cb;
+}
+
 .task-item--featured {
   border-color: #d8ad43;
   background: #fff8dc;
@@ -912,16 +921,21 @@ textarea:focus {
 
 .task-toolbar {
   padding: 10px 14px;
+  align-items: center;
+  gap: 8px;
 }
 
 .task-toolbar .panel-search {
-  grid-column: 1 / -1;
-  max-width: none;
+  flex: 1 1 140px;
+  min-width: 130px;
+  max-width: 180px;
+  margin-left: 0;
 }
 
 .task-export-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   padding: 10px 14px 0;
 }
@@ -3802,13 +3816,78 @@ body {
   color: #182f50;
 }
 
-.pauta-description-input {
-  line-height: 1.5;
-  transition: background 0.16s ease, font-size 0.16s ease;
+.rich-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.pauta-description-input--highlight {
-  background: #fff8c6;
+.rich-editor-field > span {
+  color: #6b7790;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.pauta-description-input {
+  min-height: 110px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #23344a;
+  outline: none;
+  padding: 10px 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.pauta-description-input:focus {
+  border-color: #b89551;
+  box-shadow: 0 0 0 3px rgba(184, 149, 81, 0.18);
+}
+
+.pauta-description-input:empty::before {
+  color: #8a94a6;
+  content: attr(data-placeholder);
+}
+
+.pauta-rich-text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.pauta-rich-text strong {
+  font-weight: 850;
+}
+
+.pauta-rich-text em {
+  font-style: italic;
+}
+
+.pauta-rich-text mark {
+  background: #fff3a3;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 2px;
+}
+
+.pauta-rich-text .pauta-text-small {
+  font-size: 12px;
+}
+
+.pauta-rich-text .pauta-text-normal {
+  font-size: 14px;
+}
+
+.pauta-rich-text .pauta-text-large {
+  font-size: 18px;
+}
+
+.pauta-rich-text .pauta-text-xlarge {
+  font-size: 22px;
 }
 
 .pauta-format-preview {
@@ -3836,14 +3915,10 @@ body {
   line-height: 1.3;
 }
 
-.pauta-format-preview p {
+.pauta-format-preview .pauta-rich-text {
   margin: 0;
   color: inherit;
-  font-size: inherit;
-  font-style: inherit;
-  font-weight: inherit;
   line-height: 1.45;
-  white-space: pre-wrap;
 }
 
 .form-actions-inline {
