@@ -56,10 +56,14 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Filtro mensal altera mes/ano exibido | Pendente |
 | Botao destacar deixa pauta em alto relevo | Pendente |
 | Botao de rolagem liga/desliga rolagem da lista | Pendente |
-| Usuario conclui pauta geral ou atribuida | Pendente |
+| Usuario comum nao conclui pauta geral sem estar marcado | Pendente |
+| Usuario marcado conclui pauta atribuida a ele | Pendente |
+| Pauta concluida pelo usuario marcado sai da visualizacao ativa dele | Pendente |
 | Conclusao de pauta gera notificacao/e-mail para admin | Pendente |
+| Admin visualiza item concluido no historico/Coordenacao e consegue reabrir quando aplicavel | Pendente |
 | Exportar pautas em PDF | Pendente |
 | Exportar pautas em XLSX real | Pendente |
+| Enviar pautas por e-mail preserva fonte legivel e estilos principais | Pendente |
 | Pauta criada na Coordenacao aparece no menu Pautas apos recarregar | Pendente |
 | Pauta criada no menu Pautas aparece na Coordenacao apos recarregar | Pendente |
 | Pauta criada na Coordenacao com anexo aparece no menu Pautas com anexo abrindo/baixando | Pendente |
@@ -89,16 +93,20 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Teste | Resultado |
 | --- | --- |
 | Menu lateral aparece como `Calendario de Tarefas` | Pendente |
-| Criar tarefa pela sidebar | Pendente |
+| Criar tarefa pela sidebar `Nova tarefa` | Pendente |
 | Sidebar inicia como `Minhas tarefas` com formulario oculto | Pendente |
 | Botao `Nova tarefa` abre formulario lateral | Pendente |
-| Criar tarefa pelo calendario original | Pendente |
+| Duplo clique no dia do calendario abre o mesmo formulario lateral | Pendente |
+| Botao redundante `+ Novo` do calendario nao aparece ou nao cria fluxo duplicado | Pendente |
 | Responsaveis aparecem e salvam | Pendente |
 | Anexo em tarefa salva | Pendente |
 | Editar tarefa/notas pela sidebar | Pendente |
+| Botoes salvar/cancelar aparecem e funcionam ao editar tarefa | Pendente |
 | Concluir/reabrir tarefa | Pendente |
-| Excluir tarefa permitida | Pendente |
-| Calendario, painel lateral e sidebar de lembretes ficam sincronizados | Pendente |
+| Excluir tarefa permitida remove da lista ativa e mantem historico na Agenda | Pendente |
+| Usuario marcado visualiza em `Minhas tarefas` e recebe notificacao | Pendente |
+| Usuario comum nao edita/exclui tarefa criada por outro | Pendente |
+| Calendario e painel lateral ficam sincronizados | Pendente |
 
 ## Bloco 6 - Arquivos e visualizador
 
@@ -206,10 +214,15 @@ Opcionalmente, use tambem `Configuracoes > Checklist funcional` dentro do HUB pa
 | Botao `Criar pauta` aparece no topo e nas acoes rapidas | Pendente |
 | Criar pauta registra item na lista de atividades | Pendente |
 | Criar lembrete registra item na lista de atividades | Pendente |
+| Linguagem usa `Criar lembrete colaborador` e `Criar item de pauta` sem ambiguidade | Pendente |
 | Anexo em pauta/lembrete salva e aparece no card | Pendente |
 | Anexo de pauta criada na Coordenacao permanece disponivel no menu Pautas nativo | Pendente |
+| Lembrete de avaliacao marcado para integrar/repetir cria tambem tarefa no Calendario de Tarefas | Pendente |
 | Historico dos ultimos 30 dias abre | Pendente |
 | Gerar relatorio inclui pautas, lembretes e anexos | Pendente |
+| Template de bonificacao aceita upload XLSX e abre espelho editavel | Pendente |
+| Botao `Preencher avaliacoes` cria/preenche bloco de avaliacao | Pendente |
+| Exportar XLSX do template gera arquivo real `.xlsx` | Pendente |
 | Botao enviar pauta por e-mail funciona | Pendente |
 | Botao enviar avaliacoes por e-mail funciona | Pendente |
 | Registros aparecem em `email_outbox` | Pendente |

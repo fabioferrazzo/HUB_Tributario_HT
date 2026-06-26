@@ -99,7 +99,9 @@ Como colaborador:
 - visualizar pauta geral;
 - visualizar pauta atribuida ao usuario;
 - baixar anexo quando autorizado;
-- concluir pauta geral ou atribuida;
+- nao concluir pauta geral quando nao estiver marcado;
+- concluir pauta atribuida ao usuario;
+- confirmar que pauta concluida pelo usuario sai da visualizacao ativa dele;
 - nao visualizar pauta restrita a outro usuario.
 
 ## 6. Lembretes
@@ -125,16 +127,20 @@ Como colaborador:
 
 Validar os dois caminhos:
 
-- criar tarefa pela sidebar;
-- criar tarefa pelo calendario original, com duplo clique no dia ou botao `+ Novo`;
+- criar tarefa pela sidebar `Nova tarefa`;
+- criar tarefa pelo calendario original com duplo clique no dia;
+- confirmar que o antigo fluxo redundante `+ Novo` nao aparece ou nao cria tarefa por caminho separado;
 - marcar responsaveis;
 - anexar arquivo;
 - editar tarefa;
+- confirmar botoes salvar/cancelar ao editar;
 - concluir/reabrir;
-- excluir tarefa permitida;
+- excluir tarefa permitida, removendo da lista ativa e preservando historico;
+- confirmar que usuario marcado ve a tarefa em `Minhas tarefas` e recebe notificacao;
+- confirmar que colaborador nao edita/exclui tarefa criada por outro usuario;
 - conferir se o calendario e a lista lateral ficam sincronizados.
 
-Observacao: a sincronizacao multiusuario Supabase de Tarefas esta preparada para ativacao futura por variavel. O fluxo atual preserva a integracao com o calendario original.
+Observacao: o fluxo aprovado usa Tarefas/Lembretes como uma unica entidade operacional no Calendario de Tarefas.
 
 ## 8. Arquivos
 
@@ -226,13 +232,16 @@ Validar no app integrado:
 
 - abrir app sem erro;
 - confirmar topo compacto com busca, filtro por colaborador e botoes de acao;
-- criar pauta;
-- criar lembrete;
+- criar item de pauta;
+- criar lembrete colaborador;
+- confirmar que a linguagem nao exibe opcoes ambiguas como `pauta`, `pautas` e `colaborador` sem contexto;
 - anexar arquivo em pauta/lembrete;
 - confirmar que anexos aparecem no card;
 - confirmar que anexo de pauta criada na Coordenacao permanece disponivel no menu `Pautas`;
+- marcar `Integrar/repetir no Calendario de Tarefas` em lembrete colaborador e confirmar que a tarefa aparece no calendario;
 - abrir historico dos ultimos 30 dias;
 - gerar relatorio e conferir pautas, lembretes e anexos;
+- usar `Template - bonificacao`: fazer upload do XLSX do colaborador, editar espelho, preencher avaliacoes e exportar XLSX real;
 - usar botao manual de envio de pauta por e-mail;
 - usar botao manual de envio de avaliacoes por e-mail;
 - conferir registros na `email_outbox`.

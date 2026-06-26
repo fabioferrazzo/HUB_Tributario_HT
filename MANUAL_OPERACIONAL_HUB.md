@@ -46,8 +46,9 @@ Este manual resume a rotina de administracao do HUB sem substituir o checklist d
 
 3. Coordenacao Tributaria.
    - Revisar colaboradores.
-   - Atualizar atividades, lembretes e pautas.
+   - Atualizar lembretes de avaliacao de colaboradores e itens de pauta.
    - Confirmar que anexos de pautas criadas na Coordenacao abrem/baixam no menu `Pautas`.
+   - Quando houver avaliacao/bonificacao, usar `Template - bonificacao` para abrir o XLSX do colaborador, preencher avaliacoes, revisar o espelho editavel e exportar o XLSX final.
    - Usar envio manual de pauta/avaliacoes quando necessario.
 
 4. Rodapes.

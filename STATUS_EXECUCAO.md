@@ -362,3 +362,7 @@
 - Coordenacao: em 25/06/2026, Bloco 07 iniciou o fluxo de bonificacao por template XLSX: upload do XLSX do colaborador, espelho editavel em tabela, botao `Preencher avaliacoes`, campos de colaborador/periodo/recomendacoes e exportacao final em XLSX.
 - `npm.cmd run typecheck`: OK em 25/06/2026 apos painel de template XLSX de bonificacao na Coordenacao.
 - `npm.cmd run build`: OK em 25/06/2026 apos painel de template XLSX de bonificacao na Coordenacao.
+- Homologacao: em 26/06/2026, Bloco 08 atualizou o roteiro/checklist/manual com os criterios finais de Pautas, Calendario de Tarefas, Coordenacao, integracao de lembretes ao calendario e template XLSX de bonificacao.
+- `npm.cmd run typecheck`: OK em 26/06/2026 apos atualizacao do roteiro/checklist/manual de homologacao.
+- `npm.cmd run preflight`: OK em 26/06/2026 apos atualizacao do roteiro/checklist/manual de homologacao.
+- `npm.cmd run build`: OK em 26/06/2026 apos atualizacao do roteiro/checklist/manual de homologacao.
