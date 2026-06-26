@@ -540,15 +540,22 @@ export function App() {
     await markAllAppNotificationsRead(user, ids);
   }
 
-  function handlePomodoroNotesSave() {
-    savePomodoroNotes(pomodoroNotes);
+  function handlePomodoroNotesSave(nextNotes = pomodoroNotes) {
+    savePomodoroNotes(nextNotes);
+    setPomodoroNotes(nextNotes);
     setPomodoroNotesStatus("Anotacoes salvas.");
   }
 
-  function handlePomodoroNotesClose() {
-    savePomodoroNotes(pomodoroNotes);
+  function handlePomodoroNotesClose(nextNotes = pomodoroNotes) {
+    savePomodoroNotes(nextNotes);
+    setPomodoroNotes(nextNotes);
     setPomodoroNotesOpen(false);
     setPomodoroNotesStatus("");
+  }
+
+  function handlePomodoroNotesChange(nextNotes: string) {
+    setPomodoroNotes(nextNotes);
+    savePomodoroNotes(nextNotes);
   }
 
   return (
@@ -629,7 +636,7 @@ export function App() {
         notes={pomodoroNotes}
         open={pomodoroNotesOpen}
         status={pomodoroNotesStatus}
-        onChange={setPomodoroNotes}
+        onChange={handlePomodoroNotesChange}
         onClose={handlePomodoroNotesClose}
         onSave={handlePomodoroNotesSave}
       />
@@ -649,8 +656,8 @@ function PomodoroFloatingNotes({
   open: boolean;
   status: string;
   onChange: (notes: string) => void;
-  onClose: () => void;
-  onSave: () => void;
+  onClose: (notes?: string) => void;
+  onSave: (notes?: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dragStartRef = useRef<{ pointerId: number; x: number; y: number; left: number; top: number } | null>(null);
@@ -697,6 +704,12 @@ function PomodoroFloatingNotes({
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
+  function commitEditorDraft() {
+    const nextNotes = editorRef.current ? editorRef.current.innerHTML : notes;
+    onChange(nextNotes);
+    return nextNotes;
+  }
+
   return (
     <section
       className={`pomodoro-floating-notes ${minimized ? "pomodoro-floating-notes--minimized" : ""}`}
@@ -716,14 +729,32 @@ function PomodoroFloatingNotes({
         </div>
         <div className="pomodoro-floating-notes__actions">
           {!minimized ? (
-            <button type="button" onClick={onSave}>
+            <button
+              type="button"
+              onClick={() => {
+                const nextNotes = commitEditorDraft();
+                onSave(nextNotes);
+              }}
+            >
               Salvar
             </button>
           ) : null}
-          <button type="button" onClick={() => setMinimized((current) => !current)}>
+          <button
+              type="button"
+              onClick={() => {
+                commitEditorDraft();
+                setMinimized((current) => !current);
+            }}
+          >
             {minimized ? "Abrir" : "Minimizar"}
           </button>
-          <button type="button" onClick={onClose}>
+          <button
+              type="button"
+              onClick={() => {
+                const nextNotes = commitEditorDraft();
+                onClose(nextNotes);
+              }}
+            >
             Fechar
           </button>
         </div>
@@ -736,6 +767,7 @@ function PomodoroFloatingNotes({
             ref={editorRef}
             suppressContentEditableWarning
             onInput={(event) => onChange(event.currentTarget.innerHTML)}
+            onBlur={(event) => onChange(event.currentTarget.innerHTML)}
           />
           {status ? <div className="pomodoro-floating-notes__status">{status}</div> : null}
         </>
