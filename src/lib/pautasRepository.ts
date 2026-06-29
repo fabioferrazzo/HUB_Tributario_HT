@@ -432,8 +432,8 @@ function decodePautaDescricao(value: string): {
 }
 
 function normalizePautaTextSize(value?: string): PautaTextSize {
-  if (value === "pequena" || value === "grande" || value === "muito-grande") return value;
-  if (value === "muitoGrande") return "muito-grande";
+  if (value === "pequena" || value === "normal" || value === "grande") return value;
+  if (value === "muito-grande" || value === "muitoGrande") return "grande";
   return "normal";
 }
 
