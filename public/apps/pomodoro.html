@@ -94,20 +94,35 @@
                 <button id="float-notes" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold flex items-center gap-1" type="button">
                     <i class="ph ph-arrow-square-out"></i> Flutuar
                 </button>
+                <button id="archive-note" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Arquivar</button>
+                <button id="open-notes-archive" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Arquivo</button>
                 <button id="save-notes" class="text-xs px-3 py-2 rounded-xl bg-stone-900 text-white font-semibold" type="button">Salvar</button>
                 <button id="close-notes" class="text-stone-400 p-2" type="button"><i class="ph ph-x text-xl"></i></button>
             </div>
         </div>
         <div class="px-4 py-2 border-b flex gap-2 items-center overflow-x-auto no-scrollbar bg-white">
             <button onmousedown="event.preventDefault();" onclick="formatDoc('bold')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-b"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('italic')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-italic"></i></button>
             <button onmousedown="event.preventDefault();" onclick="formatDoc('strikeThrough')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-strikethrough"></i></button>
             <button onmousedown="event.preventDefault();" onclick="formatDoc('backColor', '#fef08a')" class="p-1.5 hover:bg-yellow-100 rounded text-yellow-600"><i class="ph-fill ph-highlighter"></i></button>
             <div class="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
-            <input type="color" onchange="formatDoc('foreColor', this.value)" class="w-6 h-6 border-0 p-0 rounded cursor-pointer">
-            <input type="color" onchange="formatDoc('backColor', this.value)" class="w-6 h-6 border-0 p-0 rounded cursor-pointer">
+            <label class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-stone-200 bg-white cursor-pointer" title="Cor do texto">
+                <input type="color" aria-label="Cor do texto" onchange="formatDoc('foreColor', this.value); this.nextElementSibling.style.backgroundColor = this.value;" class="absolute inset-0 h-full w-full opacity-0 cursor-pointer" value="#292524">
+                <span class="block h-5 w-5 rounded border border-stone-300 bg-stone-900"></span>
+            </label>
             <select onchange="formatDoc('fontSize', this.value)" class="text-sm bg-transparent border rounded p-1 text-stone-600">
                 <option value="5">Normal</option><option value="6">Grande</option><option value="7">Enorme</option>
             </select>
+        </div>
+        <div id="notes-archive-panel" class="hidden border-b bg-stone-50 p-4">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <div>
+                    <strong class="text-sm text-stone-700">Arquivo de notas</strong>
+                    <p class="text-[11px] text-stone-500">Abra, edite, salve ou exclua anotacoes arquivadas.</p>
+                </div>
+                <button id="close-notes-archive" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Fechar</button>
+            </div>
+            <div id="notes-archive-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
         </div>
         <div id="editor" contenteditable="true" placeholder="Escreva aqui..." class="flex-1 p-6 outline-none overflow-y-auto text-stone-700 text-2xl"></div>
         <div class="p-4 border-t bg-stone-50">
@@ -186,6 +201,9 @@
         const MODES = { pomodoro: 25, shortBreak: 5, longBreak: 15 };
         let currentMode = 'pomodoro', timeLeft = MODES[currentMode] * 60, isRunning = false;
         let audioReminders = JSON.parse(localStorage.getItem('pomo_complete_reminders_v7')) || [];
+        const NOTES_ARCHIVE_KEY = 'pomo_notes_archive_v1';
+        let activeArchiveId = null;
+        let notesArchive = readNotesArchive();
 
         const timeDisplay = document.getElementById('time-display'), mainBtn = document.getElementById('main-btn');
         const taskInput = document.getElementById('task-input'), appBody = document.getElementById('app-body');
@@ -240,9 +258,10 @@
         };
 
         function saveData() {
+            const editor = document.getElementById('editor');
             const data = {
                 bgColor: colorPicker.value, cardColor: cardColorPicker.value, textColor: textColorPicker.value,
-                modes: MODES, notes: document.getElementById('editor').innerHTML, 
+                modes: MODES, notes: editor ? editor.innerHTML : "",
                 task: taskInput.value, attachments: document.getElementById('attachments-list').innerHTML
             };
             localStorage.setItem('pomo_complete_data_v7', JSON.stringify(data));
@@ -262,7 +281,122 @@
                 taskInput.value = d.task || "";
                 timeLeft = MODES[currentMode] * 60; updateDisplay();
             }
+            renderNotesArchive();
         }
+
+        function readNotesArchive() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(NOTES_ARCHIVE_KEY) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function persistNotesArchive() {
+            localStorage.setItem(NOTES_ARCHIVE_KEY, JSON.stringify(notesArchive));
+        }
+
+        function textFromHtml(html) {
+            const div = document.createElement('div');
+            div.innerHTML = html || '';
+            return (div.textContent || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
+
+        function renderNotesArchive() {
+            const list = document.getElementById('notes-archive-list');
+            if (!list) return;
+
+            if (!notesArchive.length) {
+                list.innerHTML = '<div class="text-xs text-stone-500 border border-dashed rounded-xl p-3 bg-white">Nenhuma nota arquivada.</div>';
+                return;
+            }
+
+            list.innerHTML = notesArchive.map(note => `
+                <div class="rounded-xl border p-3 text-xs ${note.id === activeArchiveId ? 'border-amber-300 bg-amber-50' : 'border-stone-200 bg-white'}">
+                    <div class="flex justify-between gap-3">
+                        <div class="min-w-0">
+                            <strong class="block truncate text-stone-700">${escapeHtml(note.title || 'Nota sem titulo')}</strong>
+                            <span class="text-[10px] text-stone-400">${new Date(note.updatedAt || note.createdAt).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div class="flex gap-1 shrink-0">
+                            <button onclick="openArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Abrir</button>
+                            <button onclick="saveArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Salvar edicao</button>
+                            <button onclick="deleteArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-red-100 bg-white font-semibold text-red-600" type="button">Excluir</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function archiveCurrentNote() {
+            const editor = document.getElementById('editor');
+            const html = editor ? editor.innerHTML : '';
+            const text = textFromHtml(html);
+            if (!text) {
+                alert('Escreva uma anotacao antes de arquivar.');
+                return;
+            }
+
+            const now = new Date().toISOString();
+            const note = {
+                id: Date.now(),
+                title: text.slice(0, 58) || 'Nota arquivada',
+                html,
+                createdAt: now,
+                updatedAt: now
+            };
+
+            notesArchive.unshift(note);
+            activeArchiveId = note.id;
+            persistNotesArchive();
+            renderNotesArchive();
+            document.getElementById('notes-archive-panel').classList.remove('hidden');
+            saveData();
+        }
+
+        window.openArchivedNote = (id) => {
+            const note = notesArchive.find(item => item.id === id);
+            const editor = document.getElementById('editor');
+            if (!note || !editor) return;
+            activeArchiveId = id;
+            editor.innerHTML = note.html || '';
+            saveData();
+            renderNotesArchive();
+        };
+
+        window.saveArchivedNote = (id) => {
+            const note = notesArchive.find(item => item.id === id);
+            const editor = document.getElementById('editor');
+            if (!note || !editor) return;
+            const html = editor.innerHTML;
+            const text = textFromHtml(html);
+            note.html = html;
+            note.title = text.slice(0, 58) || note.title || 'Nota arquivada';
+            note.updatedAt = new Date().toISOString();
+            activeArchiveId = id;
+            persistNotesArchive();
+            renderNotesArchive();
+            saveData();
+        };
+
+        window.deleteArchivedNote = (id) => {
+            if (!confirm('Excluir esta nota arquivada?')) return;
+            notesArchive = notesArchive.filter(note => note.id !== id);
+            if (activeArchiveId === id) activeArchiveId = null;
+            persistNotesArchive();
+            renderNotesArchive();
+        };
 
         function updateDisplay() {
             const m = Math.floor(timeLeft/60).toString().padStart(2,'0'), s = (timeLeft%60).toString().padStart(2,'0');
@@ -440,8 +574,17 @@
             document.getElementById('notes-sidebar').classList.add('translate-x-full');
         }
 
-        document.getElementById('notes-toggle').onclick = () => document.getElementById('notes-sidebar').classList.remove('translate-x-full');
+        document.getElementById('notes-toggle').onclick = () => {
+            loadData();
+            document.getElementById('notes-sidebar').classList.remove('translate-x-full');
+        };
         document.getElementById('save-notes').onclick = saveNotesNow;
+        document.getElementById('archive-note').onclick = archiveCurrentNote;
+        document.getElementById('open-notes-archive').onclick = () => {
+            renderNotesArchive();
+            document.getElementById('notes-archive-panel').classList.toggle('hidden');
+        };
+        document.getElementById('close-notes-archive').onclick = () => document.getElementById('notes-archive-panel').classList.add('hidden');
         document.getElementById('float-notes').onclick = floatNotesToHub;
         document.getElementById('close-notes').onclick = () => {
             saveData();
