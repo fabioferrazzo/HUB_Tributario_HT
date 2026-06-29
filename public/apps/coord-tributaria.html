@@ -47,7 +47,7 @@
       color: var(--ink);
       cursor: pointer;
       font-weight: 800;
-      padding: 9px 12px;
+      padding: 7px 10px;
     }
 
     button:hover {
@@ -77,7 +77,7 @@
       border-radius: 7px;
       background: #fffefa;
       color: var(--ink);
-      padding: 9px 10px;
+      padding: 7px 9px;
       outline: none;
     }
 
@@ -104,8 +104,8 @@
       display: grid;
       grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
       align-items: end;
-      gap: 16px;
-      padding: 14px 18px;
+      gap: 12px;
+      padding: 10px 14px;
       background: var(--panel);
       border-bottom: 1px solid var(--line);
       box-shadow: 0 8px 18px rgba(13, 32, 58, 0.07);
@@ -118,7 +118,7 @@
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .title-mark {
@@ -154,16 +154,17 @@
 
     .top-actions {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
+      min-width: 0;
     }
 
     .top-controls {
       display: grid;
-      grid-template-columns: minmax(210px, 1fr) 150px auto;
+      grid-template-columns: minmax(190px, 0.72fr) 118px auto;
       align-items: end;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
     }
 
@@ -177,6 +178,9 @@
 
     .top-controls button {
       white-space: nowrap;
+      min-height: 34px;
+      padding: 7px 9px;
+      font-size: 12px;
     }
 
     .sync-pill {
@@ -209,13 +213,13 @@
     .tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      padding: 12px 18px 0;
+      gap: 7px;
+      padding: 9px 14px 0;
     }
 
     .tab-button {
       border-radius: 999px;
-      padding: 8px 13px;
+      padding: 7px 11px;
       background: #fffefa;
     }
 
@@ -226,7 +230,7 @@
     }
 
     .workspace {
-      padding: 12px 18px 18px;
+      padding: 10px 14px 14px;
     }
 
     .view {
@@ -235,26 +239,26 @@
 
     .view.active {
       display: grid;
-      gap: 14px;
+      gap: 9px;
     }
 
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
+      gap: 8px;
     }
 
     .metric {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 12px;
+      padding: 8px 10px;
       display: grid;
-      gap: 4px;
+      gap: 2px;
     }
 
     .metric strong {
-      font-size: 26px;
+      font-size: 20px;
       color: var(--brand);
     }
 
@@ -267,7 +271,7 @@
     .board-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 14px;
+      gap: 9px;
     }
 
     .panel {
@@ -283,23 +287,23 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       border-bottom: 1px solid var(--line);
-      padding: 12px 14px;
+      padding: 8px 10px;
       background: #fffefa;
     }
 
     .panel-header h2 {
-      font-size: 17px;
+      font-size: 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .panel-body {
-      padding: 12px;
+      padding: 8px;
       display: grid;
-      gap: 10px;
+      gap: 7px;
     }
 
     .chip {
@@ -317,18 +321,19 @@
 
     .reminder-list {
       display: grid;
-      gap: 9px;
-      min-height: 70px;
+      gap: 6px;
+      min-height: 46px;
     }
 
     .reminder-card {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
-      gap: 10px;
+      column-gap: 7px;
+      row-gap: 4px;
       border: 1px solid var(--line);
-      border-radius: 9px;
+      border-radius: 8px;
       background: #fffefa;
-      padding: 10px;
+      padding: 6px 7px;
     }
 
     .reminder-card.done {
@@ -340,12 +345,12 @@
     }
 
     .priority-dot {
-      width: 13px;
-      height: 13px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       border: 2px solid white;
       box-shadow: 0 0 0 1px #b4bed0;
-      margin-top: 5px;
+      margin-top: 4px;
     }
 
     .priority-alta {
@@ -361,39 +366,40 @@
     }
 
     .date-badge {
-      width: 54px;
+      width: 40px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 7px;
       overflow: hidden;
       background: #fff;
       text-align: center;
       flex: 0 0 auto;
+      grid-row: 1 / span 2;
     }
 
     .date-badge small {
       display: block;
       background: var(--brand);
       color: #fff;
-      padding: 3px;
-      font-size: 10px;
+      padding: 2px;
+      font-size: 9px;
       font-weight: 900;
       text-transform: uppercase;
     }
 
     .date-badge strong {
       display: block;
-      padding: 5px 2px;
-      font-size: 18px;
+      padding: 3px 2px;
+      font-size: 14px;
     }
 
     .reminder-main {
       min-width: 0;
       display: grid;
-      gap: 4px;
+      gap: 2px;
     }
 
     .reminder-title {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 900;
       color: var(--ink);
       overflow-wrap: anywhere;
@@ -402,9 +408,16 @@
     .reminder-meta,
     .reminder-description {
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
+      font-size: 11px;
+      line-height: 1.22;
       overflow-wrap: anywhere;
+    }
+
+    .reminder-description {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .reminder-tags,
@@ -412,7 +425,7 @@
     .attachment-pills {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
     }
 
@@ -453,15 +466,17 @@
     .reminder-actions {
       display: flex;
       align-items: start;
-      justify-content: flex-end;
+      justify-content: flex-start;
       flex-wrap: wrap;
-      gap: 6px;
-      max-width: 190px;
+      gap: 4px;
+      max-width: none;
+      grid-column: 2 / 3;
     }
 
     .reminder-actions button {
-      padding: 6px 8px;
-      font-size: 12px;
+      padding: 3px 6px;
+      font-size: 11px;
+      min-height: 24px;
     }
 
     .drawer {
@@ -491,7 +506,7 @@
     .report-layout {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
-      gap: 14px;
+      gap: 9px;
       align-items: start;
     }
 
@@ -499,7 +514,7 @@
     .agenda-list,
     .history-list {
       display: grid;
-      gap: 10px;
+      gap: 7px;
     }
 
     .bonus-panel {
@@ -742,17 +757,17 @@
       <div class="top-controls" aria-label="Filtros e acoes">
         <label>
           Buscar
-          <input id="searchInput" placeholder="Buscar lembretes, pautas ou colaboradores" />
+          <input id="searchInput" placeholder="Buscar lembrete, pauta ou colaborador" />
         </label>
         <label>
           Colaborador
           <select id="collaboratorFilter"></select>
         </label>
         <div class="top-actions">
-          <button type="button" id="addReminderButton" class="primary">Criar lembrete colaborador</button>
-          <button type="button" id="addPautaButton">Criar item de pauta</button>
+          <button type="button" id="addReminderButton" class="primary">+ Lembrete</button>
+          <button type="button" id="addPautaButton">+ Pauta</button>
           <button type="button" id="historyButton">Historico</button>
-          <button type="button" id="reportButton">Gerar relatorio</button>
+          <button type="button" id="reportButton">Relatorio</button>
         </div>
       </div>
     </header>
@@ -838,10 +853,10 @@
               <h2>Acoes rapidas</h2>
             </div>
             <div class="panel-body">
-              <button type="button" class="primary" id="quickAddReminder">Criar lembrete colaborador</button>
-              <button type="button" id="quickAddPauta">Criar item de pauta</button>
-              <button type="button" id="quickHistory">Historico dos ultimos 30 dias</button>
-              <button type="button" id="quickReport">Gerar relatorio filtrado</button>
+              <button type="button" class="primary" id="quickAddReminder">+ Lembrete</button>
+              <button type="button" id="quickAddPauta">+ Pauta</button>
+              <button type="button" id="quickHistory">Historico</button>
+              <button type="button" id="quickReport">Relatorio</button>
               <p class="subtitle">Use os filtros superiores para localizar por texto ou colaborador.</p>
             </div>
           </aside>
