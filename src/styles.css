@@ -1350,45 +1350,70 @@ select {
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 6px;
   overflow: auto;
-  padding: 14px;
+  padding: 8px;
 }
 
 .file-resource {
   display: grid;
-  gap: 9px;
+  gap: 3px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  padding: 13px;
+  padding: 6px 8px;
 }
 
 .file-resource > div:first-child {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 850;
 }
 
 .file-resource strong {
   color: var(--ink);
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .file-resource p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .file-resource small {
   color: #65748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.file-resource .record-actions {
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.file-resource .record-actions button,
+.file-resource .record-actions a {
+  min-height: 27px;
+  padding: 4px 7px;
+  font-size: 11px;
+  gap: 4px;
+  border-radius: 6px;
+}
+
+.file-resource .record-actions svg {
+  width: 12px;
+  height: 12px;
 }
 
 .processing-badge {
@@ -3265,11 +3290,7 @@ body {
 }
 
 .pauta-content--grande {
-  font-size: 18px;
-}
-
-.pauta-content--muito-grande {
-  font-size: 22px;
+  font-size: 16px;
 }
 
 .pauta-content--bold {
@@ -3883,11 +3904,7 @@ body {
 }
 
 .pauta-rich-text .pauta-text-large {
-  font-size: 18px;
-}
-
-.pauta-rich-text .pauta-text-xlarge {
-  font-size: 22px;
+  font-size: 16px;
 }
 
 .pauta-format-preview {
@@ -4185,6 +4202,127 @@ body {
   background: var(--navy);
   border-color: var(--navy);
   color: white;
+}
+
+.pomodoro-floating-notes__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  position: relative;
+  z-index: 2;
+  flex-wrap: wrap;
+}
+
+.pomodoro-floating-notes__toolbar button,
+.pomodoro-floating-notes__toolbar select,
+.pomodoro-floating-notes__toolbar label {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pomodoro-floating-notes__toolbar button {
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.pomodoro-floating-notes__toolbar select {
+  padding: 0 10px;
+}
+
+.pomodoro-floating-notes__toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.pomodoro-floating-notes__toolbar input[type="color"] {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pomodoro-floating-notes__archive {
+  border-bottom: 1px solid var(--border);
+  background: #f8f6f0;
+  padding: 12px 14px;
+}
+
+.pomodoro-floating-notes__archive > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.pomodoro-floating-notes__archive p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pomodoro-floating-notes__archive-list {
+  display: grid;
+  gap: 8px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.pomodoro-floating-notes__archive-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.pomodoro-floating-notes__archive-list article > div:first-child {
+  display: grid;
+  min-width: 0;
+}
+
+.pomodoro-floating-notes__archive-list article strong {
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pomodoro-floating-notes__archive-list article span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.pomodoro-floating-notes__archive-list article > div:last-child {
+  display: flex;
+  gap: 6px;
+}
+
+.pomodoro-floating-notes__archive-list button {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--navy);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 8px;
 }
 
 .pomodoro-floating-notes__editor {

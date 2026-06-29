@@ -104,6 +104,13 @@ type ViewerPreviewMode = "image" | "iframe" | "unsupported";
 type ReportFormat = "pdf" | "excel";
 type ReportRow = Record<string, string | number>;
 type PdfReportLine = { bold?: boolean; size?: number; text: string };
+type PomodoroArchivedNote = {
+  id: string;
+  title: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 type ViewerPreview = {
   mode: ViewerPreviewMode;
@@ -368,7 +375,7 @@ const routeGroups = [
   { label: "Sistema", items: ["coord", "admin"] }
 ] satisfies Array<{ label: string; items: HubRoute[] }>;
 
-const coordStandaloneVersion = "2026-05-26-pautas-nativas";
+const coordStandaloneVersion = "2026-06-27-coord-compacta";
 
 const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: string }> = {
   agenda: { title: "Agenda tributaria", src: "/apps/agenda-tributaria.html" },
@@ -377,6 +384,7 @@ const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: s
 };
 
 const POMODORO_STORAGE_KEY = "pomo_complete_data_v7";
+const POMODORO_ARCHIVE_STORAGE_KEY = "hub_pomodoro_notes_archive";
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: "admin", label: "Administrador" },
@@ -407,6 +415,7 @@ export function App() {
   const [pomodoroNotesOpen, setPomodoroNotesOpen] = useState(false);
   const [pomodoroNotes, setPomodoroNotes] = useState("");
   const [pomodoroNotesStatus, setPomodoroNotesStatus] = useState("");
+  const [pomodoroArchivedNotes, setPomodoroArchivedNotes] = useState<PomodoroArchivedNote[]>(() => readPomodoroArchivedNotes());
 
   useEffect(() => {
     function handleLembretesChange() {
@@ -558,6 +567,58 @@ export function App() {
     savePomodoroNotes(nextNotes);
   }
 
+  function handlePomodoroNoteArchive(nextNotes = pomodoroNotes) {
+    const plainText = getPlainTextFromHtml(nextNotes);
+    if (!plainText) {
+      setPomodoroNotesStatus("Escreva uma anotacao antes de arquivar.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const archivedNote: PomodoroArchivedNote = {
+      id: crypto.randomUUID(),
+      title: plainText.slice(0, 64),
+      notes: nextNotes,
+      createdAt: now,
+      updatedAt: now
+    };
+    const nextArchive = [archivedNote, ...pomodoroArchivedNotes];
+    setPomodoroArchivedNotes(nextArchive);
+    savePomodoroArchivedNotes(nextArchive);
+    setPomodoroNotesStatus("Anotacao arquivada.");
+  }
+
+  function handlePomodoroArchivedNoteOpen(note: PomodoroArchivedNote) {
+    setPomodoroNotes(note.notes);
+    savePomodoroNotes(note.notes);
+    setPomodoroNotesStatus("Anotacao arquivada aberta para edicao.");
+  }
+
+  function handlePomodoroArchivedNoteSave(noteId: string, nextNotes = pomodoroNotes) {
+    const plainText = getPlainTextFromHtml(nextNotes);
+    const now = new Date().toISOString();
+    const nextArchive = pomodoroArchivedNotes.map((note) =>
+      note.id === noteId
+        ? {
+            ...note,
+            title: plainText.slice(0, 64) || note.title,
+            notes: nextNotes,
+            updatedAt: now
+          }
+        : note
+    );
+    setPomodoroArchivedNotes(nextArchive);
+    savePomodoroArchivedNotes(nextArchive);
+    setPomodoroNotesStatus("Edicao do arquivo salva.");
+  }
+
+  function handlePomodoroArchivedNoteDelete(noteId: string) {
+    const nextArchive = pomodoroArchivedNotes.filter((note) => note.id !== noteId);
+    setPomodoroArchivedNotes(nextArchive);
+    savePomodoroArchivedNotes(nextArchive);
+    setPomodoroNotesStatus("Anotacao arquivada excluida.");
+  }
+
   return (
     <div className={`app-shell ${menuCollapsed ? "app-shell--collapsed" : ""}`}>
       <aside className={`sidebar ${menuOpen ? "sidebar--open" : ""} ${menuCollapsed ? "sidebar--collapsed" : ""}`}>
@@ -633,35 +694,52 @@ export function App() {
         <section className="workspace-body">{renderRoute(route, user, hubUsers, handleRoute)}</section>
       </main>
       <PomodoroFloatingNotes
+        archivedNotes={pomodoroArchivedNotes}
         notes={pomodoroNotes}
         open={pomodoroNotesOpen}
         status={pomodoroNotesStatus}
+        onArchive={handlePomodoroNoteArchive}
         onChange={handlePomodoroNotesChange}
         onClose={handlePomodoroNotesClose}
+        onDeleteArchived={handlePomodoroArchivedNoteDelete}
+        onOpenArchived={handlePomodoroArchivedNoteOpen}
         onSave={handlePomodoroNotesSave}
+        onSaveArchived={handlePomodoroArchivedNoteSave}
       />
     </div>
   );
 }
 
 function PomodoroFloatingNotes({
+  archivedNotes,
   notes,
   open,
   status,
+  onArchive,
   onChange,
   onClose,
-  onSave
+  onDeleteArchived,
+  onOpenArchived,
+  onSave,
+  onSaveArchived
 }: {
+  archivedNotes: PomodoroArchivedNote[];
   notes: string;
   open: boolean;
   status: string;
+  onArchive: (notes?: string) => void;
   onChange: (notes: string) => void;
   onClose: (notes?: string) => void;
+  onDeleteArchived: (noteId: string) => void;
+  onOpenArchived: (note: PomodoroArchivedNote) => void;
   onSave: (notes?: string) => void;
+  onSaveArchived: (noteId: string, notes?: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dragStartRef = useRef<{ pointerId: number; x: number; y: number; left: number; top: number } | null>(null);
   const [minimized, setMinimized] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [activeArchiveId, setActiveArchiveId] = useState<string | null>(null);
   const [position, setPosition] = useState(() => ({ left: Math.max(16, window.innerWidth - 460), top: Math.max(16, window.innerHeight - 560) }));
 
   useEffect(() => {
@@ -675,7 +753,7 @@ function PomodoroFloatingNotes({
 
   function startDrag(event: React.PointerEvent<HTMLElement>) {
     const target = event.target as HTMLElement;
-    if (target.closest("button")) return;
+    if (target.closest("button,input,select,textarea,[contenteditable='true']")) return;
     dragStartRef.current = {
       pointerId: event.pointerId,
       x: event.clientX,
@@ -710,6 +788,18 @@ function PomodoroFloatingNotes({
     return nextNotes;
   }
 
+  function runEditorCommand(command: string, value?: string) {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    commitEditorDraft();
+  }
+
+  function handleArchivedOpen(note: PomodoroArchivedNote) {
+    setActiveArchiveId(note.id);
+    setArchiveOpen(false);
+    onOpenArchived(note);
+  }
+
   return (
     <section
       className={`pomodoro-floating-notes ${minimized ? "pomodoro-floating-notes--minimized" : ""}`}
@@ -729,6 +819,11 @@ function PomodoroFloatingNotes({
         </div>
         <div className="pomodoro-floating-notes__actions">
           {!minimized ? (
+            <button type="button" onClick={() => setArchiveOpen((current) => !current)}>
+              Arquivo
+            </button>
+          ) : null}
+          {!minimized ? (
             <button
               type="button"
               onClick={() => {
@@ -737,6 +832,28 @@ function PomodoroFloatingNotes({
               }}
             >
               Salvar
+            </button>
+          ) : null}
+          {!minimized ? (
+            <button
+              type="button"
+              onClick={() => {
+                const nextNotes = commitEditorDraft();
+                onArchive(nextNotes);
+              }}
+            >
+              Arquivar
+            </button>
+          ) : null}
+          {!minimized && activeArchiveId ? (
+            <button
+              type="button"
+              onClick={() => {
+                const nextNotes = commitEditorDraft();
+                onSaveArchived(activeArchiveId, nextNotes);
+              }}
+            >
+              Salvar edicao
             </button>
           ) : null}
           <button
@@ -761,6 +878,65 @@ function PomodoroFloatingNotes({
       </header>
       {!minimized ? (
         <>
+          <div className="pomodoro-floating-notes__toolbar" aria-label="Formatacao das anotacoes">
+            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => runEditorCommand("bold")}>
+              B
+            </button>
+            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => runEditorCommand("italic")}>
+              I
+            </button>
+            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => runEditorCommand("strikeThrough")}>
+              S
+            </button>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runEditorCommand("backColor", "#fff4a8")}
+            >
+              Grifo
+            </button>
+            <label>
+              Cor
+              <input
+                aria-label="Cor do texto"
+                type="color"
+                defaultValue="#000000"
+                onChange={(event) => runEditorCommand("foreColor", event.target.value)}
+              />
+            </label>
+            <select aria-label="Tamanho da fonte" defaultValue="3" onChange={(event) => runEditorCommand("fontSize", event.target.value)}>
+              <option value="2">Pequeno</option>
+              <option value="3">Normal</option>
+              <option value="4">Grande</option>
+            </select>
+          </div>
+          {archiveOpen ? (
+            <div className="pomodoro-floating-notes__archive">
+              <strong>Arquivo de notas</strong>
+              {archivedNotes.length ? (
+                <div className="pomodoro-floating-notes__archive-list">
+                  {archivedNotes.map((note) => (
+                    <article key={note.id}>
+                      <div>
+                        <strong>{note.title}</strong>
+                        <span>{formatPomodoroArchiveDate(note.updatedAt)}</span>
+                      </div>
+                      <div>
+                        <button type="button" onClick={() => handleArchivedOpen(note)}>
+                          Abrir
+                        </button>
+                        <button type="button" onClick={() => onDeleteArchived(note.id)}>
+                          Excluir
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p>Nenhuma anotacao arquivada.</p>
+              )}
+            </div>
+          ) : null}
           <div
             className="pomodoro-floating-notes__editor"
             contentEditable
@@ -792,6 +968,41 @@ function savePomodoroNotes(notes: string) {
   } catch {
     localStorage.setItem(POMODORO_STORAGE_KEY, JSON.stringify({ notes }));
   }
+}
+
+function readPomodoroArchivedNotes(): PomodoroArchivedNote[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(POMODORO_ARCHIVE_STORAGE_KEY) || "[]") as PomodoroArchivedNote[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((note) => note && typeof note.id === "string" && typeof note.notes === "string")
+      .map((note) => ({
+        id: note.id,
+        title: note.title || getPlainTextFromHtml(note.notes).slice(0, 64) || "Anotacao",
+        notes: note.notes,
+        createdAt: note.createdAt || new Date().toISOString(),
+        updatedAt: note.updatedAt || note.createdAt || new Date().toISOString()
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function savePomodoroArchivedNotes(notes: PomodoroArchivedNote[]) {
+  localStorage.setItem(POMODORO_ARCHIVE_STORAGE_KEY, JSON.stringify(notes));
+}
+
+function getPlainTextFromHtml(html: string) {
+  if (!html) return "";
+  const element = document.createElement("div");
+  element.innerHTML = html;
+  return (element.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function formatPomodoroArchiveDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 function LoginScreen({ onLogin }: { onLogin: (user: HubUser) => void }) {
@@ -1637,7 +1848,6 @@ function Dashboard({
                   <option value="pequena">Pequena</option>
                   <option value="normal">Normal</option>
                   <option value="grande">Grande</option>
-                  <option value="muito-grande">Muito grande</option>
                 </select>
               </label>
               <button
@@ -1706,10 +1916,10 @@ function Dashboard({
                 </select>
               </label>
               <label>
-                Escopo
+                Destinatarios
                 <select value={scope} onChange={(event) => setScope(event.target.value as "todos" | "usuarios")}>
                   <option value="todos">Todos</option>
-                  <option value="usuarios">Usuarios especificos</option>
+                  <option value="usuarios">Colaboradores marcados</option>
                 </select>
               </label>
             </div>
@@ -1722,7 +1932,7 @@ function Dashboard({
             </label>
             {scope === "usuarios" ? (
               <fieldset className="member-picker">
-                <legend>Usuarios selecionados</legend>
+                <legend>Colaboradores marcados</legend>
                 <div>
                   {getActiveProfiles(hubUsers).map((member) => (
                     <label key={member.email}>
@@ -2310,7 +2520,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
 
     try {
       const saved = await deleteAppTask({ current: tasks, task, user });
-      setTasks(saved);
+      setTasks(saved.filter((item) => item.id !== task.id));
       if (editingId === task.id) resetForm();
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
@@ -3684,7 +3894,6 @@ function ArquivosModule({ user }: { user: HubUser }) {
                   <span className={`processing-badge processing-badge--${processingBadge.tone}`}>{processingBadge.label}</span>
                 ) : null}
                 {resource.processingMessage ? <small>{resource.processingMessage}</small> : null}
-                <small>{resource.scope === "global" ? "Global" : "Pessoal"} - {formatDate(resource.createdAt)}</small>
                 <div className="record-actions">
                   {resource.url || resource.processedUrl ? (
                     <button type="button" onClick={() => openViewer(resource)}>
@@ -6269,10 +6478,9 @@ function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
 }
 
 function getPautaEmailFontSize(size: Pauta["textSize"]) {
-  if (size === "pequena") return "10.5pt";
-  if (size === "grande") return "14pt";
-  if (size === "muito-grande") return "16pt";
-  return "12pt";
+  if (size === "pequena") return "12pt";
+  if (size === "grande") return "16pt";
+  return "14pt";
 }
 
 function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): ReportRow {
@@ -6306,17 +6514,18 @@ const TASK_SIDEBAR_HISTORY_DAYS = 7;
 const TASK_SIDEBAR_HISTORY_MS = TASK_SIDEBAR_HISTORY_DAYS * 24 * 60 * 60 * 1000;
 
 function shouldKeepTaskInSidebarHistory(task: TaskItem) {
-  const referenceDate = task.archivedAt || task.prazo;
-  if (!referenceDate) return true;
+  if (task.archivedAt) return false;
+  if (!task.prazo) return true;
 
-  const timestamp = Date.parse(referenceDate);
+  const timestamp = Date.parse(task.prazo);
   if (!Number.isFinite(timestamp)) return true;
+  if (timestamp > Date.now()) return true;
 
   return Date.now() - timestamp <= TASK_SIDEBAR_HISTORY_MS;
 }
 
 function isTaskSidebarHistoryRecord(task: TaskItem) {
-  if (task.archivedAt) return true;
+  if (task.archivedAt) return false;
   if (!task.prazo) return false;
 
   const timestamp = Date.parse(task.prazo);
@@ -7005,8 +7214,7 @@ function escapeHtmlText(value: string) {
 const pautaTextSizeClassMap: Record<NonNullable<Pauta["textSize"]>, string> = {
   pequena: "pauta-text-small",
   normal: "pauta-text-normal",
-  grande: "pauta-text-large",
-  "muito-grande": "pauta-text-xlarge"
+  grande: "pauta-text-large"
 };
 
 const pautaAllowedTextSizeClasses = new Set(Object.values(pautaTextSizeClassMap));
@@ -7102,8 +7310,7 @@ function hasYellowBackground(element: HTMLElement) {
 
 function getPautaFontClassFromLegacySize(size: string | null) {
   if (size === "1" || size === "2") return pautaTextSizeClassMap.pequena;
-  if (size === "5" || size === "6") return pautaTextSizeClassMap.grande;
-  if (size === "7") return pautaTextSizeClassMap["muito-grande"];
+  if (size === "4" || size === "5" || size === "6" || size === "7") return pautaTextSizeClassMap.grande;
   return pautaTextSizeClassMap.normal;
 }
 
@@ -7137,10 +7344,9 @@ function hasPautaRichContent(value: string) {
 
 function renderPautaRichHtmlForEmail(value: string) {
   return sanitizePautaRichHtml(value || "Sem acao registrada")
-    .replace(/<span class="pauta-text-small">/g, '<span style="font-size:10.5pt;">')
-    .replace(/<span class="pauta-text-normal">/g, '<span style="font-size:12pt;">')
-    .replace(/<span class="pauta-text-large">/g, '<span style="font-size:14pt;">')
-    .replace(/<span class="pauta-text-xlarge">/g, '<span style="font-size:16pt;">')
+    .replace(/<span class="pauta-text-small">/g, '<span style="font-size:12pt;">')
+    .replace(/<span class="pauta-text-normal">/g, '<span style="font-size:14pt;">')
+    .replace(/<span class="pauta-text-large">/g, '<span style="font-size:16pt;">')
     .replace(/<mark>/g, '<mark style="background:#fff3a3;padding:0 2px;border-radius:3px;">');
 }
 
@@ -7289,15 +7495,13 @@ function getPautaDescriptionStyle(pauta: Pauta): CSSProperties {
 
 function getPautaFontSize(size: Pauta["textSize"]) {
   if (size === "pequena") return "12px";
-  if (size === "grande") return "18px";
-  if (size === "muito-grande") return "22px";
+  if (size === "grande") return "16px";
   return "14px";
 }
 
 function getPautaExecFontSize(size: Pauta["textSize"]) {
   if (size === "pequena") return "2";
-  if (size === "grande") return "5";
-  if (size === "muito-grande") return "7";
+  if (size === "grande") return "4";
   return "3";
 }
 
