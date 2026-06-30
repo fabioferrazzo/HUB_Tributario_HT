@@ -597,7 +597,9 @@ async function archiveSupabaseTask(taskId: string, archivedAt: string) {
     throw rpcResult.error;
   }
 
-  if (!rpcResult.error) return;
+  if (!rpcResult.error) {
+    return;
+  }
 
   const { data, error } = await client
     .from("tarefas")
