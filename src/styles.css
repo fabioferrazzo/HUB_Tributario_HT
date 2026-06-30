@@ -923,12 +923,13 @@ textarea:focus {
   padding: 10px 14px;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .task-toolbar .panel-search {
-  flex: 1 1 140px;
-  min-width: 130px;
-  max-width: 180px;
+  flex: 1 1 132px;
+  min-width: 120px;
+  max-width: 168px;
   margin-left: 0;
 }
 
@@ -949,6 +950,11 @@ textarea:focus {
   padding: 7px 9px;
   font-size: 12px;
   font-weight: 800;
+}
+
+.task-export-actions button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .task-featured-check {
