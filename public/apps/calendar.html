@@ -189,6 +189,9 @@ let pendingFiles=[], editingEvId=null;
 let popupEv=null, popupAutoClose=null;
 let alarmInterval=null, audioCtx=null;
 const HUB_EMBEDDED=(()=>{try{return window.parent&&window.parent!==window;}catch(e){return false;}})();
+const REMINDER_STORAGE_KEY="hub-calendar-task-reminders-v1";
+const MAX_TIMEOUT_MS=2147483647;
+const reminderTimers={};
 
 // ---- IndexedDB ----
 let db;
@@ -205,6 +208,52 @@ function dbPut(ev){return new Promise((res,rej)=>{const req=db.transaction("even
 function dbDelete(id){return new Promise((res,rej)=>{const req=db.transaction("events","readwrite").objectStore("events").delete(id);req.onsuccess=()=>res();req.onerror=e=>rej(e);});}
 function notifyParentTasksChanged(detail){try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"hub:tasks",...(detail||{})},window.location.origin);}catch(e){}}
 function requestHubSync(){if(HUB_EMBEDDED)notifyParentTasksChanged({action:"ready"});}
+function loadStoredReminders(){
+  try{
+    const raw=localStorage.getItem(REMINDER_STORAGE_KEY);
+    const parsed=raw?JSON.parse(raw):[];
+    reminders=(Array.isArray(parsed)?parsed:[]).filter(r=>r&&r.ev&&r.notifAt&&Number.isFinite(new Date(r.notifAt).getTime()));
+  }catch(e){reminders=[];}
+}
+function saveStoredReminders(){
+  try{localStorage.setItem(REMINDER_STORAGE_KEY,JSON.stringify(reminders));}catch(e){}
+}
+function clearReminderTimer(id){
+  const key=String(id);
+  if(reminderTimers[key]){clearTimeout(reminderTimers[key]);delete reminderTimers[key];}
+}
+function clearAllReminderTimers(){Object.keys(reminderTimers).forEach(clearReminderTimer);}
+function scheduleStoredReminder(reminder){
+  if(!reminder||!reminder.ev||!reminder.notifAt)return;
+  const key=String(reminder.id);
+  clearReminderTimer(key);
+  const delay=new Date(reminder.notifAt).getTime()-Date.now();
+  const wait=Math.max(0,Math.min(delay,MAX_TIMEOUT_MS));
+  reminderTimers[key]=setTimeout(()=>{
+    if(delay>MAX_TIMEOUT_MS)scheduleStoredReminder(reminder);
+    else fireReminder(reminder.ev,reminder.id,reminder.type);
+  },wait);
+}
+function scheduleStoredReminders(){
+  clearAllReminderTimers();
+  reminders.forEach(scheduleStoredReminder);
+}
+function reconcileRemindersWithEvents(){
+  if(!reminders.length||!events.length)return;
+  let changed=false;
+  reminders=reminders.map(r=>{
+    const fresh=events.find(ev=>String(ev.id)===String(r.ev?.id));
+    if(!fresh)return r;
+    changed=true;
+    return {...r,ev:fresh};
+  });
+  if(changed)saveStoredReminders();
+}
+function requestReminderNotificationPermission(){
+  if("Notification" in window&&Notification.permission==="default"){
+    Notification.requestPermission().then(p=>{notifPerm=p;updateNotifBadge();}).catch(()=>{});
+  }
+}
 function normalizeHubSyncedEvent(raw){
   const hub=raw&&typeof raw.hub==="object"&&raw.hub?raw.hub:{};
   const attachments=Array.isArray(raw?.attachments)?raw.attachments.map(att=>({
@@ -225,6 +274,8 @@ function normalizeHubSyncedEvent(raw){
 }
 function applyHubSyncedEvents(rawEvents){
   events=(Array.isArray(rawEvents)?rawEvents:[]).map(normalizeHubSyncedEvent);
+  reconcileRemindersWithEvents();
+  scheduleStoredReminders();
   renderMonth();
   if(view==="agenda")renderAgenda();
   if(view==="reminders")renderRemindersList();
@@ -241,6 +292,9 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)requestHub
 // ---- Init ----
 openDB().then(()=>dbGetAll()).then(evs=>{
   events=HUB_EMBEDDED?[]:(evs||[]);
+  loadStoredReminders();
+  reconcileRemindersWithEvents();
+  scheduleStoredReminders();
   updateNotifBadge();
   setFavicon();
   renderMonth();
@@ -320,7 +374,8 @@ function getCalDays(y,m){
   while(days.length<42){const n=days.length-first.getDay()-last.getDate()+1;days.push({date:new Date(y,m+1,n),cur:false});}
   return days;
 }
-function dayEvs(d){return events.filter(ev=>sameDay(new Date(ev.date),d)).sort((a,b)=>new Date(a.date)-new Date(b.date));}
+function isArchivedEvent(ev){return Boolean(ev?.archivedAt||ev?.hub?.archivedAt);}
+function dayEvs(d){return events.filter(ev=>!isArchivedEvent(ev)&&sameDay(new Date(ev.date),d)).sort((a,b)=>new Date(a.date)-new Date(b.date));}
 function getSelEvs(){return dayEvs(selDate);}
 
 function renderMonth(){
@@ -382,14 +437,16 @@ function setView(v){
 }
 function renderAgenda(){
   const lv=document.getElementById("list-view");lv.innerHTML="";
-  const future=events.filter(ev=>new Date(ev.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const past=events.filter(ev=>new Date(ev.date)<today).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const future=events.filter(ev=>!isArchivedEvent(ev)&&new Date(ev.date)>=today).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const past=events.filter(ev=>!isArchivedEvent(ev)&&new Date(ev.date)<today).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const archived=events.filter(isArchivedEvent).sort((a,b)=>new Date(b.hub?.archivedAt||b.archivedAt||b.date)-new Date(a.hub?.archivedAt||a.archivedAt||a.date));
   if(!events.length){lv.innerHTML='<div style="text-align:center;padding:40px 0;color:#888;font-size:13px">Nenhuma tarefa.</div>';return;}
   const eb=document.createElement("div");eb.style.cssText="display:flex;justify-content:flex-end;margin-bottom:10px";
   eb.innerHTML='<button onclick="exportICS(events)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #ddd;background:none;color:#555;cursor:pointer">⬇ Exportar todos .ics</button>';
   lv.appendChild(eb);
   if(future.length){const l=document.createElement("div");l.className="section-label";l.textContent="PRÓXIMOS";lv.appendChild(l);future.forEach(ev=>lv.appendChild(makeEvCard(ev,true)));}
   if(past.length){const l=document.createElement("div");l.className="section-label";l.textContent="PASSADOS";lv.appendChild(l);past.forEach(ev=>lv.appendChild(makeEvCard(ev,true)));}
+  if(archived.length){const l=document.createElement("div");l.className="section-label";l.textContent="HISTÓRICO / EXCLUÍDAS";lv.appendChild(l);archived.forEach(ev=>lv.appendChild(makeEvCard(ev,true)));}
 }
 function renderRemindersList(){
   const lv=document.getElementById("list-view");lv.innerHTML="";
@@ -403,7 +460,13 @@ function renderRemindersList(){
 }
 
 // ---- Form ----
-function openFormForDate(date){openForm(null,date.toISOString().slice(0,10)+"T09:00");}
+function localTaskDateValue(date){
+  const source=date instanceof Date?date:new Date(date||selDate);
+  const safe=isNaN(source)?selDate:source;
+  const pad=n=>String(n).padStart(2,"0");
+  return safe.getFullYear()+"-"+pad(safe.getMonth()+1)+"-"+pad(safe.getDate())+"T09:00";
+}
+function openFormForDate(date){openForm(null,localTaskDateValue(date));}
 async function openForm(evId,defaultDate){
   if(HUB_EMBEDDED){
     notifyParentTasksChanged({action:evId?"edit":"new",id:evId||"",date:defaultDate||selDate.toISOString().slice(0,10)+"T09:00"});
@@ -479,21 +542,38 @@ function selectMins(m){
 }
 function doRemind(){
   const ev=window._remindEv,mins=window._remindMins||30,type=window._remindType||"standard";
+  if(!ev)return;
   const notifAt=new Date(new Date(ev.date).getTime()-mins*60000);
   if(notifAt<=Date.now()){alert("Horário já passou.");return;}
-  const id=Date.now();
-  reminders.push({id,ev,mins,type,notifAt:notifAt.toISOString()});
-  setTimeout(()=>fireReminder(ev,id,type),notifAt-Date.now());
+  const id=String(Date.now());
+  const reminder={id,ev,mins,type,notifAt:notifAt.toISOString()};
+  reminders=reminders.filter(r=>String(r.ev?.id)!==String(ev.id));
+  reminders.push(reminder);
+  saveStoredReminders();
+  scheduleStoredReminder(reminder);
+  requestReminderNotificationPermission();
   closePanel();refresh();
   alert("✓ Lembrete agendado!\nNotificação às "+notifAt.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+" de "+notifAt.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}));
 }
-function removeReminder(id){reminders=reminders.filter(r=>r.id!==id);renderRemindersList();}
+function removeReminder(id){
+  clearReminderTimer(id);
+  reminders=reminders.filter(r=>String(r.id)!==String(id));
+  saveStoredReminders();
+  renderRemindersList();
+}
 function fireReminder(ev,id,type){
-  reminders=reminders.filter(x=>x.id!==id);
-  showReminderPopup(ev,type||"standard");
+  const stored=reminders.find(x=>String(x.id)===String(id));
+  ev=ev||stored?.ev;
+  type=type||stored?.type||"standard";
+  clearReminderTimer(id);
+  reminders=reminders.filter(x=>String(x.id)!==String(id));
+  saveStoredReminders();
+  if(!ev)return;
+  showReminderPopup(ev,type);
   if("Notification" in window&&Notification.permission==="granted"){
     try{new Notification((type==="large"?"⚠ ":"🔔 ")+ev.title,{body:fTime(ev.date),requireInteraction:type==="large"});}catch(e){}
   }
+  if(view==="reminders")renderRemindersList();
 }
 
 // ---- Popup ----
@@ -522,10 +602,12 @@ function snoozePopup(){
   const ev=popupEv, type=document.getElementById("reminder-popup").className||"standard";
   dismissPopup();
   if(!ev)return;
-  const id=Date.now();
+  const id=String(Date.now());
   const notifAt=new Date(Date.now()+5*60000);
-  reminders.push({id,ev,mins:5,type,notifAt:notifAt.toISOString()});
-  setTimeout(()=>fireReminder(ev,id,type),5*60000);
+  const reminder={id,ev,mins:5,type,notifAt:notifAt.toISOString()};
+  reminders.push(reminder);
+  saveStoredReminders();
+  scheduleStoredReminder(reminder);
   if(view==="reminders")renderRemindersList();
   alert("Soneca ativada! Lembrete em 5 minutos.");
 }
