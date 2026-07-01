@@ -1281,6 +1281,10 @@ function Dashboard({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [pautasEmailStatus, setPautasEmailStatus] = useState("");
   const [sendingPautasEmail, setSendingPautasEmail] = useState(false);
+  const [pautasView, setPautasView] = useState<"lista" | "avisos">("lista");
+  const [avisosView, setAvisosView] = useState<"geral" | "particular">("geral");
+  const [avisosDrawMode, setAvisosDrawMode] = useState(false);
+  const [selectedAvisoCell, setSelectedAvisoCell] = useState(1);
   const source = getPautasSource(user);
 
   useEffect(() => {
@@ -1737,103 +1741,248 @@ function Dashboard({
     );
   }
 
+  function renderQuadroAvisos() {
+    const avisoCells = Array.from({ length: 10 }, (_, index) => index + 1);
+
+    return (
+      <div className="avisos-board">
+        <div className="avisos-toolbar">
+          <div className="avisos-toolbar-main">
+            <button type="button">Texto</button>
+            <button
+              className={avisosDrawMode ? "primary" : ""}
+              type="button"
+              onClick={() => setAvisosDrawMode((current) => !current)}
+            >
+              Desenhar
+            </button>
+            <button type="button">Imagem</button>
+            <button type="button">Anexo</button>
+            <button type="button">Post-it</button>
+          </div>
+          <div className="avisos-mode-switch" aria-label="Filtro do quadro de avisos">
+            <button
+              className={avisosView === "geral" ? "active" : ""}
+              type="button"
+              onClick={() => setAvisosView("geral")}
+            >
+              Quadro geral
+            </button>
+            <button
+              className={avisosView === "particular" ? "active" : ""}
+              type="button"
+              onClick={() => setAvisosView("particular")}
+            >
+              Quadro particular
+            </button>
+          </div>
+        </div>
+
+        {avisosDrawMode ? (
+          <div className="avisos-draw-stage">
+            <div className="avisos-draw-head">
+              <div>
+                <strong>Modo desenho</strong>
+                <span>Quadro branco temporario para rascunhos. Exporte antes de sair deste modo.</span>
+              </div>
+              <div className="avisos-export-actions">
+                <button type="button">PDF</button>
+                <button type="button">DOCX</button>
+                <button type="button">XLSX</button>
+              </div>
+            </div>
+            <div className="avisos-draw-canvas">
+              <span>Area livre para desenho estilo Paint</span>
+            </div>
+          </div>
+        ) : (
+          <div className="avisos-workspace">
+            <div className="avisos-grid" aria-label="Quadro de avisos em 10 partes">
+              {avisoCells.map((cell) => (
+                <button
+                  className={`aviso-cell ${selectedAvisoCell === cell ? "active" : ""}`}
+                  key={cell}
+                  type="button"
+                  onClick={() => setSelectedAvisoCell(cell)}
+                >
+                  <span className="aviso-cell__title">Espaco {String(cell).padStart(2, "0")}</span>
+                  <span className="aviso-cell__hint">
+                    {avisosView === "geral" ? "Geral" : "Particular"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <aside className="avisos-editor-panel">
+              <span className="panel-status">Rascunho visual</span>
+              <h3>Editor do espaco {String(selectedAvisoCell).padStart(2, "0")}</h3>
+              <div className="pauta-format-toolbar avisos-format-toolbar">
+                <label>
+                  Fonte
+                  <select defaultValue="normal">
+                    <option value="pequena">Pequena</option>
+                    <option value="normal">Normal</option>
+                    <option value="grande">Grande</option>
+                  </select>
+                </label>
+                <button type="button"><strong>B</strong></button>
+                <button type="button"><Highlighter size={15} /></button>
+              </div>
+              <textarea placeholder="Escreva um aviso, orientacao ou recado para este espaco." />
+              <div className="avisos-editor-actions">
+                <button type="button">Inserir imagem</button>
+                <button type="button">Anexar documento</button>
+                <button type="button">Post-it</button>
+              </div>
+              <fieldset className="member-picker avisos-member-picker">
+                <legend>Salvar como</legend>
+                <label>
+                  <input checked={avisosView === "geral"} readOnly type="radio" />
+                  Quadro geral
+                </label>
+                <label>
+                  <input checked={avisosView === "particular"} readOnly type="radio" />
+                  Quadro particular
+                </label>
+              </fieldset>
+              {avisosView === "particular" ? (
+                <div className="avisos-user-list">
+                  {getActiveProfiles(hubUsers).map((member) => (
+                    <label key={member.email}>
+                      <input type="checkbox" />
+                      {member.nome}
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <button className="primary-action" type="button">Salvar aviso</button>
+            </aside>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="pautas-page">
       <section className="panel panel--pautas">
         <DashboardPanelHeader
-          actionLabel={canManagePautas ? "Nova pauta" : undefined}
+          actionLabel={pautasView === "lista" && canManagePautas ? "Nova pauta" : undefined}
           actionTitle="Criar pauta no HUB"
           icon={<ListChecks size={18} />}
-          onAction={canManagePautas ? startNewPauta : undefined}
+          onAction={pautasView === "lista" && canManagePautas ? startNewPauta : undefined}
           secondaryIcon={<RefreshCw size={14} />}
-          secondaryLabel={autoScroll ? "Rolagem ligada" : "Rolagem parada"}
-          onSecondaryAction={() => setAutoScroll((current) => !current)}
+          secondaryLabel={pautasView === "lista" ? (autoScroll ? "Rolagem ligada" : "Rolagem parada") : "Quadro ativo"}
+          onSecondaryAction={pautasView === "lista" ? () => setAutoScroll((current) => !current) : undefined}
           status={pautaStatusLabel}
           title="Pautas"
         />
-        <div className="pautas-monthbar">
-          <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
-            <ChevronLeft size={16} />
-          </button>
-          <strong>{monthCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong>
-          <button type="button" onClick={() => shiftMonth(1)} aria-label="Proximo mes">
-            <ChevronRight size={16} />
-          </button>
-          <button type="button" onClick={() => setMonthCursor(new Date())}>Mes atual</button>
-        </div>
-        <div className="panel-toolbar">
-          <button className={`filter-pill ${pautaFilter === "todas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("todas")}>
-            Todas ({monthPautas.length})
-          </button>
-          <button className={`filter-pill ${pautaFilter === "minhas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("minhas")}>
-            Minhas ({statusCounts.minhas})
-          </button>
-          <button className={`filter-pill ${pautaFilter === "destaques" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("destaques")}>
-            Destaques ({statusCounts.destaques})
-          </button>
-          <button className={`filter-pill ${pautaFilter === "alta" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("alta")}>
-            Alta ({statusCounts.alta})
+        <div className="pautas-subtabs" role="tablist" aria-label="Secoes do menu Pautas">
+          <button
+            aria-selected={pautasView === "lista"}
+            className={pautasView === "lista" ? "active" : ""}
+            role="tab"
+            type="button"
+            onClick={() => setPautasView("lista")}
+          >
+            Pautas
           </button>
           <button
-            className={`filter-pill filter-pill--danger ${pautaFilter === "atrasadas" ? "active" : ""}`}
+            aria-selected={pautasView === "avisos"}
+            className={pautasView === "avisos" ? "active" : ""}
+            role="tab"
             type="button"
-            onClick={() => setPautaFilter("atrasadas")}
+            onClick={() => setPautasView("avisos")}
           >
-            Atrasadas ({statusCounts.atrasado})
+            Quadro de Avisos
           </button>
-          <button
-            className={`filter-pill filter-pill--warning ${pautaFilter === "semPrazo" ? "active" : ""}`}
-            type="button"
-            onClick={() => setPautaFilter("semPrazo")}
-          >
-            Sem prazo ({statusCounts.semPrazo})
-          </button>
-          <button className={`filter-pill ${pautaFilter === "concluidas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("concluidas")}>
-            Concluidas ({statusCounts.concluidas})
-          </button>
-          <label className="panel-search">
-            <Search size={14} />
-            <input
-              aria-label="Buscar pautas"
-              onChange={(event) => setPautaQuery(event.target.value)}
-              placeholder="Buscar..."
-              value={pautaQuery}
-            />
-          </label>
-          <div className="panel-export-actions" aria-label="Exportar pautas">
-            <button type="button" onClick={() => exportPautas("pdf")}>PDF</button>
-            <button type="button" onClick={() => exportPautas("excel")}>XLSX</button>
-            <button disabled={sendingPautasEmail} type="button" onClick={sendPautasByEmail}>
-              {sendingPautasEmail ? "Enviando..." : "E-mail"}
-            </button>
-          </div>
         </div>
-        {error ? <p className="module-error module-error--compact">{error}</p> : null}
-        {pautasEmailStatus ? <p className="module-notice module-notice--compact">{pautasEmailStatus}</p> : null}
-        <div
-          className={`stack-list pautas-stack ${shouldAutoScrollPautas ? "pautas-stack--scrolling" : ""}`}
-          ref={pautasStackRef}
-          style={pautasScrollStyle}
-        >
-          <div className="pautas-scroll-track" key={`${selectedYear}-${selectedMonth}-${pautaFilter}-${filteredPautas.length}-${autoScroll ? "scroll" : "static"}`}>
-            <div className="pautas-scroll-group">
-              {filteredPautas.map((pauta) => renderPautaRow(pauta))}
-              {!filteredPautas.length && !loading ? (
-                <div className="empty-state">
-                  Nenhuma pauta encontrada para o filtro atual.
-                </div>
-              ) : null}
+        {pautasView === "avisos" ? renderQuadroAvisos() : (
+          <>
+            <div className="pautas-monthbar">
+              <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
+                <ChevronLeft size={16} />
+              </button>
+              <strong>{monthCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong>
+              <button type="button" onClick={() => shiftMonth(1)} aria-label="Proximo mes">
+                <ChevronRight size={16} />
+              </button>
+              <button type="button" onClick={() => setMonthCursor(new Date())}>Mes atual</button>
             </div>
-            {shouldAutoScrollPautas ? (
-              <div aria-hidden="true" className="pautas-scroll-group pautas-scroll-group--copy">
-                {filteredPautas.map((pauta) => renderPautaRow(pauta, "copy-"))}
+            <div className="panel-toolbar">
+              <button className={`filter-pill ${pautaFilter === "todas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("todas")}>
+                Todas ({monthPautas.length})
+              </button>
+              <button className={`filter-pill ${pautaFilter === "minhas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("minhas")}>
+                Minhas ({statusCounts.minhas})
+              </button>
+              <button className={`filter-pill ${pautaFilter === "destaques" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("destaques")}>
+                Destaques ({statusCounts.destaques})
+              </button>
+              <button className={`filter-pill ${pautaFilter === "alta" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("alta")}>
+                Alta ({statusCounts.alta})
+              </button>
+              <button
+                className={`filter-pill filter-pill--danger ${pautaFilter === "atrasadas" ? "active" : ""}`}
+                type="button"
+                onClick={() => setPautaFilter("atrasadas")}
+              >
+                Atrasadas ({statusCounts.atrasado})
+              </button>
+              <button
+                className={`filter-pill filter-pill--warning ${pautaFilter === "semPrazo" ? "active" : ""}`}
+                type="button"
+                onClick={() => setPautaFilter("semPrazo")}
+              >
+                Sem prazo ({statusCounts.semPrazo})
+              </button>
+              <button className={`filter-pill ${pautaFilter === "concluidas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("concluidas")}>
+                Concluidas ({statusCounts.concluidas})
+              </button>
+              <label className="panel-search">
+                <Search size={14} />
+                <input
+                  aria-label="Buscar pautas"
+                  onChange={(event) => setPautaQuery(event.target.value)}
+                  placeholder="Buscar..."
+                  value={pautaQuery}
+                />
+              </label>
+              <div className="panel-export-actions" aria-label="Exportar pautas">
+                <button type="button" onClick={() => exportPautas("pdf")}>PDF</button>
+                <button type="button" onClick={() => exportPautas("excel")}>XLSX</button>
+                <button disabled={sendingPautasEmail} type="button" onClick={sendPautasByEmail}>
+                  {sendingPautasEmail ? "Enviando..." : "E-mail"}
+                </button>
               </div>
-            ) : null}
-          </div>
-        </div>
+            </div>
+            {error ? <p className="module-error module-error--compact">{error}</p> : null}
+            {pautasEmailStatus ? <p className="module-notice module-notice--compact">{pautasEmailStatus}</p> : null}
+            <div
+              className={`stack-list pautas-stack ${shouldAutoScrollPautas ? "pautas-stack--scrolling" : ""}`}
+              ref={pautasStackRef}
+              style={pautasScrollStyle}
+            >
+              <div className="pautas-scroll-track" key={`${selectedYear}-${selectedMonth}-${pautaFilter}-${filteredPautas.length}-${autoScroll ? "scroll" : "static"}`}>
+                <div className="pautas-scroll-group">
+                  {filteredPautas.map((pauta) => renderPautaRow(pauta))}
+                  {!filteredPautas.length && !loading ? (
+                    <div className="empty-state">
+                      Nenhuma pauta encontrada para o filtro atual.
+                    </div>
+                  ) : null}
+                </div>
+                {shouldAutoScrollPautas ? (
+                  <div aria-hidden="true" className="pautas-scroll-group pautas-scroll-group--copy">
+                    {filteredPautas.map((pauta) => renderPautaRow(pauta, "copy-"))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
-      {canManagePautas && formOpen ? (
+      {pautasView === "lista" && canManagePautas && formOpen ? (
         <section className="panel pauta-editor-panel" ref={pautaEditorRef}>
           <PanelHeader title={editingId ? "Editar pauta" : "Nova pauta"} icon={<ListChecks size={18} />} action={source} />
           <form className="stack-form" onSubmit={submitPauta}>
