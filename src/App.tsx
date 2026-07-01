@@ -375,7 +375,7 @@ const routeGroups = [
   { label: "Sistema", items: ["coord", "admin"] }
 ] satisfies Array<{ label: string; items: HubRoute[] }>;
 
-const coordStandaloneVersion = "2026-06-27-coord-compacta";
+const coordStandaloneVersion = "2026-07-01-coord-list-cards";
 
 const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: string }> = {
   agenda: { title: "Agenda tributaria", src: "/apps/agenda-tributaria.html" },
