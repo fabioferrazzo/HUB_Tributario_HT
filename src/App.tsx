@@ -737,6 +737,7 @@ function PomodoroFloatingNotes({
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dragStartRef = useRef<{ pointerId: number; x: number; y: number; left: number; top: number } | null>(null);
+  const draftRef = useRef(notes);
   const [minimized, setMinimized] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [activeArchiveId, setActiveArchiveId] = useState<string | null>(null);
@@ -744,7 +745,8 @@ function PomodoroFloatingNotes({
 
   useEffect(() => {
     if (!open || !editorRef.current) return;
-    if (editorRef.current.innerHTML !== notes) {
+    if (notes !== draftRef.current && editorRef.current.innerHTML !== notes) {
+      draftRef.current = notes;
       editorRef.current.innerHTML = notes;
     }
   }, [notes, open]);
@@ -784,7 +786,9 @@ function PomodoroFloatingNotes({
 
   function commitEditorDraft() {
     const nextNotes = editorRef.current ? editorRef.current.innerHTML : notes;
+    draftRef.current = nextNotes;
     onChange(nextNotes);
+    savePomodoroNotes(nextNotes);
     return nextNotes;
   }
 
@@ -858,27 +862,33 @@ function PomodoroFloatingNotes({
           ) : null}
           <button
               type="button"
+              className="pomodoro-floating-notes__icon-action"
+              aria-label={minimized ? "Restaurar anotacoes" : "Minimizar anotacoes"}
+              title={minimized ? "Restaurar" : "Minimizar"}
               onClick={() => {
-                commitEditorDraft();
+                const nextNotes = commitEditorDraft();
+                onSave(nextNotes);
                 setMinimized((current) => !current);
             }}
           >
-            {minimized ? "Abrir" : "Minimizar"}
+            {minimized ? "+" : "_"}
           </button>
           <button
               type="button"
+              className="pomodoro-floating-notes__icon-action"
+              aria-label="Fechar anotacoes"
+              title="Fechar"
               onClick={() => {
                 const nextNotes = commitEditorDraft();
                 onClose(nextNotes);
               }}
             >
-            Fechar
+            <span aria-hidden="true">x</span>
           </button>
         </div>
       </header>
-      {!minimized ? (
-        <>
-          <div className="pomodoro-floating-notes__toolbar" aria-label="Formatacao das anotacoes">
+      <div className="pomodoro-floating-notes__body" aria-hidden={minimized}>
+        <div className="pomodoro-floating-notes__toolbar" aria-label="Formatacao das anotacoes">
             <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => runEditorCommand("bold")}>
               B
             </button>
@@ -909,45 +919,54 @@ function PomodoroFloatingNotes({
               <option value="3">Normal</option>
               <option value="4">Grande</option>
             </select>
+        </div>
+        {archiveOpen ? (
+          <div className="pomodoro-floating-notes__archive">
+            <strong>Arquivo de notas</strong>
+            {archivedNotes.length ? (
+              <div className="pomodoro-floating-notes__archive-list">
+                {archivedNotes.map((note) => (
+                  <article key={note.id}>
+                    <div>
+                      <strong>{note.title}</strong>
+                      <span>{formatPomodoroArchiveDate(note.updatedAt)}</span>
+                    </div>
+                    <div>
+                      <button type="button" onClick={() => handleArchivedOpen(note)}>
+                        Abrir
+                      </button>
+                      <button type="button" onClick={() => onDeleteArchived(note.id)}>
+                        Excluir
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p>Nenhuma anotacao arquivada.</p>
+            )}
           </div>
-          {archiveOpen ? (
-            <div className="pomodoro-floating-notes__archive">
-              <strong>Arquivo de notas</strong>
-              {archivedNotes.length ? (
-                <div className="pomodoro-floating-notes__archive-list">
-                  {archivedNotes.map((note) => (
-                    <article key={note.id}>
-                      <div>
-                        <strong>{note.title}</strong>
-                        <span>{formatPomodoroArchiveDate(note.updatedAt)}</span>
-                      </div>
-                      <div>
-                        <button type="button" onClick={() => handleArchivedOpen(note)}>
-                          Abrir
-                        </button>
-                        <button type="button" onClick={() => onDeleteArchived(note.id)}>
-                          Excluir
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p>Nenhuma anotacao arquivada.</p>
-              )}
-            </div>
-          ) : null}
-          <div
-            className="pomodoro-floating-notes__editor"
-            contentEditable
-            ref={editorRef}
-            suppressContentEditableWarning
-            onInput={(event) => onChange(event.currentTarget.innerHTML)}
-            onBlur={(event) => onChange(event.currentTarget.innerHTML)}
-          />
-          {status ? <div className="pomodoro-floating-notes__status">{status}</div> : null}
-        </>
-      ) : null}
+        ) : null}
+        <div
+          className="pomodoro-floating-notes__editor"
+          contentEditable
+          ref={editorRef}
+          suppressContentEditableWarning
+          onInput={(event) => {
+            const nextNotes = event.currentTarget.innerHTML;
+            draftRef.current = nextNotes;
+            onChange(nextNotes);
+            savePomodoroNotes(nextNotes);
+          }}
+          onBlur={(event) => {
+            const nextNotes = event.currentTarget.innerHTML;
+            draftRef.current = nextNotes;
+            onChange(nextNotes);
+            savePomodoroNotes(nextNotes);
+          }}
+        />
+        {status ? <div className="pomodoro-floating-notes__status">{status}</div> : null}
+      </div>
     </section>
   );
 }
@@ -3879,21 +3898,27 @@ function ArquivosModule({ user }: { user: HubUser }) {
             const processingBadge = getProcessingBadge(resource);
             return (
               <article className="file-resource" key={resource.id}>
-                <div>
-                  <FileArchive size={17} />
-                  <span>{resource.kind === "upload" ? "Upload" : formatFileCategory(resource.categoria)}</span>
+                <div className="file-resource__content">
+                  <div className="file-resource__label">
+                    <FileArchive size={14} />
+                    <span>{resource.kind === "upload" ? "Upload" : formatFileCategory(resource.categoria)}</span>
+                  </div>
+                  <div className="file-resource__body">
+                    <strong>{resource.titulo}</strong>
+                    <p>{resource.descricao || "Sem descricao"}</p>
+                  </div>
+                  <div className="file-resource__meta">
+                    <span>
+                      {resource.scope === "global" ? "Global" : "Pessoal"} - {folderNames.get(resource.folderId) || "Sem pasta"} -{" "}
+                      {formatDate(resource.createdAt)}
+                    </span>
+                    {resource.fileName ? <span>{resource.fileName}</span> : null}
+                    {processingBadge ? (
+                      <span className={`processing-badge processing-badge--${processingBadge.tone}`}>{processingBadge.label}</span>
+                    ) : null}
+                    {resource.processingMessage ? <span>{resource.processingMessage}</span> : null}
+                  </div>
                 </div>
-                <strong>{resource.titulo}</strong>
-                <p>{resource.descricao || "Sem descricao"}</p>
-                <small>
-                  {resource.scope === "global" ? "Global" : "Pessoal"} - {folderNames.get(resource.folderId) || "Sem pasta"} -{" "}
-                  {formatDate(resource.createdAt)}
-                </small>
-                {resource.fileName ? <small>{resource.fileName}</small> : null}
-                {processingBadge ? (
-                  <span className={`processing-badge processing-badge--${processingBadge.tone}`}>{processingBadge.label}</span>
-                ) : null}
-                {resource.processingMessage ? <small>{resource.processingMessage}</small> : null}
                 <div className="record-actions">
                   {resource.url || resource.processedUrl ? (
                     <button type="button" onClick={() => openViewer(resource)}>

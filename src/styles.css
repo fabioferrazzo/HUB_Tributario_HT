@@ -1356,70 +1356,117 @@ select {
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: 6px;
+  gap: 4px;
   overflow: auto;
-  padding: 8px;
+  padding: 5px;
 }
 
 .file-resource {
-  display: grid;
-  gap: 3px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  padding: 6px 8px;
-}
-
-.file-resource > div:first-child {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  min-height: 58px;
+  padding: 5px 7px;
+}
+
+.file-resource__content {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(66px, auto) minmax(0, 1fr);
+  grid-template-areas:
+    "label body"
+    "meta meta";
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.file-resource__label {
+  grid-area: label;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--accent);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 850;
+}
+
+.file-resource__body {
+  grid-area: body;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
 }
 
 .file-resource strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.12;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-resource p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 10.5px;
+  line-height: 1.12;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.file-resource small {
+.file-resource__meta {
+  grid-area: meta;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 8px;
   color: #65748b;
-  font-size: 11px;
+  font-size: 9.75px;
   font-weight: 700;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+  line-height: 1.05;
+}
+
+.file-resource__meta > span {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-resource .record-actions {
-  gap: 5px;
-  margin-top: 2px;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: 0;
+  max-width: 360px;
 }
 
 .file-resource .record-actions button,
 .file-resource .record-actions a {
-  min-height: 27px;
-  padding: 4px 7px;
-  font-size: 11px;
+  min-height: 22px;
+  padding: 3px 6px;
+  font-size: 10px;
   gap: 4px;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 .file-resource .record-actions svg {
   width: 12px;
   height: 12px;
+}
+
+.file-resource__meta .processing-badge {
+  margin: 0;
 }
 
 .processing-badge {
@@ -1428,8 +1475,8 @@ select {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 4px 9px;
-  font-size: 11px;
+  padding: 2px 7px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0;
 }
@@ -4140,6 +4187,10 @@ body {
   z-index: 80;
   width: min(420px, calc(100vw - 32px));
   height: min(520px, calc(100vh - 48px));
+  min-width: 320px;
+  min-height: 260px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -4150,19 +4201,43 @@ body {
   overflow: hidden;
   opacity: 1;
   backdrop-filter: none;
+  resize: both;
+}
+
+.pomodoro-floating-notes::after {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 14px;
+  height: 14px;
+  border-right: 2px solid #b8c0ce;
+  border-bottom: 2px solid #b8c0ce;
+  content: "";
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .pomodoro-floating-notes--minimized {
-  width: min(300px, calc(100vw - 32px));
+  width: min(280px, calc(100vw - 32px));
   height: auto;
+  min-height: 0;
+  resize: none;
+}
+
+.pomodoro-floating-notes--minimized::after {
+  display: none;
+}
+
+.pomodoro-floating-notes--minimized .pomodoro-floating-notes__body {
+  display: none;
 }
 
 .pomodoro-floating-notes__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   background: #f8f6f0;
   cursor: move;
@@ -4174,6 +4249,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .pomodoro-floating-notes__header strong {
@@ -4190,7 +4266,12 @@ body {
 
 .pomodoro-floating-notes__actions {
   display: flex;
-  gap: 8px;
+  flex: 0 0 auto;
+  gap: 4px;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .pomodoro-floating-notes__actions button {
@@ -4199,15 +4280,36 @@ body {
   background: #ffffff;
   color: var(--navy);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  padding: 8px 10px;
+  line-height: 1;
+  padding: 6px 8px;
+  white-space: nowrap;
 }
 
 .pomodoro-floating-notes__actions button:first-child {
   background: var(--navy);
   border-color: var(--navy);
   color: white;
+}
+
+.pomodoro-floating-notes__actions .pomodoro-floating-notes__icon-action {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 16px;
+}
+
+.pomodoro-floating-notes__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  background: #ffffff;
 }
 
 .pomodoro-floating-notes__toolbar {
