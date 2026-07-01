@@ -321,19 +321,34 @@
 
     .reminder-list {
       display: grid;
-      gap: 6px;
+      gap: 8px;
       min-height: 46px;
     }
 
     .reminder-card {
+      position: relative;
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      column-gap: 7px;
-      row-gap: 4px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 10px;
+      row-gap: 7px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-left: 5px solid #b4bed0;
+      border-radius: 9px;
       background: #fffefa;
-      padding: 6px 7px;
+      padding: 9px 10px 9px 12px;
+      box-shadow: 0 2px 8px rgba(13, 34, 62, 0.04);
+    }
+
+    .reminder-card.priority-alta {
+      border-left-color: var(--danger);
+    }
+
+    .reminder-card.priority-media {
+      border-left-color: var(--warning);
+    }
+
+    .reminder-card.priority-baixa {
+      border-left-color: var(--ok);
     }
 
     .reminder-card.done {
@@ -344,13 +359,23 @@
       text-decoration: line-through;
     }
 
+    .priority-line {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
     .priority-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
       border: 2px solid white;
       box-shadow: 0 0 0 1px #b4bed0;
-      margin-top: 4px;
+      flex: 0 0 auto;
     }
 
     .priority-alta {
@@ -366,7 +391,7 @@
     }
 
     .date-badge {
-      width: 40px;
+      width: 58px;
       border: 1px solid var(--line);
       border-radius: 7px;
       overflow: hidden;
@@ -374,6 +399,7 @@
       text-align: center;
       flex: 0 0 auto;
       grid-row: 1 / span 2;
+      align-self: start;
     }
 
     .date-badge small {
@@ -388,28 +414,36 @@
 
     .date-badge strong {
       display: block;
-      padding: 3px 2px;
+      padding: 5px 2px;
       font-size: 14px;
+      line-height: 1.05;
+    }
+
+    .date-icon {
+      display: inline-block;
+      margin-right: 2px;
+      font-size: 9px;
     }
 
     .reminder-main {
       min-width: 0;
       display: grid;
-      gap: 2px;
+      gap: 4px;
     }
 
     .reminder-title {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 900;
       color: var(--ink);
       overflow-wrap: anywhere;
+      line-height: 1.22;
     }
 
     .reminder-meta,
     .reminder-description {
       color: var(--muted);
-      font-size: 11px;
-      line-height: 1.22;
+      font-size: 12px;
+      line-height: 1.32;
       overflow-wrap: anywhere;
     }
 
@@ -465,16 +499,16 @@
 
     .reminder-actions {
       display: flex;
-      align-items: start;
+      align-items: center;
       justify-content: flex-start;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 5px;
       max-width: none;
-      grid-column: 2 / 3;
+      grid-column: 1 / -1;
     }
 
     .reminder-actions button {
-      padding: 3px 6px;
+      padding: 4px 7px;
       font-size: 11px;
       min-height: 24px;
     }
@@ -1322,22 +1356,23 @@
         const date = item.due ? new Date(item.due) : null;
         const month = date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString("pt-BR", { month: "short" }) : "--";
         const day = date && !Number.isNaN(date.getTime()) ? String(date.getDate()).padStart(2, "0") : "--";
+        const priorityText = priorityLabel(item.priority);
         const meta = [item.type === "colaborador" ? collaborator?.name || "Sem colaborador" : itemTypeLabel(item.type), formatDateTime(item.due)]
           .filter(Boolean)
           .join(" - ");
         const attachments = item.attachments || [];
 
         return `
-          <article class="reminder-card ${item.status === "concluido" ? "done" : ""}" data-id="${item.id}">
-            <span class="priority-dot priority-${item.priority}" title="Prioridade ${item.priority}"></span>
+          <article class="reminder-card priority-${item.priority} ${item.status === "concluido" ? "done" : ""}" data-id="${item.id}">
             <div class="reminder-main">
+              <div class="priority-line"><span class="priority-dot priority-${item.priority}" title="Prioridade ${item.priority}"></span><span>${escapeHtml(priorityText)}</span></div>
               <div class="reminder-title">${escapeHtml(item.title)}</div>
               <div class="reminder-tags"><span class="chip">${escapeHtml(itemTypeLabel(item.type))}</span>${attachments.length ? `<span class="chip">${attachments.length} anexo(s)</span>` : ""}</div>
               <div class="reminder-meta">${escapeHtml(meta)}</div>
               ${compact ? "" : `<div class="reminder-description">${escapeHtml(item.description || "Sem descricao")}</div>`}
               ${compact || !attachments.length ? "" : renderAttachmentPills(item)}
             </div>
-            <div class="date-badge"><small>${escapeHtml(month)}</small><strong>${day}</strong></div>
+            <div class="date-badge"><small><span class="date-icon" aria-hidden="true">&#128197;</span>${escapeHtml(month)}</small><strong>${day}</strong></div>
             <div class="reminder-actions">
               <button type="button" data-action="toggle" data-id="${item.id}">${item.status === "concluido" ? "Reabrir" : "Concluir"}</button>
               <button type="button" data-action="edit" data-id="${item.id}">Editar</button>
@@ -1346,6 +1381,12 @@
             </div>
           </article>
         `;
+      }
+
+      function priorityLabel(priority) {
+        if (priority === "alta") return "Alta prioridade";
+        if (priority === "media") return "Media prioridade";
+        return "Baixa prioridade";
       }
 
       function renderAttachmentPills(item) {
