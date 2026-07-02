@@ -46,6 +46,7 @@ import {
   saveAppFileResource
 } from "./lib/arquivosRepository";
 import { getStoredSession, getSupabaseAccessToken, signIn, signOut } from "./lib/auth";
+import { listQuadroAvisos, saveQuadroAviso } from "./lib/avisosRepository";
 import {
   canUserManageLembrete,
   deleteAppLembrete,
@@ -92,6 +93,8 @@ import type {
   Lembrete,
   Noticia,
   Pauta,
+  QuadroAviso,
+  QuadroAvisoKind,
   TaskItem,
   UsefulLink,
   UserRole
@@ -1285,6 +1288,13 @@ function Dashboard({
   const [avisosView, setAvisosView] = useState<"geral" | "particular">("geral");
   const [avisosDrawMode, setAvisosDrawMode] = useState(false);
   const [selectedAvisoCell, setSelectedAvisoCell] = useState(1);
+  const [quadroAvisos, setQuadroAvisos] = useState<QuadroAviso[]>([]);
+  const [avisosLoading, setAvisosLoading] = useState(false);
+  const [avisoSaving, setAvisoSaving] = useState(false);
+  const [avisoMessage, setAvisoMessage] = useState("");
+  const [avisoDraft, setAvisoDraft] = useState("");
+  const [avisoKind, setAvisoKind] = useState<QuadroAvisoKind>("texto");
+  const [avisoSelectedUsers, setAvisoSelectedUsers] = useState<string[]>([]);
   const source = getPautasSource(user);
 
   useEffect(() => {
@@ -1311,6 +1321,26 @@ function Dashboard({
       window.removeEventListener("hub:pautas", refreshPautas);
     };
   }, [user]);
+
+  const loadQuadroAvisos = useCallback(async () => {
+    setAvisosLoading(true);
+    setAvisoMessage("");
+    try {
+      const loaded = await listQuadroAvisos(user);
+      setQuadroAvisos(loaded);
+    } catch (loadError) {
+      setAvisoMessage(getErrorMessage(loadError));
+    } finally {
+      setAvisosLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (pautasView !== "avisos") return;
+    void loadQuadroAvisos();
+    window.addEventListener("hub:quadro-avisos", loadQuadroAvisos);
+    return () => window.removeEventListener("hub:quadro-avisos", loadQuadroAvisos);
+  }, [loadQuadroAvisos, pautasView]);
 
   const canManagePautas = user.role === "admin";
   const selectedYear = monthCursor.getFullYear();
@@ -1741,42 +1771,143 @@ function Dashboard({
     );
   }
 
+  function toggleAvisoUser(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    setAvisoSelectedUsers((current) =>
+      current.includes(normalizedEmail)
+        ? current.filter((item) => item !== normalizedEmail)
+        : [...current, normalizedEmail]
+    );
+  }
+
+  function handleAvisosViewChange(nextView: "geral" | "particular") {
+    setAvisosView(nextView);
+    if (nextView === "geral") {
+      setAvisoSelectedUsers([]);
+    }
+  }
+
+  function chooseAvisoKind(nextKind: QuadroAvisoKind) {
+    setAvisoKind(nextKind);
+    setAvisosDrawMode(false);
+    if (nextKind === "imagem" || nextKind === "anexo") {
+      setAvisoMessage("Imagem e anexos serao adicionados no proximo bloco; este bloco salva texto e post-it.");
+    } else {
+      setAvisoMessage("");
+    }
+  }
+
+  async function handleSaveAviso() {
+    const content = avisoDraft.trim();
+    setAvisoMessage("");
+
+    if (!content) {
+      setAvisoMessage("Escreva um aviso antes de salvar.");
+      return;
+    }
+
+    if (avisosView === "particular" && avisoSelectedUsers.length === 0) {
+      setAvisoMessage("Selecione ao menos um usuario para o quadro particular.");
+      return;
+    }
+
+    setAvisoSaving(true);
+    try {
+      const nextAvisos = await saveQuadroAviso({
+        current: quadroAvisos,
+        user,
+        aviso: {
+          cell: selectedAvisoCell,
+          kind: avisoKind,
+          visibility: avisosView,
+          title: avisoKind === "postit" ? "Post-it" : "Aviso",
+          content,
+          color: avisoKind === "postit" ? "#fff4b8" : "#ffffff",
+          selectedUsers: avisosView === "particular" ? avisoSelectedUsers : []
+        }
+      });
+      setQuadroAvisos(nextAvisos);
+      setAvisoDraft("");
+      setAvisoMessage("Aviso salvo no quadro.");
+    } catch (saveError) {
+      setAvisoMessage(getErrorMessage(saveError));
+    } finally {
+      setAvisoSaving(false);
+    }
+  }
+
   function renderQuadroAvisos() {
     const avisoCells = Array.from({ length: 10 }, (_, index) => index + 1);
+    const activeProfiles = getActiveProfiles(hubUsers);
+    const visibleAvisos = quadroAvisos.filter((aviso) => aviso.visibility === avisosView);
+    const selectedCellAvisos = visibleAvisos.filter((aviso) => aviso.cell === selectedAvisoCell);
 
     return (
       <div className="avisos-board">
         <div className="avisos-toolbar">
           <div className="avisos-toolbar-main">
-            <button type="button">Texto</button>
+            <button
+              className={!avisosDrawMode && avisoKind === "texto" ? "primary" : ""}
+              type="button"
+              onClick={() => chooseAvisoKind("texto")}
+            >
+              Texto
+            </button>
             <button
               className={avisosDrawMode ? "primary" : ""}
               type="button"
-              onClick={() => setAvisosDrawMode((current) => !current)}
+              onClick={() => {
+                setAvisosDrawMode((current) => !current);
+                setAvisoMessage("");
+              }}
             >
               Desenhar
             </button>
-            <button type="button">Imagem</button>
-            <button type="button">Anexo</button>
-            <button type="button">Post-it</button>
+            <button
+              className={!avisosDrawMode && avisoKind === "imagem" ? "primary" : ""}
+              type="button"
+              onClick={() => chooseAvisoKind("imagem")}
+            >
+              Imagem
+            </button>
+            <button
+              className={!avisosDrawMode && avisoKind === "anexo" ? "primary" : ""}
+              type="button"
+              onClick={() => chooseAvisoKind("anexo")}
+            >
+              Anexo
+            </button>
+            <button
+              className={!avisosDrawMode && avisoKind === "postit" ? "primary" : ""}
+              type="button"
+              onClick={() => chooseAvisoKind("postit")}
+            >
+              Post-it
+            </button>
           </div>
           <div className="avisos-mode-switch" aria-label="Filtro do quadro de avisos">
             <button
               className={avisosView === "geral" ? "active" : ""}
               type="button"
-              onClick={() => setAvisosView("geral")}
+              onClick={() => handleAvisosViewChange("geral")}
             >
               Quadro geral
             </button>
             <button
               className={avisosView === "particular" ? "active" : ""}
               type="button"
-              onClick={() => setAvisosView("particular")}
+              onClick={() => handleAvisosViewChange("particular")}
             >
               Quadro particular
             </button>
           </div>
         </div>
+
+        {avisoMessage ? (
+          <div className={`avisos-message ${avisoMessage.includes("salvo") ? "success" : ""}`}>
+            {avisoMessage}
+          </div>
+        ) : null}
 
         {avisosDrawMode ? (
           <div className="avisos-draw-stage">
@@ -1790,6 +1921,16 @@ function Dashboard({
                 <button type="button">DOCX</button>
                 <button type="button">XLSX</button>
               </div>
+            </div>
+            <div className="avisos-draw-tools">
+              <label>
+                Cor
+                <input defaultValue="#1d3f6d" type="color" />
+              </label>
+              <label>
+                Espessura
+                <input defaultValue={4} max={18} min={1} type="range" />
+              </label>
             </div>
             <div className="avisos-draw-canvas">
               <span>Area livre para desenho estilo Paint</span>
@@ -1807,54 +1948,91 @@ function Dashboard({
                 >
                   <span className="aviso-cell__title">Espaco {String(cell).padStart(2, "0")}</span>
                   <span className="aviso-cell__hint">
-                    {avisosView === "geral" ? "Geral" : "Particular"}
+                    {avisosView === "geral" ? "Geral" : "Particular"} - {visibleAvisos.filter((aviso) => aviso.cell === cell).length} aviso(s)
+                  </span>
+                  <span className="aviso-cell__list">
+                    {visibleAvisos
+                      .filter((aviso) => aviso.cell === cell)
+                      .slice(0, 3)
+                      .map((aviso) => (
+                        <span className={`aviso-pill aviso-pill--${aviso.kind}`} key={aviso.id}>
+                          {aviso.kind === "postit" ? "Post-it" : aviso.title}: {aviso.content.slice(0, 42)}
+                        </span>
+                      ))}
+                    {visibleAvisos.filter((aviso) => aviso.cell === cell).length > 3 ? (
+                      <span className="aviso-cell__more">
+                        +{visibleAvisos.filter((aviso) => aviso.cell === cell).length - 3}
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               ))}
             </div>
             <aside className="avisos-editor-panel">
-              <span className="panel-status">Rascunho visual</span>
+              <span className="panel-status">{avisosLoading ? "Carregando" : "Supabase/local"}</span>
               <h3>Editor do espaco {String(selectedAvisoCell).padStart(2, "0")}</h3>
               <div className="pauta-format-toolbar avisos-format-toolbar">
                 <label>
-                  Fonte
-                  <select defaultValue="normal">
-                    <option value="pequena">Pequena</option>
-                    <option value="normal">Normal</option>
-                    <option value="grande">Grande</option>
+                  Tipo
+                  <select value={avisoKind} onChange={(event) => chooseAvisoKind(event.target.value as QuadroAvisoKind)}>
+                    <option value="texto">Texto</option>
+                    <option value="postit">Post-it</option>
+                    <option value="imagem">Imagem</option>
+                    <option value="anexo">Anexo</option>
                   </select>
                 </label>
-                <button type="button"><strong>B</strong></button>
-                <button type="button"><Highlighter size={15} /></button>
               </div>
-              <textarea placeholder="Escreva um aviso, orientacao ou recado para este espaco." />
+              <textarea
+                placeholder="Escreva um aviso, orientacao ou recado para este espaco."
+                value={avisoDraft}
+                onChange={(event) => setAvisoDraft(event.target.value)}
+              />
               <div className="avisos-editor-actions">
-                <button type="button">Inserir imagem</button>
-                <button type="button">Anexar documento</button>
-                <button type="button">Post-it</button>
+                <button type="button" onClick={() => chooseAvisoKind("imagem")}>Inserir imagem</button>
+                <button type="button" onClick={() => chooseAvisoKind("anexo")}>Anexar documento</button>
+                <button type="button" onClick={() => chooseAvisoKind("postit")}>Post-it</button>
               </div>
               <fieldset className="member-picker avisos-member-picker">
                 <legend>Salvar como</legend>
                 <label>
-                  <input checked={avisosView === "geral"} readOnly type="radio" />
+                  <input checked={avisosView === "geral"} onChange={() => handleAvisosViewChange("geral")} type="radio" />
                   Quadro geral
                 </label>
                 <label>
-                  <input checked={avisosView === "particular"} readOnly type="radio" />
+                  <input checked={avisosView === "particular"} onChange={() => handleAvisosViewChange("particular")} type="radio" />
                   Quadro particular
                 </label>
               </fieldset>
               {avisosView === "particular" ? (
                 <div className="avisos-user-list">
-                  {getActiveProfiles(hubUsers).map((member) => (
-                    <label key={member.email}>
-                      <input type="checkbox" />
-                      {member.nome}
-                    </label>
-                  ))}
+                  {activeProfiles.map((member) => {
+                    const email = member.email.trim().toLowerCase();
+                    return (
+                      <label key={member.email}>
+                        <input
+                          checked={avisoSelectedUsers.includes(email)}
+                          onChange={() => toggleAvisoUser(member.email)}
+                          type="checkbox"
+                        />
+                        {member.nome}
+                      </label>
+                    );
+                  })}
                 </div>
               ) : null}
-              <button className="primary-action" type="button">Salvar aviso</button>
+              <button className="primary-action" disabled={avisoSaving || avisosLoading} type="button" onClick={handleSaveAviso}>
+                {avisoSaving ? "Salvando..." : "Salvar aviso"}
+              </button>
+              <div className="avisos-saved-list">
+                <strong>Avisos deste espaco</strong>
+                {selectedCellAvisos.length ? selectedCellAvisos.map((aviso) => (
+                  <article className={`avisos-saved-item avisos-saved-item--${aviso.kind}`} key={aviso.id}>
+                    <span>{aviso.kind === "postit" ? "Post-it" : aviso.title}</span>
+                    <p>{aviso.content}</p>
+                    <small>{formatDate(aviso.updatedAt)} - {aviso.visibility === "geral" ? "geral" : "particular"}</small>
+                  </article>
+                )) : <p className="avisos-muted">Nenhum aviso salvo neste espaco.</p>}
+              </div>
             </aside>
           </div>
         )}

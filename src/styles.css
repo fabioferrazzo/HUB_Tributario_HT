@@ -3746,6 +3746,22 @@ body {
   color: #fff;
 }
 
+.avisos-message {
+  border: 1px solid #efc7c7;
+  border-radius: 8px;
+  background: #fff2f2;
+  color: #b4232a;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.avisos-message.success {
+  border-color: #b7dccb;
+  background: #eef9f3;
+  color: #226647;
+}
+
 .avisos-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -3791,6 +3807,49 @@ body {
   background: #edf4f1;
   color: #47605d;
   padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.aviso-cell__list {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-height: 52px;
+}
+
+.aviso-pill {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid #d9e2ea;
+  border-radius: 7px;
+  background: #f7fafc;
+  color: #223653;
+  padding: 4px 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.aviso-pill--postit {
+  border-color: #f0d46d;
+  background: #fff4b8;
+}
+
+.aviso-pill--imagem {
+  border-color: #c8d8f0;
+  background: #eff6ff;
+}
+
+.aviso-pill--anexo {
+  border-color: #d3c4eb;
+  background: #f5f0ff;
+}
+
+.aviso-cell__more {
+  color: #65758b;
   font-size: 11px;
   font-weight: 850;
 }
@@ -3849,6 +3908,52 @@ body {
   font-weight: 750;
 }
 
+.avisos-saved-list {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 10px;
+}
+
+.avisos-saved-list > strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.avisos-saved-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px;
+}
+
+.avisos-saved-item--postit {
+  border-color: #f0d46d;
+  background: #fff4b8;
+}
+
+.avisos-saved-item span {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.avisos-saved-item p {
+  margin: 5px 0;
+  color: #334765;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.avisos-saved-item small,
+.avisos-muted {
+  color: #71809a;
+  font-size: 11px;
+  font-weight: 750;
+}
+
 .avisos-draw-stage {
   display: flex;
   flex-direction: column;
@@ -3874,6 +3979,26 @@ body {
 .avisos-draw-head strong {
   color: var(--ink);
   font-size: 16px;
+}
+
+.avisos-draw-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+}
+
+.avisos-draw-tools label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #41536d;
+  font-size: 12px;
+  font-weight: 850;
 }
 
 .avisos-draw-canvas {

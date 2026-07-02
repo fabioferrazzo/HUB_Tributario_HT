@@ -175,6 +175,27 @@ export type UsefulLink = {
   updatedAt: string;
 };
 
+export type QuadroAvisoVisibility = "geral" | "particular";
+
+export type QuadroAvisoKind = "texto" | "imagem" | "anexo" | "postit";
+
+export type QuadroAviso = {
+  id: string;
+  cell: number;
+  kind: QuadroAvisoKind;
+  visibility: QuadroAvisoVisibility;
+  title: string;
+  content: string;
+  color: string;
+  fileName?: string;
+  fileUrl?: string;
+  selectedUsers: string[];
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Noticia = {
   id: string;
   titulo: string;
