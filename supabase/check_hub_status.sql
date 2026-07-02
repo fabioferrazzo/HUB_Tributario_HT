@@ -26,6 +26,8 @@ with required_objects as (
       ('table', 'pauta_conclusoes', 'Tabela public.pauta_conclusoes'),
       ('table', 'coord_colaboradores', 'Tabela public.coord_colaboradores'),
       ('table', 'coord_itens', 'Tabela public.coord_itens'),
+      ('table', 'quadro_avisos', 'Tabela public.quadro_avisos'),
+      ('table', 'quadro_aviso_usuarios', 'Tabela public.quadro_aviso_usuarios'),
       ('column', 'arquivo_recursos.processing_status', 'Coluna public.arquivo_recursos.processing_status'),
       ('column', 'arquivo_recursos.processed_storage_path', 'Coluna public.arquivo_recursos.processed_storage_path'),
       ('column', 'arquivo_recursos.processed_mime_type', 'Coluna public.arquivo_recursos.processed_mime_type'),
@@ -58,6 +60,10 @@ with required_objects as (
       ('function', 'notify_pauta_conclusion', 'Funcao public.notify_pauta_conclusion'),
       ('function', 'purge_old_notifications', 'Funcao public.purge_old_notifications'),
       ('function', 'touch_agenda_tributaria_cache_updated_at', 'Funcao public.touch_agenda_tributaria_cache_updated_at'),
+      ('function', 'quadro_current_user_email', 'Funcao public.quadro_current_user_email'),
+      ('function', 'can_read_quadro_aviso', 'Funcao public.can_read_quadro_aviso'),
+      ('function', 'can_manage_quadro_aviso', 'Funcao public.can_manage_quadro_aviso'),
+      ('function', 'quadro_touch_updated_at', 'Funcao public.quadro_touch_updated_at'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
