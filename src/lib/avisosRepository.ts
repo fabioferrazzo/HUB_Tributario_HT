@@ -45,6 +45,41 @@ function getAvisosSource(user?: HubUser | null): AvisosSource {
   return user && isSupabaseConfigured ? "supabase" : "local";
 }
 
+function sanitizeAvisoFileName(fileName: string) {
+  return (
+    fileName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 140) || "arquivo"
+  );
+}
+
+export async function uploadQuadroAvisoFile(
+  file: File,
+  user: HubUser
+): Promise<{ fileName: string; fileUrl: string }> {
+  if (getAvisosSource(user) !== "supabase" || !supabase) {
+    return { fileName: file.name, fileUrl: URL.createObjectURL(file) };
+  }
+
+  const safeName = sanitizeAvisoFileName(file.name);
+  const owner = user.id || user.email || "usuario";
+  const path = `quadro-avisos/${owner}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+  const { error } = await supabase.storage.from("hub-anexos").upload(path, file, {
+    contentType: file.type || undefined,
+    upsert: false
+  });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("hub-anexos").getPublicUrl(path);
+  return { fileName: file.name, fileUrl: data.publicUrl };
+}
+
 function canUserViewAviso(aviso: QuadroAviso, user?: HubUser | null) {
   if (aviso.visibility === "geral") return true;
   const userEmail = normalizeEmail(user?.email);
