@@ -31,7 +31,17 @@
   X
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CSSProperties,
+  type ChangeEvent,
+  FormEvent,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { teamMembers } from "./data/hubData";
 import {
   deleteAppFileAnnotation,
@@ -46,7 +56,7 @@ import {
   saveAppFileResource
 } from "./lib/arquivosRepository";
 import { getStoredSession, getSupabaseAccessToken, signIn, signOut } from "./lib/auth";
-import { listQuadroAvisos, saveQuadroAviso } from "./lib/avisosRepository";
+import { listQuadroAvisos, saveQuadroAviso, uploadQuadroAvisoFile } from "./lib/avisosRepository";
 import {
   canUserManageLembrete,
   deleteAppLembrete,
@@ -1295,6 +1305,14 @@ function Dashboard({
   const [avisoDraft, setAvisoDraft] = useState("");
   const [avisoKind, setAvisoKind] = useState<QuadroAvisoKind>("texto");
   const [avisoSelectedUsers, setAvisoSelectedUsers] = useState<string[]>([]);
+  const [avisoColor, setAvisoColor] = useState("#fff4b8");
+  const [avisoSelectedFile, setAvisoSelectedFile] = useState<File | null>(null);
+  const [avisoDrawColor, setAvisoDrawColor] = useState("#1d3f6d");
+  const [avisoDrawSize, setAvisoDrawSize] = useState(4);
+  const avisoFileInputRef = useRef<HTMLInputElement | null>(null);
+  const avisoCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const avisoDrawingRef = useRef(false);
+  const avisoLastPointRef = useRef<{ x: number; y: number } | null>(null);
   const source = getPautasSource(user);
 
   useEffect(() => {
@@ -1790,18 +1808,93 @@ function Dashboard({
   function chooseAvisoKind(nextKind: QuadroAvisoKind) {
     setAvisoKind(nextKind);
     setAvisosDrawMode(false);
-    if (nextKind === "imagem" || nextKind === "anexo") {
-      setAvisoMessage("Imagem e anexos serao adicionados no proximo bloco; este bloco salva texto e post-it.");
-    } else {
+    setAvisoMessage("");
+    if (nextKind !== "imagem" && nextKind !== "anexo") {
+      setAvisoSelectedFile(null);
+      if (avisoFileInputRef.current) {
+        avisoFileInputRef.current.value = "";
+      }
+    }
+  }
+
+  function handleAvisoFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+    setAvisoSelectedFile(file);
+    if (file) {
       setAvisoMessage("");
     }
+  }
+
+  function openAvisoFilePicker(nextKind: Extract<QuadroAvisoKind, "imagem" | "anexo">) {
+    setAvisoKind(nextKind);
+    setAvisosDrawMode(false);
+    setAvisoMessage("");
+    avisoFileInputRef.current?.click();
+  }
+
+  function getAvisoCanvasPoint(event: ReactPointerEvent<HTMLCanvasElement>) {
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((event.clientY - rect.top) / rect.height) * canvas.height
+    };
+  }
+
+  function beginAvisoDrawing(event: ReactPointerEvent<HTMLCanvasElement>) {
+    event.preventDefault();
+    avisoDrawingRef.current = true;
+    avisoLastPointRef.current = getAvisoCanvasPoint(event);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function drawAvisoLine(event: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!avisoDrawingRef.current || !avisoLastPointRef.current) return;
+    const canvas = event.currentTarget;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const nextPoint = getAvisoCanvasPoint(event);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = avisoDrawColor;
+    context.lineWidth = avisoDrawSize;
+    context.beginPath();
+    context.moveTo(avisoLastPointRef.current.x, avisoLastPointRef.current.y);
+    context.lineTo(nextPoint.x, nextPoint.y);
+    context.stroke();
+    avisoLastPointRef.current = nextPoint;
+  }
+
+  function endAvisoDrawing(event?: ReactPointerEvent<HTMLCanvasElement>) {
+    avisoDrawingRef.current = false;
+    avisoLastPointRef.current = null;
+    if (event?.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function clearAvisoCanvas() {
+    const canvas = avisoCanvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function exportAvisoDrawing() {
+    const canvas = avisoCanvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `quadro-avisos-desenho-${new Date().toISOString().slice(0, 10)}.png`;
+    link.click();
   }
 
   async function handleSaveAviso() {
     const content = avisoDraft.trim();
     setAvisoMessage("");
 
-    if (!content) {
+    if (!content && !avisoSelectedFile) {
       setAvisoMessage("Escreva um aviso antes de salvar.");
       return;
     }
@@ -1813,6 +1906,7 @@ function Dashboard({
 
     setAvisoSaving(true);
     try {
+      const uploadedFile = avisoSelectedFile ? await uploadQuadroAvisoFile(avisoSelectedFile, user) : null;
       const nextAvisos = await saveQuadroAviso({
         current: quadroAvisos,
         user,
@@ -1820,14 +1914,20 @@ function Dashboard({
           cell: selectedAvisoCell,
           kind: avisoKind,
           visibility: avisosView,
-          title: avisoKind === "postit" ? "Post-it" : "Aviso",
-          content,
-          color: avisoKind === "postit" ? "#fff4b8" : "#ffffff",
+          title: avisoKind === "postit" ? "Post-it" : avisoSelectedFile?.name || "Aviso",
+          content: content || avisoSelectedFile?.name || "",
+          color: avisoKind === "postit" ? avisoColor : "#ffffff",
+          fileName: uploadedFile?.fileName,
+          fileUrl: uploadedFile?.fileUrl,
           selectedUsers: avisosView === "particular" ? avisoSelectedUsers : []
         }
       });
       setQuadroAvisos(nextAvisos);
       setAvisoDraft("");
+      setAvisoSelectedFile(null);
+      if (avisoFileInputRef.current) {
+        avisoFileInputRef.current.value = "";
+      }
       setAvisoMessage("Aviso salvo no quadro.");
     } catch (saveError) {
       setAvisoMessage(getErrorMessage(saveError));
@@ -1909,6 +2009,14 @@ function Dashboard({
           </div>
         ) : null}
 
+        <input
+          ref={avisoFileInputRef}
+          accept={avisoKind === "imagem" ? "image/png,image/jpeg,image/webp,image/gif" : ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"}
+          className="sr-only"
+          type="file"
+          onChange={handleAvisoFileChange}
+        />
+
         {avisosDrawMode ? (
           <div className="avisos-draw-stage">
             <div className="avisos-draw-head">
@@ -1917,23 +2025,38 @@ function Dashboard({
                 <span>Quadro branco temporario para rascunhos. Exporte antes de sair deste modo.</span>
               </div>
               <div className="avisos-export-actions">
-                <button type="button">PDF</button>
-                <button type="button">DOCX</button>
-                <button type="button">XLSX</button>
+                <button type="button" onClick={exportAvisoDrawing}>Exportar PNG</button>
+                <button type="button" onClick={clearAvisoCanvas}>Limpar</button>
               </div>
             </div>
             <div className="avisos-draw-tools">
               <label>
                 Cor
-                <input defaultValue="#1d3f6d" type="color" />
+                <input value={avisoDrawColor} type="color" onChange={(event) => setAvisoDrawColor(event.target.value)} />
               </label>
               <label>
                 Espessura
-                <input defaultValue={4} max={18} min={1} type="range" />
+                <input
+                  max={18}
+                  min={1}
+                  type="range"
+                  value={avisoDrawSize}
+                  onChange={(event) => setAvisoDrawSize(Number(event.target.value))}
+                />
               </label>
             </div>
             <div className="avisos-draw-canvas">
-              <span>Area livre para desenho estilo Paint</span>
+              <canvas
+                ref={avisoCanvasRef}
+                aria-label="Area livre para desenho estilo Paint"
+                height={790}
+                width={1400}
+                onPointerCancel={endAvisoDrawing}
+                onPointerDown={beginAvisoDrawing}
+                onPointerLeave={endAvisoDrawing}
+                onPointerMove={drawAvisoLine}
+                onPointerUp={endAvisoDrawing}
+              />
             </div>
           </div>
         ) : (
@@ -1982,14 +2105,54 @@ function Dashboard({
                   </select>
                 </label>
               </div>
+              {avisoKind === "postit" ? (
+                <div className="aviso-color-swatches" aria-label="Cores da nota adesiva">
+                  {["#fff4b8", "#fde2e2", "#dcfce7", "#dbeafe", "#fef3c7", "#f3e8ff"].map((color) => (
+                    <button
+                      aria-label={`Usar cor ${color}`}
+                      className={avisoColor === color ? "active" : ""}
+                      key={color}
+                      style={{ background: color }}
+                      type="button"
+                      onClick={() => setAvisoColor(color)}
+                    />
+                  ))}
+                </div>
+              ) : null}
               <textarea
-                placeholder="Escreva um aviso, orientacao ou recado para este espaco."
+                placeholder={avisoKind === "postit" ? "Escreva o texto da nota adesiva." : "Escreva um aviso, orientacao ou recado para este espaco."}
                 value={avisoDraft}
                 onChange={(event) => setAvisoDraft(event.target.value)}
               />
+              {avisoKind === "imagem" || avisoKind === "anexo" ? (
+                <div className="aviso-file-tools">
+                  <button type="button" onClick={() => openAvisoFilePicker(avisoKind)}>
+                    {avisoKind === "imagem" ? "Selecionar imagem" : "Selecionar anexo"}
+                  </button>
+                  {avisoSelectedFile ? (
+                    <span className="aviso-file-chip">
+                      {avisoSelectedFile.name}
+                      <button
+                        aria-label="Remover arquivo selecionado"
+                        type="button"
+                        onClick={() => {
+                          setAvisoSelectedFile(null);
+                          if (avisoFileInputRef.current) {
+                            avisoFileInputRef.current.value = "";
+                          }
+                        }}
+                      >
+                        x
+                      </button>
+                    </span>
+                  ) : (
+                    <small>Nenhum arquivo selecionado.</small>
+                  )}
+                </div>
+              ) : null}
               <div className="avisos-editor-actions">
-                <button type="button" onClick={() => chooseAvisoKind("imagem")}>Inserir imagem</button>
-                <button type="button" onClick={() => chooseAvisoKind("anexo")}>Anexar documento</button>
+                <button type="button" onClick={() => openAvisoFilePicker("imagem")}>Inserir imagem</button>
+                <button type="button" onClick={() => openAvisoFilePicker("anexo")}>Anexar documento</button>
                 <button type="button" onClick={() => chooseAvisoKind("postit")}>Post-it</button>
               </div>
               <fieldset className="member-picker avisos-member-picker">
@@ -2026,9 +2189,21 @@ function Dashboard({
               <div className="avisos-saved-list">
                 <strong>Avisos deste espaco</strong>
                 {selectedCellAvisos.length ? selectedCellAvisos.map((aviso) => (
-                  <article className={`avisos-saved-item avisos-saved-item--${aviso.kind}`} key={aviso.id}>
+                  <article
+                    className={`avisos-saved-item avisos-saved-item--${aviso.kind}`}
+                    key={aviso.id}
+                    style={aviso.kind === "postit" ? { background: aviso.color || "#fff4b8" } : undefined}
+                  >
                     <span>{aviso.kind === "postit" ? "Post-it" : aviso.title}</span>
-                    <p>{aviso.content}</p>
+                    {aviso.kind === "imagem" && aviso.fileUrl ? (
+                      <img alt={aviso.content || aviso.fileName || "Imagem do aviso"} className="avisos-saved-image" src={aviso.fileUrl} />
+                    ) : null}
+                    {aviso.kind === "anexo" && aviso.fileUrl ? (
+                      <a className="avisos-saved-file" href={aviso.fileUrl} rel="noreferrer" target="_blank">
+                        Abrir anexo: {aviso.fileName || aviso.content}
+                      </a>
+                    ) : null}
+                    {aviso.content ? <p>{aviso.content}</p> : null}
                     <small>{formatDate(aviso.updatedAt)} - {aviso.visibility === "geral" ? "geral" : "particular"}</small>
                   </article>
                 )) : <p className="avisos-muted">Nenhum aviso salvo neste espaco.</p>}
