@@ -80,6 +80,7 @@ with required_objects as (
       ('policy_rule', 'quadro_avisos_storage_insert|auth.uid()', 'Envio de arquivo do Quadro restrito a pasta do usuario'),
       ('policy_rule', 'hub_anexos_read_authenticated|quadro-avisos', 'Leitura geral do hub-anexos exclui a pasta do Quadro'),
       ('function_rule', 'notify_quadro_aviso_particular|can_manage_quadro_aviso', 'Notificacao do Quadro so pelo autor ou admin'),
+      ('table_policy_rule', 'quadro_avisos|quadro_avisos_select_allowed|visibility', 'Quadro de Avisos permite salvar aviso (leitura avalia o proprio aviso)'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
@@ -128,6 +129,14 @@ status as (
           and p.proname = split_part(required_objects.name, '|', 1)
           and p.prosrc like '%' || split_part(required_objects.name, '|', 2) || '%'
       )
+      when kind = 'table_policy_rule' then exists (
+        select 1
+        from pg_policies pol
+        where pol.schemaname = 'public'
+          and pol.tablename = split_part(required_objects.name, '|', 1)
+          and pol.policyname = split_part(required_objects.name, '|', 2)
+          and concat_ws(' ', pol.qual, pol.with_check) like '%' || split_part(required_objects.name, '|', 3) || '%'
+      )
       when kind = 'policy_rule' then exists (
         select 1
         from pg_policies pol
@@ -149,11 +158,12 @@ select
     when 'bucket_private' then 'Seguranca'
     when 'policy_rule' then 'Seguranca'
     when 'function_rule' then 'Seguranca'
+    when 'table_policy_rule' then 'Seguranca'
     else kind
   end as tipo,
   label as item,
   case when ok then 'OK' else 'PENDENTE' end as status
 from status
 order by
-  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 when 'bucket_private' then 5 when 'policy_rule' then 5 when 'function_rule' then 5 else 6 end,
+  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 when 'bucket_private' then 5 when 'policy_rule' then 5 when 'function_rule' then 5 when 'table_policy_rule' then 5 else 6 end,
   label;
