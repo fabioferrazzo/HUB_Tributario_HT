@@ -3,7 +3,8 @@ import type { HubProfile, UserRole } from "../types";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
-export const LOCAL_DEMO_PASSWORD = "hub-demo-2026";
+// Senha do modo demonstracao: existe apenas em `npm run dev` (vazia no build de producao).
+export const LOCAL_DEMO_PASSWORD = import.meta.env.DEV ? "hub-demo-2026" : "";
 
 const USERS_STORAGE_KEY = "hub_users";
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com";

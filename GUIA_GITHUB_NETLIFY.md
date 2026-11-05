@@ -70,7 +70,7 @@ Antes do Supabase, o app ainda sobe em modo local de homologacao.
 Depois do deploy completo, validar:
 
 - URL abre;
-- login local funciona com `hub-demo-2026`;
+- login local funciona com a senha de demonstracao (somente em `npm run dev`);
 - Netlify mostra a aba `Functions`;
 - funcoes ativas do projeto aparecem no painel, como `admin-users`, `coord-data`, `coord-email`, `email-outbox` e `refresh-updates`.
 

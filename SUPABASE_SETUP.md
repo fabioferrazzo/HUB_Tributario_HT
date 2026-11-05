@@ -94,11 +94,7 @@ O modulo Admin usa:
 - modo local com `localStorage`;
 - modo Supabase com a tabela `profiles`.
 
-No modo local, usuarios ativos cadastrados no Admin conseguem entrar com a senha de homologacao:
-
-```text
-hub-demo-2026
-```
+No modo local (somente `npm run dev`), usuarios ativos cadastrados no Admin entram com a senha de demonstracao definida em `src/lib/usersRepository.ts`.
 
 No modo Supabase, o Admin pode criar um usuario novo informando nome, e-mail, perfil e senha inicial. A criacao do Auth acontece na funcao server-side `admin-users`, que usa `SUPABASE_SERVICE_ROLE_KEY` apenas no servidor.
 

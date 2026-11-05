@@ -17,16 +17,9 @@ http://127.0.0.1:5173
 
 ## Login de homologacao local
 
-Enquanto Supabase/SSO nao estiver configurado, o app usa sessao local apenas para desenvolvimento.
+Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, o app entra em modo demonstracao (dados salvos no navegador), disponivel somente em `npm run dev`. Os usuarios e a senha de demonstracao ficam em `src/lib/usersRepository.ts`.
 
-```text
-Admin: fiscal10.hteixeira@gmail.com
-Gestor: gestor.tributario@hteixeira.local
-Colaborador: colaborador@hteixeira.local
-Senha: hub-demo-2026
-```
-
-Essas credenciais nao devem ser usadas em producao.
+No build de producao o modo demonstracao e desativado: sem Supabase configurado, o login fica bloqueado.
 
 ## Apps integrados
 

@@ -63,6 +63,12 @@ export async function signIn(email: string, password: string): Promise<HubUser> 
     return user;
   }
 
+  // Modo demonstracao (dados locais, senha fixa) existe apenas em `npm run dev`.
+  // Em producao, sem Supabase configurado, o login fica bloqueado.
+  if (!import.meta.env.DEV || !LOCAL_DEMO_PASSWORD) {
+    throw new Error("Login indisponivel: Supabase nao configurado neste ambiente. Contate o administrador.");
+  }
+
   const found = findLocalUserByEmail(normalizedEmail);
 
   if (!found || !found.active || password !== LOCAL_DEMO_PASSWORD) {
