@@ -219,6 +219,14 @@ async function upsertSupabaseAviso(
     .insert(selectedPayload);
 
   if (insertError) throw insertError;
+
+  const { error: notifyError } = await client.rpc("notify_quadro_aviso_particular", {
+    p_aviso_id: avisoId
+  });
+
+  if (notifyError) {
+    console.warn("Nao foi possivel notificar os usuarios do quadro particular.", notifyError);
+  }
 }
 
 export async function listQuadroAvisos(user?: HubUser | null): Promise<QuadroAviso[]> {

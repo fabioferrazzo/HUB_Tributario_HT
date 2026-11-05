@@ -35,6 +35,7 @@ create table if not exists public.lembretes (
   prazo timestamptz,
   prioridade public.prioridade not null default 'normal',
   status public.lembrete_status not null default 'aberto',
+  confidencial boolean not null default false,
   created_by uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -135,6 +136,164 @@ as $$
   );
 $$;
 
+create or replace function public.is_active_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and active
+  );
+$$;
+
+create or replace function public.can_read_lembrete(target_lembrete_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.lembretes l
+    where l.id = target_lembrete_id
+      and public.is_active_user()
+      and (
+        public.is_admin()
+        or l.created_by = auth.uid()
+        or (
+          exists (
+            select 1
+            from public.lembrete_usuarios lu_any
+            where lu_any.lembrete_id = target_lembrete_id
+          )
+          and (
+            not coalesce(l.confidencial, false)
+            or exists (
+              select 1
+              from public.lembrete_usuarios lu
+              where lu.lembrete_id = target_lembrete_id
+                and lu.user_id = auth.uid()
+            )
+          )
+        )
+      )
+  );
+$$;
+
+create or replace function public.can_manage_lembrete(target_lembrete_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.lembretes l
+    where l.id = target_lembrete_id
+      and public.is_active_user()
+      and (l.created_by = auth.uid() or public.is_admin())
+  );
+$$;
+
+create or replace function public.set_lembrete_created_by()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null then
+    new.created_by := auth.uid();
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.normalize_lembrete_confidencial()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    new.confidencial := false;
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.create_lembrete(
+  p_titulo text,
+  p_descricao text default '',
+  p_prazo timestamptz default null,
+  p_prioridade public.prioridade default 'normal',
+  p_status public.lembrete_status default 'aberto',
+  p_responsaveis text[] default '{}'::text[],
+  p_confidencial boolean default false
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_lembrete_id uuid;
+begin
+  if auth.uid() is null or not public.is_active_user() then
+    raise exception 'Usuario sem permissao para criar lembrete.';
+  end if;
+
+  insert into public.lembretes (
+    titulo,
+    descricao,
+    prazo,
+    prioridade,
+    status,
+    confidencial,
+    created_by
+  )
+  values (
+    nullif(trim(p_titulo), ''),
+    coalesce(p_descricao, ''),
+    p_prazo,
+    p_prioridade,
+    p_status,
+    coalesce(p_confidencial, false) and public.is_admin(),
+    auth.uid()
+  )
+  returning id into v_lembrete_id;
+
+  insert into public.lembrete_usuarios (lembrete_id, user_id)
+  select v_lembrete_id, p.id
+  from public.profiles p
+  where p.active
+    and p.email = any(coalesce(p_responsaveis, '{}'::text[]))
+  on conflict do nothing;
+
+  return v_lembrete_id;
+end;
+$$;
+
+grant execute on function public.create_lembrete(
+  text,
+  text,
+  timestamptz,
+  public.prioridade,
+  public.lembrete_status,
+  text[],
+  boolean
+) to authenticated;
+
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql
@@ -154,6 +313,16 @@ drop trigger if exists lembretes_touch_updated_at on public.lembretes;
 create trigger lembretes_touch_updated_at
 before update on public.lembretes
 for each row execute function public.touch_updated_at();
+
+drop trigger if exists lembretes_set_created_by on public.lembretes;
+create trigger lembretes_set_created_by
+before insert on public.lembretes
+for each row execute function public.set_lembrete_created_by();
+
+drop trigger if exists lembretes_normalize_confidencial on public.lembretes;
+create trigger lembretes_normalize_confidencial
+before insert or update on public.lembretes
+for each row execute function public.normalize_lembrete_confidencial();
 
 drop trigger if exists links_uteis_touch_updated_at on public.links_uteis;
 create trigger links_uteis_touch_updated_at
@@ -178,7 +347,11 @@ drop policy if exists "profiles_select_own_or_manager" on public.profiles;
 create policy "profiles_select_own_or_manager"
 on public.profiles for select
 to authenticated
-using (id = auth.uid() or public.is_manager());
+using (
+  id = auth.uid()
+  or public.is_manager()
+  or (active and public.is_active_user())
+);
 
 drop policy if exists "profiles_insert_admin" on public.profiles;
 create policy "profiles_insert_admin"
@@ -197,106 +370,52 @@ drop policy if exists "lembretes_select_allowed" on public.lembretes;
 create policy "lembretes_select_allowed"
 on public.lembretes for select
 to authenticated
-using (
-  created_by = auth.uid()
-  or public.is_manager()
-  or exists (
-    select 1
-    from public.lembrete_usuarios lu
-    where lu.lembrete_id = id
-      and lu.user_id = auth.uid()
-  )
-);
+using (public.can_read_lembrete(id));
 
 drop policy if exists "lembretes_insert_authenticated" on public.lembretes;
 create policy "lembretes_insert_authenticated"
 on public.lembretes for insert
 to authenticated
-with check (created_by = auth.uid() or public.is_manager());
+with check (public.is_active_user());
 
 drop policy if exists "lembretes_update_owner_or_manager" on public.lembretes;
 create policy "lembretes_update_owner_or_manager"
 on public.lembretes for update
 to authenticated
-using (created_by = auth.uid() or public.is_manager())
-with check (created_by = auth.uid() or public.is_manager());
+using (public.can_manage_lembrete(id))
+with check (public.can_manage_lembrete(id));
 
 drop policy if exists "lembretes_delete_owner_or_manager" on public.lembretes;
 create policy "lembretes_delete_owner_or_manager"
 on public.lembretes for delete
 to authenticated
-using (created_by = auth.uid() or public.is_manager());
+using (public.can_manage_lembrete(id));
 
 drop policy if exists "lembrete_usuarios_select_allowed" on public.lembrete_usuarios;
 create policy "lembrete_usuarios_select_allowed"
 on public.lembrete_usuarios for select
 to authenticated
-using (
-  user_id = auth.uid()
-  or public.is_manager()
-  or exists (
-    select 1 from public.lembretes l
-    where l.id = lembrete_id and l.created_by = auth.uid()
-  )
-);
+using (public.can_read_lembrete(lembrete_id));
 
 drop policy if exists "lembrete_usuarios_manage_owner_or_manager" on public.lembrete_usuarios;
 create policy "lembrete_usuarios_manage_owner_or_manager"
 on public.lembrete_usuarios for all
 to authenticated
-using (
-  public.is_manager()
-  or exists (
-    select 1 from public.lembretes l
-    where l.id = lembrete_id and l.created_by = auth.uid()
-  )
-)
-with check (
-  public.is_manager()
-  or exists (
-    select 1 from public.lembretes l
-    where l.id = lembrete_id and l.created_by = auth.uid()
-  )
-);
+using (public.can_manage_lembrete(lembrete_id))
+with check (public.can_manage_lembrete(lembrete_id));
 
 drop policy if exists "lembrete_anexos_select_allowed" on public.lembrete_anexos;
 create policy "lembrete_anexos_select_allowed"
 on public.lembrete_anexos for select
 to authenticated
-using (
-  uploaded_by = auth.uid()
-  or public.is_manager()
-  or exists (
-    select 1 from public.lembretes l
-    where l.id = lembrete_id and l.created_by = auth.uid()
-  )
-  or exists (
-    select 1 from public.lembrete_usuarios lu
-    where lu.lembrete_id = lembrete_anexos.lembrete_id
-      and lu.user_id = auth.uid()
-  )
-);
+using (uploaded_by = auth.uid() or public.can_read_lembrete(lembrete_id));
 
 drop policy if exists "lembrete_anexos_manage_owner_or_manager" on public.lembrete_anexos;
 create policy "lembrete_anexos_manage_owner_or_manager"
 on public.lembrete_anexos for all
 to authenticated
-using (
-  uploaded_by = auth.uid()
-  or public.is_manager()
-  or exists (
-    select 1 from public.lembretes l
-    where l.id = lembrete_id and l.created_by = auth.uid()
-  )
-)
-with check (
-  uploaded_by = auth.uid()
-  or public.is_manager()
-  or exists (
-    select 1 from public.lembretes l
-    where l.id = lembrete_id and l.created_by = auth.uid()
-  )
-);
+using (uploaded_by = auth.uid() or public.can_manage_lembrete(lembrete_id))
+with check (uploaded_by = auth.uid() or public.can_manage_lembrete(lembrete_id));
 
 drop policy if exists "notificacoes_select_own" on public.notificacoes;
 create policy "notificacoes_select_own"

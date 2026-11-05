@@ -106,9 +106,15 @@ Para editar um usuario existente, o Admin atualiza `profiles`.
 
 O `supabase/schema.sql` inclui policies para:
 
-- selecionar perfis pelo proprio usuario, gestor ou admin;
+- selecionar perfis ativos por usuarios ativos, para marcacao em lembretes;
 - inserir perfis como admin;
 - atualizar perfis como admin.
+
+Se o schema ja foi executado antes dessa regra, rode somente:
+
+```text
+supabase/patch_profiles_read_active.sql
+```
 
 Importante:
 

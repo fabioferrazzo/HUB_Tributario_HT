@@ -1,0 +1,13 @@
+node_modules/
+dist/
+deploy/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+vite-dev*.log
+vite.config.js
+vite.config.d.ts
+.netlify/
+.DS_Store
+Thumbs.db

@@ -1947,60 +1947,44 @@ function Dashboard({
         <div className="avisos-toolbar">
           <div className="avisos-toolbar-main">
             <button
-              className={!avisosDrawMode && avisoKind === "texto" ? "primary" : ""}
+              className={!avisosDrawMode ? "primary" : ""}
               type="button"
-              onClick={() => chooseAvisoKind("texto")}
+              onClick={() => {
+                setAvisosDrawMode(false);
+                setAvisoMessage("");
+              }}
             >
-              Texto
+              Quadro de Avisos
             </button>
             <button
               className={avisosDrawMode ? "primary" : ""}
               type="button"
               onClick={() => {
-                setAvisosDrawMode((current) => !current);
+                setAvisosDrawMode(true);
                 setAvisoMessage("");
               }}
             >
               Desenhar
             </button>
-            <button
-              className={!avisosDrawMode && avisoKind === "imagem" ? "primary" : ""}
-              type="button"
-              onClick={() => chooseAvisoKind("imagem")}
-            >
-              Imagem
-            </button>
-            <button
-              className={!avisosDrawMode && avisoKind === "anexo" ? "primary" : ""}
-              type="button"
-              onClick={() => chooseAvisoKind("anexo")}
-            >
-              Anexo
-            </button>
-            <button
-              className={!avisosDrawMode && avisoKind === "postit" ? "primary" : ""}
-              type="button"
-              onClick={() => chooseAvisoKind("postit")}
-            >
-              Post-it
-            </button>
           </div>
-          <div className="avisos-mode-switch" aria-label="Filtro do quadro de avisos">
-            <button
-              className={avisosView === "geral" ? "active" : ""}
-              type="button"
-              onClick={() => handleAvisosViewChange("geral")}
-            >
-              Quadro geral
-            </button>
-            <button
-              className={avisosView === "particular" ? "active" : ""}
-              type="button"
-              onClick={() => handleAvisosViewChange("particular")}
-            >
-              Quadro particular
-            </button>
-          </div>
+          {!avisosDrawMode ? (
+            <div className="avisos-mode-switch" aria-label="Filtro do quadro de avisos">
+              <button
+                className={avisosView === "geral" ? "active" : ""}
+                type="button"
+                onClick={() => handleAvisosViewChange("geral")}
+              >
+                Quadro geral
+              </button>
+              <button
+                className={avisosView === "particular" ? "active" : ""}
+                type="button"
+                onClick={() => handleAvisosViewChange("particular")}
+              >
+                Quadro particular
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {avisoMessage ? (
