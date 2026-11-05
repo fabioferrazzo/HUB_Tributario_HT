@@ -81,6 +81,10 @@ with required_objects as (
       ('policy_rule', 'hub_anexos_read_authenticated|quadro-avisos', 'Leitura geral do hub-anexos exclui a pasta do Quadro'),
       ('function_rule', 'notify_quadro_aviso_particular|can_manage_quadro_aviso', 'Notificacao do Quadro so pelo autor ou admin'),
       ('table_policy_rule', 'quadro_avisos|quadro_avisos_select_allowed|visibility', 'Quadro de Avisos permite salvar aviso (leitura avalia o proprio aviso)'),
+      ('table', 'senha_autorizacoes', 'Tabela public.senha_autorizacoes (senhas so pelo admin)'),
+      ('table', 'senha_eventos', 'Tabela public.senha_eventos (senhas so pelo admin)'),
+      ('function', 'proteger_troca_de_senha', 'Funcao public.proteger_troca_de_senha (senhas so pelo admin)'),
+      ('auth_trigger', 'proteger_troca_de_senha', 'Troca de senha somente pelo admin (gatilho em auth.users)'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
@@ -129,6 +133,17 @@ status as (
           and p.proname = split_part(required_objects.name, '|', 1)
           and p.prosrc like '%' || split_part(required_objects.name, '|', 2) || '%'
       )
+      when kind = 'auth_trigger' then exists (
+        select 1
+        from pg_trigger t
+        join pg_class c on c.oid = t.tgrelid
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'auth'
+          and c.relname = 'users'
+          and t.tgname = required_objects.name
+          and not t.tgisinternal
+          and t.tgenabled <> 'D'
+      )
       when kind = 'table_policy_rule' then exists (
         select 1
         from pg_policies pol
@@ -159,11 +174,12 @@ select
     when 'policy_rule' then 'Seguranca'
     when 'function_rule' then 'Seguranca'
     when 'table_policy_rule' then 'Seguranca'
+    when 'auth_trigger' then 'Seguranca'
     else kind
   end as tipo,
   label as item,
   case when ok then 'OK' else 'PENDENTE' end as status
 from status
 order by
-  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 when 'bucket_private' then 5 when 'policy_rule' then 5 when 'function_rule' then 5 when 'table_policy_rule' then 5 else 6 end,
+  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 when 'bucket_private' then 5 when 'policy_rule' then 5 when 'function_rule' then 5 when 'table_policy_rule' then 5 when 'auth_trigger' then 5 else 6 end,
   label;

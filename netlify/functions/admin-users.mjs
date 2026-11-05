@@ -52,7 +52,15 @@ export default async function handler(request) {
         return json(400, { error: "ID Auth Supabase nao informado para redefinir senha." });
       }
 
-      await resetAuthUserPassword(supabaseUrl, serviceRoleKey, profile.id, password);
+      // Somente o admin define senhas: o banco so aceita a troca com esta autorizacao
+      // (ver supabase/patch_senhas_somente_admin.sql).
+      await authorizePasswordChange(supabaseUrl, serviceRoleKey, profile.id, authUser.id);
+      try {
+        await resetAuthUserPassword(supabaseUrl, serviceRoleKey, profile.id, password);
+      } catch (resetError) {
+        await revokePasswordAuthorization(supabaseUrl, serviceRoleKey, profile.id);
+        throw resetError;
+      }
       const emailQueued = await queuePasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, authUser.id);
       return json(200, { ok: true, emailQueued });
     }
@@ -143,6 +151,35 @@ async function resetAuthUserPassword(supabaseUrl, serviceRoleKey, userId, passwo
       password
     })
   });
+}
+
+async function authorizePasswordChange(supabaseUrl, serviceRoleKey, userId, adminId) {
+  const expiresAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+  try {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/senha_autorizacoes?on_conflict=user_id`, {
+      method: "POST",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json",
+        prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify({ user_id: userId, autorizado_por: adminId, expira_em: expiresAt })
+    });
+  } catch (error) {
+    console.error("Falha ao autorizar troca de senha.", error?.message || error);
+    throw httpError(500, "Nao foi possivel autorizar a troca de senha. Verifique se o patch_senhas_somente_admin.sql foi aplicado no Supabase.");
+  }
+}
+
+async function revokePasswordAuthorization(supabaseUrl, serviceRoleKey, userId) {
+  try {
+    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/senha_autorizacoes?user_id=eq.${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: { ...serviceHeaders(serviceRoleKey), prefer: "return=minimal" }
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel remover a autorizacao de senha.", error?.message || error);
+  }
 }
 
 async function queuePasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy) {
