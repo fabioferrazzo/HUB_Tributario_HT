@@ -1,5 +1,6 @@
 -- IMPORTANTE: depois deste arquivo, execute supabase/patch_anexos_privados.sql
--- (regras de arquivo do Quadro de Avisos restritas por permissao do aviso).
+-- (regras de arquivo do Quadro de Avisos restritas por permissao do aviso)
+-- e supabase/patch_quadro_notify_seguro.sql (notificacao so pelo autor ou admin).
 
 begin;
 
