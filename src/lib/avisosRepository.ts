@@ -14,6 +14,7 @@ type QuadroAvisoRow = {
   color: string | null;
   file_name: string | null;
   file_url: string | null;
+  file_path?: string | null;
   created_by: string | null;
   created_by_email: string | null;
   created_at: string;
@@ -57,27 +58,74 @@ function sanitizeAvisoFileName(fileName: string) {
   );
 }
 
+// Anexos do Quadro ficam no bucket privado hub-anexos e sao abertos por
+// links assinados temporarios, gerados apenas para quem pode ver o aviso.
+const QUADRO_AVISOS_BUCKET = "hub-anexos";
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+const LEGACY_PUBLIC_PREFIX = `/storage/v1/object/public/${QUADRO_AVISOS_BUCKET}/`;
+
+function legacyPathFromPublicUrl(url?: string | null) {
+  if (!url) return "";
+  const index = url.indexOf(LEGACY_PUBLIC_PREFIX);
+  if (index < 0) return "";
+  const raw = url.slice(index + LEGACY_PUBLIC_PREFIX.length).split("?")[0];
+  try {
+    return raw
+      .split("/")
+      .map((part) => decodeURIComponent(part))
+      .join("/");
+  } catch {
+    return raw;
+  }
+}
+
+function getAvisoFilePath(row: QuadroAvisoRow) {
+  return row.file_path || legacyPathFromPublicUrl(row.file_url);
+}
+
+async function createAvisoSignedUrls(paths: string[]) {
+  const client = supabase;
+  const unique = Array.from(new Set(paths.filter(Boolean)));
+  const result = new Map<string, string>();
+  if (!client || unique.length === 0) return result;
+
+  const { data, error } = await client.storage.from(QUADRO_AVISOS_BUCKET).createSignedUrls(unique, SIGNED_URL_TTL_SECONDS);
+  if (error) {
+    console.warn("Nao foi possivel gerar os links dos arquivos do quadro.", error);
+    return result;
+  }
+
+  for (const item of data || []) {
+    if (item.path && item.signedUrl && !item.error) result.set(item.path, item.signedUrl);
+  }
+  return result;
+}
+
 export async function uploadQuadroAvisoFile(
   file: File,
   user: HubUser
-): Promise<{ fileName: string; fileUrl: string }> {
+): Promise<{ fileName: string; filePath?: string; fileUrl: string }> {
   if (getAvisosSource(user) !== "supabase" || !supabase) {
     return { fileName: file.name, fileUrl: URL.createObjectURL(file) };
   }
 
-  const safeName = sanitizeAvisoFileName(file.name);
-  const owner = user.id || user.email || "usuario";
-  const path = `quadro-avisos/${owner}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  const authUserId = authData?.user?.id;
+  if (authError || !authUserId) {
+    throw authError || new Error("Sessao expirada. Entre novamente para enviar arquivos.");
+  }
 
-  const { error } = await supabase.storage.from("hub-anexos").upload(path, file, {
+  const safeName = sanitizeAvisoFileName(file.name);
+  const path = `quadro-avisos/${authUserId}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
+
+  const { error } = await supabase.storage.from(QUADRO_AVISOS_BUCKET).upload(path, file, {
     contentType: file.type || undefined,
     upsert: false
   });
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from("hub-anexos").getPublicUrl(path);
-  return { fileName: file.name, fileUrl: data.publicUrl };
+  return { fileName: file.name, filePath: path, fileUrl: URL.createObjectURL(file) };
 }
 
 function canUserViewAviso(aviso: QuadroAviso, user?: HubUser | null) {
@@ -91,7 +139,11 @@ function notifyQuadroAvisosChanged() {
   window.dispatchEvent(new Event("hub:quadro-avisos"));
 }
 
-function normalizeAviso(row: QuadroAvisoRow, usuarios: QuadroAvisoUsuarioRow[] = []): QuadroAviso {
+function normalizeAviso(
+  row: QuadroAvisoRow,
+  usuarios: QuadroAvisoUsuarioRow[] = [],
+  signedUrls: Map<string, string> = new Map()
+): QuadroAviso {
   const selectedUsers = usuarios
     .filter((usuario) => usuario.aviso_id === row.id)
     .map((usuario) => normalizeEmail(usuario.email))
@@ -106,7 +158,8 @@ function normalizeAviso(row: QuadroAvisoRow, usuarios: QuadroAvisoUsuarioRow[] =
     content: row.content || "",
     color: row.color || "#ffffff",
     fileName: row.file_name || undefined,
-    fileUrl: row.file_url || undefined,
+    fileUrl: getAvisoFilePath(row) ? signedUrls.get(getAvisoFilePath(row)) : row.file_url || undefined,
+    filePath: getAvisoFilePath(row) || undefined,
     selectedUsers: uniqueEmails(selectedUsers),
     createdBy: row.created_by || "",
     createdByEmail: normalizeEmail(row.created_by_email || ""),
@@ -140,7 +193,8 @@ async function loadSupabaseAvisos(user?: HubUser | null): Promise<QuadroAviso[]>
     usuarios = (selectedRows || []) as QuadroAvisoUsuarioRow[];
   }
 
-  return rows.map((row) => normalizeAviso(row, usuarios)).filter((aviso) => canUserViewAviso(aviso, user));
+  const signedUrls = await createAvisoSignedUrls(rows.map(getAvisoFilePath));
+  return rows.map((row) => normalizeAviso(row, usuarios, signedUrls)).filter((aviso) => canUserViewAviso(aviso, user));
 }
 
 async function resolveSelectedProfiles(emails: string[]) {
@@ -175,7 +229,8 @@ async function upsertSupabaseAviso(
     content: aviso.content,
     color: aviso.color,
     file_name: aviso.fileName || null,
-    file_url: aviso.fileUrl || null,
+    file_path: aviso.filePath || null,
+    file_url: aviso.filePath ? null : aviso.fileUrl || null,
     created_by: user.id || null,
     created_by_email: normalizeEmail(user.email)
   };
@@ -263,6 +318,7 @@ export async function saveQuadroAviso({
     color: aviso.color,
     fileName: aviso.fileName,
     fileUrl: aviso.fileUrl,
+    filePath: aviso.filePath,
     selectedUsers: aviso.visibility === "particular" ? uniqueEmails(aviso.selectedUsers) : [],
     createdBy: existing?.createdBy || user.id || user.email,
     createdByEmail: existing?.createdByEmail || normalizeEmail(user.email),

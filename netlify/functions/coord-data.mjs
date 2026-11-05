@@ -131,12 +131,20 @@ async function loadNativePautasForCoord(supabaseUrl, serviceRoleKey, rows) {
       : []
   ]);
 
+  const safeAnexoRows = Array.isArray(anexoRows) ? anexoRows : [];
+  const signedUrls = await createSignedStorageUrls(
+    supabaseUrl,
+    serviceRoleKey,
+    "hub-anexos",
+    safeAnexoRows.map((item) => item.storage_path)
+  );
+
   return rows.map((row) =>
     fromPautaRow(
       row,
       (Array.isArray(usuariosRows) ? usuariosRows : []).filter((item) => item.pauta_id === row.id),
-      (Array.isArray(anexoRows) ? anexoRows : []).filter((item) => item.pauta_id === row.id),
-      supabaseUrl
+      safeAnexoRows.filter((item) => item.pauta_id === row.id),
+      signedUrls
     )
   );
 }
@@ -311,7 +319,7 @@ function fromItemRow(row) {
   };
 }
 
-function fromPautaRow(row, usuarios, anexos, supabaseUrl) {
+function fromPautaRow(row, usuarios, anexos, signedUrls) {
   return {
     id: row.id,
     title: row.titulo,
@@ -323,7 +331,7 @@ function fromPautaRow(row, usuarios, anexos, supabaseUrl) {
     recurring: "none",
     status: row.status === "concluida" ? "concluido" : "aberto",
     pinned: row.destaque ? "main" : "main",
-    attachments: anexos.map((anexo) => fromPautaAnexoRow(anexo, supabaseUrl)),
+    attachments: anexos.map((anexo) => fromPautaAnexoRow(anexo, signedUrls)),
     deletedAt: "",
     completedAt: "",
     createdAt: row.created_at,
@@ -337,14 +345,14 @@ function fromPautaRow(row, usuarios, anexos, supabaseUrl) {
   };
 }
 
-function fromPautaAnexoRow(row, supabaseUrl) {
+function fromPautaAnexoRow(row, signedUrls) {
   return {
     id: row.id,
     name: row.file_name,
     type: row.mime_type || "application/octet-stream",
     size: Number(row.size_bytes || 0),
     dataUrl: "",
-    url: buildPublicStorageUrl(supabaseUrl, "hub-anexos", row.storage_path),
+    url: signedUrls.get(row.storage_path) || "",
     createdAt: row.created_at
   };
 }
@@ -594,9 +602,38 @@ function parseDataUrlBytes(value) {
   }
 }
 
-function buildPublicStorageUrl(supabaseUrl, bucket, storagePath) {
-  if (!storagePath) return "";
-  return `${trimUrl(supabaseUrl)}/storage/v1/object/public/${bucket}/${encodeStoragePath(storagePath)}`;
+// O bucket hub-anexos e privado: gera links assinados temporarios (1 hora)
+// para os anexos das pautas entregues a Coordenacao.
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+async function createSignedStorageUrls(supabaseUrl, serviceRoleKey, bucket, paths) {
+  const unique = Array.from(new Set((paths || []).filter(Boolean)));
+  const result = new Map();
+  if (!unique.length) return result;
+
+  try {
+    const response = await fetch(`${trimUrl(supabaseUrl)}/storage/v1/object/sign/${bucket}`, {
+      method: "POST",
+      headers: {
+        ...serviceHeaders(serviceRoleKey),
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ expiresIn: SIGNED_URL_TTL_SECONDS, paths: unique })
+    });
+    const data = parseJson(await response.text());
+    if (!response.ok || !Array.isArray(data)) {
+      console.warn("Nao foi possivel gerar links assinados dos anexos.", response.status);
+      return result;
+    }
+    for (const item of data) {
+      const signed = item?.signedURL || item?.signedUrl;
+      if (!item?.path || !signed || item?.error) continue;
+      result.set(item.path, `${trimUrl(supabaseUrl)}/storage/v1${signed.startsWith("/") ? "" : "/"}${signed}`);
+    }
+  } catch (error) {
+    console.warn("Nao foi possivel gerar links assinados dos anexos.", error?.message || error);
+  }
+  return result;
 }
 
 function encodeStoragePath(value) {

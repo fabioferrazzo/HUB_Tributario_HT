@@ -1,3 +1,6 @@
+-- IMPORTANTE: depois deste arquivo, execute supabase/patch_anexos_privados.sql
+-- (regras de arquivo do Quadro de Avisos restritas por permissao do aviso).
+
 begin;
 
 create table if not exists public.quadro_avisos (
@@ -256,9 +259,10 @@ to authenticated
 using (public.can_manage_quadro_aviso(aviso_id))
 with check (public.can_manage_quadro_aviso(aviso_id));
 
+-- Bucket privado: arquivos abertos por link assinado (ver patch_anexos_privados.sql).
 insert into storage.buckets (id, name, public)
-values ('hub-anexos', 'hub-anexos', true)
-on conflict (id) do update set public = true;
+values ('hub-anexos', 'hub-anexos', false)
+on conflict (id) do update set public = false;
 
 drop policy if exists "quadro_avisos_storage_select" on storage.objects;
 create policy "quadro_avisos_storage_select"

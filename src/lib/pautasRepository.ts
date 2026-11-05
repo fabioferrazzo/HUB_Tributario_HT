@@ -229,12 +229,15 @@ async function loadSupabasePautas(user?: HubUser | null): Promise<Pauta[]> {
   if (anexosError) throw anexosError;
   if (conclusoesError) throw conclusoesError;
 
+  const signedUrls = await createPautaAnexoSignedUrls(((anexos || []) as PautaAnexoRow[]).map((item) => item.storage_path));
+
   const mapped = (pautaRows as PautaRow[]).map((row) =>
     mapPautaRow(
       row,
       ((usuarios || []) as PautaUsuarioRow[]).filter((item) => item.pauta_id === row.id),
       ((anexos || []) as PautaAnexoRow[]).filter((item) => item.pauta_id === row.id),
-      ((conclusoes || []) as PautaConclusaoRow[]).filter((item) => item.pauta_id === row.id)
+      ((conclusoes || []) as PautaConclusaoRow[]).filter((item) => item.pauta_id === row.id),
+      signedUrls
     )
   );
 
@@ -287,7 +290,34 @@ async function uploadSupabasePautaAnexo(pautaId: string, file: File) {
   if (metadataError) throw metadataError;
 }
 
-function mapPautaRow(row: PautaRow, usuarios: PautaUsuarioRow[], anexos: PautaAnexoRow[], conclusoes: PautaConclusaoRow[]): Pauta {
+// Anexos ficam no bucket privado hub-anexos; o app gera links assinados
+// temporarios apenas para as pautas que o usuario pode ver.
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+async function createPautaAnexoSignedUrls(paths: string[]) {
+  const unique = Array.from(new Set(paths.filter(Boolean)));
+  const result = new Map<string, string>();
+  if (unique.length === 0) return result;
+
+  const { data, error } = await assertSupabase().storage.from(STORAGE_BUCKET).createSignedUrls(unique, SIGNED_URL_TTL_SECONDS);
+  if (error) {
+    console.warn("Nao foi possivel gerar os links dos anexos das pautas.", error);
+    return result;
+  }
+
+  for (const item of data || []) {
+    if (item.path && item.signedUrl && !item.error) result.set(item.path, item.signedUrl);
+  }
+  return result;
+}
+
+function mapPautaRow(
+  row: PautaRow,
+  usuarios: PautaUsuarioRow[],
+  anexos: PautaAnexoRow[],
+  conclusoes: PautaConclusaoRow[],
+  signedUrls: Map<string, string> = new Map()
+): Pauta {
   const responsaveis = usuarios.map((item) => item.email).filter(Boolean);
   const firstResponsavel = usuarios.map((item) => item.nome || item.email).filter(Boolean).join(", ");
   const concludedDates = conclusoes.map((item) => item.completed_at).sort();
@@ -316,7 +346,7 @@ function mapPautaRow(row: PautaRow, usuarios: PautaUsuarioRow[], anexos: PautaAn
     textItalic: descricao.textItalic,
     textHighlight: descricao.textHighlight,
     responsaveis,
-    anexos: anexos.map(mapPautaAnexoRow),
+    anexos: anexos.map((anexo) => mapPautaAnexoRow(anexo, signedUrls)),
     conclusoes: conclusoes.map(mapPautaConclusaoRow),
     createdBy: row.created_by || row.created_by_email || "",
     createdAt: row.created_at,
@@ -324,13 +354,12 @@ function mapPautaRow(row: PautaRow, usuarios: PautaUsuarioRow[], anexos: PautaAn
   });
 }
 
-function mapPautaAnexoRow(row: PautaAnexoRow): PautaAttachment {
-  const { data } = assertSupabase().storage.from(STORAGE_BUCKET).getPublicUrl(row.storage_path);
+function mapPautaAnexoRow(row: PautaAnexoRow, signedUrls: Map<string, string>): PautaAttachment {
   return {
     id: row.id,
     name: row.file_name,
     storagePath: row.storage_path,
-    url: data.publicUrl,
+    url: signedUrls.get(row.storage_path) || "",
     mimeType: row.mime_type || "",
     sizeBytes: row.size_bytes || 0,
     uploadedBy: row.uploaded_by || "",

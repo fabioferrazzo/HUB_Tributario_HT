@@ -72,6 +72,13 @@ with required_objects as (
       ('function', 'quadro_current_email', 'Funcao public.quadro_current_email (Quadro v2)'),
       ('function', 'can_insert_quadro_aviso', 'Funcao public.can_insert_quadro_aviso (Quadro v2)'),
       ('function', 'notify_quadro_aviso_particular', 'Funcao public.notify_quadro_aviso_particular (Quadro v2)'),
+      ('column', 'quadro_avisos.file_path', 'Coluna public.quadro_avisos.file_path (anexos privados)'),
+      ('function', 'can_read_quadro_aviso_file', 'Funcao public.can_read_quadro_aviso_file (anexos privados)'),
+      ('bucket_private', 'hub-anexos', 'Bucket hub-anexos privado (sem link publico)'),
+      ('bucket_private', 'hub-arquivos', 'Bucket hub-arquivos privado (sem link publico)'),
+      ('policy_rule', 'quadro_avisos_storage_select|can_read_quadro_aviso_file', 'Arquivos do Quadro lidos conforme permissao do aviso'),
+      ('policy_rule', 'quadro_avisos_storage_insert|auth.uid()', 'Envio de arquivo do Quadro restrito a pasta do usuario'),
+      ('policy_rule', 'hub_anexos_read_authenticated|quadro-avisos', 'Leitura geral do hub-anexos exclui a pasta do Quadro'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
@@ -106,6 +113,20 @@ status as (
         from storage.buckets b
         where b.id = required_objects.name
       )
+      when kind = 'bucket_private' then exists (
+        select 1
+        from storage.buckets b
+        where b.id = required_objects.name
+          and not coalesce(b.public, false)
+      )
+      when kind = 'policy_rule' then exists (
+        select 1
+        from pg_policies pol
+        where pol.schemaname = 'storage'
+          and pol.tablename = 'objects'
+          and pol.policyname = split_part(required_objects.name, '|', 1)
+          and concat_ws(' ', pol.qual, pol.with_check) like '%' || split_part(required_objects.name, '|', 2) || '%'
+      )
       else false
     end as ok
   from required_objects
@@ -116,11 +137,13 @@ select
     when 'column' then 'Coluna'
     when 'function' then 'Funcao'
     when 'bucket' then 'Bucket'
+    when 'bucket_private' then 'Seguranca'
+    when 'policy_rule' then 'Seguranca'
     else kind
   end as tipo,
   label as item,
   case when ok then 'OK' else 'PENDENTE' end as status
 from status
 order by
-  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 else 5 end,
+  case kind when 'table' then 1 when 'column' then 2 when 'function' then 3 when 'bucket' then 4 when 'bucket_private' then 5 when 'policy_rule' then 5 else 6 end,
   label;

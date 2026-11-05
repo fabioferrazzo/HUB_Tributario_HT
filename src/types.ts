@@ -189,6 +189,7 @@ export type QuadroAviso = {
   color: string;
   fileName?: string;
   fileUrl?: string;
+  filePath?: string;
   selectedUsers: string[];
   createdBy: string;
   createdByEmail: string;

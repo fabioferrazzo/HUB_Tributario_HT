@@ -1919,6 +1919,7 @@ function Dashboard({
           color: avisoKind === "postit" ? avisoColor : "#ffffff",
           fileName: uploadedFile?.fileName,
           fileUrl: uploadedFile?.fileUrl,
+          filePath: uploadedFile?.filePath,
           selectedUsers: avisosView === "particular" ? avisoSelectedUsers : []
         }
       });
