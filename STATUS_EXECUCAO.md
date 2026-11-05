@@ -370,3 +370,49 @@
 - `npm.cmd run typecheck`: OK em 26/06/2026 apos limpeza final de variaveis/artefatos legados do Sheets.
 - `npm.cmd run preflight`: OK em 26/06/2026 apos limpeza final de variaveis/artefatos legados do Sheets.
 - `npm.cmd run build`: OK em 26/06/2026 apos limpeza final de variaveis/artefatos legados do Sheets.
+
+## Atualizacao 05/11/2026 - Retomada apos troca de HD
+
+### Ambiente
+
+- Git 2.56 instalado no PC novo; variavel de usuario `NODE_OPTIONS=--use-system-ca` (a rede/antivirus intercepta HTTPS e o npm so funciona com os certificados do Windows).
+- Nova pasta de trabalho: `HUB_Tributario_HT_git` (clone do GitHub). A pasta antiga foi arquivada como `_ARQUIVO_App HUB TRIB (versao ate 13-07-2026)`; backup em `_backups\HUB_Tributario_HT_local_2026-11-05_1549.zip`.
+- Atalho "HUB Depto Tributario" recriado na Area de Trabalho (Chrome, perfil fiscal10, modo app).
+- `.env.local` recebeu `VITE_SUPABASE_ANON_KEY`: o app local passa a usar o banco real (testes locais alteram dados reais; usar itens de teste identificados).
+
+### GitHub
+
+- Commit `2e26496`: sincronizado o trabalho local de 13/07 (Quadro de Avisos v2) e os patches SQL de Pautas/Tarefas de 02 a 22/06 que estavam apenas no PC.
+- Commit `cd766fd`: `check_hub_status.sql` confere os objetos do Quadro v2 e corrige o teste de buckets, que marcava OK mesmo sem o bucket existir.
+
+### Seguranca (branch `seguranca-anexos-privados`)
+
+- `supabase/patch_anexos_privados.sql`: bucket `hub-anexos` privado; arquivos do Quadro lidos conforme a permissao do aviso; envio de arquivo do Quadro apenas na pasta do proprio usuario ativo; links publicos antigos migrados para `quadro_avisos.file_path`.
+- App: Pautas, Quadro de Avisos e Coordenacao (`coord-data`) passam a usar links assinados de 1 hora, gerados apenas para itens que o usuario pode ver.
+- `supabase/patch_quadro_notify_seguro.sql`: notificacao de aviso particular so pode ser disparada pelo autor do aviso ou por admin.
+- `patch_quadro_avisos.sql` e `patch_quadro_avisos_v2.sql` nao tornam mais o bucket publico.
+- Login de demonstracao restrito a `npm run dev`; senha removida do pacote de producao e da documentacao.
+- Dependencias: `npm audit fix` (0 vulnerabilidades no pacote de producao).
+- `check_hub_status.sql` passa a conferir bucket privado, regras de arquivo do Quadro e a protecao da notificacao.
+- Testes: patches validados em PostgreSQL 16 simulando o Supabase (execucao repetida, migracao de links, leitura/envio por perfil admin, gestor, autor, marcado, nao marcado, inativo e visitante); `npm.cmd run typecheck`, `npm.cmd run preflight` e `npm.cmd run build` OK em 05/11/2026.
+
+### Ordem de aplicacao (deploy de marco)
+
+1. SQL Editor do Supabase: rodar `supabase/check_hub_status.sql`.
+2. Se os itens "(Quadro v2)" estiverem PENDENTE: rodar `supabase/patch_quadro_avisos_v2.sql`.
+3. Rodar `supabase/patch_anexos_privados.sql` e `supabase/patch_quadro_notify_seguro.sql`.
+4. Juntar o branch `seguranca-anexos-privados` ao `main`.
+5. Netlify: Deploys > Trigger deploy > Deploy site.
+6. Rodar `check_hub_status.sql` (nenhum PENDENTE) e testar: anexo de pauta, imagem do Quadro e anexo pela Coordenacao.
+
+Os passos 3 a 5 devem ser feitos em sequencia: com o app antigo, os anexos de Pautas e do Quadro deixam de abrir apos o passo 3.
+
+### Pendencias registradas
+
+- `vite`/`esbuild` (apenas servidor de testes local): correcao exige atualizar para vite 8.
+- Agente OCR local (protocolo `hubocr://` e tarefa de login) nao esta registrado no PC novo; registrar a partir da nova pasta quando for usar.
+- Usuario logado ainda consegue gravar (sem ler) arquivo na pasta de lembrete de outro usuario.
+- Tokens em URL (`?token=`) na Agenda e na fila de e-mails; preferir cabecalho.
+- E-mail de senha provisoria grava a senha em texto na fila `email_outbox`.
+- `src/App.tsx` monolitico (~300 KB): dividir em modulos.
+- Menu Lembretes fora do menu lateral (acesso pelo Calendario de Tarefas e pelo sino): confirmar se e intencional.
