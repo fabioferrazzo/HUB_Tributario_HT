@@ -64,6 +64,14 @@ with required_objects as (
       ('function', 'can_read_quadro_aviso', 'Funcao public.can_read_quadro_aviso'),
       ('function', 'can_manage_quadro_aviso', 'Funcao public.can_manage_quadro_aviso'),
       ('function', 'quadro_touch_updated_at', 'Funcao public.quadro_touch_updated_at'),
+      ('column', 'quadro_avisos.cell', 'Coluna public.quadro_avisos.cell (Quadro v2)'),
+      ('column', 'quadro_avisos.kind', 'Coluna public.quadro_avisos.kind (Quadro v2)'),
+      ('column', 'quadro_avisos.visibility', 'Coluna public.quadro_avisos.visibility (Quadro v2)'),
+      ('column', 'quadro_avisos.file_url', 'Coluna public.quadro_avisos.file_url (Quadro v2)'),
+      ('column', 'quadro_aviso_usuarios.email', 'Coluna public.quadro_aviso_usuarios.email (Quadro v2)'),
+      ('function', 'quadro_current_email', 'Funcao public.quadro_current_email (Quadro v2)'),
+      ('function', 'can_insert_quadro_aviso', 'Funcao public.can_insert_quadro_aviso (Quadro v2)'),
+      ('function', 'notify_quadro_aviso_particular', 'Funcao public.notify_quadro_aviso_particular (Quadro v2)'),
       ('bucket', 'hub-anexos', 'Bucket storage hub-anexos'),
       ('bucket', 'hub-arquivos', 'Bucket storage hub-arquivos')
   ) as item(kind, name, label)
@@ -96,7 +104,7 @@ status as (
       when kind = 'bucket' then exists (
         select 1
         from storage.buckets b
-        where b.id = name
+        where b.id = required_objects.name
       )
       else false
     end as ok
