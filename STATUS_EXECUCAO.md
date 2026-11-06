@@ -459,3 +459,21 @@ Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em nav
 ### Pendências de 05/11/2026 resolvidas
 
 - `vite`/`esbuild` (item 4 acima), agente OCR (item 5, falta só executar o instalador), gravação em pasta de lembrete alheia (item 3), tokens em URL (item 2), senha na fila de e-mails (item 1), `App.tsx` monolítico (item 6) e Lembretes fora do menu (confirmado como intencional).
+
+### Publicado em 06/11/2026 (tarde)
+
+- `patch_permissoes_arquivos_anexos.sql` aplicado no Supabase e branch `seguranca-etapas` publicado.
+- Netlify: `APP_BASE_URL` corrigida para `https://hub-depto-tributario-ht.netlify.app`; `EMAIL_SCHEDULE_ENABLED` e `EMAIL_DELIVERY_ENABLED` já estavam `true`; `EMAIL_FORCE_TEST_TO` mantém todos os e-mails na caixa fiscal10 (modo de teste).
+- Arquivos sem OCR nesta versão (`OCR_ENABLED = false` em `src/app/appConfig.ts`): digitalizados ficam guardados como enviados, para visualizar, baixar e excluir. O instalador `INSTALAR_OCR_HUB.cmd` fica pronto para uma versão futura.
+- Testes em navegador dentro do projeto: `npm.cmd run test:e2e` (ver `tests/e2e/LEIAME.md`), rodar antes de cada publicação.
+- Acentuação das mensagens do app, e-mails, respostas das Functions e apps internos (exceto palavras-chave de busca de notícias, filtros de consulta e cabeçalhos técnicos).
+- E-mails pelo Gmail: novo provedor `EMAIL_PROVIDER=gmail` (SMTP com senha de app; variáveis `GMAIL_USER`, `GMAIL_APP_PASSWORD` e, opcional, `EMAIL_FROM_NAME`). O Resend continua disponível; o domínio próprio no Resend deixou de ser necessário.
+- Segurança local: `SUPABASE_SERVICE_ROLE_KEY` retirada do `.env.local` (projeto e pasta arquivada). Só o OCR local usa essa chave; ao reativá-lo, gerar chave secreta nova no Supabase. Uma cópia antiga permanece no backup `_backups\HUB_Tributario_HT_local_2026-11-05_1549.zip`: recomenda-se trocar a chave no Supabase e no Netlify.
+- Ramos de trabalho já incorporados ao `main` apagados do GitHub.
+
+### Pendências (atualizadas)
+
+- Configurar o envio pelo Gmail no Netlify (conta remetente, verificação em duas etapas, senha de app) e, depois do teste, retirar `EMAIL_FORCE_TEST_TO` para cada usuário receber os próprios e-mails.
+- Trocar a chave `service_role` (Supabase e Netlify), por causa da cópia no backup.
+- Conferir em 07/11/2026 as rotinas agendadas no Node 22 (Agenda 06h15, fila de e-mails 09h, notícias).
+- OCR em versão futura.
