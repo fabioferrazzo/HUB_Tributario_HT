@@ -1,5 +1,6 @@
 ﻿import {
   Bell,
+  Bold as BoldIcon,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -12,7 +13,10 @@
   Highlighter,
   Home,
   Image as ImageIcon,
+  Italic as ItalicIcon,
   Link2,
+  List as ListIcon,
+  ListOrdered,
   ListChecks,
   LogOut,
   Menu,
@@ -22,6 +26,7 @@
   PanelLeftOpen,
   Plus,
   RefreshCw,
+  RemoveFormatting,
   Search,
   Settings,
   ShieldCheck,
@@ -30,6 +35,7 @@
   Timer,
   Trash2,
   Type as TypeIcon,
+  Underline as UnderlineIcon,
   UserRoundCog,
   UserRound,
   X
@@ -815,6 +821,21 @@ function PomodoroFloatingNotes({
     commitEditorDraft();
   }
 
+  function togglePomodoroHighlight() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const range = getRichSelectionRange(editor);
+    if (!range) return;
+    const highlighted = findRichElementsInRange(editor, range, isHighlightElement);
+    if (highlighted.length) {
+      removeHighlightFromElements(highlighted);
+    } else if (!range.collapsed) {
+      document.execCommand("backColor", false, "#fff4a8");
+    }
+    commitEditorDraft();
+  }
+
   function handleArchivedOpen(note: PomodoroArchivedNote) {
     setActiveArchiveId(note.id);
     setArchiveOpen(false);
@@ -918,7 +939,7 @@ function PomodoroFloatingNotes({
             <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => runEditorCommand("backColor", "#fff4a8")}
+              onClick={togglePomodoroHighlight}
             >
               Grifo
             </button>
@@ -935,6 +956,8 @@ function PomodoroFloatingNotes({
               <option value="2">Pequeno</option>
               <option value="3">Normal</option>
               <option value="4">Grande</option>
+              <option value="5">Muito grande</option>
+              <option value="6">Título</option>
             </select>
         </div>
         {archiveOpen ? (
@@ -1285,10 +1308,13 @@ function Dashboard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [pautaTextSize, setPautaTextSize] = useState<NonNullable<Pauta["textSize"]>>("normal");
+  const [pautaTextSize, setPautaTextSize] = useState<PautaInlineSize>("normal");
   const [pautaTextBold, setPautaTextBold] = useState(false);
   const [pautaTextItalic, setPautaTextItalic] = useState(false);
   const [pautaTextHighlight, setPautaTextHighlight] = useState(false);
+  const [pautaTextUnderline, setPautaTextUnderline] = useState(false);
+  const [pautaListState, setPautaListState] = useState<"" | "ul" | "ol">("");
+  const [pautaFormatHint, setPautaFormatHint] = useState("");
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState("normal");
   const [status, setStatus] = useState("aberta");
@@ -1471,43 +1497,101 @@ function Dashboard({
   function syncPautaDescriptionFromEditor() {
     const editor = pautaDescriptionEditorRef.current;
     if (!editor) return;
-    const sanitized = sanitizePautaRichHtml(editor.innerHTML);
-    setDescricao(sanitized);
+    setDescricao(sanitizePautaRichHtml(editor.innerHTML));
     rememberPautaSelection();
   }
 
-  function normalizePautaEditorAfterCommand() {
+  function updatePautaFormatState() {
     const editor = pautaDescriptionEditorRef.current;
     if (!editor) return;
-    const sanitized = sanitizePautaRichHtml(editor.innerHTML);
-    if (editor.innerHTML !== sanitized) {
-      editor.innerHTML = sanitized;
-    }
-    setDescricao(sanitized);
-    rememberPautaSelection();
+    const range = getRichSelectionRange(editor);
+    if (!range) return;
+    setPautaTextBold(document.queryCommandState("bold"));
+    setPautaTextItalic(document.queryCommandState("italic"));
+    setPautaTextUnderline(document.queryCommandState("underline"));
+    setPautaTextHighlight(findRichElementsInRange(editor, range, isHighlightElement).length > 0);
+    setPautaTextSize(detectPautaInlineSize(editor, range.startContainer));
+    setPautaListState(
+      document.queryCommandState("insertOrderedList") ? "ol" : document.queryCommandState("insertUnorderedList") ? "ul" : ""
+    );
   }
 
-  function applyPautaTextSize(nextSize: NonNullable<Pauta["textSize"]>) {
+  function handlePautaEditorSelection() {
+    rememberPautaSelection();
+    updatePautaFormatState();
+  }
+
+  function handlePautaEditorInput() {
+    syncPautaDescriptionFromEditor();
+    setPautaFormatHint("");
+  }
+
+  function applyPautaTextSize(nextSize: PautaInlineSize) {
+    const size = pautaInlineSizes.find((item) => item.value === nextSize);
+    if (!size) return;
     setPautaTextSize(nextSize);
     restorePautaSelection();
-    document.execCommand("fontSize", false, getPautaExecFontSize(nextSize));
-    normalizePautaEditorAfterCommand();
+    document.execCommand("styleWithCSS", false, "false");
+    document.execCommand("fontSize", false, size.exec);
+    syncPautaDescriptionFromEditor();
+    setPautaFormatHint(
+      window.getSelection()?.isCollapsed ? "O novo tamanho vale para o texto digitado a partir do cursor." : ""
+    );
   }
 
-  function applyPautaInlineCommand(command: "bold" | "italic") {
+  function applyPautaInlineCommand(
+    command: "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList"
+  ) {
     restorePautaSelection();
     document.execCommand(command);
-    normalizePautaEditorAfterCommand();
-    if (command === "bold") setPautaTextBold(document.queryCommandState("bold"));
-    if (command === "italic") setPautaTextItalic(document.queryCommandState("italic"));
+    syncPautaDescriptionFromEditor();
+    updatePautaFormatState();
+    setPautaFormatHint("");
   }
 
-  function applyPautaHighlight() {
+  function togglePautaHighlight() {
+    const editor = pautaDescriptionEditorRef.current;
+    if (!editor) return;
     restorePautaSelection();
-    const applied = document.execCommand("hiliteColor", false, "#fff3a3");
-    if (!applied) document.execCommand("backColor", false, "#fff3a3");
-    setPautaTextHighlight(true);
-    normalizePautaEditorAfterCommand();
+    const range = getRichSelectionRange(editor);
+    if (!range) return;
+
+    const highlighted = findRichElementsInRange(editor, range, isHighlightElement);
+    if (highlighted.length) {
+      removeHighlightFromElements(highlighted);
+    } else if (range.collapsed) {
+      setPautaFormatHint("Selecione o trecho que deseja grifar.");
+      return;
+    } else {
+      const applied = document.execCommand("hiliteColor", false, PAUTA_HIGHLIGHT_COLOR);
+      if (!applied) document.execCommand("backColor", false, PAUTA_HIGHLIGHT_COLOR);
+    }
+
+    setPautaFormatHint("");
+    syncPautaDescriptionFromEditor();
+    updatePautaFormatState();
+  }
+
+  function clearPautaFormatting() {
+    const editor = pautaDescriptionEditorRef.current;
+    if (!editor) return;
+    restorePautaSelection();
+    const range = getRichSelectionRange(editor);
+    if (!range || range.collapsed) {
+      setPautaFormatHint("Selecione o trecho cuja formatação deseja remover.");
+      return;
+    }
+
+    document.execCommand("removeFormat");
+    const after = getRichSelectionRange(editor);
+    if (after) {
+      removeHighlightFromElements(findRichElementsInRange(editor, after, isHighlightElement));
+      findRichElementsInRange(editor, after, isRichFormattingElement).forEach(unwrapElement);
+    }
+
+    setPautaFormatHint("");
+    syncPautaDescriptionFromEditor();
+    updatePautaFormatState();
   }
 
   function exportPautas(format: ReportFormat) {
@@ -1561,6 +1645,9 @@ function Dashboard({
     setPautaTextBold(false);
     setPautaTextItalic(false);
     setPautaTextHighlight(false);
+    setPautaTextUnderline(false);
+    setPautaListState("");
+    setPautaFormatHint("");
     setPrazo("");
     setPrioridade("normal");
     setStatus("aberta");
@@ -1585,11 +1672,14 @@ function Dashboard({
 
     setEditingId(pauta.id);
     setTitulo(pauta.tema);
-    setDescricao(pauta.acoes || pauta.pendenciasObs || "");
-    setPautaTextSize(pauta.textSize || "normal");
-    setPautaTextBold(Boolean(pauta.textBold));
-    setPautaTextItalic(Boolean(pauta.textItalic));
-    setPautaTextHighlight(Boolean(pauta.textHighlight));
+    setDescricao(convertLegacyPautaFormatting(pauta));
+    setPautaTextSize("normal");
+    setPautaTextBold(false);
+    setPautaTextItalic(false);
+    setPautaTextUnderline(false);
+    setPautaTextHighlight(false);
+    setPautaListState("");
+    setPautaFormatHint("");
     setPrazo(toDatetimeLocalValue(pauta.prazo));
     setPrioridade(pauta.prioridade || "normal");
     setStatus(pauta.status || "aberta");
@@ -1630,10 +1720,11 @@ function Dashboard({
       origem: "HUB Pautas",
       scope,
       destaque,
-      textSize: pautaTextSize,
-      textBold: pautaTextBold,
-      textItalic: pautaTextItalic,
-      textHighlight: pautaTextHighlight,
+      // A formatacao fica no proprio texto (trecho a trecho), e nao na pauta inteira.
+      textSize: "normal",
+      textBold: false,
+      textItalic: false,
+      textHighlight: false,
       responsaveis: scope === "usuarios" ? responsaveis : [],
       anexos: existing?.anexos || [],
       conclusoes: existing?.conclusoes || [],
@@ -2537,66 +2628,120 @@ function Dashboard({
               <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
             </label>
             <div className="rich-editor-field">
-              <span>Descricao / orientacao</span>
+              <span>Descrição / orientação</span>
+              <div className="pauta-format-toolbar" role="toolbar" aria-label="Formatação da descrição da pauta">
+                <label className="pauta-format-size">
+                  <span className="sr-only">Tamanho da fonte</span>
+                  <select
+                    aria-label="Tamanho da fonte"
+                    title="Tamanho da fonte do trecho selecionado"
+                    value={pautaTextSize}
+                    onMouseDown={rememberPautaSelection}
+                    onChange={(event) => applyPautaTextSize(event.target.value as PautaInlineSize)}
+                  >
+                    {pautaInlineSizes.map((size) => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span aria-hidden="true" className="pauta-format-divider" />
+                {(
+                  [
+                    { command: "bold", label: "Negrito (Ctrl+B)", Icon: BoldIcon, active: pautaTextBold },
+                    { command: "italic", label: "Itálico (Ctrl+I)", Icon: ItalicIcon, active: pautaTextItalic },
+                    { command: "underline", label: "Sublinhado (Ctrl+U)", Icon: UnderlineIcon, active: pautaTextUnderline }
+                  ] as const
+                ).map(({ command, label, Icon, active }) => (
+                  <button
+                    aria-label={label}
+                    aria-pressed={active}
+                    className={active ? "active" : ""}
+                    key={command}
+                    title={label}
+                    type="button"
+                    onClick={(event) => {
+                      if (event.detail === 0) applyPautaInlineCommand(command);
+                    }}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      applyPautaInlineCommand(command);
+                    }}
+                  >
+                    <Icon size={15} strokeWidth={1.8} />
+                  </button>
+                ))}
+                <button
+                  aria-label={pautaTextHighlight ? "Remover grifo" : "Grifo amarelo"}
+                  aria-pressed={pautaTextHighlight}
+                  className={pautaTextHighlight ? "highlight-active" : ""}
+                  title={pautaTextHighlight ? "Remover grifo do trecho" : "Grifo amarelo no trecho selecionado"}
+                  type="button"
+                  onClick={(event) => {
+                    if (event.detail === 0) togglePautaHighlight();
+                  }}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    togglePautaHighlight();
+                  }}
+                >
+                  <Highlighter size={15} strokeWidth={1.8} />
+                </button>
+                <span aria-hidden="true" className="pauta-format-divider" />
+                {(
+                  [
+                    { command: "insertUnorderedList", label: "Lista com marcadores", Icon: ListIcon, active: pautaListState === "ul" },
+                    { command: "insertOrderedList", label: "Lista numerada", Icon: ListOrdered, active: pautaListState === "ol" }
+                  ] as const
+                ).map(({ command, label, Icon, active }) => (
+                  <button
+                    aria-label={label}
+                    aria-pressed={active}
+                    className={active ? "active" : ""}
+                    key={command}
+                    title={label}
+                    type="button"
+                    onClick={(event) => {
+                      if (event.detail === 0) applyPautaInlineCommand(command);
+                    }}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      applyPautaInlineCommand(command);
+                    }}
+                  >
+                    <Icon size={15} strokeWidth={1.8} />
+                  </button>
+                ))}
+                <span aria-hidden="true" className="pauta-format-divider" />
+                <button
+                  aria-label="Limpar formatação"
+                  title="Limpar formatação do trecho selecionado"
+                  type="button"
+                  onClick={(event) => {
+                    if (event.detail === 0) clearPautaFormatting();
+                  }}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    clearPautaFormatting();
+                  }}
+                >
+                  <RemoveFormatting size={15} strokeWidth={1.8} />
+                </button>
+              </div>
               <div
-                aria-label="Descricao / orientacao"
+                aria-label="Descrição / orientação"
                 className="pauta-description-input pauta-rich-text"
                 contentEditable
-                data-placeholder="Escreva a orientacao da pauta..."
+                data-placeholder="Escreva a orientação da pauta..."
                 onBlur={rememberPautaSelection}
-                onInput={syncPautaDescriptionFromEditor}
-                onKeyUp={rememberPautaSelection}
-                onMouseUp={rememberPautaSelection}
+                onInput={handlePautaEditorInput}
+                onKeyUp={handlePautaEditorSelection}
+                onMouseUp={handlePautaEditorSelection}
                 ref={pautaDescriptionEditorRef}
                 suppressContentEditableWarning
               />
-            </div>
-            <div className="pauta-format-toolbar" aria-label="Formatacao da descricao da pauta">
-              <label>
-                Fonte
-                <select
-                  value={pautaTextSize}
-                  onMouseDown={rememberPautaSelection}
-                  onChange={(event) => applyPautaTextSize(event.target.value as NonNullable<Pauta["textSize"]>)}
-                >
-                  <option value="pequena">Pequena</option>
-                  <option value="normal">Normal</option>
-                  <option value="grande">Grande</option>
-                </select>
-              </label>
-              <button
-                className={pautaTextBold ? "active" : ""}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  applyPautaInlineCommand("bold");
-                }}
-                type="button"
-                title="Negrito"
-              >
-                <strong>B</strong>
-              </button>
-              <button
-                className={pautaTextItalic ? "active" : ""}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  applyPautaInlineCommand("italic");
-                }}
-                type="button"
-                title="Italico"
-              >
-                <em>I</em>
-              </button>
-              <button
-                className={pautaTextHighlight ? "active highlight-active" : ""}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  applyPautaHighlight();
-                }}
-                type="button"
-                title="Grifo amarelo"
-              >
-                <Highlighter size={15} />
-              </button>
+              {pautaFormatHint ? <small className="pauta-format-hint">{pautaFormatHint}</small> : null}
             </div>
             {titulo.trim() || hasPautaRichContent(descricao) ? (
               <div className="pauta-format-preview">
@@ -7937,7 +8082,113 @@ const pautaTextSizeClassMap: Record<NonNullable<Pauta["textSize"]>, string> = {
   grande: "pauta-text-large"
 };
 
-const pautaAllowedTextSizeClasses = new Set(Object.values(pautaTextSizeClassMap));
+type PautaInlineSize = "pequena" | "normal" | "grande" | "muito-grande" | "titulo";
+
+const pautaInlineSizes: Array<{ value: PautaInlineSize; label: string; exec: string; className: string }> = [
+  { value: "pequena", label: "Pequena", exec: "2", className: "pauta-text-small" },
+  { value: "normal", label: "Normal", exec: "3", className: "pauta-text-normal" },
+  { value: "grande", label: "Grande", exec: "4", className: "pauta-text-large" },
+  { value: "muito-grande", label: "Muito grande", exec: "5", className: "pauta-text-xlarge" },
+  { value: "titulo", label: "Título", exec: "6", className: "pauta-text-title" }
+];
+
+const pautaAllowedTextSizeClasses = new Set(pautaInlineSizes.map((size) => size.className));
+
+const PAUTA_HIGHLIGHT_COLOR = "#fff3a3";
+
+function isHighlightElement(element: Element) {
+  if (element.tagName === "MARK") return true;
+  if (!(element instanceof HTMLElement)) return false;
+  const background = (element.style.backgroundColor || "").replace(/\s/g, "").toLowerCase();
+  return Boolean(background) && !["transparent", "rgba(0,0,0,0)", "initial", "inherit", "unset"].includes(background);
+}
+
+function isRichFormattingElement(element: Element) {
+  if (["FONT", "MARK", "STRONG", "B", "EM", "I", "U"].includes(element.tagName)) return true;
+  return element.tagName === "SPAN" && Array.from(element.classList).some((item) => pautaAllowedTextSizeClasses.has(item));
+}
+
+function unwrapElement(element: Element) {
+  const parent = element.parentNode;
+  if (!parent) return;
+  while (element.firstChild) parent.insertBefore(element.firstChild, element);
+  parent.removeChild(element);
+}
+
+function removeHighlightFromElements(elements: Element[]) {
+  elements.forEach((element) => {
+    if (!element.isConnected) return;
+    if (element.tagName === "MARK") {
+      unwrapElement(element);
+      return;
+    }
+    if (!(element instanceof HTMLElement)) return;
+    element.style.removeProperty("background-color");
+    element.style.removeProperty("background");
+    if (element.tagName === "SPAN" && !(element.getAttribute("style") || "").trim() && !element.className) {
+      unwrapElement(element);
+    }
+  });
+}
+
+function getRichSelectionRange(root: HTMLElement) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  return root.contains(range.commonAncestorContainer) ? range : null;
+}
+
+function findRichElementsInRange(root: HTMLElement, range: Range, matcher: (element: Element) => boolean) {
+  const found = new Set<Element>();
+  [range.startContainer, range.endContainer].forEach((node) => {
+    let current: Node | null = node instanceof Element ? node : node.parentNode;
+    while (current && current !== root) {
+      if (current instanceof Element && matcher(current)) found.add(current);
+      current = current.parentNode;
+    }
+  });
+
+  if (!range.collapsed) {
+    root.querySelectorAll("*").forEach((element) => {
+      if (!matcher(element)) return;
+      const elementRange = document.createRange();
+      elementRange.selectNodeContents(element);
+      const endsAfterStart = range.compareBoundaryPoints(Range.START_TO_END, elementRange) === 1;
+      const startsBeforeEnd = range.compareBoundaryPoints(Range.END_TO_START, elementRange) === -1;
+      if (endsAfterStart && startsBeforeEnd) found.add(element);
+    });
+  }
+
+  return Array.from(found);
+}
+
+function detectPautaInlineSize(root: HTMLElement, node: Node): PautaInlineSize {
+  let current: Node | null = node instanceof Element ? node : node.parentNode;
+  while (current && current !== root) {
+    if (current instanceof HTMLElement) {
+      const element = current;
+      if (element.tagName === "FONT" && element.getAttribute("size")) {
+        const className = getPautaFontClassFromLegacySize(element.getAttribute("size"));
+        return pautaInlineSizes.find((size) => size.className === className)?.value || "normal";
+      }
+      const match = pautaInlineSizes.find((size) => element.classList.contains(size.className));
+      if (match) return match.value;
+    }
+    current = current.parentNode;
+  }
+  return "normal";
+}
+
+// Pautas antigas guardavam negrito, italico e tamanho para o texto inteiro.
+// Ao editar, essa formatacao vira formatacao do proprio texto, que pode ser desfeita.
+function convertLegacyPautaFormatting(pauta: Pauta) {
+  let html = sanitizePautaRichHtml(pauta.acoes || pauta.pendenciasObs || "");
+  if (!html) return "";
+  if (pauta.textSize && pauta.textSize !== "normal") html = `<span class="${pautaTextSizeClassMap[pauta.textSize]}">${html}</span>`;
+  if (pauta.textItalic) html = `<em>${html}</em>`;
+  if (pauta.textBold) html = `<strong>${html}</strong>`;
+  return html;
+}
 
 function sanitizePautaRichHtml(value: string) {
   const source = String(value || "");
@@ -8010,6 +8261,36 @@ function sanitizePautaRichHtml(value: string) {
       }
     }
 
+    if (tagName === "u") {
+      const underline = document.createElement("u");
+      appendCleanChildren(node, underline);
+      parent.appendChild(underline);
+      return;
+    }
+
+    if (tagName === "ul" || tagName === "ol") {
+      const list = document.createElement(tagName);
+      Array.from(node.childNodes).forEach((child) => {
+        if (child instanceof HTMLElement && child.tagName.toLowerCase() === "li") {
+          const item = document.createElement("li");
+          appendCleanChildren(child, item);
+          list.appendChild(item);
+        } else if ((child.textContent || "").trim()) {
+          const item = document.createElement("li");
+          appendCleanNode(child, item);
+          list.appendChild(item);
+        }
+      });
+      if (list.childNodes.length) parent.appendChild(list);
+      return;
+    }
+
+    if (tagName === "li") {
+      appendCleanChildren(node, parent);
+      parent.appendChild(document.createElement("br"));
+      return;
+    }
+
     if (tagName === "div" || tagName === "p") {
       appendCleanChildren(node, parent);
       parent.appendChild(document.createElement("br"));
@@ -8029,9 +8310,11 @@ function hasYellowBackground(element: HTMLElement) {
 }
 
 function getPautaFontClassFromLegacySize(size: string | null) {
-  if (size === "1" || size === "2") return pautaTextSizeClassMap.pequena;
-  if (size === "4" || size === "5" || size === "6" || size === "7") return pautaTextSizeClassMap.grande;
-  return pautaTextSizeClassMap.normal;
+  if (size === "1" || size === "2") return "pauta-text-small";
+  if (size === "4") return "pauta-text-large";
+  if (size === "5") return "pauta-text-xlarge";
+  if (size === "6" || size === "7") return "pauta-text-title";
+  return "pauta-text-normal";
 }
 
 function pautaRichTextToPlain(value: string) {
@@ -8041,6 +8324,9 @@ function pautaRichTextToPlain(value: string) {
 
   const container = document.createElement("div");
   container.innerHTML = sanitizePautaRichHtml(source);
+  container.querySelectorAll("ol").forEach((list) => Array.from(list.children).forEach((item, index) => item.prepend(`${index + 1}. `)));
+  container.querySelectorAll("ul > li").forEach((item) => item.prepend("• "));
+  container.querySelectorAll("li").forEach((item) => item.append("\n"));
   container.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
   return (container.textContent || "").replace(/\n{3,}/g, "\n\n").trim();
 }
@@ -8067,6 +8353,8 @@ function renderPautaRichHtmlForEmail(value: string) {
     .replace(/<span class="pauta-text-small">/g, '<span style="font-size:12pt;">')
     .replace(/<span class="pauta-text-normal">/g, '<span style="font-size:14pt;">')
     .replace(/<span class="pauta-text-large">/g, '<span style="font-size:16pt;">')
+    .replace(/<span class="pauta-text-xlarge">/g, '<span style="font-size:20pt;">')
+    .replace(/<span class="pauta-text-title">/g, '<span style="font-size:24pt;">')
     .replace(/<mark>/g, '<mark style="background:#fff3a3;padding:0 2px;border-radius:3px;">');
 }
 
@@ -8217,12 +8505,6 @@ function getPautaFontSize(size: Pauta["textSize"]) {
   if (size === "pequena") return "12px";
   if (size === "grande") return "16px";
   return "14px";
-}
-
-function getPautaExecFontSize(size: Pauta["textSize"]) {
-  if (size === "pequena") return "2";
-  if (size === "grande") return "4";
-  return "3";
 }
 
 function sortPautasForDashboard(pautas: Pauta[]) {

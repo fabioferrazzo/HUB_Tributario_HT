@@ -4544,30 +4544,57 @@ a.aviso-card__file:hover {
 .pauta-format-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfaf6;
-  padding: 8px;
+  padding: 4px 6px;
 }
 
 .pauta-format-toolbar label {
   min-width: 150px;
 }
 
+.pauta-format-toolbar .pauta-format-size {
+  min-width: 0;
+}
+
+.pauta-format-size select {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: #1b365d;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.pauta-format-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
 .pauta-format-toolbar button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  min-height: 34px;
-  border: 1px solid var(--line);
+  min-width: 32px;
+  min-height: 30px;
+  border: 1px solid transparent;
   border-radius: 7px;
-  background: #fff;
-  color: var(--accent);
+  background: transparent;
+  color: #34496a;
   font-size: 13px;
   font-weight: 850;
+}
+
+.pauta-format-toolbar button:hover {
+  border-color: var(--line);
+  background: #fff;
 }
 
 .pauta-format-toolbar button.active {
@@ -4580,6 +4607,34 @@ a.aviso-card__file:hover {
   border-color: #d7a214;
   background: #fff3a3;
   color: #182f50;
+}
+
+.pauta-format-hint {
+  color: #8a5a00;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pauta-description-input font[size="1"],
+.pauta-description-input font[size="2"] {
+  font-size: 12px;
+}
+
+.pauta-description-input font[size="3"] {
+  font-size: 14px;
+}
+
+.pauta-description-input font[size="4"] {
+  font-size: 16px;
+}
+
+.pauta-description-input font[size="5"] {
+  font-size: 20px;
+}
+
+.pauta-description-input font[size="6"],
+.pauta-description-input font[size="7"] {
+  font-size: 24px;
 }
 
 .rich-editor-field {
@@ -4595,8 +4650,8 @@ a.aviso-card__file:hover {
 }
 
 .pauta-description-input {
-  min-height: 110px;
-  max-height: 240px;
+  min-height: 140px;
+  max-height: 360px;
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -4650,6 +4705,44 @@ a.aviso-card__file:hover {
 
 .pauta-rich-text .pauta-text-large {
   font-size: 16px;
+}
+
+.list-row--pauta .pauta-description {
+  color: #2a3b55;
+}
+
+/* Trechos formatados ficam na mesma linha do texto (a regra geral .list-row span os tornava blocos). */
+.pauta-rich-text span {
+  display: inline;
+  margin-top: 0;
+  color: inherit;
+}
+
+.pauta-rich-text .pauta-text-xlarge {
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.pauta-rich-text .pauta-text-title {
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.pauta-rich-text u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pauta-rich-text ul,
+.pauta-rich-text ol {
+  margin: 4px 0;
+  padding-left: 22px;
+  white-space: normal;
+}
+
+.pauta-rich-text li {
+  margin: 2px 0;
+  white-space: pre-wrap;
 }
 
 .pauta-format-preview {
