@@ -175,7 +175,7 @@ export function App() {
   function handlePomodoroNotesSave(nextNotes = pomodoroNotes) {
     savePomodoroNotes(nextNotes);
     setPomodoroNotes(nextNotes);
-    setPomodoroNotesStatus("Anotacoes salvas.");
+    setPomodoroNotesStatus("Anotações salvas.");
   }
 
   function handlePomodoroNotesClose(nextNotes = pomodoroNotes) {
@@ -193,7 +193,7 @@ export function App() {
   function handlePomodoroNoteArchive(nextNotes = pomodoroNotes) {
     const plainText = getPlainTextFromHtml(nextNotes);
     if (!plainText) {
-      setPomodoroNotesStatus("Escreva uma anotacao antes de arquivar.");
+      setPomodoroNotesStatus("Escreva uma anotação antes de arquivar.");
       return;
     }
 
@@ -208,13 +208,13 @@ export function App() {
     const nextArchive = [archivedNote, ...pomodoroArchivedNotes];
     setPomodoroArchivedNotes(nextArchive);
     savePomodoroArchivedNotes(nextArchive);
-    setPomodoroNotesStatus("Anotacao arquivada.");
+    setPomodoroNotesStatus("Anotação arquivada.");
   }
 
   function handlePomodoroArchivedNoteOpen(note: PomodoroArchivedNote) {
     setPomodoroNotes(note.notes);
     savePomodoroNotes(note.notes);
-    setPomodoroNotesStatus("Anotacao arquivada aberta para edicao.");
+    setPomodoroNotesStatus("Anotação arquivada aberta para edição.");
   }
 
   function handlePomodoroArchivedNoteSave(noteId: string, nextNotes = pomodoroNotes) {
@@ -232,7 +232,7 @@ export function App() {
     );
     setPomodoroArchivedNotes(nextArchive);
     savePomodoroArchivedNotes(nextArchive);
-    setPomodoroNotesStatus("Edicao do arquivo salva.");
+    setPomodoroNotesStatus("Edição do arquivo salva.");
   }
 
   function handlePomodoroArchivedNoteDelete(noteId: string) {
@@ -240,7 +240,7 @@ export function App() {
     const nextArchive = pomodoroArchivedNotes.filter((note) => note.id !== noteId);
     setPomodoroArchivedNotes(nextArchive);
     savePomodoroArchivedNotes(nextArchive);
-    setPomodoroNotesStatus("Anotacao arquivada excluida.");
+    setPomodoroNotesStatus("Anotação arquivada excluida.");
   }
 
   return (

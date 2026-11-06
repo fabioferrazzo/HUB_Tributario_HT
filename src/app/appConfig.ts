@@ -12,7 +12,7 @@ export const HUB_SUPABASE_HOST = "kgorlrpparhcrprwamlc.supabase.co";
 
 export const dailyOperationalGuide = [
   {
-    title: "Abrir Saude operacional",
+    title: "Abrir Saúde operacional",
     detail: "Conferir a etiqueta de versão, origens Supabase/local, Functions e avisos antes de mexer em dados reais."
   },
   {
@@ -44,7 +44,7 @@ export const weeklyOperationalGuide = [
   },
   {
     title: "Revisar Coordenação",
-    detail: "Atualizar colaboradores, atividades, pautas e usar os botões manuais de e-mail quando a comunicacao estiver pronta."
+    detail: "Atualizar colaboradores, atividades, pautas e usar os botões manuais de e-mail quando a comunicação estiver pronta."
   },
   {
     title: "Conferir Make da Agenda",
@@ -97,7 +97,7 @@ export const homologationBlocks: HomologationBlock[] = [
     items: [
       { id: "arquivo-biblioteca", title: "Biblioteca", detail: "Pastas, upload, edição e exclusão controlada." },
       { id: "arquivo-visualizador", title: "Visualizador", detail: "Busca, zoom, grifo, comentários e exportação de notas." },
-      { id: "arquivo-ocr", title: "OCR manual", detail: "Botao Rodar OCR aciona o agente local quando houver pendentes." }
+      { id: "arquivo-ocr", title: "OCR manual", detail: "Botão Rodar OCR aciona o agente local quando houver pendentes." }
     ]
   },
   {
@@ -114,7 +114,7 @@ export const homologationBlocks: HomologationBlock[] = [
     title: "Agenda Tributária",
     items: [
       { id: "agenda-cache", title: "Cache compartilhado", detail: "Mês abre com dados persistidos em agenda_tributaria_cache quando disponível." },
-      { id: "agenda-rfb", title: "Atualização RFB", detail: "Botao de atualizar busca RFB e preserva fallback local se a Function falhar." },
+      { id: "agenda-rfb", title: "Atualização RFB", detail: "Botão de atualizar busca RFB e preserva fallback local se a Function falhar." },
       { id: "agenda-make", title: "Make mensal", detail: "Cenario mensal chama /api/agenda-tributaria com AGENDA_SYNC_TOKEN configurado." }
     ]
   },
@@ -134,7 +134,7 @@ export const homologationBlocks: HomologationBlock[] = [
     items: [
       { id: "coord-layout", title: "Layout simplificado", detail: "Busca, colaborador e ações na mesma linha." },
       { id: "coord-pautas", title: "Pautas e lembretes", detail: "Criar pauta/lembrete com anexos e histórico." },
-      { id: "coord-email", title: "E-mails da Coordenação", detail: "Enviar pauta e avaliacoes por comando manual." }
+      { id: "coord-email", title: "E-mails da Coordenação", detail: "Enviar pauta e avaliações por comando manual." }
     ]
   },
   {

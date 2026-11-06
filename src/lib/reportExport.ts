@@ -57,7 +57,7 @@ export function buildPdfReport(title: string, rows: ReportRow[]) {
   const generatedAt = new Date().toLocaleString("pt-BR");
   const lines: PdfReportLine[] = [
     { text: title, bold: true, size: 16 },
-    { text: `Gerado em ${generatedAt} pelo HUB Depto Tributario.`, size: 9 },
+    { text: `Gerado em ${generatedAt} pelo HUB Depto Tributário.`, size: 9 },
     { text: "", size: 5 }
   ];
 
@@ -244,7 +244,7 @@ export function buildDocxReport(title: string, rows: ReportRow[]) {
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
     <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>${escapeXmlText(title)}</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Gerado em ${escapeXmlText(generatedAt)} pelo HUB Depto Tributario.</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Gerado em ${escapeXmlText(generatedAt)} pelo HUB Depto Tributário.</w:t></w:r></w:p>
     ${bodyRows}
     <w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr>
   </w:body>
@@ -273,7 +273,7 @@ export function buildDocxReport(title: string, rows: ReportRow[]) {
       data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title>${escapeXmlText(title)}</dc:title>
-  <dc:creator>HUB Depto Tributario</dc:creator>
+  <dc:creator>HUB Depto Tributário</dc:creator>
   <dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>
   <dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>
 </cp:coreProperties>`
@@ -312,7 +312,7 @@ export function buildReportHtml(title: string, rows: ReportRow[], printable: boo
 </head>
 <body>
   <h1>${escapeHtmlText(title)}</h1>
-  <p>Gerado em ${escapeHtmlText(generatedAt)} pelo HUB Depto Tributario.</p>
+  <p>Gerado em ${escapeHtmlText(generatedAt)} pelo HUB Depto Tributário.</p>
   <table>
     <thead><tr>${tableHead}</tr></thead>
     <tbody>${tableRows}</tbody>
@@ -392,7 +392,7 @@ export function buildXlsxWorkbook(title: string, rows: ReportRow[]) {
       name: "docProps/app.xml",
       data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-  <Application>HUB Depto Tributario</Application>
+  <Application>HUB Depto Tributário</Application>
   <DocSecurity>0</DocSecurity>
   <ScaleCrop>false</ScaleCrop>
   <HeadingPairs><vt:vector size="2" baseType="variant"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>1</vt:i4></vt:variant></vt:vector></HeadingPairs>
@@ -404,9 +404,9 @@ export function buildXlsxWorkbook(title: string, rows: ReportRow[]) {
       data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title>${escapeXmlText(title)}</dc:title>
-  <dc:creator>HUB Depto Tributario</dc:creator>
-  <cp:lastModifiedBy>HUB Depto Tributario</cp:lastModifiedBy>
-  <dc:description>Relatorio gerado em ${escapeXmlText(generatedAt)}</dc:description>
+  <dc:creator>HUB Depto Tributário</dc:creator>
+  <cp:lastModifiedBy>HUB Depto Tributário</cp:lastModifiedBy>
+  <dc:description>Relatório gerado em ${escapeXmlText(generatedAt)}</dc:description>
   <dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>
   <dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>
 </cp:coreProperties>`

@@ -14,7 +14,7 @@ const MANAGER_ROLES = new Set(["admin", "gestor"]);
 
 export default async function handler(request) {
   if (request.method !== "POST") {
-    return json(405, { error: "Metodo nao permitido." });
+    return json(405, { error: "Metodo não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -22,7 +22,7 @@ export default async function handler(request) {
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+    return json(500, { error: "Variáveis Supabase ausentes no servidor." });
   }
 
   try {
@@ -38,7 +38,7 @@ export default async function handler(request) {
     });
 
     if (!authorized.ok) {
-      return respond(request, 401, { error: authorized.error || "Envio nao autorizado." });
+      return respond(request, 401, { error: authorized.error || "Envio não autorizado." });
     }
 
     const subject = String(payload.subject || "").trim();
@@ -46,7 +46,7 @@ export default async function handler(request) {
     const textBody = String(payload.body || "").trim();
 
     if (!to || !subject || (!htmlBody && !textBody)) {
-      return respond(request, 400, { error: "Destinatario, assunto e corpo sao obrigatorios." });
+      return respond(request, 400, { error: "Destinatario, assunto e corpo são obrigatorios." });
     }
 
     const category = inferCategory(subject, payload.collaboratorName);
@@ -72,7 +72,7 @@ export default async function handler(request) {
       results: processed.results || []
     });
   } catch (error) {
-    return respond(request, 400, { error: error?.message || "Nao foi possivel enviar o e-mail da Coordenacao Tributaria." });
+    return respond(request, 400, { error: error?.message || "Não foi possível enviar o e-mail da Coordenação Tributária." });
   }
 }
 
@@ -86,14 +86,14 @@ async function authorizeDispatch({ supabaseUrl, supabaseAnonKey, serviceRoleKey,
 
   const bearer = String(authToken || "").trim();
   if (!bearer) {
-    return { ok: false, error: "Token ou sessao do HUB nao informados." };
+    return { ok: false, error: "Token ou sessão do HUB não informados." };
   }
 
   const authUser = await verifySession(supabaseUrl, supabaseAnonKey, bearer);
   const profile = await readProfile(supabaseUrl, serviceRoleKey, authUser.id);
 
   if (!profile?.active) {
-    return { ok: false, error: "Usuario inativo ou sem perfil no HUB." };
+    return { ok: false, error: "Usuário inativo ou sem perfil no HUB." };
   }
 
   const profileEmail = String(profile.email || "").trim().toLowerCase();
@@ -101,7 +101,7 @@ async function authorizeDispatch({ supabaseUrl, supabaseAnonKey, serviceRoleKey,
   const canSendToSelf = Boolean(targetEmail && profileEmail && profileEmail === String(targetEmail).trim().toLowerCase());
 
   if (!canSendAsManager && !canSendToSelf) {
-    return { ok: false, error: "Usuarios comuns podem enviar relatorios apenas para o proprio e-mail." };
+    return { ok: false, error: "Usuários comuns podem enviar relatórios apenas para o próprio e-mail." };
   }
 
   return { ok: true, userId: authUser.id };
@@ -116,7 +116,7 @@ async function verifySession(supabaseUrl, anonKey, token) {
   });
 
   if (!user?.id) {
-    throw new Error("Sessao Supabase invalida.");
+    throw new Error("Sessão Supabase inválida.");
   }
 
   return user;

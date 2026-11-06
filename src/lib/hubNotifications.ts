@@ -54,7 +54,7 @@ export function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubP
           route: "lembretes",
           targetRef: lembrete.id,
           targetType: "lembrete",
-          title: `Voce foi marcado: ${lembrete.titulo}`,
+          title: `Você foi marcado: ${lembrete.titulo}`,
           tipo: "lembrete_assigned",
           tone: "info"
         })
@@ -79,7 +79,7 @@ export function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubP
       createNotification({
         dedupeKey: `lembrete:${lembrete.id}:${tone}`,
         title: lembrete.titulo,
-        detail: tone === "danger" ? `Vencido: ${formatDateTime(lembrete.prazo)}` : `Vence em ate 24h: ${formatDateTime(lembrete.prazo)}`,
+        detail: tone === "danger" ? `Vencido: ${formatDateTime(lembrete.prazo)}` : `Vence em até 24h: ${formatDateTime(lembrete.prazo)}`,
         meta: formatResponsaveis(lembrete.responsaveis, profiles),
         tone,
         route: "lembretes",
@@ -105,8 +105,8 @@ export function buildPautaNotifications(pautas: Pauta[], user: HubUser): HubNoti
       return createNotification({
         dedupeKey: `pauta:${pauta.id}:${tone}`,
         title: pauta.tema,
-        detail: tone === "danger" ? `Pauta atrasada: ${formatDate(pauta.prazo)}` : `Pauta vence em ate 24h: ${formatDate(pauta.prazo)}`,
-        meta: pauta.responsavel || pauta.email || "Sem responsavel definido",
+        detail: tone === "danger" ? `Pauta atrasada: ${formatDate(pauta.prazo)}` : `Pauta vence em até 24h: ${formatDate(pauta.prazo)}`,
+        meta: pauta.responsavel || pauta.email || "Sem responsável definido",
         tone,
         route: "home",
         tipo: tone === "danger" ? "pauta_overdue" : "pauta_due",
@@ -132,7 +132,7 @@ export function buildTaskNotifications(tasks: TaskItem[], profiles: HubProfile[]
         route: "tarefas",
         targetRef: task.id,
         targetType: "tarefa",
-        title: `Voce foi marcado em uma tarefa: ${task.titulo}`,
+        title: `Você foi marcado em uma tarefa: ${task.titulo}`,
         tipo: "tarefa_assigned",
         tone: "info"
       })
@@ -150,7 +150,7 @@ export function buildTaskNotifications(tasks: TaskItem[], profiles: HubProfile[]
     .map(({ task, tone }) =>
       createNotification({
         dedupeKey: `tarefa:${task.id}:${tone}:${user.email}`,
-        detail: tone === "danger" ? `Tarefa vencida: ${formatDateTime(task.prazo)}` : `Tarefa vence em ate 24h: ${formatDateTime(task.prazo)}`,
+        detail: tone === "danger" ? `Tarefa vencida: ${formatDateTime(task.prazo)}` : `Tarefa vence em até 24h: ${formatDateTime(task.prazo)}`,
         meta: formatResponsaveis(task.responsaveis, profiles),
         route: "tarefas",
         targetRef: task.id,

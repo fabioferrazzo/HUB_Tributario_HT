@@ -274,7 +274,7 @@ export function hasPautaRichContent(value: string) {
 }
 
 export function renderPautaRichHtmlForEmail(value: string) {
-  return sanitizePautaRichHtml(value || "Sem acao registrada")
+  return sanitizePautaRichHtml(value || "Sem ação registrada")
     .replace(/<span class="pauta-text-small">/g, '<span style="font-size:12pt;">')
     .replace(/<span class="pauta-text-normal">/g, '<span style="font-size:14pt;">')
     .replace(/<span class="pauta-text-large">/g, '<span style="font-size:16pt;">')

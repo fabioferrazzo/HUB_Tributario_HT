@@ -61,7 +61,7 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
     if (canUserManageLembrete(target, user)) {
       startEdit(target);
     } else {
-      setError("Voce pode visualizar este lembrete, mas apenas o criador, coordenacao ou administrador pode altera-lo.");
+      setError("Você pode visualizar este lembrete, mas apenas o criador, coordenação ou administrador pode altera-lo.");
     }
   }, [lembretes, loading, user]);
 
@@ -102,7 +102,7 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
 
   function startEdit(lembrete: Lembrete) {
     if (!canManageLembrete(lembrete)) {
-      setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode altera-lo.");
+      setError("Você pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode altera-lo.");
       return;
     }
 
@@ -190,7 +190,7 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
     if (!target) return;
 
     if (!canManageLembrete(target)) {
-      setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode altera-lo.");
+      setError("Você pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode altera-lo.");
       return;
     }
 
@@ -204,7 +204,7 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
   async function removeLembrete(id: string) {
     const target = lembretes.find((lembrete) => lembrete.id === id);
     if (target && !canManageLembrete(target)) {
-      setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode exclui-lo.");
+      setError("Você pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode exclui-lo.");
       return;
     }
     if (!confirmDeletion(`Excluir o lembrete "${target?.titulo || ""}"?`)) return;

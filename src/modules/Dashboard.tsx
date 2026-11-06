@@ -175,7 +175,7 @@ export function Dashboard({
   }, [autoScroll, filteredPautas.length, pautaFilter, pautaQuery, selectedMonth, selectedYear]);
 
   function exportPautas(format: ReportFormat) {
-    exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
+    exportReport(format, "Pautas - HUB Depto Tributário", filteredPautas.map(pautaToReportRow));
   }
 
   async function sendPautasByEmail() {
@@ -198,7 +198,7 @@ export function Dashboard({
         body: JSON.stringify({
           authToken,
           to: user.email,
-          subject: "Pautas do HUB Depto Tributario",
+          subject: "Pautas do HUB Depto Tributário",
           body,
           htmlBody: buildPautasEmailHtml(filteredPautas, hubUsers)
         })
@@ -206,7 +206,7 @@ export function Dashboard({
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(data?.error || "Nao foi possivel enviar as pautas por e-mail.");
+        throw new Error(data?.error || "Não foi possível enviar as pautas por e-mail.");
       }
 
       setPautasEmailStatus(`Pautas enviadas para ${user.email}.`);
@@ -262,7 +262,7 @@ export function Dashboard({
     event.preventDefault();
     if (!canManagePautas) return;
     if (!titulo.trim()) {
-      setError("Informe o titulo da pauta.");
+      setError("Informe o título da pauta.");
       return;
     }
 
@@ -377,7 +377,7 @@ export function Dashboard({
 
   function renderPautaRow(pauta: Pauta, keyPrefix = "") {
     const pautaContentStyle = getPautaContentStyle(pauta);
-    const pautaDescriptionHtml = sanitizePautaRichHtml(pauta.acoes || pauta.pendenciasObs || "Sem acao registrada");
+    const pautaDescriptionHtml = sanitizePautaRichHtml(pauta.acoes || pauta.pendenciasObs || "Sem ação registrada");
     return (
       <article className={`list-row list-row--pauta ${pauta.destaque ? "list-row--pauta-featured" : ""}`} data-pauta-row key={`${keyPrefix}${pauta.id}`}>
         <div

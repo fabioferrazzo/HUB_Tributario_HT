@@ -20,9 +20,9 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
 
   return [
     {
-      area: "Versao do HUB",
+      area: "Versão do HUB",
       status: APP_RELEASE_LABEL,
-      detail: `Pacote preparado em ${APP_RELEASE_DATE}; use esta etiqueta para confirmar se o navegador/Netlify carregou a versao correta.`,
+      detail: `Pacote preparado em ${APP_RELEASE_DATE}; use esta etiqueta para confirmar se o navegador/Netlify carregou a versão correta.`,
       tone: "info"
     },
     {
@@ -30,14 +30,14 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
       status: configuredSupabaseHost,
       detail:
         configuredSupabaseHost === HUB_SUPABASE_HOST
-          ? "Conectado ao projeto correto do HUB Depto Tributario."
-          : `Revise o Netlify: este HUB deve usar ${HUB_SUPABASE_HOST}, nao o projeto futuro do app substituto do Sheets.`,
+          ? "Conectado ao projeto correto do HUB Depto Tributário."
+          : `Revise o Netlify: este HUB deve usar ${HUB_SUPABASE_HOST}, não o projeto futuro do app substituto do Sheets.`,
       tone: configuredSupabaseHost === HUB_SUPABASE_HOST ? "ok" : "warning"
     },
     {
-      area: "Usuarios e perfis",
+      area: "Usuários e perfis",
       status: usersSource === "supabase" ? "Supabase ativo" : "Modo local",
-      detail: hasAdmin && hasCurrentUser ? "Admin ativo e usuario logado presente na lista." : "Revise se ha admin ativo e se o usuario logado esta em profiles.",
+      detail: hasAdmin && hasCurrentUser ? "Admin ativo e usuário logado presente na lista." : "Revise se ha admin ativo e se o usuário logado esta em profiles.",
       tone: usersSource === "supabase" && hasAdmin && hasCurrentUser ? "ok" : "warning"
     },
     {
@@ -53,7 +53,7 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
       tone: arquivosSource === "supabase" ? "ok" : "warning"
     },
     {
-      area: "Links uteis",
+      area: "Links úteis",
       status: linksSource === "supabase" ? "Links sincronizados" : "Fallback local",
       detail: "Links globais e pessoais respeitam permissões de admin, gestor e colaborador.",
       tone: linksSource === "supabase" ? "ok" : "warning"
@@ -63,14 +63,14 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
       status: tarefasSource,
       detail:
         tarefasSource === "supabase"
-          ? "Persistencia multiusuario ativa; calendario original sincroniza com Supabase."
+          ? "Persistencia multiusuario ativa; calendário original sincroniza com Supabase."
           : tarefasSource === "calendario"
-            ? "Calendario local ativo; Supabase preparado para ativacao por VITE_TAREFAS_SUPABASE=true."
-            : "Fallback local ativo porque o calendario do navegador nao esta disponivel.",
+            ? "Calendário local ativo; Supabase preparado para ativacao por VITE_TAREFAS_SUPABASE=true."
+            : "Fallback local ativo porque o calendário do navegador não esta disponível.",
       tone: tarefasSource === "supabase" ? "ok" : "info"
     },
     {
-      area: "Coordenacao Tributaria",
+      area: "Coordenação Tributária",
       status: coordHealth.status,
       detail: coordHealth.detail,
       tone: coordHealth.tone
@@ -88,7 +88,7 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
       tone: "info"
     },
     {
-      area: "Agenda Tributaria",
+      area: "Agenda Tributária",
       status: "Make/RFB preparado",
       detail: "Agenda usa o endpoint /api/agenda-tributaria e o cache agenda_tributaria_cache; configure AGENDA_SYNC_TOKEN no Netlify e no Make.",
       tone: "info"

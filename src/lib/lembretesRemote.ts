@@ -22,7 +22,7 @@ type ProfileRow = {
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;
@@ -33,7 +33,7 @@ async function getCurrentAuthUserId() {
   const { data, error } = await client.auth.getUser();
 
   if (error || !data.user?.id) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   return data.user.id;

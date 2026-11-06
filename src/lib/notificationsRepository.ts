@@ -220,7 +220,7 @@ function storageKey(user: HubUser) {
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;

@@ -244,7 +244,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
 
     if (!canUserManageTask(task, user)) {
       setFormOpen(false);
-      setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+      setError("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
       return;
     }
 
@@ -264,11 +264,11 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!titulo.trim()) {
-      setError("Informe o titulo da tarefa.");
+      setError("Informe o título da tarefa.");
       return;
     }
     if (!prazo) {
-      setError("Informe o prazo da tarefa para sincronizar com o calendario.");
+      setError("Informe o prazo da tarefa para sincronizar com o calendário.");
       return;
     }
 
@@ -329,7 +329,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
     if (!target) return;
 
     if (!canUserManageTask(target, user)) {
-      setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode conclui-la.");
+      setError("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode conclui-la.");
       return;
     }
 
@@ -342,7 +342,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
 
   async function removeTask(task: TaskItem) {
     if (!canUserManageTask(task, user)) {
-      setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
+      setError("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
       return;
     }
     if (!confirmDeletion(`Excluir a tarefa "${task.titulo}"?`)) return;
@@ -372,7 +372,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
   }
 
   function exportTasks(format: ReportFormat) {
-    exportReport(format, "Calendario de Tarefas - HUB Depto Tributario", filteredTasks.map(taskToReportRow));
+    exportReport(format, "Calendário de Tarefas - HUB Depto Tributário", filteredTasks.map(taskToReportRow));
   }
 
   async function sendTasksByEmail() {
@@ -399,13 +399,13 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
           body: JSON.stringify({
             authToken,
             to,
-            subject: "Calendario de Tarefas - HUB Depto Tributario",
+            subject: "Calendário de Tarefas - HUB Depto Tributário",
             body,
-            htmlBody: `<p>Segue o resumo do Calendario de Tarefas do HUB Depto Tributario.</p><pre>${escapeHtmlText(body)}</pre>`
+            htmlBody: `<p>Segue o resumo do Calendário de Tarefas do HUB Depto Tributário.</p><pre>${escapeHtmlText(body)}</pre>`
           })
         });
         const data = await response.json().catch(() => null);
-        if (!response.ok) throw new Error(data?.error || `Nao foi possivel enviar o calendario para ${to}.`);
+        if (!response.ok) throw new Error(data?.error || `Não foi possível enviar o calendário para ${to}.`);
       }
 
       setTaskEmailStatus(`Resumo enviado para ${recipients.length} destinatario(s).`);
@@ -687,10 +687,10 @@ export function TaskLembretesPanel({
           <input aria-label="Buscar lembretes" onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lembrete..." value={query} />
         </label>
         <div className="panel-export-actions" aria-label="Exportar lembretes">
-          <button type="button" onClick={() => exportReport("pdf", "Lembretes - HUB Depto Tributario", filtered.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)))}>
+          <button type="button" onClick={() => exportReport("pdf", "Lembretes - HUB Depto Tributário", filtered.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)))}>
             PDF
           </button>
-          <button type="button" onClick={() => exportReport("excel", "Lembretes - HUB Depto Tributario", filtered.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)))}>
+          <button type="button" onClick={() => exportReport("excel", "Lembretes - HUB Depto Tributário", filtered.map((lembrete) => lembreteToReportRow(lembrete, hubUsers)))}>
             XLSX
           </button>
         </div>

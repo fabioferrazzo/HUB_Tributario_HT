@@ -102,7 +102,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111010",
-    titulo: "Reforma Tributaria - Ministerio da Fazenda",
+    titulo: "Reforma Tributária - Ministerio da Fazenda",
     url: "https://www.gov.br/fazenda/pt-br/acesso-a-informacao/acoes-e-programas/reforma-tributaria",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -120,7 +120,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111012",
-    titulo: "Planalto - Legislacao",
+    titulo: "Planalto - Legislação",
     url: "https://www4.planalto.gov.br/legislacao",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -250,7 +250,7 @@ export async function listAppLinks(user: HubUser): Promise<UsefulLink[]> {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      console.warn("Falha ao carregar links do Supabase; usando links padrao.", error);
+      console.warn("Falha ao carregar links do Supabase; usando links padrão.", error);
       return filterVisibleLinks(mergeDefaultLinks([]), user);
     }
 
@@ -308,7 +308,7 @@ export async function deleteAppLink(link: UsefulLink, user: HubUser): Promise<Us
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;
@@ -319,7 +319,7 @@ async function getCurrentAuthUserId() {
   const { data, error } = await client.auth.getUser();
 
   if (error || !data.user?.id) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   return data.user.id;
@@ -341,7 +341,7 @@ function normalizeLink(value: Partial<UsefulLink>): UsefulLink {
   const now = new Date().toISOString();
   return {
     id: value.id || crypto.randomUUID(),
-    titulo: value.titulo?.trim() || "Link sem titulo",
+    titulo: value.titulo?.trim() || "Link sem título",
     url: value.url?.trim() || "",
     scope: value.scope || "privado",
     createdBy: value.createdBy || "",

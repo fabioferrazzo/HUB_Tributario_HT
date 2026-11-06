@@ -20,9 +20,9 @@ export default async function handler(request) {
   try {
     if (request.method === "GET") return await handleGet(request);
     if (request.method === "POST") return await handlePost(request);
-    return json(405, { error: "Metodo nao permitido." });
+    return json(405, { error: "Metodo não permitido." });
   } catch (error) {
-    return json(500, { error: error?.message || "Falha ao processar agenda tributaria." });
+    return json(500, { error: error?.message || "Falha ao processar agenda tributária." });
   }
 }
 
@@ -54,8 +54,8 @@ async function handlePost(request) {
   // A chave so e aceita no cabecalho (enderecos ficam gravados em historicos e logs).
   const token = request.headers.get("x-agenda-sync-token") || "";
 
-  if (!expectedToken) return json(500, { error: "AGENDA_SYNC_TOKEN nao configurado no Netlify." });
-  if (token !== expectedToken) return json(401, { error: "Token invalido para sincronizar agenda." });
+  if (!expectedToken) return json(500, { error: "AGENDA_SYNC_TOKEN não configurado no Netlify." });
+  if (token !== expectedToken) return json(401, { error: "Token inválido para sincronizar agenda." });
 
   const body = await readJson(request);
   const now = new Date();
@@ -85,7 +85,7 @@ export async function readCache(year, month) {
 
 export async function upsertCache(agenda, updatedBy) {
   const supabase = getSupabaseEnv();
-  if (!supabase) throw new Error("VITE_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY nao configurados.");
+  if (!supabase) throw new Error("VITE_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY não configurados.");
 
   const row = {
     year: agenda.year,

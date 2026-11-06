@@ -15,7 +15,7 @@ export function normalizeLembrete(value: PartialStoredLembrete): Lembrete {
 
   return {
     id: value.id || crypto.randomUUID(),
-    titulo: value.titulo || "Lembrete sem titulo",
+    titulo: value.titulo || "Lembrete sem título",
     descricao: value.descricao || "",
     prazo: value.prazo || "",
     prioridade: value.prioridade || "normal",

@@ -19,7 +19,7 @@ export function getStoredSession(): HubUser | null {
 
 async function getSupabaseProfile(userId: string, email: string): Promise<HubUser> {
   if (!supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   const { data, error } = await supabase.from("profiles").select("id,email,nome,role,active").eq("id", userId).single();
@@ -34,7 +34,7 @@ async function getSupabaseProfile(userId: string, email: string): Promise<HubUse
   }
 
   if (!data.active) {
-    throw new Error("Usuario desativado. Solicite liberacao ao administrador.");
+    throw new Error("Usuário desativado. Solicite liberação ao administrador.");
   }
 
   return {
@@ -55,7 +55,7 @@ export async function signIn(email: string, password: string): Promise<HubUser> 
     });
 
     if (error || !data.user?.email) {
-      throw new Error(error?.message || "E-mail ou senha invalidos.");
+      throw new Error(error?.message || "E-mail ou senha inválidos.");
     }
 
     const user = await getSupabaseProfile(data.user.id, data.user.email);
@@ -66,13 +66,13 @@ export async function signIn(email: string, password: string): Promise<HubUser> 
   // Modo demonstracao (dados locais, senha fixa) existe apenas em `npm run dev`.
   // Em producao, sem Supabase configurado, o login fica bloqueado.
   if (!import.meta.env.DEV || !LOCAL_DEMO_PASSWORD) {
-    throw new Error("Login indisponivel: Supabase nao configurado neste ambiente. Contate o administrador.");
+    throw new Error("Login indisponível: Supabase não configurado neste ambiente. Contate o administrador.");
   }
 
   const found = findLocalUserByEmail(normalizedEmail);
 
   if (!found || !found.active || password !== LOCAL_DEMO_PASSWORD) {
-    throw new Error("E-mail ou senha invalidos.");
+    throw new Error("E-mail ou senha inválidos.");
   }
 
   const user: HubUser = {

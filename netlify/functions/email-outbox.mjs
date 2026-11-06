@@ -9,7 +9,7 @@ const MANAGER_ROLES = new Set(["admin", "gestor"]);
 
 export default async function handler(request) {
   if (!["GET", "POST"].includes(request.method)) {
-    return json(405, { error: "Metodo nao permitido." });
+    return json(405, { error: "Metodo não permitido." });
   }
 
   const payload = request.method === "POST" ? await parseJsonBody(request) : readQueryPayload(request);
@@ -26,7 +26,7 @@ export default async function handler(request) {
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+    return json(500, { error: "Variáveis Supabase ausentes no servidor." });
   }
 
   if (!scheduled) {
@@ -40,7 +40,7 @@ export default async function handler(request) {
     });
 
     if (!authorized.ok) {
-      return json(401, { error: authorized.error || "Token de despacho de e-mail ausente ou invalido." });
+      return json(401, { error: authorized.error || "Token de despacho de e-mail ausente ou inválido." });
     }
   }
 
@@ -81,7 +81,7 @@ export default async function handler(request) {
   }
 
   if (action !== "process") {
-    return json(400, { error: "Acao invalida." });
+    return json(400, { error: "Ação inválida." });
   }
 
   const processed = await processDueEmails(supabaseUrl, serviceRoleKey, Number(payload.limit || 20));
@@ -188,7 +188,7 @@ export async function sendEmail(email) {
   const provider = getEmailProvider();
 
   if (provider !== "resend") {
-    throw new Error(`Provedor de e-mail nao suportado: ${provider}`);
+    throw new Error(`Provedor de e-mail não suportado: ${provider}`);
   }
 
   const forcedRecipient = getEnv("EMAIL_FORCE_TEST_TO");
@@ -252,7 +252,7 @@ async function authorizeDispatch({ authToken, dispatchToken, requestToken, servi
   }
 
   if (!supabaseAnonKey) {
-    return { ok: false, error: "VITE_SUPABASE_ANON_KEY ausente para validar sessao do HUB." };
+    return { ok: false, error: "VITE_SUPABASE_ANON_KEY ausente para validar sessão do HUB." };
   }
 
   const authUser = await verifySession(supabaseUrl, supabaseAnonKey, bearer);
@@ -274,7 +274,7 @@ async function verifySession(supabaseUrl, anonKey, token) {
   });
 
   if (!user?.id) {
-    throw new Error("Sessao Supabase invalida.");
+    throw new Error("Sessão Supabase inválida.");
   }
 
   return user;
@@ -293,11 +293,11 @@ async function readProfile(supabaseUrl, serviceRoleKey, userId) {
 
 export function assertDeliveryConfig() {
   if (!getEnv("EMAIL_PROVIDER_API_KEY")) {
-    throw new Error("EMAIL_PROVIDER_API_KEY nao configurada.");
+    throw new Error("EMAIL_PROVIDER_API_KEY não configurada.");
   }
 
   if (!getEnv("EMAIL_FROM")) {
-    throw new Error("EMAIL_FROM nao configurado.");
+    throw new Error("EMAIL_FROM não configurado.");
   }
 }
 

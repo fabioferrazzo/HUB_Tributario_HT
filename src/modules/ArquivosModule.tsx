@@ -104,7 +104,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
       } | null;
 
       if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || "Agente OCR local nao respondeu.");
+        throw new Error(payload?.error || "Agente OCR local não respondeu.");
       }
 
       setOcrMessage(summarizeLocalOcrOutput([payload.stdout, payload.stderr].filter(Boolean).join("\n")));
@@ -114,7 +114,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
 
       if (protocolTriggered) {
         setOcrMessage(
-          "OCR enviado ao Windows pelo protocolo hubocr://rodar. Se o Chrome pedir permissao, confirme para abrir o HUB OCR. Ao terminar, volte aqui e atualize a lista se necessario."
+          "OCR enviado ao Windows pelo protocolo hubocr://rodar. Se o Chrome pedir permissão, confirme para abrir o HUB OCR. Ao terminar, volte aqui e atualize a lista se necessário."
         );
         window.setTimeout(() => {
           void refreshResources();
@@ -192,7 +192,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
 
     if (viewerStudyResource && !isPdfResource(viewerStudyResource) && !isDocxResource(viewerStudyResource)) {
       setViewerSearchTerm("");
-      setViewerError("Busca interna com navegacao esta disponivel para PDF pesquisavel e DOCX convertido. Para PPTX, Excel, imagens ou links externos, abra em nova aba ou converta para PDF pesquisavel.");
+      setViewerError("Busca interna com navegacao esta disponível para PDF pesquisável e DOCX convertido. Para PPTX, Excel, imagens ou links externos, abra em nova aba ou converta para PDF pesquisável.");
       return;
     }
 
@@ -385,7 +385,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
     const processingStatus = file && OCR_ENABLED ? getInitialFileProcessingStatus(file.name, file.type || "") : "none";
     return {
       id: crypto.randomUUID(),
-      titulo: (shouldUseFileName ? file?.name.replace(/\.[^.]+$/, "") : titulo.trim()) || "Arquivo sem titulo",
+      titulo: (shouldUseFileName ? file?.name.replace(/\.[^.]+$/, "") : titulo.trim()) || "Arquivo sem título",
       descricao: descricao.trim(),
       url: file ? "" : url.trim(),
       categoria,
@@ -397,7 +397,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
       mimeType: file?.type || "",
       sizeBytes: file?.size || 0,
       processingStatus,
-      processingMessage: processingStatus === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : "",
+      processingMessage: processingStatus === "pending" ? "Aguardando conversão/OCR para versão pesquisável." : "",
       processedUrl: "",
       processedFileName: "",
       processedStoragePath: "",
@@ -415,7 +415,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
     setError("");
 
     if (!titulo.trim() && !selectedFiles.length) {
-      setError("Informe um titulo ou selecione um arquivo.");
+      setError("Informe um título ou selecione um arquivo.");
       return;
     }
 
@@ -444,7 +444,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
           mimeType: file?.type || editingResource.mimeType,
           sizeBytes: file?.size || editingResource.sizeBytes,
           processingStatus,
-          processingMessage: file && processingStatus === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : editingResource.processingMessage,
+          processingMessage: file && processingStatus === "pending" ? "Aguardando conversão/OCR para versão pesquisável." : editingResource.processingMessage,
           processedUrl: file ? "" : editingResource.processedUrl,
           processedFileName: file ? "" : editingResource.processedFileName,
           processedStoragePath: file ? "" : editingResource.processedStoragePath,
@@ -977,8 +977,8 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                 ) : (
                   <div className="document-preview-fallback">
                     <FileArchive size={38} />
-                    <h3>Previa interna indisponivel</h3>
-                    <p>{viewerPreview?.detail || "Este arquivo ou link nao permite visualizacao embutida no painel."}</p>
+                    <h3>Previa interna indisponível</h3>
+                    <p>{viewerPreview?.detail || "Este arquivo ou link não permite visualização embutida no painel."}</p>
                     <a href={activeViewerResource?.url || viewerResource.url} rel="noreferrer" target="_blank">
                       <Link2 size={15} />
                       Abrir em nova aba

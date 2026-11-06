@@ -16,7 +16,7 @@ export default async function handler(request) {
   }
 
   if (!["GET", "PUT"].includes(request.method)) {
-    return json(405, { error: "Metodo nao permitido." });
+    return json(405, { error: "Metodo não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -24,12 +24,12 @@ export default async function handler(request) {
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+    return json(500, { error: "Variáveis Supabase ausentes no servidor." });
   }
 
   const token = readBearerToken(request.headers.get("authorization"));
   if (!token) {
-    return json(401, { error: "Sessao nao informada." });
+    return json(401, { error: "Sessão não informada." });
   }
 
   try {
@@ -37,7 +37,7 @@ export default async function handler(request) {
     const profile = await readProfile(supabaseUrl, serviceRoleKey, authUser.id);
 
     if (!profile?.active || !MANAGER_ROLES.has(profile.role)) {
-      return json(403, { error: "Apenas administradores ou gestores podem sincronizar a Coordenacao Tributaria." });
+      return json(403, { error: "Apenas administradores ou gestores podem sincronizar a Coordenação Tributária." });
     }
 
     if (request.method === "GET") {
@@ -51,7 +51,7 @@ export default async function handler(request) {
     return json(200, { ok: true, source: "supabase", state });
   } catch (error) {
     const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 400;
-    return json(statusCode, { error: error?.message || "Nao foi possivel sincronizar a Coordenacao Tributaria." });
+    return json(statusCode, { error: error?.message || "Não foi possível sincronizar a Coordenação Tributária." });
   }
 }
 
@@ -201,7 +201,7 @@ async function saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, reminders)
 
 function normalizeState(value, userId) {
   if (!value || !Array.isArray(value.collaborators) || !Array.isArray(value.reminders)) {
-    throw httpError(400, "Estado da Coordenacao Tributaria invalido.");
+    throw httpError(400, "Estado da Coordenação Tributária inválido.");
   }
 
   return {
@@ -236,7 +236,7 @@ function normalizeItem(item, userId) {
   const title = String(item?.title || item?.titulo || "").trim();
 
   if (!title) {
-    throw httpError(400, "Item de Coordenacao sem titulo.");
+    throw httpError(400, "Item de Coordenação sem título.");
   }
 
   const type = ITEM_TYPES.has(item?.type) ? item.type : "colaborador";
@@ -622,7 +622,7 @@ async function createSignedStorageUrls(supabaseUrl, serviceRoleKey, bucket, path
     });
     const data = parseJson(await response.text());
     if (!response.ok || !Array.isArray(data)) {
-      console.warn("Nao foi possivel gerar links assinados dos anexos.", response.status);
+      console.warn("Não foi possível gerar links assinados dos anexos.", response.status);
       return result;
     }
     for (const item of data) {
@@ -631,7 +631,7 @@ async function createSignedStorageUrls(supabaseUrl, serviceRoleKey, bucket, path
       result.set(item.path, `${trimUrl(supabaseUrl)}/storage/v1${signed.startsWith("/") ? "" : "/"}${signed}`);
     }
   } catch (error) {
-    console.warn("Nao foi possivel gerar links assinados dos anexos.", error?.message || error);
+    console.warn("Não foi possível gerar links assinados dos anexos.", error?.message || error);
   }
   return result;
 }
@@ -673,7 +673,7 @@ async function verifySession(supabaseUrl, anonKey, token) {
   });
 
   if (!user?.id) {
-    throw httpError(401, "Sessao invalida.");
+    throw httpError(401, "Sessão inválida.");
   }
 
   return user;
@@ -728,7 +728,7 @@ async function parseJsonBody(request) {
   try {
     return await request.json();
   } catch {
-    throw httpError(400, "JSON invalido.");
+    throw httpError(400, "JSON inválido.");
   }
 }
 

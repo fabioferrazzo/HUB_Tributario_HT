@@ -19,8 +19,8 @@ export const config = {
 export default async function handler() {
   const supabase = getSupabaseEnv();
   if (!supabase) {
-    console.error("agenda-sync: VITE_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY nao configurados.");
-    return new Response("Supabase nao configurado.", { status: 500 });
+    console.error("agenda-sync: VITE_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY não configurados.");
+    return new Response("Supabase não configurado.", { status: 500 });
   }
 
   const today = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -134,7 +134,7 @@ async function notifyAdmins(supabase, { dedupeKey, tone, title, body, year, mont
     headers: { ...headers, prefer: "resolution=ignore-duplicates,return=minimal" },
     body: JSON.stringify(rows)
   });
-  if (!insert.ok) console.error("agenda-sync: falha ao gravar notificacao", insert.status, await insert.text().catch(() => ""));
+  if (!insert.ok) console.error("agenda-sync: falha ao gravar notificação", insert.status, await insert.text().catch(() => ""));
 
   const html = `<p><strong>${escapeHtml(title)}</strong></p><p>${escapeHtml(body).replace(/\n/g, "<br>")}</p><p>Abra o HUB em Agenda tributária para conferir.</p>`;
   for (const admin of admins) {
@@ -144,7 +144,7 @@ async function notifyAdmins(supabase, { dedupeKey, tone, title, body, year, mont
       headers,
       body: JSON.stringify({
         p_to_email: admin.email,
-        p_subject: `HUB Depto Tributario - ${title}`,
+        p_subject: `HUB Depto Tributário - ${title}`,
         p_html_body: html,
         p_text_body: `${title}\n\n${body}`,
         p_category: "agenda",

@@ -34,8 +34,8 @@ export function TopBar({
   }, [route]);
 
   function exportNotificationsDocx() {
-    const rows = notificationItems.length ? notificationItems.map(notificationToReportRow) : [{ Info: "Nenhuma notificacao pendente." }];
-    downloadDocxReport("Notificacoes - HUB Depto Tributario", rows);
+    const rows = notificationItems.length ? notificationItems.map(notificationToReportRow) : [{ Info: "Nenhuma notificação pendente." }];
+    downloadDocxReport("Notificações - HUB Depto Tributário", rows);
   }
 
   async function emailNotifications() {
@@ -92,7 +92,7 @@ export function TopBar({
               <header>
                 <div>
                   <strong>Notificações</strong>
-                  <small>{notificationItems.length ? `${notificationItems.length} aviso(s) nao lido(s)` : "Sem avisos ativos"}</small>
+                  <small>{notificationItems.length ? `${notificationItems.length} aviso(s) não lido(s)` : "Sem avisos ativos"}</small>
                 </div>
                 <div className="notification-actions">
                   <button className="notification-read-all" type="button" onClick={exportNotificationsDocx}>

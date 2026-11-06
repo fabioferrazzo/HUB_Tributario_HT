@@ -8,8 +8,8 @@ import { pautaRichTextToPlain, renderPautaRichHtmlForEmail } from "./richText";
 export function pautaToReportRow(pauta: Pauta): ReportRow {
   return {
     Tema: pauta.tema,
-    Acao: pautaRichTextToPlain(pauta.acoes || pauta.pendenciasObs || "Sem acao registrada"),
-    Responsavel: pauta.responsavel || "Sem responsavel definido",
+    Acao: pautaRichTextToPlain(pauta.acoes || pauta.pendenciasObs || "Sem ação registrada"),
+    Responsavel: pauta.responsavel || "Sem responsável definido",
     Email: pauta.email || "",
     Prazo: formatDate(pauta.prazo),
     Prioridade: pauta.prioridade || "",
@@ -26,8 +26,8 @@ export function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
           const fontSize = getPautaEmailFontSize(pauta.textSize);
           const fontWeight = pauta.textBold ? "700" : "400";
           const fontStyle = pauta.textItalic ? "italic" : "normal";
-          const description = pauta.acoes || pauta.pendenciasObs || "Sem acao registrada";
-          const responsaveis = pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], profiles) : "Todos os usuarios";
+          const description = pauta.acoes || pauta.pendenciasObs || "Sem ação registrada";
+          const responsaveis = pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], profiles) : "Todos os usuários";
 
           return `
             <article style="border:1px solid #d8cdb6;border-radius:8px;padding:14px 16px;margin:0 0 12px;background:#fffdf8;">
@@ -38,7 +38,7 @@ export function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
                 ${renderPautaRichHtmlForEmail(description)}
               </div>
               <p style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;margin:10px 0 0;color:#10233d;">
-                <strong>Responsaveis:</strong> ${escapeHtmlText(responsaveis)}<br/>
+                <strong>Responsáveis:</strong> ${escapeHtmlText(responsaveis)}<br/>
                 <strong>Prazo:</strong> ${escapeHtmlText(formatDate(pauta.prazo))}<br/>
                 <strong>Status:</strong> ${escapeHtmlText(pauta.status || "Sem status")}<br/>
                 <strong>Prioridade:</strong> ${escapeHtmlText(pauta.prioridade || "Normal")}
@@ -51,7 +51,7 @@ export function buildPautasEmailHtml(pautas: Pauta[], profiles: HubProfile[]) {
 
   return `
     <div style="font-family:Arial,sans-serif;font-size:12pt;line-height:1.45;color:#17211c;">
-      <p style="margin:0 0 12px;">Segue a lista filtrada de pautas do HUB Depto Tributario.</p>
+      <p style="margin:0 0 12px;">Segue a lista filtrada de pautas do HUB Depto Tributário.</p>
       <p style="margin:0 0 16px;color:#64716b;">Gerado em ${escapeHtmlText(generatedAt)}.</p>
       ${content}
     </div>
@@ -86,7 +86,7 @@ export function taskToReportRow(task: TaskItem): ReportRow {
     Status: task.status,
     Destaque: task.destaque ? "Sim" : "Nao",
     Origem: task.origem || "calendario",
-    Responsaveis: task.responsaveis.join(", ") || "Sem responsavel definido",
+    Responsaveis: task.responsaveis.join(", ") || "Sem responsável definido",
     Anexos: String(task.anexos.length)
   };
 }
@@ -114,7 +114,7 @@ export function notificationToReportRow(item: HubNotification): ReportRow {
 }
 
 export async function sendNotificationsByEmail(user: HubUser, items: HubNotification[]) {
-  const rows = items.length ? items.map(notificationToReportRow) : [{ Info: "Nenhuma notificacao pendente." }];
+  const rows = items.length ? items.map(notificationToReportRow) : [{ Info: "Nenhuma notificação pendente." }];
   const body = rows
     .map((row) => Object.entries(row).map(([key, value]) => `${key}: ${value}`).join("\n"))
     .join("\n\n");
@@ -128,12 +128,12 @@ export async function sendNotificationsByEmail(user: HubUser, items: HubNotifica
     body: JSON.stringify({
       authToken,
       to: user.email,
-      subject: "Notificacoes do HUB Depto Tributario",
+      subject: "Notificações do HUB Depto Tributário",
       body,
-      htmlBody: `<p>Segue o resumo das notificacoes do HUB Depto Tributario.</p><pre>${escapeHtmlText(body)}</pre>`
+      htmlBody: `<p>Segue o resumo das notificações do HUB Depto Tributário.</p><pre>${escapeHtmlText(body)}</pre>`
     })
   });
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(data?.error || "Nao foi possivel enviar as notificacoes por e-mail.");
+  if (!response.ok) throw new Error(data?.error || "Não foi possível enviar as notificações por e-mail.");
   return data;
 }

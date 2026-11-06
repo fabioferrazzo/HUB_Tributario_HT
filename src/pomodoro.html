@@ -115,7 +115,7 @@
             <div class="flex items-center justify-between gap-3 mb-3">
                 <div>
                     <strong class="text-sm text-stone-700">Arquivo de notas</strong>
-                    <p class="text-[11px] text-stone-500">Abra, edite, salve ou exclua anotacoes arquivadas.</p>
+                    <p class="text-[11px] text-stone-500">Abra, edite, salve ou exclua anotações arquivadas.</p>
                 </div>
                 <button id="close-notes-archive" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Fechar</button>
             </div>
@@ -323,12 +323,12 @@
                 <div class="rounded-xl border p-3 text-xs ${note.id === activeArchiveId ? 'border-amber-300 bg-amber-50' : 'border-stone-200 bg-white'}">
                     <div class="flex justify-between gap-3">
                         <div class="min-w-0">
-                            <strong class="block truncate text-stone-700">${escapeHtml(note.title || 'Nota sem titulo')}</strong>
+                            <strong class="block truncate text-stone-700">${escapeHtml(note.title || 'Nota sem título')}</strong>
                             <span class="text-[10px] text-stone-400">${new Date(note.updatedAt || note.createdAt).toLocaleString('pt-BR')}</span>
                         </div>
                         <div class="flex gap-1 shrink-0">
                             <button onclick="openArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Abrir</button>
-                            <button onclick="saveArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Salvar edicao</button>
+                            <button onclick="saveArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-stone-200 bg-white font-semibold text-stone-600" type="button">Salvar edição</button>
                             <button onclick="deleteArchivedNote(${note.id})" class="px-2 py-1 rounded-lg border border-red-100 bg-white font-semibold text-red-600" type="button">Excluir</button>
                         </div>
                     </div>
@@ -341,7 +341,7 @@
             const html = editor ? editor.innerHTML : '';
             const text = textFromHtml(html);
             if (!text) {
-                alert('Escreva uma anotacao antes de arquivar.');
+                alert('Escreva uma anotação antes de arquivar.');
                 return;
             }
 

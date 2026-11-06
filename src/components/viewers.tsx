@@ -67,7 +67,7 @@ export function InternalPdfViewer({
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         const response = await fetch(resource.url);
-        if (!response.ok) throw new Error("Nao foi possivel carregar o PDF para pesquisar todas as paginas.");
+        if (!response.ok) throw new Error("Não foi possível carregar o PDF para pesquisar todas as páginas.");
         const bytes = await response.arrayBuffer();
         const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
         if (active) onPageCount(document.numPages);
@@ -145,7 +145,7 @@ export function InternalPdfViewer({
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         const response = await fetch(resource.url);
-        if (!response.ok) throw new Error("Nao foi possivel carregar o PDF para estudo interno.");
+        if (!response.ok) throw new Error("Não foi possível carregar o PDF para estudo interno.");
         const bytes = await response.arrayBuffer();
         const document = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
         if (!active || cancelled) return;
@@ -157,7 +157,7 @@ export function InternalPdfViewer({
         const viewport = pdfPage.getViewport({ scale });
         const context = canvas.getContext("2d");
         const textLayerElement = textLayerRef.current;
-        if (!context) throw new Error("Canvas indisponivel para renderizar PDF.");
+        if (!context) throw new Error("Canvas indisponível para renderizar PDF.");
         if (!active || cancelled) return;
 
         canvas.width = Math.floor(viewport.width);
@@ -264,7 +264,7 @@ export function InternalPdfViewer({
   return (
     <div className="internal-doc-viewer" onMouseUp={handleSelection} ref={containerRef}>
       {loading ? <div className="document-preview-banner">Renderizando PDF para estudo interno...</div> : null}
-      {searchLoading ? <div className="document-preview-banner">Pesquisando em todas as paginas do PDF...</div> : null}
+      {searchLoading ? <div className="document-preview-banner">Pesquisando em todas as páginas do PDF...</div> : null}
       {searchError && globalSearchTerm === normalizedSearchTerm ? (
         <div className="document-preview-banner document-preview-banner--error">{searchError}</div>
       ) : null}
@@ -343,7 +343,7 @@ export function InternalDocxViewer({
         const mammothModule = await import("mammoth");
         const mammothLib = mammothModule.default;
         const response = await fetch(resource.url);
-        if (!response.ok) throw new Error("Nao foi possivel carregar o DOCX para estudo interno.");
+        if (!response.ok) throw new Error("Não foi possível carregar o DOCX para estudo interno.");
         const arrayBuffer = await response.arrayBuffer();
         const result = await mammothLib.convertToHtml(
           { arrayBuffer },

@@ -34,7 +34,7 @@ export function toReportFileName(title: string) {
 }
 
 export function formatResponsaveis(responsaveis: string[], profiles: Array<{ email: string; nome: string }> = teamMembers) {
-  if (!responsaveis.length) return "Sem usuarios marcados";
+  if (!responsaveis.length) return "Sem usuários marcados";
   return responsaveis
     .map((emailOrName) => profiles.find((member) => member.email === emailOrName)?.nome || emailOrName)
     .join(", ");
@@ -125,7 +125,7 @@ export function confirmDeletion(message: string) {
 export function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   if (error && typeof error === "object" && "message" in error) {
-    return String((error as { message?: unknown }).message || "Nao foi possivel concluir a operacao.");
+    return String((error as { message?: unknown }).message || "Não foi possível concluir a operação.");
   }
-  return "Nao foi possivel concluir a operacao.";
+  return "Não foi possível concluir a operação.";
 }

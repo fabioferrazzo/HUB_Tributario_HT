@@ -184,7 +184,7 @@ export function getProcessingBadge(resource: FileResource) {
     none: "",
     pending: "OCR/conversao pendente",
     processing: "Processando OCR",
-    ready: "Versao pesquisavel pronta",
+    ready: "Versão pesquisável pronta",
     error: "Falha no OCR"
   };
 
@@ -219,10 +219,10 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       title: resource.titulo,
       notice:
         resource.processingStatus === "ready"
-          ? "Abrindo a versao processada para estudo, com PDF pesquisavel quando o OCR/conversao estiver completo."
+          ? "Abrindo a versão processada para estudo, com PDF pesquisável quando o OCR/conversao estiver completo."
           : query
             ? "Pesquisa aplicada a camada de texto do PDF. Se o arquivo for escaneado ou imagem, use OCR para permitir busca/grifo."
-            : "PDF renderizado internamente com PDF.js para permitir selecao de texto e grifo visual quando houver camada de texto."
+            : "PDF renderizado internamente com PDF.js para permitir seleção de texto e grifo visual quando houver camada de texto."
     };
   }
 
@@ -233,7 +233,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       title: resource.titulo,
       notice: query
         ? "Pesquisa aplicada ao DOCX convertido internamente. Selecione um trecho do texto para salvar como grifo."
-        : "DOCX convertido internamente para permitir selecao de texto e grifo visual no conteudo renderizado."
+        : "DOCX convertido internamente para permitir seleção de texto e grifo visual no conteúdo renderizado."
     };
   }
 
@@ -243,7 +243,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       mode: "iframe",
       src: googleDrivePreview,
       title: resource.titulo,
-      notice: "Google Drive pode exigir permissao de acesso. Busca e selecao de texto dependem do preview do Google."
+      notice: "Google Drive pode exigir permissão de acesso. Busca e seleção de texto dependem do preview do Google."
     };
   }
 
@@ -263,8 +263,8 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       title: resource.titulo,
       notice:
         OCR_ENABLED && (resource.processingStatus === "pending" || resource.processingStatus === "processing")
-          ? "Arquivo aguardando conversao/OCR para PDF pesquisavel. Enquanto isso, o preview usa Office externo e nao permite busca/grifo interno."
-          : "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Busca, selecao e grifo direto dependem desse preview externo."
+          ? "Arquivo aguardando conversão/OCR para PDF pesquisável. Enquanto isso, o preview usa Office externo e não permite busca/grifo interno."
+          : "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Busca, seleção e grifo direto dependem desse preview externo."
     };
   }
 
@@ -273,7 +273,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       mode: "iframe",
       src: resource.url,
       title: resource.titulo,
-      notice: "Alguns sites bloqueiam visualizacao embutida por seguranca. Busca e selecao podem nao funcionar dentro do painel."
+      notice: "Alguns sites bloqueiam visualização embutida por seguranca. Busca e seleção podem não funcionar dentro do painel."
     };
   }
 
@@ -471,7 +471,7 @@ export function buildViewerNotesMarkdown(resource: FileResource, notes: FileView
   });
 
   const lines = [
-    `# Anotacoes - ${resource.titulo}`,
+    `# Anotações - ${resource.titulo}`,
     "",
     `- Arquivo: ${resource.fileName || resource.titulo}`,
     `- Categoria: ${formatFileCategory(resource.categoria)}`,
@@ -483,11 +483,11 @@ export function buildViewerNotesMarkdown(resource: FileResource, notes: FileView
   ];
 
   if (!sortedNotes.length) {
-    lines.push("Nenhuma anotacao registrada.");
+    lines.push("Nenhuma anotação registrada.");
   }
 
   sortedNotes.forEach((note) => {
-    lines.push(`### ${formatViewerNoteKind(note.kind)} - pagina ${note.page}`);
+    lines.push(`### ${formatViewerNoteKind(note.kind)} - página ${note.page}`);
     lines.push("");
     lines.push(`- Autor: ${note.userEmail || note.createdBy}`);
     lines.push(`- Criado em: ${formatDateTime(note.createdAt)}`);

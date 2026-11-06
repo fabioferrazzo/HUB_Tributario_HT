@@ -24,7 +24,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
   const [role, setRole] = useState<UserRole>("colaborador");
   const [active, setActive] = useState(true);
   const [coordHealth, setCoordHealth] = useState<CoordSyncHealth>({
-    status: "Nao consultado",
+    status: "Não consultado",
     detail: "A sincronização da Coordenação será conferida neste painel.",
     tone: "info"
   });
@@ -82,7 +82,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
       try {
         const token = await getSupabaseAccessToken();
         if (!token) {
-          throw new Error("Sessao Supabase nao disponivel para consultar coord-data.");
+          throw new Error("Sessão Supabase não disponível para consultar coord-data.");
         }
 
         const response = await fetch("/.netlify/functions/coord-data", {
@@ -91,7 +91,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(data.error || response.statusText || "Function coord-data indisponivel.");
+          throw new Error(data.error || response.statusText || "Function coord-data indisponível.");
         }
 
         if (!mounted) return;
@@ -108,7 +108,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
         if (!mounted) return;
         setCoordHealth({
           status: "Aguardando deploy",
-          detail: `${getErrorMessage(healthError)} Execute o proximo deploy de marco para publicar a Function coord-data.`,
+          detail: `${getErrorMessage(healthError)} Execute o próximo deploy de marco para publicar a Function coord-data.`,
           tone: "info"
         });
       }
@@ -152,7 +152,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
       return;
     }
     if (source === "supabase" && editingKey && temporaryPassword.trim() && temporaryPassword.trim().length < 8) {
-      setError("Informe uma senha provisoria com pelo menos 8 caracteres.");
+      setError("Informe uma senha provisória com pelo menos 8 caracteres.");
       return;
     }
 
@@ -196,7 +196,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
             : `Usuário atualizado. Senha provisória redefinida; o e-mail não foi enviado (${resetResult.emailReason || "envio indisponível"}). Informe a senha ao usuário pessoalmente.`
         );
       } else {
-        setNotice(editingKey ? "Usuario atualizado." : "Usuario salvo.");
+        setNotice(editingKey ? "Usuário atualizado." : "Usuário salvo.");
       }
 
       resetForm();
@@ -209,7 +209,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
 
   async function toggleActive(profile: HubProfile) {
     if (profile.email.toLowerCase() === currentUser.email.toLowerCase() && profile.active) {
-      setError("Nao desative o usuario logado.");
+      setError("Não desative o usuário logado.");
       return;
     }
 
@@ -234,7 +234,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
         <PanelHeader
           title="Usuários e perfis"
           icon={<UserRoundCog size={18} />}
-          action={loading ? "Carregando" : `${source} - ${users.length} usuarios`}
+          action={loading ? "Carregando" : `${source} - ${users.length} usuários`}
         />
 
         {error ? <p className="module-error">{error}</p> : null}
@@ -287,7 +287,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
           <div className="section-title-row">
             <div>
               <span className="panel-chip">Pre-deploy</span>
-              <h3>Saude operacional do HUB</h3>
+              <h3>Saúde operacional do HUB</h3>
             </div>
             <small>{formatDateTime(new Date().toISOString())}</small>
           </div>
@@ -303,7 +303,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
             ))}
           </div>
           <p className="health-footnote">
-            Use este painel como checklist antes de liberar novo deploy. Ele não dispara builds nem consome creditos do Netlify.
+            Use este painel como checklist antes de liberar novo deploy. Ele não dispara builds nem consome créditos do Netlify.
           </p>
         </section>
 
@@ -356,7 +356,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
           ) : null}
           {source === "supabase" && editingKey ? (
             <label>
-              Nova senha provisoria
+              Nova senha provisória
               <input
                 autoComplete="new-password"
                 minLength={8}
@@ -431,7 +431,7 @@ export function OperationalHomologationPanel() {
 
   async function copyChecklistSummary() {
     const lines = [
-      "# Homologacao funcional - HUB Depto Tributario",
+      "# Homologação funcional - HUB Depto Tributário",
       "",
       `Gerado em: ${formatDateTime(new Date().toISOString())}`,
       `Resumo: ${summary.counts.ok}/${summary.total} OK, ${summary.counts.ajustar} ajustar, ${summary.counts.falhou} falhou, ${summary.counts.pendente} pendente.`,
@@ -447,7 +447,7 @@ export function OperationalHomologationPanel() {
       await navigator.clipboard.writeText(lines.join("\n"));
       setNotice("Resumo copiado para a area de transferencia.");
     } catch {
-      setNotice("Nao foi possivel copiar automaticamente. Use o roteiro Markdown como fallback.");
+      setNotice("Não foi possível copiar automaticamente. Use o roteiro Markdown como fallback.");
     }
   }
 
@@ -528,11 +528,11 @@ export function OperationalGuidePanel() {
   const guideText = useMemo(
     () =>
       [
-        "# Guia rapido operacional - HUB Depto Tributario",
+        "# Guia rápido operacional - HUB Depto Tributário",
         "",
-        `Versao esperada: ${APP_RELEASE_LABEL}`,
+        `Versão esperada: ${APP_RELEASE_LABEL}`,
         "",
-        "## Rotina diaria",
+        "## Rotina diária",
         ...dailyOperationalGuide.flatMap((item, index) => [`${index + 1}. ${item.title}`, `   - ${item.detail}`]),
         "",
         "## Rotina semanal",
@@ -553,7 +553,7 @@ export function OperationalGuidePanel() {
       await navigator.clipboard.writeText(guideText);
       setCopyNotice("Guia copiado.");
     } catch {
-      setCopyNotice("Nao foi possivel copiar automaticamente.");
+      setCopyNotice("Não foi possível copiar automaticamente.");
     }
   }
 
@@ -597,7 +597,7 @@ export function OperationalGuidePanel() {
       <div className="operation-card operation-card--compact">
         <strong>Antes de deploy de marco</strong>
         <p>
-          Confirme o checklist funcional, rode <code>npm.cmd run preflight</code>, rode <code>npm.cmd run build</code> e so entao libere os
+          Confirme o checklist funcional, rode <code>npm.cmd run preflight</code>, rode <code>npm.cmd run build</code> e so então libere os
           builds do Netlify para publicar a rodada.
         </p>
       </div>
@@ -614,8 +614,8 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
   const [operationNotice, setOperationNotice] = useState("");
   const [queuePreview, setQueuePreview] = useState<EmailQueuePreviewItem[]>([]);
   const [manualTo, setManualTo] = useState(currentUser.email);
-  const [manualSubject, setManualSubject] = useState("Teste manual - HUB Depto Tributario");
-  const [manualBody, setManualBody] = useState("Mensagem enviada manualmente pelo HUB Depto Tributario.");
+  const [manualSubject, setManualSubject] = useState("Teste manual - HUB Depto Tributário");
+  const [manualBody, setManualBody] = useState("Mensagem enviada manualmente pelo HUB Depto Tributário.");
 
   const activeUsers = useMemo(() => getActiveProfiles(users), [users]);
 
@@ -639,7 +639,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
     }
 
     if (!response.ok) {
-      throw new Error(data.error || response.statusText || "Nao foi possivel executar a operacao.");
+      throw new Error(data.error || response.statusText || "Não foi possível executar a operação.");
     }
 
     return data;
@@ -706,7 +706,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
       if (action === "queue-deadlines") {
         setOperationNotice(`${queued} aviso(s) de vencimento enfileirado(s).`);
       } else if (action === "daily") {
-        setOperationNotice(`Rotina diaria executada: ${queued} aviso(s) enfileirado(s) e ${processed} e-mail(s) processado(s).`);
+        setOperationNotice(`Rotina diária executada: ${queued} aviso(s) enfileirado(s) e ${processed} e-mail(s) processado(s).`);
       } else {
         setOperationNotice(`${processed} e-mail(s) processado(s).`);
       }
@@ -720,7 +720,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
   async function sendManualEmail(event: FormEvent) {
     event.preventDefault();
     if (!manualTo.trim() || !manualSubject.trim() || !manualBody.trim()) {
-      setOperationError("Destinatario, assunto e mensagem sao obrigatorios.");
+      setOperationError("Destinatario, assunto e mensagem são obrigatorios.");
       return;
     }
 

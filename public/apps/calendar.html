@@ -264,7 +264,7 @@ function normalizeHubSyncedEvent(raw){
   })):[];
   return {
     id:String(raw?.id||uid()),
-    title:String(raw?.title||"Sem titulo"),
+    title:String(raw?.title||"Sem título"),
     date:String(raw?.date||new Date().toISOString()),
     description:String(raw?.description||""),
     category:String(raw?.category||"personal"),
@@ -406,7 +406,7 @@ function renderDayPanel(){
   document.getElementById("day-panel-title").textContent=selDate.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
   const container=document.getElementById("day-events");container.innerHTML="";
   const evs=getSelEvs();
-  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa neste dia. Use duplo clique no calendario ou + Nova tarefa na sidebar.</div>';return;}
+  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa neste dia. Use duplo clique no calendário ou + Nova tarefa na sidebar.</div>';return;}
   evs.forEach(ev=>container.appendChild(makeEvCard(ev,false)));
 }
 

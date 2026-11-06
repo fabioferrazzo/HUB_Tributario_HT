@@ -192,7 +192,7 @@ export async function saveAppFileResource(resource: FileResource, user: HubUser,
         mime_type: mimeType,
         size_bytes: sizeBytes,
         processing_status: processingStatus,
-        processing_message: uploadData && processingStatus === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : normalized.processingMessage,
+        processing_message: uploadData && processingStatus === "pending" ? "Aguardando conversão/OCR para versão pesquisável." : normalized.processingMessage,
         processed_file_name: uploadData ? null : normalized.processedFileName || null,
         processed_storage_path: uploadData ? null : normalized.processedStoragePath || null,
         processed_mime_type: uploadData ? null : normalized.processedMimeType || null,
@@ -245,7 +245,7 @@ export async function saveAppFileResource(resource: FileResource, user: HubUser,
     mimeType: file?.type || normalized.mimeType,
     sizeBytes: file?.size || normalized.sizeBytes,
     processingStatus: file ? getInitialProcessingStatus(file.name, file.type || "") : normalized.processingStatus,
-    processingMessage: file && getInitialProcessingStatus(file.name, file.type || "") === "pending" ? "Aguardando conversao/OCR para versao pesquisavel." : normalized.processingMessage,
+    processingMessage: file && getInitialProcessingStatus(file.name, file.type || "") === "pending" ? "Aguardando conversão/OCR para versão pesquisável." : normalized.processingMessage,
     updatedAt: new Date().toISOString()
   });
   const resources = readStorage<FileResource[]>(RESOURCES_STORAGE_KEY, []).map(normalizeResource);
@@ -338,7 +338,7 @@ export async function deleteAppFileAnnotation(note: FileViewerNote, user: HubUse
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;
@@ -349,7 +349,7 @@ async function getCurrentAuthUserId() {
   const { data, error } = await client.auth.getUser();
 
   if (error || !data.user?.id) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   return data.user.id;
@@ -456,7 +456,7 @@ function normalizeResource(value: Partial<FileResource>): FileResource {
   const now = new Date().toISOString();
   return {
     id: value.id || crypto.randomUUID(),
-    titulo: value.titulo?.trim() || value.fileName || "Arquivo sem titulo",
+    titulo: value.titulo?.trim() || value.fileName || "Arquivo sem título",
     descricao: value.descricao || "",
     url: value.url || "",
     categoria: value.categoria || "outro",

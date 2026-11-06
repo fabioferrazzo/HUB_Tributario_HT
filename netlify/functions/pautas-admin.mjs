@@ -9,7 +9,7 @@ const SCOPES = new Set(["todos", "usuarios"]);
 
 export default async function handler(request) {
   if (request.method !== "POST") {
-    return json(405, { error: "Metodo nao permitido." });
+    return json(405, { error: "Metodo não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -17,12 +17,12 @@ export default async function handler(request) {
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+    return json(500, { error: "Variáveis Supabase ausentes no servidor." });
   }
 
   const token = readBearerToken(request.headers.get("authorization"));
   if (!token) {
-    return json(401, { error: "Sessao nao informada." });
+    return json(401, { error: "Sessão não informada." });
   }
 
   const payload = await parseBody(request);
@@ -35,13 +35,13 @@ export default async function handler(request) {
 
     if (action === "delete") {
       const pautaId = String(payload.value.id || "").trim();
-      if (!pautaId) return json(400, { error: "ID da pauta nao informado." });
+      if (!pautaId) return json(400, { error: "ID da pauta não informado." });
       await deletePauta(supabaseUrl, serviceRoleKey, pautaId);
       return json(200, { ok: true, id: pautaId });
     }
 
     if (action !== "upsert") {
-      return json(400, { error: "Acao invalida." });
+      return json(400, { error: "Ação inválida." });
     }
 
     const pauta = normalizePautaPayload(payload.value.pauta, callerProfile);
@@ -64,7 +64,7 @@ async function verifySession(supabaseUrl, anonKey, token) {
   });
 
   if (!user?.id || !user?.email) {
-    throw httpError(401, "Sessao invalida.");
+    throw httpError(401, "Sessão inválida.");
   }
 
   return { id: user.id, email: String(user.email).toLowerCase() };
@@ -113,7 +113,7 @@ function normalizePautaPayload(raw, callerProfile) {
     : [];
 
   if (!titulo) {
-    throw httpError(400, "Titulo da pauta e obrigatorio.");
+    throw httpError(400, "Título da pauta e obrigatório.");
   }
 
   return {
@@ -245,7 +245,7 @@ async function parseBody(request) {
   try {
     return { ok: true, value: await request.json() };
   } catch {
-    return { ok: false, error: "JSON invalido." };
+    return { ok: false, error: "JSON inválido." };
   }
 }
 
@@ -275,5 +275,5 @@ function httpError(statusCode, message, detail = "") {
 }
 
 function toPublicMessage(error) {
-  return error?.message || "Nao foi possivel gerenciar a pauta.";
+  return error?.message || "Não foi possível gerenciar a pauta.";
 }

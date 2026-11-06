@@ -21,4 +21,5 @@ npm.cmd run test:e2e
 | arquivos-envio | Envio de arquivos digitalizados sem OCR, download e exclusão |
 | pomodoro | Notificação de fim de ciclo |
 | varredura | Abre todas as seções e acusa erros de página |
+| apps-internos | Agenda, Coordenação, Pomodoro e Calendário abrem sem erro e sem mojibake |
 | contraste | Relatório de contraste de textos |

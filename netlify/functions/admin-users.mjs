@@ -9,7 +9,7 @@ const ROLES = new Set(["admin", "gestor", "colaborador"]);
 
 export default async function handler(request) {
   if (request.method !== "POST") {
-    return json(405, { error: "Metodo nao permitido." });
+    return json(405, { error: "Metodo não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -17,12 +17,12 @@ export default async function handler(request) {
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+    return json(500, { error: "Variáveis Supabase ausentes no servidor." });
   }
 
   const token = readBearerToken(request.headers.get("authorization"));
   if (!token) {
-    return json(401, { error: "Sessao nao informada." });
+    return json(401, { error: "Sessão não informada." });
   }
 
   const payload = await parseBody(request);
@@ -34,11 +34,11 @@ export default async function handler(request) {
   const action = String(body.action || "upsert-user");
 
   if (!profile.email || !profile.nome) {
-    return json(400, { error: "Nome e e-mail sao obrigatorios." });
+    return json(400, { error: "Nome e e-mail são obrigatorios." });
   }
 
   if (!ROLES.has(profile.role)) {
-    return json(400, { error: "Perfil invalido." });
+    return json(400, { error: "Perfil inválido." });
   }
 
   if ((action === "reset-password" || body.createAuthUser !== false) && password.length < 8) {
@@ -51,7 +51,7 @@ export default async function handler(request) {
 
     if (action === "reset-password") {
       if (!profile.id) {
-        return json(400, { error: "ID Auth Supabase nao informado para redefinir senha." });
+        return json(400, { error: "ID Auth Supabase não informado para redefinir senha." });
       }
 
       // Somente o admin define senhas: o banco so aceita a troca com esta autorizacao
@@ -75,7 +75,7 @@ export default async function handler(request) {
     }
 
     if (!userId) {
-      return json(400, { error: "ID do usuario Auth nao encontrado." });
+      return json(400, { error: "ID do usuário Auth não encontrado." });
     }
 
     const savedProfile = await upsertProfile(supabaseUrl, serviceRoleKey, {
@@ -102,7 +102,7 @@ async function verifySession(supabaseUrl, anonKey, token) {
   });
 
   if (!user?.id) {
-    throw httpError(401, "Sessao invalida.");
+    throw httpError(401, "Sessão inválida.");
   }
 
   return user;
@@ -119,7 +119,7 @@ async function assertAdminCaller(supabaseUrl, serviceRoleKey, userId) {
   const caller = Array.isArray(rows) ? rows[0] : null;
 
   if (!caller?.active || caller.role !== "admin") {
-    throw httpError(403, "Apenas administradores podem criar usuarios.");
+    throw httpError(403, "Apenas administradores podem criar usuários.");
   }
 }
 
@@ -169,7 +169,7 @@ async function authorizePasswordChange(supabaseUrl, serviceRoleKey, userId, admi
     });
   } catch (error) {
     console.error("Falha ao autorizar troca de senha.", error?.message || error);
-    throw httpError(500, "Nao foi possivel autorizar a troca de senha. Verifique se o patch_senhas_somente_admin.sql foi aplicado no Supabase.");
+    throw httpError(500, "Não foi possível autorizar a troca de senha. Verifique se o patch_senhas_somente_admin.sql foi aplicado no Supabase.");
   }
 }
 
@@ -180,7 +180,7 @@ async function revokePasswordAuthorization(supabaseUrl, serviceRoleKey, userId) 
       headers: { ...serviceHeaders(serviceRoleKey), prefer: "return=minimal" }
     });
   } catch (error) {
-    console.warn("Nao foi possivel remover a autorizacao de senha.", error?.message || error);
+    console.warn("Não foi possível remover a autorizacao de senha.", error?.message || error);
   }
 }
 
@@ -189,17 +189,17 @@ async function revokePasswordAuthorization(supabaseUrl, serviceRoleKey, userId) 
 // Motivo: a fila pode ser consultada por gestores e o envio pode estar desligado.
 async function sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy) {
   const appUrl = getAppBaseUrl();
-  const subject = "Senha provisoria do HUB Depto Tributario";
+  const subject = "Senha provisória do HUB Depto Tributário";
   const dedupeKey = `password_reset:${profile.id}:${Date.now()}`;
   const htmlBody = (secret) =>
-    "<p>Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.</p>" +
+    "<p>Uma senha provisória foi gerada para seu acesso ao HUB Depto Tributário.</p>" +
     `<p><strong>E-mail:</strong> ${escapeHtml(profile.email)}</p>` +
-    `<p><strong>Senha provisoria:</strong> ${escapeHtml(secret)}</p>` +
+    `<p><strong>Senha provisória:</strong> ${escapeHtml(secret)}</p>` +
     `<p>Acesse: <a href="${escapeHtml(appUrl)}">${escapeHtml(appUrl)}</a></p>`;
   const textBody = (secret) =>
-    "Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.\n" +
+    "Uma senha provisória foi gerada para seu acesso ao HUB Depto Tributário.\n" +
     `E-mail: ${profile.email}\n` +
-    `Senha provisoria: ${secret}\n` +
+    `Senha provisória: ${secret}\n` +
     `Acesse: ${appUrl}`;
 
   let result = { emailSent: false, emailReason: "envio de e-mails desativado no Netlify (EMAIL_DELIVERY_ENABLED)" };
@@ -253,7 +253,7 @@ async function sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, pass
       });
     }
   } catch (error) {
-    console.warn("Nao foi possivel registrar o envio da senha provisoria.", error?.message || error);
+    console.warn("Não foi possível registrar o envio da senha provisória.", error?.message || error);
   }
 
   return result;
@@ -316,7 +316,7 @@ async function parseBody(request) {
   try {
     return { ok: true, value: await request.json() };
   } catch {
-    return { ok: false, error: "JSON invalido." };
+    return { ok: false, error: "JSON inválido." };
   }
 }
 
@@ -368,10 +368,10 @@ function httpError(statusCode, message) {
 }
 
 function toPublicMessage(error) {
-  const message = error?.message || "Nao foi possivel criar o usuario.";
+  const message = error?.message || "Não foi possível criar o usuário.";
 
   if (/already registered|already exists|duplicate/i.test(message)) {
-    return "Este e-mail ja possui usuario no Supabase Auth.";
+    return "Este e-mail já possui usuário no Supabase Auth.";
   }
 
   return message;

@@ -785,11 +785,11 @@
       <div class="title-block">
         <div class="title-mark">CT</div>
         <div>
-          <h1>Coordenacao Tributaria</h1>
-          <p class="subtitle">Resumo, lembretes de avaliacao e pautas do setor. <span id="syncStatus" class="sync-pill">local</span></p>
+          <h1>Coordenação Tributária</h1>
+          <p class="subtitle">Resumo, lembretes de avaliação e pautas do setor. <span id="syncStatus" class="sync-pill">local</span></p>
         </div>
       </div>
-      <div class="top-controls" aria-label="Filtros e acoes">
+      <div class="top-controls" aria-label="Filtros e ações">
         <label>
           Buscar
           <input id="searchInput" placeholder="Buscar lembrete, pauta ou colaborador" />
@@ -801,17 +801,17 @@
         <div class="top-actions">
           <button type="button" id="addReminderButton" class="primary">+ Lembrete</button>
           <button type="button" id="addPautaButton">+ Pauta</button>
-          <button type="button" id="historyButton">Historico</button>
-          <button type="button" id="reportButton">Relatorio</button>
+          <button type="button" id="historyButton">Histórico</button>
+          <button type="button" id="reportButton">Relatório</button>
         </div>
       </div>
     </header>
 
     <nav class="tabs" aria-label="Navegacao">
       <button class="tab-button active" type="button" data-tab="resumo">Resumo geral</button>
-      <button class="tab-button" type="button" data-tab="colaboradores">Lembretes avaliacao</button>
+      <button class="tab-button" type="button" data-tab="colaboradores">Lembretes avaliação</button>
       <button class="tab-button" type="button" data-tab="atividades">Itens de pauta e lembretes</button>
-      <button class="tab-button" type="button" data-tab="relatorios">Relatorios e e-mails</button>
+      <button class="tab-button" type="button" data-tab="relatorios">Relatórios e e-mails</button>
     </nav>
 
     <main class="workspace">
@@ -822,7 +822,7 @@
         <div class="board-grid">
           <section class="panel">
             <div class="panel-header">
-              <h2><span class="priority-dot priority-baixa"></span> Lembretes Avaliacao Colaboradores</h2>
+              <h2><span class="priority-dot priority-baixa"></span> Lembretes Avaliação Colaboradores</h2>
               <button type="button" class="ghost" data-toggle-drawer="colaborador">Expandir</button>
             </div>
             <div class="panel-body">
@@ -863,7 +863,7 @@
                 <input type="hidden" id="collabId" />
                 <label>Nome<input id="collabName" required /></label>
                 <label>E-mail<input id="collabEmail" type="email" required /></label>
-                <label>Funcao<input id="collabRole" placeholder="Ex.: Fiscal, assistente, coordenador" /></label>
+                <label>Função<input id="collabRole" placeholder="Ex.: Fiscal, assistente, coordenador" /></label>
                 <button class="primary" type="submit">Salvar colaborador</button>
                 <button type="button" id="resetCollabForm">Limpar formulario</button>
               </form>
@@ -885,13 +885,13 @@
           </section>
           <aside class="panel">
             <div class="panel-header">
-              <h2>Acoes rapidas</h2>
+              <h2>Ações rapidas</h2>
             </div>
             <div class="panel-body">
               <button type="button" class="primary" id="quickAddReminder">+ Lembrete</button>
               <button type="button" id="quickAddPauta">+ Pauta</button>
-              <button type="button" id="quickHistory">Historico</button>
-              <button type="button" id="quickReport">Relatorio</button>
+              <button type="button" id="quickHistory">Histórico</button>
+              <button type="button" id="quickReport">Relatório</button>
               <p class="subtitle">Use os filtros superiores para localizar por texto ou colaborador.</p>
             </div>
           </aside>
@@ -902,7 +902,7 @@
         <div class="report-layout">
           <section class="panel">
             <div class="panel-header">
-              <h2>Relatorio atual</h2>
+              <h2>Relatório atual</h2>
               <button type="button" id="printReport">Imprimir</button>
             </div>
             <div class="panel-body">
@@ -916,16 +916,16 @@
             <div class="panel-body">
               <form id="emailForm" class="stack-form">
                 <label>Destinatario<input id="emailTo" type="email" required /></label>
-                <label>Token de envio opcional<input id="emailToken" type="password" placeholder="EMAIL_DISPATCH_TOKEN, se nao houver sessao" /></label>
+                <label>Token de envio opcional<input id="emailToken" type="password" placeholder="EMAIL_DISPATCH_TOKEN, se não houver sessão" /></label>
                 <button type="button" class="primary" id="sendAgendaEmail">Enviar pauta por e-mail</button>
-                <button type="button" id="sendEvaluationEmail">Enviar avaliacoes por e-mail</button>
+                <button type="button" id="sendEvaluationEmail">Enviar avaliações por e-mail</button>
               </form>
-              <p class="subtitle">O envio usa a sessao do HUB quando disponivel. O token fica apenas como contingencia operacional.</p>
+              <p class="subtitle">O envio usa a sessão do HUB quando disponível. O token fica apenas como contingencia operacional.</p>
             </div>
           </aside>
           <section class="panel bonus-panel">
             <div class="panel-header">
-              <h2>Template - bonificacao</h2>
+              <h2>Template - bonificação</h2>
               <span class="sync-pill">XLSX</span>
             </div>
             <div class="panel-body">
@@ -934,16 +934,16 @@
                   Upload XLSX do colaborador
                   <input id="bonusTemplateFile" type="file" accept=".xlsx,.xls" />
                 </label>
-                <button type="button" class="primary" id="bonusFillButton">Preencher avaliacoes</button>
+                <button type="button" class="primary" id="bonusFillButton">Preencher avaliações</button>
                 <button type="button" id="bonusExportButton">Exportar XLSX</button>
                 <button type="button" id="bonusClearButton">Limpar</button>
               </div>
               <div class="bonus-meta">
                 <label>Colaborador<input id="bonusCollaborator" placeholder="Nome do colaborador" /></label>
-                <label>Periodo<input id="bonusPeriod" placeholder="Ex.: Junho/2026" /></label>
-                <label class="wide">Recomendacoes<textarea id="bonusRecommendations" placeholder="Recomendacoes, observacoes e pontos de acompanhamento."></textarea></label>
+                <label>Período<input id="bonusPeriod" placeholder="Ex.: Junho/2026" /></label>
+                <label class="wide">Recomendações<textarea id="bonusRecommendations" placeholder="Recomendações, observações e pontos de acompanhamento."></textarea></label>
               </div>
-              <p id="bonusTemplateNotice" class="subtitle">Envie um XLSX para abrir um espelho editavel ou use Preencher avaliacoes para criar uma base.</p>
+              <p id="bonusTemplateNotice" class="subtitle">Envie um XLSX para abrir um espelho editavel ou use Preencher avaliações para criar uma base.</p>
               <div id="bonusTableWrap" class="bonus-table-wrap"></div>
             </div>
           </section>
@@ -962,7 +962,7 @@
         <form id="reminderForm" class="stack-form">
           <input type="hidden" id="reminderId" />
           <div class="form-grid">
-            <label class="wide">Titulo<input id="reminderTitle" required /></label>
+            <label class="wide">Título<input id="reminderTitle" required /></label>
             <label>Tipo
               <select id="reminderType">
                 <option value="colaborador">Lembrete colaborador</option>
@@ -986,10 +986,10 @@
                 <option value="monthly">Mensal</option>
               </select>
             </label>
-            <label class="wide">Descricao<textarea id="reminderDescription" placeholder="Contexto da atividade, pauta ou lembrete."></textarea></label>
+            <label class="wide">Descrição<textarea id="reminderDescription" placeholder="Contexto da atividade, pauta ou lembrete."></textarea></label>
             <label class="wide inline-check">
               <input id="reminderCalendarSync" type="checkbox" />
-              Integrar/repetir no Calendario de Tarefas
+              Integrar/repetir no Calendário de Tarefas
             </label>
             <label class="wide">Anexos<input id="reminderAttachments" type="file" multiple /></label>
             <div id="reminderAttachmentList" class="attachment-list wide">Nenhum anexo salvo.</div>
@@ -1003,7 +1003,7 @@
   <div id="historyModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
     <section class="modal">
       <div class="modal-header">
-        <h2 id="historyModalTitle">Historico dos ultimos 30 dias</h2>
+        <h2 id="historyModalTitle">Histórico dos últimos 30 dias</h2>
         <button type="button" data-close-modal>Fechar</button>
       </div>
       <div class="modal-content">
@@ -1028,8 +1028,8 @@
         reminders: [
           {
             id: cryptoId(),
-            title: "Revisar pautas da reuniao semanal",
-            description: "Conferir pendencias, responsaveis e proximos prazos antes da reuniao.",
+            title: "Revisar pautas da reunião semanal",
+            description: "Conferir pendências, responsáveis e próximos prazos antes da reunião.",
             type: "coordenacao",
             collaboratorId: "",
             due: addDaysInput(1, 9, 0),
@@ -1044,7 +1044,7 @@
           {
             id: cryptoId(),
             title: "Acompanhar retorno dos colaboradores",
-            description: "Registrar dificuldades e necessidade de apoio em tarefas do periodo.",
+            description: "Registrar dificuldades e necessidade de apoio em tarefas do período.",
             type: "colaborador",
             collaboratorId: "equipe",
             due: addDaysInput(2, 16, 0),
@@ -1158,7 +1158,7 @@
         } catch (error) {
           syncState.remoteReady = false;
           setSyncStatus("local", "error");
-          console.warn("Coordenacao em modo local.", error?.message || error);
+          console.warn("Coordenação em modo local.", error?.message || error);
         }
       }
 
@@ -1237,7 +1237,7 @@
         } catch (error) {
           syncState.remoteReady = false;
           setSyncStatus("local", "error");
-          console.warn("Nao foi possivel salvar a Coordenacao no Supabase.", error?.message || error);
+          console.warn("Não foi possível salvar a Coordenação no Supabase.", error?.message || error);
         } finally {
           syncState.saving = false;
         }
@@ -1317,7 +1317,7 @@
         const reminderOptions = activeCollaborators()
           .map((item) => `<option value="${item.id}">${escapeHtml(item.name)}</option>`)
           .join("");
-        refs.reminderCollaborator.innerHTML = `<option value="">Sem colaborador especifico</option>${reminderOptions}`;
+        refs.reminderCollaborator.innerHTML = `<option value="">Sem colaborador específico</option>${reminderOptions}`;
       }
 
       function renderSummary() {
@@ -1329,7 +1329,7 @@
           metric("Abertos", open.length),
           metric("Atrasados", overdue.length),
           metric("Hoje", today.length),
-          metric("Lembretes avaliacao", activeCollaborators().length)
+          metric("Lembretes avaliação", activeCollaborators().length)
         ].join("");
       }
 
@@ -1347,7 +1347,7 @@
         const mainItems = items.filter((item) => item.pinned !== "hidden").slice(0, 6);
         const overflow = items.filter((item) => !mainItems.includes(item)).slice(0, 4);
 
-        mainElement.innerHTML = mainItems.length ? mainItems.map((item) => renderReminderCard(item, false)).join("") : empty("Nenhum lembrete visivel.");
+        mainElement.innerHTML = mainItems.length ? mainItems.map((item) => renderReminderCard(item, false)).join("") : empty("Nenhum lembrete visível.");
         drawerElement.className = `drawer ${drawers[type] ? "open" : ""}`;
         drawerElement.innerHTML = overflow.length ? overflow.map((item) => renderReminderCard(item, true)).join("") : empty("Sem itens extras.");
       }
@@ -1370,7 +1370,7 @@
               <div class="reminder-title">${escapeHtml(item.title)}</div>
               <div class="reminder-tags"><span class="chip">${escapeHtml(itemTypeLabel(item.type))}</span>${attachments.length ? `<span class="chip">${attachments.length} anexo(s)</span>` : ""}</div>
               <div class="reminder-meta">${escapeHtml(meta)}</div>
-              ${compact ? "" : `<div class="reminder-description">${escapeHtml(item.description || "Sem descricao")}</div>`}
+              ${compact ? "" : `<div class="reminder-description">${escapeHtml(item.description || "Sem descrição")}</div>`}
               ${compact || !attachments.length ? "" : renderAttachmentPills(item)}
             </div>
             <div class="date-badge"><small><span class="date-icon" aria-hidden="true">&#128197;</span>${escapeHtml(month)}</small><strong>${day}</strong></div>
@@ -1403,7 +1403,7 @@
       function itemTypeLabel(type) {
         if (type === "pauta") return "Item de pauta";
         if (type === "coordenacao") return "Item de pauta";
-        return "Lembrete avaliacao";
+        return "Lembrete avaliação";
       }
 
       function itemCreateLabel(type) {
@@ -1429,7 +1429,7 @@
             <div>
               <strong>${escapeHtml(collaborator.name)}</strong>
               <p class="reminder-meta">${escapeHtml(collaborator.email)}</p>
-              <p class="reminder-meta">${escapeHtml(collaborator.role || "Sem funcao")} - ${items.length} lembrete(s) aberto(s)</p>
+              <p class="reminder-meta">${escapeHtml(collaborator.role || "Sem função")} - ${items.length} lembrete(s) aberto(s)</p>
             </div>
             <div class="reminder-actions">
               <button type="button" data-action="quick-collab-reminder" data-id="${collaborator.id}">Lembrete</button>
@@ -1455,12 +1455,12 @@
         const open = items.filter((item) => item.status !== "concluido");
         const done = items.filter((item) => item.status === "concluido");
         const lines = [
-          "Relatorio de Coordenacao Tributaria",
+          "Relatório de Coordenação Tributária",
           `Gerado em: ${new Date().toLocaleString("pt-BR")}`,
           "",
           `Total filtrado: ${items.length}`,
           `Abertos: ${open.length}`,
-          `Concluidos: ${done.length}`,
+          `Concluídos: ${done.length}`,
           `Colaboradores ativos: ${activeCollaborators().length}`,
           "",
           "Itens:"
@@ -1471,11 +1471,11 @@
           lines.push(
             `${index + 1}. ${item.title}`,
             `   Tipo: ${itemTypeLabel(item.type)}`,
-            `   Responsavel: ${collaborator?.name || "Sem colaborador especifico"}`,
+            `   Responsável: ${collaborator?.name || "Sem colaborador específico"}`,
             `   Prazo: ${formatDateTime(item.due)}`,
             `   Prioridade: ${item.priority}`,
             `   Status: ${item.status}`,
-            `   Descricao: ${item.description || "Sem descricao"}`,
+            `   Descrição: ${item.description || "Sem descrição"}`,
             `   Anexos: ${(item.attachments || []).map((attachment) => attachment.name).join(", ") || "Nenhum"}`,
             ""
           );
@@ -1489,7 +1489,7 @@
         const rowCount = bonusTemplate.rows.length;
         refs.bonusTemplateNotice.textContent = rowCount
           ? `${bonusTemplate.fileName || "Template"} - ${bonusTemplate.sheetName || "Planilha"} - ${rowCount} linha(s) editaveis.`
-          : "Envie um XLSX para abrir um espelho editavel ou use Preencher avaliacoes para criar uma base.";
+          : "Envie um XLSX para abrir um espelho editavel ou use Preencher avaliações para criar uma base.";
 
         if (!rowCount) {
           refs.bonusTableWrap.innerHTML = empty("Nenhum template carregado.");
@@ -1532,7 +1532,7 @@
       async function handleBonusTemplateUpload(event) {
         const file = event.target.files?.[0];
         if (!file) return;
-        if (!window.XLSX) return showNotice("Biblioteca XLSX nao carregada. Verifique a conexao e tente novamente.", true);
+        if (!window.XLSX) return showNotice("Biblioteca XLSX não carregada. Verifique a conexão e tente novamente.", true);
         try {
           const buffer = await file.arrayBuffer();
           const workbook = window.XLSX.read(buffer, { type: "array", cellDates: true });
@@ -1545,9 +1545,9 @@
             rows: normalizeBonusRows(rows)
           };
           renderBonusTemplate();
-          showNotice("Template XLSX carregado para edicao.");
+          showNotice("Template XLSX carregado para edição.");
         } catch (error) {
-          showNotice(error.message || "Nao foi possivel ler o XLSX.", true);
+          showNotice(error.message || "Não foi possível ler o XLSX.", true);
         } finally {
           event.target.value = "";
         }
@@ -1574,13 +1574,13 @@
             fileName: "template-bonificacao.xlsx",
             sheetName: "Avaliacao",
             rows: [
-              ["Template de bonificacao - HUB Depto Tributario"],
+              ["Template de bonificação - HUB Depto Tributário"],
               ["Colaborador", collaborator],
               ["Periodo", period],
               ["Gerado em", new Date().toLocaleString("pt-BR")],
               [],
               ["Criterio", "Nota", "Recomendacao", "Observacao"],
-              ["Qualidade tecnica", "", "", ""],
+              ["Qualidade técnica", "", "", ""],
               ["Prazos e organizacao", "", "", ""],
               ["Comunicacao", "", "", ""],
               ["Proatividade", "", "", ""],
@@ -1590,7 +1590,7 @@
         } else {
           bonusTemplate.rows.push(
             [],
-            ["Avaliacao HUB Depto Tributario"],
+            ["Avaliação HUB Depto Tributário"],
             ["Colaborador", collaborator],
             ["Periodo", period],
             ["Gerado em", new Date().toLocaleString("pt-BR")],
@@ -1598,12 +1598,12 @@
           );
         }
         renderBonusTemplate();
-        showNotice("Campos de avaliacao adicionados ao espelho do template.");
+        showNotice("Campos de avaliação adicionados ao espelho do template.");
       }
 
       function exportBonusTemplate() {
         if (!bonusTemplate.rows.length) return showNotice("Carregue ou preencha um template antes de exportar.", true);
-        if (!window.XLSX) return showNotice("Biblioteca XLSX nao carregada. Verifique a conexao e tente novamente.", true);
+        if (!window.XLSX) return showNotice("Biblioteca XLSX não carregada. Verifique a conexão e tente novamente.", true);
         const worksheet = window.XLSX.utils.aoa_to_sheet(bonusTemplate.rows);
         const workbook = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(workbook, worksheet, "Avaliacao");
@@ -1761,7 +1761,7 @@
                     url: "",
                     createdAt: new Date().toISOString()
                   });
-                reader.onerror = () => reject(new Error(`Nao foi possivel ler o anexo ${file.name}.`));
+                reader.onerror = () => reject(new Error(`Não foi possível ler o anexo ${file.name}.`));
                 reader.readAsDataURL(file);
               })
           )
@@ -1783,7 +1783,7 @@
         try {
           newAttachments = await readSelectedAttachments();
         } catch (error) {
-          return showNotice(error.message || "Nao foi possivel anexar o arquivo.", true);
+          return showNotice(error.message || "Não foi possível anexar o arquivo.", true);
         }
         const patch = {
           id,
@@ -1803,7 +1803,7 @@
           updatedAt: new Date().toISOString()
         };
 
-        if (!patch.title || !patch.due) return showNotice("Informe titulo e prazo.", true);
+        if (!patch.title || !patch.due) return showNotice("Informe título e prazo.", true);
 
         if (previous) {
           Object.assign(previous, patch);
@@ -1854,7 +1854,7 @@
       function deleteReminder(id) {
         const item = state.reminders.find((reminder) => reminder.id === id);
         if (!item) return;
-        if (!window.confirm("Excluir este lembrete? Ele ficara no historico por 30 dias.")) return;
+        if (!window.confirm("Excluir este lembrete? Ele ficara no histórico por 30 dias.")) return;
         item.deletedAt = new Date().toISOString();
         item.status = "concluido";
         saveState();
@@ -1873,7 +1873,7 @@
         const item = state.reminders.find((reminder) => reminder.id === reminderId);
         const attachment = item?.attachments?.find((entry) => entry.id === attachmentId);
         const source = attachment?.dataUrl || attachment?.url || "";
-        if (!source) return showNotice("Anexo indisponivel neste navegador.", true);
+        if (!source) return showNotice("Anexo indisponível neste navegador.", true);
         const win = window.open("", "_blank", "noopener,noreferrer");
         if (!win) return showNotice("Permita pop-ups para abrir anexos.", true);
         win.document.write(`
@@ -1941,7 +1941,7 @@
           })
           .sort((a, b) => new Date(b.updatedAt || b.completedAt).getTime() - new Date(a.updatedAt || a.completedAt).getTime());
 
-        refs.historyList.innerHTML = items.length ? items.map((item) => renderReminderCard(item, false)).join("") : empty("Sem historico nos ultimos 30 dias.");
+        refs.historyList.innerHTML = items.length ? items.map((item) => renderReminderCard(item, false)).join("") : empty("Sem histórico nos últimos 30 dias.");
         refs.historyModal.classList.add("open");
       }
 
@@ -1955,27 +1955,27 @@
         syncState.token = syncState.token || readStoredAuthToken();
         const token = refs.emailToken.value.trim() || sessionStorage.getItem(EMAIL_TOKEN_KEY) || "";
         if (!to) return showNotice("Informe o destinatario do e-mail.", true);
-        if (!token && !syncState.token) return showNotice("Sessao do HUB nao encontrada. Informe o EMAIL_DISPATCH_TOKEN apenas se precisar usar a contingencia.", true);
+        if (!token && !syncState.token) return showNotice("Sessão do HUB não encontrada. Informe o EMAIL_DISPATCH_TOKEN apenas se precisar usar a contingencia.", true);
 
         if (token) sessionStorage.setItem(EMAIL_TOKEN_KEY, token);
         const report = buildReportText();
-        const subject = kind === "pautas" ? "Pautas da Coordenacao Tributaria" : "Avaliacoes da Coordenacao Tributaria";
+        const subject = kind === "pautas" ? "Pautas da Coordenação Tributária" : "Avaliações da Coordenação Tributária";
         const body =
           kind === "pautas"
-            ? `Segue pauta filtrada da Coordenacao Tributaria.\n\n${report}`
-            : `Segue resumo de avaliacoes/acompanhamentos da Coordenacao Tributaria.\n\n${report}`;
+            ? `Segue pauta filtrada da Coordenação Tributária.\n\n${report}`
+            : `Segue resumo de avaliações/acompanhamentos da Coordenação Tributária.\n\n${report}`;
 
         try {
           const response = await fetch(EMAIL_ENDPOINT, {
             method: "POST",
             headers: { "content-type": "application/json", accept: "application/json" },
-            body: JSON.stringify({ to, subject, body, token, authToken: syncState.token, collaboratorName: "Coordenacao Tributaria", periodId: `coord-${new Date().toISOString().slice(0, 10)}` })
+            body: JSON.stringify({ to, subject, body, token, authToken: syncState.token, collaboratorName: "Coordenação Tributária", periodId: `coord-${new Date().toISOString().slice(0, 10)}` })
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || response.statusText);
           showNotice("E-mail enfileirado/enviado pela fila operacional.");
         } catch (error) {
-          showNotice(error.message || "Nao foi possivel enviar o e-mail.", true);
+          showNotice(error.message || "Não foi possível enviar o e-mail.", true);
         }
       }
 

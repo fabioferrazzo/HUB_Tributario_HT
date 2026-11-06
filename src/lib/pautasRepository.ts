@@ -155,11 +155,11 @@ export async function completeAppPauta({
   user: HubUser;
 }) {
   if (!canUserCompletePautaApp(pauta, user)) {
-    throw new Error("Voce nao esta autorizado a concluir esta pauta.");
+    throw new Error("Você não esta autorizado a concluir esta pauta.");
   }
 
   if (hasUserCompletedPauta(pauta, user)) {
-    throw new Error("Esta pauta ja foi concluida por voce.");
+    throw new Error("Esta pauta já foi concluída por você.");
   }
 
   const now = new Date().toISOString();
@@ -301,7 +301,7 @@ async function createPautaAnexoSignedUrls(paths: string[]) {
 
   const { data, error } = await assertSupabase().storage.from(STORAGE_BUCKET).createSignedUrls(unique, SIGNED_URL_TTL_SECONDS);
   if (error) {
-    console.warn("Nao foi possivel gerar os links dos anexos das pautas.", error);
+    console.warn("Não foi possível gerar os links dos anexos das pautas.", error);
     return result;
   }
 
@@ -383,7 +383,7 @@ function normalizePauta(value: Partial<Pauta>): Pauta {
 
   return {
     id: value.id || crypto.randomUUID(),
-    tema: value.tema?.trim() || "Pauta sem titulo",
+    tema: value.tema?.trim() || "Pauta sem título",
     acoes: value.acoes || "",
     prazo: value.prazo || "",
     prioridade: value.prioridade || "normal",
@@ -471,8 +471,8 @@ function seedLocalPautas(): Pauta[] {
   return [
     normalizePauta({
       id: "local-pauta-reuniao",
-      tema: "Revisao de obrigacoes acessorias da semana",
-      acoes: "Conferir pendencias, responsaveis e proximos prazos antes da reuniao.",
+      tema: "Revisão de obrigações acessórias da semana",
+      acoes: "Conferir pendências, responsáveis e próximos prazos antes da reunião.",
       prazo: now,
       prioridade: "alta",
       responsavel: "Equipe Fiscal",
@@ -483,8 +483,8 @@ function seedLocalPautas(): Pauta[] {
     }),
     normalizePauta({
       id: "local-pauta-orientacoes",
-      tema: "Consolidar orientacoes da coordenacao",
-      acoes: "Atualizar orientacoes por responsavel.",
+      tema: "Consolidar orientações da coordenação",
+      acoes: "Atualizar orientações por responsável.",
       prioridade: "normal",
       responsavel: "Todos",
       status: "aberta",
@@ -496,7 +496,7 @@ function seedLocalPautas(): Pauta[] {
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;
@@ -507,7 +507,7 @@ async function getCurrentAuthUserId() {
   const { data, error } = await client.auth.getUser();
 
   if (error || !data.user?.id) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   return data.user.id;
@@ -518,7 +518,7 @@ async function getCurrentAccessToken() {
   const { data, error } = await client.auth.getSession();
 
   if (error || !data.session?.access_token) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   return data.session.access_token;
@@ -550,7 +550,7 @@ async function callPautasAdminFunction<T>(body: unknown): Promise<T> {
             .map(([key, value]) => `${key}: ${String(value)}`)
             .join(", ")})`
         : "";
-    throw new Error(`${data?.error || text || "Nao foi possivel gerenciar a pauta."}${detail}`);
+    throw new Error(`${data?.error || text || "Não foi possível gerenciar a pauta."}${detail}`);
   }
 
   return data as T;

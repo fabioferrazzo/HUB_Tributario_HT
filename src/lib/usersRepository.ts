@@ -31,7 +31,7 @@ const prototypeUsers: HubProfile[] = [
   {
     id: "local-admin",
     email: ADMIN_EMAIL,
-    nome: "Administrador Tributario",
+    nome: "Administrador Tributário",
     iniciais: "AT",
     role: "admin",
     active: true
@@ -39,7 +39,7 @@ const prototypeUsers: HubProfile[] = [
   {
     id: "local-gestor",
     email: "gestor.tributario@hteixeira.local",
-    nome: "Gestor Tributario",
+    nome: "Gestor Tributário",
     iniciais: "GT",
     role: "gestor",
     active: true
@@ -107,7 +107,7 @@ export async function saveAppUserWithOptions(
 
     const client = assertSupabase();
     if (!profile.id) {
-      throw new Error("Informe o ID do usuario criado no Supabase Auth.");
+      throw new Error("Informe o ID do usuário criado no Supabase Auth.");
     }
 
     const { error } = await client.from("profiles").upsert(
@@ -172,7 +172,7 @@ export async function resetAppUserPassword(
   }
 
   if (password.trim().length < 8) {
-    throw new Error("Informe uma senha provisoria com pelo menos 8 caracteres.");
+    throw new Error("Informe uma senha provisória com pelo menos 8 caracteres.");
   }
 
   const client = assertSupabase();
@@ -180,7 +180,7 @@ export async function resetAppUserPassword(
   const token = data.session?.access_token;
 
   if (!token) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   const response = await fetch("/.netlify/functions/admin-users", {
@@ -203,7 +203,7 @@ export async function resetAppUserPassword(
   const payload = (await response.json().catch(() => ({}))) as { error?: string; emailSent?: boolean; emailReason?: string };
 
   if (!response.ok) {
-    throw new Error(payload.error || "Nao foi possivel redefinir a senha do usuario.");
+    throw new Error(payload.error || "Não foi possível redefinir a senha do usuário.");
   }
 
   return { emailSent: Boolean(payload.emailSent), emailReason: payload.emailReason };
@@ -211,7 +211,7 @@ export async function resetAppUserPassword(
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;
@@ -223,7 +223,7 @@ async function createSupabaseAuthUser(profile: HubProfile, password: string) {
   const token = data.session?.access_token;
 
   if (!token) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   const response = await fetch("/.netlify/functions/admin-users", {
@@ -245,7 +245,7 @@ async function createSupabaseAuthUser(profile: HubProfile, password: string) {
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
 
   if (!response.ok) {
-    throw new Error(payload.error || "Nao foi possivel criar o usuario no Supabase Auth.");
+    throw new Error(payload.error || "Não foi possível criar o usuário no Supabase Auth.");
   }
 }
 

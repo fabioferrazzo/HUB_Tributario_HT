@@ -3,8 +3,8 @@ import type { Lembrete, Noticia, Pauta, TeamMember } from "../types";
 export const mockPautas: Pauta[] = [
   {
     id: "pauta-1",
-    tema: "Revisao de obrigacoes acessorias da semana",
-    acoes: "Conferir pendencias da semana",
+    tema: "Revisão de obrigações acessórias da semana",
+    acoes: "Conferir pendências da semana",
     prazo: "2026-05-08",
     prioridade: "Alta",
     responsavel: "Equipe fiscal",
@@ -19,11 +19,11 @@ export const mockPautas: Pauta[] = [
   },
   {
     id: "pauta-2",
-    tema: "Conferencia de atualizacoes SEFAZ/RS",
+    tema: "Conferência de atualizações SEFAZ/RS",
     acoes: "Verificar comunicados recentes",
     prazo: "2026-05-10",
     prioridade: "Normal",
-    responsavel: "Gestao tributaria",
+    responsavel: "Gestao tributária",
     email: "",
     pendenciasObs: "",
     retorno: "",
@@ -35,8 +35,8 @@ export const mockPautas: Pauta[] = [
   },
   {
     id: "pauta-3",
-    tema: "Consolidar orientacoes da coordenacao",
-    acoes: "Atualizar orientacoes por responsavel",
+    tema: "Consolidar orientações da coordenação",
+    acoes: "Atualizar orientações por responsável",
     prazo: "2026-05-13",
     prioridade: "Normal",
     responsavel: "",
@@ -55,7 +55,7 @@ export const mockLembretes: Lembrete[] = [
   {
     id: "lem-1",
     titulo: "Enviar resumo de vencimentos",
-    descricao: "Consolidar pendencias com prazo curto.",
+    descricao: "Consolidar pendências com prazo curto.",
     prazo: "2026-05-08T16:00",
     prioridade: "alta",
     status: "aberto",
@@ -68,8 +68,8 @@ export const mockLembretes: Lembrete[] = [
   },
   {
     id: "lem-2",
-    titulo: "Revisar pauta de reuniao",
-    descricao: "Atualizar itens da coordenacao.",
+    titulo: "Revisar pauta de reunião",
+    descricao: "Atualizar itens da coordenação.",
     prazo: "2026-05-09T10:00",
     prioridade: "normal",
     status: "aberto",
@@ -91,14 +91,14 @@ export const teamMembers: TeamMember[] = [
   { nome: "Carol", email: "fiscal07.hteixeira@gmail.com", iniciais: "CA", role: "colaborador" },
   { nome: "Flavio", email: "fiscal05.hteixeira@gmail.com", iniciais: "FL", role: "colaborador" },
   { nome: "Leticia", email: "fiscal13.hteixeira@gmail.com", iniciais: "LE", role: "colaborador" },
-  { nome: "Gestor Tributario", email: "gestor.tributario@hteixeira.local", iniciais: "GT", role: "gestor" },
+  { nome: "Gestor Tributário", email: "gestor.tributario@hteixeira.local", iniciais: "GT", role: "gestor" },
   { nome: "Colaborador", email: "colaborador@hteixeira.local", iniciais: "CO", role: "colaborador" }
 ];
 
 const legacyMockNoticias: Noticia[] = [
   {
     id: "noticia-1",
-    titulo: "Receita Federal publica nova orientacao tributaria",
+    titulo: "Receita Federal publica nova orientação tributária",
     fonte: "Receita Federal",
     url: "https://www.gov.br/receitafederal/pt-br",
     data: "2026-05-07"
@@ -123,13 +123,13 @@ const legacyMockLegislacoes: Noticia[] = [
   {
     id: "leg-1",
     titulo: "Monitorar publicacoes oficiais relacionadas a IBS, CBS e Comite Gestor",
-    fonte: "Reforma Tributaria",
+    fonte: "Reforma Tributária",
     url: "https://www.gov.br/fazenda/pt-br/acesso-a-informacao/acoes-e-programas/reforma-tributaria",
     data: "2026-05-07"
   },
   {
     id: "leg-2",
-    titulo: "Acompanhar atos normativos no Planalto sobre regulamentacao da Reforma Tributaria",
+    titulo: "Acompanhar atos normativos no Planalto sobre regulamentacao da Reforma Tributária",
     fonte: "Planalto",
     url: "https://www4.planalto.gov.br/legislacao",
     data: "2026-05-07"
@@ -146,7 +146,7 @@ const legacyMockLegislacoes: Noticia[] = [
 export const mockNoticias: Noticia[] = [
   {
     id: "noticia-rfb-curso-rtc",
-    titulo: "Receita Federal e CFC iniciam capacitacao sobre a Reforma Tributaria do Consumo",
+    titulo: "Receita Federal e CFC iniciam capacitacao sobre a Reforma Tributária do Consumo",
     fonte: "Receita Federal",
     url: "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/maio/receita-federal-e-conselho-federal-de-contabilidade-iniciam-capacitacao-inedita-sobre-a-reforma-tributaria-do-consumo",
     data: "2026-05-12",
@@ -155,7 +155,7 @@ export const mockNoticias: Noticia[] = [
   },
   {
     id: "noticia-rfb-programacao-rtc",
-    titulo: "Receita Federal divulga programacao do Curso Reforma Tributaria do Consumo",
+    titulo: "Receita Federal divulga programacao do Curso Reforma Tributária do Consumo",
     fonte: "Receita Federal",
     url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/curso/programacao",
     data: "2026-05-06",
@@ -164,7 +164,7 @@ export const mockNoticias: Noticia[] = [
   },
   {
     id: "noticia-rfb-orientacoes-2026",
-    titulo: "Receita Federal atualiza orientacoes da Reforma Tributaria para 2026",
+    titulo: "Receita Federal atualiza orientações da Reforma Tributária para 2026",
     fonte: "Receita Federal",
     url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/orientacoes-2026",
     data: "2026-05-06",
@@ -177,7 +177,7 @@ export const mockLegislacoes: Noticia[] = [
   {
     id: "leg-portaria-mf-cgibs-7-2026",
     titulo: "Portaria Conjunta MF/CGIBS nº 7, de 30 de abril de 2026",
-    fonte: "Diario Oficial da Uniao",
+    fonte: "Diário Oficial da Uniao",
     url: "https://www.in.gov.br/web/dou/-/portaria-conjunta-mf/cgibs-n-7-de-30-de-abril-de-2026-702822417",
     data: "2026-04-30",
     tipo: "legislacao",

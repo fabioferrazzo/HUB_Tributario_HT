@@ -110,7 +110,7 @@ export async function saveCalendarEventTask(event: unknown, user: HubUser): Prom
     const existingTasks = await loadSupabaseTasks();
     const existing = existingTasks.find((task) => task.id === calendarEvent.id);
     if (existing && !canUserManageTask(existing, user)) {
-      throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+      throw new Error("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
     }
 
     await putCalendarEvent(calendarEvent);
@@ -131,7 +131,7 @@ export async function deleteCalendarEventTask(id: string, user: HubUser): Promis
     const existingTasks = await loadSupabaseTasks();
     const existing = existingTasks.find((task) => task.id === id);
     if (existing && !canUserManageTask(existing, user)) {
-      throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
+      throw new Error("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
     }
 
     const archivedAt = new Date().toISOString();
@@ -158,7 +158,7 @@ export async function saveAppTask({
   const existingTask = current.find((item) => item.id === task.id);
 
   if (existingTask && !canUserManageTask(existingTask, user)) {
-    throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+    throw new Error("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
   }
 
   if (source === "supabase") {
@@ -178,7 +178,7 @@ export async function saveAppTask({
     const events = await readCalendarEvents();
     const existing = events.find((event) => event.id === task.id);
     if (existing && !canUserManageTask(calendarEventToTask(existing), user)) {
-      throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
+      throw new Error("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode altera-la.");
     }
 
     await putCalendarEvent(await taskToCalendarEvent(task, existing, files));
@@ -209,7 +209,7 @@ export async function deleteAppTask({
   const source = getTarefasSource(user);
 
   if (!canUserManageTask(task, user)) {
-    throw new Error("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
+    throw new Error("Você pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
   }
 
   if (source === "supabase") {
@@ -310,7 +310,7 @@ function normalizeCalendarEvent(value: unknown, user: HubUser): CalendarEvent {
 
   return {
     id,
-    title: String(event.title || "Tarefa sem titulo").trim(),
+    title: String(event.title || "Tarefa sem título").trim(),
     date: event.date || now,
     description: event.description || "",
     category: event.category || "work",
@@ -395,7 +395,7 @@ async function mergeCalendarAttachments(task: TaskItem, existing: CalendarEvent 
 function fileToCalendarAttachment(file: File): Promise<CalendarAttachment> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(reader.error || new Error("Nao foi possivel ler o anexo."));
+    reader.onerror = () => reject(reader.error || new Error("Não foi possível ler o anexo."));
     reader.onload = () =>
       resolve({
         name: file.name,
@@ -426,7 +426,7 @@ function canUseCalendarDb() {
 function openCalendarDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (!canUseCalendarDb()) {
-      reject(new Error("IndexedDB indisponivel neste navegador."));
+      reject(new Error("IndexedDB indisponível neste navegador."));
       return;
     }
 
@@ -438,7 +438,7 @@ function openCalendarDb(): Promise<IDBDatabase> {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error("Nao foi possivel abrir o calendario."));
+    request.onerror = () => reject(request.error || new Error("Não foi possível abrir o calendário."));
   });
 }
 
@@ -450,11 +450,11 @@ async function readCalendarEvents(): Promise<CalendarEvent[]> {
     const request = transaction.objectStore(CALENDAR_STORE_NAME).getAll();
 
     request.onsuccess = () => resolve((request.result || []) as CalendarEvent[]);
-    request.onerror = () => reject(request.error || new Error("Nao foi possivel carregar as tarefas."));
+    request.onerror = () => reject(request.error || new Error("Não foi possível carregar as tarefas."));
     transaction.oncomplete = () => db.close();
     transaction.onerror = () => {
       db.close();
-      reject(transaction.error || new Error("Nao foi possivel carregar as tarefas."));
+      reject(transaction.error || new Error("Não foi possível carregar as tarefas."));
     };
   });
 }
@@ -471,7 +471,7 @@ async function putCalendarEvent(event: CalendarEvent): Promise<void> {
     };
     transaction.onerror = () => {
       db.close();
-      reject(transaction.error || new Error("Nao foi possivel salvar a tarefa."));
+      reject(transaction.error || new Error("Não foi possível salvar a tarefa."));
     };
   });
 }
@@ -488,7 +488,7 @@ async function deleteCalendarEvent(id: string): Promise<void> {
     };
     transaction.onerror = () => {
       db.close();
-      reject(transaction.error || new Error("Nao foi possivel excluir a tarefa."));
+      reject(transaction.error || new Error("Não foi possível excluir a tarefa."));
     };
   });
 }
@@ -576,14 +576,14 @@ async function upsertSupabaseTask(task: TaskItem, user: HubUser, options: { isEx
     if (fallback.error) throw fallback.error;
 
     const taskId = typeof fallback.data === "string" && fallback.data ? fallback.data : task.id;
-    if (!taskId) throw new Error("Nao foi possivel identificar a tarefa salva.");
+    if (!taskId) throw new Error("Não foi possível identificar a tarefa salva.");
     return taskId;
   }
 
   if (error) throw error;
 
   const taskId = typeof data === "string" && data ? data : task.id;
-  if (!taskId) throw new Error("Nao foi possivel identificar a tarefa salva.");
+  if (!taskId) throw new Error("Não foi possível identificar a tarefa salva.");
   return taskId;
 }
 
@@ -609,7 +609,7 @@ async function archiveSupabaseTask(taskId: string, archivedAt: string) {
     .maybeSingle();
   if (error) throw error;
   if (!data?.archived_at) {
-    throw new Error("Sem permissao para excluir esta tarefa ou tarefa nao encontrada.");
+    throw new Error("Sem permissão para excluir esta tarefa ou tarefa não encontrada.");
   }
 }
 
@@ -654,7 +654,7 @@ async function uploadSupabaseTaskAttachment(taskId: string, file: File) {
 
 function assertSupabase() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error("Supabase nao configurado.");
+    throw new Error("Supabase não configurado.");
   }
 
   return supabase;
@@ -665,7 +665,7 @@ async function getCurrentAuthUserId() {
   const { data, error } = await client.auth.getUser();
 
   if (error || !data.user?.id) {
-    throw new Error("Sessao Supabase expirada. Entre novamente.");
+    throw new Error("Sessão Supabase expirada. Entre novamente.");
   }
 
   return data.user.id;
@@ -717,7 +717,7 @@ function normalizeTask(value: Partial<TaskItem>): TaskItem {
 
   return {
     id: value.id || crypto.randomUUID(),
-    titulo: value.titulo?.trim() || "Tarefa sem titulo",
+    titulo: value.titulo?.trim() || "Tarefa sem título",
     descricao: value.descricao || "",
     prazo: value.prazo || "",
     prioridade: value.prioridade || "normal",

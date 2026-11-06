@@ -91,7 +91,7 @@ async function createAvisoSignedUrls(paths: string[]) {
 
   const { data, error } = await client.storage.from(QUADRO_AVISOS_BUCKET).createSignedUrls(unique, SIGNED_URL_TTL_SECONDS);
   if (error) {
-    console.warn("Nao foi possivel gerar os links dos arquivos do quadro.", error);
+    console.warn("Não foi possível gerar os links dos arquivos do quadro.", error);
     return result;
   }
 
@@ -112,7 +112,7 @@ export async function uploadQuadroAvisoFile(
   const { data: authData, error: authError } = await supabase.auth.getUser();
   const authUserId = authData?.user?.id;
   if (authError || !authUserId) {
-    throw authError || new Error("Sessao expirada. Entre novamente para enviar arquivos.");
+    throw authError || new Error("Sessão expirada. Entre novamente para enviar arquivos.");
   }
 
   const safeName = sanitizeAvisoFileName(file.name);
@@ -279,7 +279,7 @@ async function upsertSupabaseAviso(
   });
 
   if (notifyError) {
-    console.warn("Nao foi possivel notificar os usuarios do quadro particular.", notifyError);
+    console.warn("Não foi possível notificar os usuários do quadro particular.", notifyError);
   }
 }
 
@@ -352,7 +352,7 @@ export async function deleteQuadroAviso({
 
     if (aviso.filePath) {
       const { error: storageError } = await client.storage.from(QUADRO_AVISOS_BUCKET).remove([aviso.filePath]);
-      if (storageError) console.warn("Aviso excluido, mas o arquivo anexo nao foi removido.", storageError);
+      if (storageError) console.warn("Aviso excluído, mas o arquivo anexo não foi removido.", storageError);
     }
 
     notifyQuadroAvisosChanged();
@@ -368,5 +368,5 @@ export async function deleteQuadroAviso({
 export async function removeQuadroAvisoFile(filePath: string, user?: HubUser | null) {
   if (!filePath || getAvisosSource(user) !== "supabase" || !supabase) return;
   const { error } = await supabase.storage.from(QUADRO_AVISOS_BUCKET).remove([filePath]);
-  if (error) console.warn("Nao foi possivel remover o arquivo antigo do aviso.", error);
+  if (error) console.warn("Não foi possível remover o arquivo antigo do aviso.", error);
 }

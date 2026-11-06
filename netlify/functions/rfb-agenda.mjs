@@ -39,7 +39,7 @@ const MONTH_NAMES = {
 
 export default async function handler(request) {
   if (request.method === "OPTIONS") return json(204, {});
-  if (request.method !== "GET") return json(405, { error: "Metodo nao permitido." });
+  if (request.method !== "GET") return json(405, { error: "Metodo não permitido." });
 
   const url = new URL(request.url);
   const year = clampInteger(url.searchParams.get("year"), 2020, 2035, new Date().getFullYear());
@@ -132,7 +132,7 @@ export async function fetchRfbAgenda(year, month) {
           }
         ]
       },
-      warning: "Parser nao encontrou eventos estruturados na pagina oficial."
+      warning: "Parser não encontrou eventos estruturados na página oficial."
     };
   }
 
