@@ -2037,7 +2037,7 @@ select {
   width: fit-content;
   border-radius: 999px;
   background: #edf3ef;
-  color: #65748b;
+  color: #52617a;
   padding: 4px 9px;
   font-size: 11px;
   font-weight: 900;
@@ -5336,3 +5336,11 @@ a.aviso-card__file:hover {
     max-height: calc(100vh - 24px);
   }
 }
+
+/* Contraste das etiquetas em listas */
+.list-row .status-pill--danger { color: var(--danger); }
+.list-row .status-pill--warning { color: #7a5208; }
+.list-row .status-pill--ok { color: var(--ok); }
+.list-row .status-pill--neutral { color: #48554f; }
+.filter-pill--warning { color: #765600; }
+.filter-pill--danger { color: #9b3333; }
