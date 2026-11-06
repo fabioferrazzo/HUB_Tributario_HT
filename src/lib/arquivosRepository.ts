@@ -90,7 +90,7 @@ export async function listAppFileFolders(user: HubUser): Promise<FileFolder[]> {
 export async function saveAppFileFolder(folder: FileFolder, user: HubUser): Promise<FileFolder[]> {
   const normalized = normalizeFolder({
     ...folder,
-    scope: user.role === "admin" ? folder.scope : "privado",
+    scope: folder.scope,
     createdBy: folder.createdBy || user.email
   });
 
@@ -160,7 +160,7 @@ export async function listAppFileResources(user: HubUser): Promise<FileResource[
 export async function saveAppFileResource(resource: FileResource, user: HubUser, file?: File | null): Promise<FileResource[]> {
   const normalized = normalizeResource({
     ...resource,
-    scope: user.role === "admin" ? resource.scope : "privado",
+    scope: resource.scope,
     createdBy: resource.createdBy || user.email
   });
 

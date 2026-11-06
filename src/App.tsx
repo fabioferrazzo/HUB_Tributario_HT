@@ -2537,7 +2537,7 @@ function Dashboard({
           <PanelHeader title={editingId ? "Editar pauta" : "Nova pauta"} icon={<ListChecks size={18} />} action={source} />
           <form className="stack-form" onSubmit={submitPauta}>
             <label>
-              Titulo
+              Título
               <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
             </label>
             <RichTextEditor
@@ -3266,7 +3266,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
         <form className="task-form task-form--open task-form--full" onSubmit={handleSubmit}>
           {error ? <p className="module-error module-error--compact">{error}</p> : null}
           <label>
-            Titulo
+            Título
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
           <label>
@@ -3542,7 +3542,7 @@ function TaskLembretesPanel({
               <DueSignal prazo={lembrete.prazo} />
               <div>
                 <strong>{lembrete.titulo}</strong>
-                <span>{lembrete.descricao || "Sem descricao"}</span>
+                <span>{lembrete.descricao || "Sem descrição"}</span>
                 <small>{formatDateTime(lembrete.prazo)} - {formatResponsaveis(lembrete.responsaveis, hubUsers)}</small>
               </div>
             </article>
@@ -3808,7 +3808,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
                 <DueSignal prazo={lembrete.prazo} />
                 <div>
                   <strong>{lembrete.titulo}</strong>
-                  <span>{lembrete.descricao || "Sem descricao"}</span>
+                  <span>{lembrete.descricao || "Sem descrição"}</span>
                   <em>{formatDateTime(lembrete.prazo)} - {formatResponsaveis(lembrete.responsaveis, hubUsers)}</em>
                 </div>
               </div>
@@ -3855,11 +3855,11 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
         <PanelHeader title={editingId ? "Editar lembrete" : "Novo lembrete"} icon={<Bell size={18} />} action={source} />
         <form className="stack-form lembrete-form" onSubmit={handleSubmit}>
           <label>
-            Titulo
+            Título
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
           <label>
-            Descricao
+            Descrição
             <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
           </label>
           <div className="form-row">
@@ -3956,13 +3956,13 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [descricao, setDescricao] = useState("");
   const [url, setUrl] = useState("");
   const [categoria, setCategoria] = useState<FileResourceCategory>("drive");
-  const [scope, setScope] = useState<FileResourceScope>(user.role === "admin" ? "global" : "privado");
+  const [scope, setScope] = useState<FileResourceScope>("global");
   const [folderId, setFolderId] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dropActive, setDropActive] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folderDescription, setFolderDescription] = useState("");
-  const [folderScope, setFolderScope] = useState<FileResourceScope>(user.role === "admin" ? "global" : "privado");
+  const [folderScope, setFolderScope] = useState<FileResourceScope>("global");
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [viewerResource, setViewerResource] = useState<FileResource | null>(null);
   const [viewerZoom, setViewerZoom] = useState(100);
@@ -4282,7 +4282,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setDescricao("");
     setUrl("");
     setCategoria("drive");
-    setScope(user.role === "admin" ? "global" : "privado");
+    setScope("global");
     setFolderId("");
     setSelectedFiles([]);
     setError("");
@@ -4322,7 +4322,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
       descricao: descricao.trim(),
       url: file ? "" : url.trim(),
       categoria,
-      scope: user.role === "admin" ? scope : "privado",
+      scope,
       folderId,
       kind: file ? "upload" : "link",
       fileName: file?.name || "",
@@ -4370,7 +4370,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
           descricao: descricao.trim(),
           url: file ? "" : url.trim() || editingResource.url,
           categoria,
-          scope: user.role === "admin" ? scope : "privado",
+          scope,
           folderId,
           kind: file || editingResource.storagePath ? "upload" : "link",
           fileName: file?.name || editingResource.fileName,
@@ -4432,7 +4432,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
       id: existingFolder?.id || crypto.randomUUID(),
       nome: folderName.trim(),
       descricao: folderDescription.trim(),
-      scope: user.role === "admin" ? folderScope : "privado",
+      scope: folderScope,
       createdBy: existingFolder?.createdBy || user.email,
       createdAt: existingFolder?.createdAt || now,
       updatedAt: now
@@ -4459,7 +4459,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setEditingFolderId(null);
     setFolderName("");
     setFolderDescription("");
-    setFolderScope(user.role === "admin" ? "global" : "privado");
+    setFolderScope("global");
   }
 
   async function removeFolder(folder: FileFolder) {
@@ -4570,7 +4570,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
                   </div>
                   <div className="file-resource__body">
                     <strong>{resource.titulo}</strong>
-                    <p>{resource.descricao || "Sem descricao"}</p>
+                    <p>{resource.descricao || "Sem descrição"}</p>
                   </div>
                   <div className="file-resource__meta">
                     <span>
@@ -4607,6 +4607,12 @@ function ArquivosModule({ user }: { user: HubUser }) {
                     Abrir
                   </button>
                 )}
+                {resource.kind === "upload" && resource.url ? (
+                  <a href={buildFileDownloadUrl(resource)} rel="noreferrer" target="_blank">
+                    <FileArchive size={14} strokeWidth={1.8} />
+                    Baixar
+                  </a>
+                ) : null}
                 {resource.processedUrl ? (
                   <a href={resource.processedUrl} rel="noreferrer" target="_blank">
                     <Search size={14} />
@@ -4640,10 +4646,10 @@ function ArquivosModule({ user }: { user: HubUser }) {
       </section>
 
       <section className="panel narrow-panel arquivos-form-panel">
-        <PanelHeader title={editingId ? "Editar arquivo" : "Novo arquivo"} icon={<Paperclip size={18} />} action={user.role === "admin" ? "global/pessoal" : "pessoal"} />
+        <PanelHeader title={editingId ? "Editar arquivo" : "Novo arquivo"} icon={<Paperclip size={18} />} action="global/pessoal" />
         <form className="stack-form" onSubmit={handleSubmit}>
           <label>
-            Titulo
+            Título
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
           <label>
@@ -4671,17 +4677,15 @@ function ArquivosModule({ user }: { user: HubUser }) {
               <option value="outro">Outro</option>
             </select>
           </label>
-          {user.role === "admin" ? (
-            <label>
-              Escopo
-              <select value={scope} onChange={(event) => setScope(event.target.value as "privado" | "global")}>
-                <option value="global">Global</option>
-                <option value="privado">Pessoal</option>
-              </select>
-            </label>
-          ) : null}
           <label>
-            Descricao
+            Visibilidade
+            <select value={scope} onChange={(event) => setScope(event.target.value as FileResourceScope)}>
+              <option value="global">Todos os usuários (global)</option>
+              <option value="privado">Somente eu (pessoal)</option>
+            </select>
+          </label>
+          <label>
+            Descrição
             <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
           </label>
           <label
@@ -4735,17 +4739,15 @@ function ArquivosModule({ user }: { user: HubUser }) {
             Nome da pasta
             <input value={folderName} onChange={(event) => setFolderName(event.target.value)} />
           </label>
-          {user.role === "admin" ? (
-            <label>
-              Escopo
-              <select value={folderScope} onChange={(event) => setFolderScope(event.target.value as FileResourceScope)}>
-                <option value="global">Global</option>
-                <option value="privado">Pessoal</option>
-              </select>
-            </label>
-          ) : null}
           <label>
-            Descricao
+            Visibilidade
+            <select value={folderScope} onChange={(event) => setFolderScope(event.target.value as FileResourceScope)}>
+              <option value="global">Todos os usuários (global)</option>
+              <option value="privado">Somente eu (pessoal)</option>
+            </select>
+          </label>
+          <label>
+            Descrição
             <textarea value={folderDescription} onChange={(event) => setFolderDescription(event.target.value)} />
           </label>
           <div className="form-actions-inline">
@@ -6065,7 +6067,7 @@ function LinksModule({ user }: { user: HubUser }) {
         <PanelHeader title={editingId ? "Editar link" : "Novo link"} icon={<Link2 size={18} />} action={user.role === "admin" || user.role === "gestor" ? "global/pessoal" : "pessoal"} />
         <form className="stack-form" onSubmit={handleSubmit}>
           <label>
-            Titulo
+            Título
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
           <label>
@@ -7189,7 +7191,7 @@ function getPautaEmailFontSize(size: Pauta["textSize"]) {
 function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): ReportRow {
   return {
     Titulo: lembrete.titulo,
-    Descricao: lembrete.descricao || "Sem descricao",
+    Descricao: lembrete.descricao || "Sem descrição",
     Responsaveis: formatResponsaveis(lembrete.responsaveis, profiles),
     Prazo: formatDateTime(lembrete.prazo),
     Prioridade: lembrete.prioridade,
@@ -7202,7 +7204,7 @@ function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]): Report
 function taskToReportRow(task: TaskItem): ReportRow {
   return {
     Titulo: task.titulo,
-    Descricao: task.descricao || "Sem descricao",
+    Descricao: task.descricao || "Sem descrição",
     Prazo: formatDateTime(task.prazo),
     Prioridade: task.prioridade,
     Status: task.status,
@@ -8958,6 +8960,17 @@ function summarizeLocalOcrOutput(output: string) {
 // Exclusoes sao definitivas: sempre pedir confirmacao antes.
 function confirmDeletion(message: string) {
   return window.confirm(`${message}\n\nEsta ação não pode ser desfeita.`);
+}
+
+// Link assinado do Supabase com download direto (parametro download=nome do arquivo).
+function buildFileDownloadUrl(resource: FileResource) {
+  try {
+    const url = new URL(resource.url);
+    url.searchParams.set("download", resource.fileName || resource.titulo || "arquivo");
+    return url.toString();
+  } catch {
+    return resource.url;
+  }
 }
 
 function getErrorMessage(error: unknown) {
