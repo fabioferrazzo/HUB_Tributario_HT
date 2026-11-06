@@ -473,7 +473,7 @@ Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em nav
 
 ### Pendências (atualizadas)
 
-- Configurar o envio pelo Gmail no Netlify (conta remetente, verificação em duas etapas, senha de app) e, depois do teste, retirar `EMAIL_FORCE_TEST_TO` para cada usuário receber os próprios e-mails.
+- Envio pelo Gmail ativo desde 06/11/2026: conta remetente `hub.hteixeira@gmail.com` (verificação em duas etapas e senha de app), `EMAIL_PROVIDER=gmail`; teste confirmado na caixa fiscal10 e `EMAIL_FORCE_TEST_TO` retirada — cada usuário recebe os próprios e-mails. Manter atualizados os e-mails cadastrados em Configurações > Usuários.
 - Trocar a chave `service_role` (Supabase e Netlify), por causa da cópia no backup.
 - Conferir em 07/11/2026 as rotinas agendadas no Node 22 (Agenda 06h15, fila de e-mails 09h, notícias).
 - OCR em versão futura.
