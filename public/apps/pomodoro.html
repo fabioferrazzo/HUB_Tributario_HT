@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pomodoro Minimalista</title>
     
-    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#f5f5f4">
     <link rel="apple-touch-icon" href="icon.png">
 
@@ -193,9 +192,28 @@
     <video id="pip-video" class="hidden" muted autoplay playsinline></video>
 
     <script>
-        if ('serviceWorker' in navigator) { 
-            navigator.serviceWorker.register('./sw.js').catch(() => {}); 
+        // O HUB nao usa service worker (main.tsx remove registros antigos para evitar versoes em cache).
+        // Por isso as notificacoes usam a API direta do navegador, com service worker apenas se existir.
+        if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
+        }
+
+        function showSystemNotification(title, options) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const direct = () => {
+                try {
+                    const { vibrate, renotify, ...basic } = options || {};
+                    const notification = new Notification(title, basic);
+                    notification.onclick = () => { window.focus(); notification.close(); };
+                } catch (error) { console.warn('Notificacao indisponivel', error); }
+            };
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+                navigator.serviceWorker.getRegistration()
+                    .then((reg) => (reg ? reg.showNotification(title, options) : direct()))
+                    .catch(direct);
+            } else {
+                direct();
+            }
         }
 
         const MODES = { pomodoro: 25, shortBreak: 5, longBreak: 15 };
@@ -237,16 +255,12 @@
             drawPiP("FIM!");
 
             const msg = currentMode === 'pomodoro' ? "Sessão Concluída!" : "Pausa Terminada!";
-            if (Notification.permission === "granted" && navigator.serviceWorker) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification(msg, { 
+            showSystemNotification(msg, { 
                         body: taskInput.value || "O seu tempo esgotou.", 
                         vibrate: [300, 100, 300], 
                         requireInteraction: true,
                         tag: 'pomo-timer-end'
                     });
-                });
-            }
 
             document.getElementById('time-up-title').textContent = msg;
             document.getElementById('time-up-modal').classList.remove('hidden');
@@ -484,17 +498,13 @@
                 renderReminders();
 
                 // Notificação Forçada via Service Worker com Vibração (Igual ao Timer)
-                if (Notification.permission === "granted" && navigator.serviceWorker) {
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.showNotification("🎤 " + rem.title, { 
+                showSystemNotification("🎤 " + rem.title, { 
                             body: "Novo lembrete de áudio disponível. Toque para ouvir.", 
                             vibrate: [300, 100, 300], 
                             requireInteraction: true,
                             tag: 'pomo-audio-reminder',
                             renotify: true
                         });
-                    });
-                }
 
                 const audioEl = document.getElementById('trigger-reminder-audio');
                 document.getElementById('trigger-reminder-title').textContent = rem.title;
