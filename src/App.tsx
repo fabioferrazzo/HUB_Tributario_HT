@@ -6280,9 +6280,9 @@ function AdminModule({ currentUser }: { currentUser: HubUser }) {
         );
 
         setNotice(
-          resetResult.emailQueued
-            ? "Usuario atualizado. Senha provisoria redefinida e e-mail enfileirado."
-            : "Usuario atualizado. Senha provisoria redefinida, mas o e-mail nao foi enfileirado."
+          resetResult.emailSent
+            ? "Usuário atualizado. Senha provisória redefinida e enviada por e-mail ao usuário."
+            : `Usuário atualizado. Senha provisória redefinida; o e-mail não foi enviado (${resetResult.emailReason || "envio indisponível"}). Informe a senha ao usuário pessoalmente.`
         );
       } else {
         setNotice(editingKey ? "Usuario atualizado." : "Usuario salvo.");

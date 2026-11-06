@@ -184,7 +184,7 @@ async function updateEmail(supabaseUrl, serviceRoleKey, id, patch) {
   });
 }
 
-async function sendEmail(email) {
+export async function sendEmail(email) {
   const provider = getEmailProvider();
 
   if (provider !== "resend") {
@@ -291,7 +291,7 @@ async function readProfile(supabaseUrl, serviceRoleKey, userId) {
   return Array.isArray(rows) ? rows[0] : null;
 }
 
-function assertDeliveryConfig() {
+export function assertDeliveryConfig() {
   if (!getEnv("EMAIL_PROVIDER_API_KEY")) {
     throw new Error("EMAIL_PROVIDER_API_KEY nao configurada.");
   }
@@ -301,7 +301,7 @@ function assertDeliveryConfig() {
   }
 }
 
-function isDeliveryEnabled() {
+export function isDeliveryEnabled() {
   return getEnv("EMAIL_DELIVERY_ENABLED").toLowerCase() === "true";
 }
 

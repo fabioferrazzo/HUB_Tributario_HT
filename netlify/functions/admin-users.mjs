@@ -1,3 +1,5 @@
+import { assertDeliveryConfig, isDeliveryEnabled, sendEmail } from "./email-outbox.mjs";
+
 const JSON_HEADERS = {
   "content-type": "application/json",
   "cache-control": "no-store"
@@ -61,8 +63,8 @@ export default async function handler(request) {
         await revokePasswordAuthorization(supabaseUrl, serviceRoleKey, profile.id);
         throw resetError;
       }
-      const emailQueued = await queuePasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, authUser.id);
-      return json(200, { ok: true, emailQueued });
+      const email = await sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, authUser.id);
+      return json(200, { ok: true, ...email });
     }
 
     let userId = profile.id;
@@ -182,41 +184,79 @@ async function revokePasswordAuthorization(supabaseUrl, serviceRoleKey, userId) 
   }
 }
 
-async function queuePasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy) {
+// A senha provisoria nunca e gravada no banco: o e-mail sai na hora (quando o envio
+// esta ativo no Netlify) e a fila email_outbox guarda apenas um registro SEM a senha.
+// Motivo: a fila pode ser consultada por gestores e o envio pode estar desligado.
+async function sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy) {
+  const appUrl = getAppBaseUrl();
+  const subject = "Senha provisoria do HUB Depto Tributario";
+  const dedupeKey = `password_reset:${profile.id}:${Date.now()}`;
+  const htmlBody = (secret) =>
+    "<p>Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.</p>" +
+    `<p><strong>E-mail:</strong> ${escapeHtml(profile.email)}</p>` +
+    `<p><strong>Senha provisoria:</strong> ${escapeHtml(secret)}</p>` +
+    `<p>Acesse: <a href="${escapeHtml(appUrl)}">${escapeHtml(appUrl)}</a></p>`;
+  const textBody = (secret) =>
+    "Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.\n" +
+    `E-mail: ${profile.email}\n` +
+    `Senha provisoria: ${secret}\n` +
+    `Acesse: ${appUrl}`;
+
+  let result = { emailSent: false, emailReason: "envio de e-mails desativado no Netlify (EMAIL_DELIVERY_ENABLED)" };
+  let sent = null;
+  if (isDeliveryEnabled()) {
+    try {
+      assertDeliveryConfig();
+      sent = await sendEmail({
+        dedupe_key: dedupeKey,
+        to_email: profile.email,
+        to_name: profile.nome,
+        subject,
+        html_body: htmlBody(password),
+        text_body: textBody(password)
+      });
+      result = { emailSent: true };
+    } catch (error) {
+      result = { emailSent: false, emailReason: error?.message || "falha no envio" };
+    }
+  }
+
+  // Registro para auditoria, sem a senha.
   try {
-    await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/rpc/queue_email`, {
+    const omitted = "[senha omitida por segurança]";
+    const emailId = await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/rpc/queue_email`, {
       method: "POST",
-      headers: {
-        ...serviceHeaders(serviceRoleKey),
-        "content-type": "application/json"
-      },
+      headers: { ...serviceHeaders(serviceRoleKey), "content-type": "application/json" },
       body: JSON.stringify({
         p_to_email: profile.email,
         p_to_name: profile.nome,
-        p_subject: "Senha provisoria do HUB Depto Tributario",
-        p_html_body:
-          "<p>Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.</p>" +
-          `<p><strong>E-mail:</strong> ${escapeHtml(profile.email)}</p>` +
-          `<p><strong>Senha provisoria:</strong> ${escapeHtml(password)}</p>` +
-          `<p>Acesse: <a href="${escapeHtml(getAppBaseUrl())}">${escapeHtml(getAppBaseUrl())}</a></p>`,
-        p_text_body:
-          "Uma senha provisoria foi gerada para seu acesso ao HUB Depto Tributario.\n" +
-          `E-mail: ${profile.email}\n` +
-          `Senha provisoria: ${password}\n` +
-          `Acesse: ${getAppBaseUrl()}`,
+        p_subject: subject,
+        p_html_body: htmlBody(omitted),
+        p_text_body: textBody(omitted),
         p_category: "usuario_senha",
         p_target_type: "profile",
         p_target_ref: profile.id,
         p_scheduled_for: new Date().toISOString(),
-        p_dedupe_key: `password_reset:${profile.id}:${Date.now()}`,
+        p_dedupe_key: dedupeKey,
         p_created_by: createdBy
       })
     });
-    return true;
+    if (emailId) {
+      await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/email_outbox?id=eq.${encodeURIComponent(emailId)}`, {
+        method: "PATCH",
+        headers: { ...serviceHeaders(serviceRoleKey), "content-type": "application/json", prefer: "return=minimal" },
+        body: JSON.stringify(
+          sent
+            ? { status: "sent", sent_at: new Date().toISOString(), provider: sent.provider, provider_message_id: sent.id || null, attempts: 1, last_error: null }
+            : { status: "skipped", last_error: result.emailReason }
+        )
+      });
+    }
   } catch (error) {
-    console.warn("Nao foi possivel enfileirar e-mail de senha provisoria.", error?.message || error);
-    return false;
+    console.warn("Nao foi possivel registrar o envio da senha provisoria.", error?.message || error);
   }
+
+  return result;
 }
 
 async function upsertProfile(supabaseUrl, serviceRoleKey, profile) {

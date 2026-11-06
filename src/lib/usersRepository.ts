@@ -159,7 +159,10 @@ export async function setAppUserActive(profile: HubProfile, active: boolean): Pr
   return sortUsers(users);
 }
 
-export async function resetAppUserPassword(profile: HubProfile, password: string): Promise<{ emailQueued: boolean }> {
+export async function resetAppUserPassword(
+  profile: HubProfile,
+  password: string
+): Promise<{ emailSent: boolean; emailReason?: string }> {
   if (getUsersSource() !== "supabase") {
     throw new Error("Reset de senha real exige Supabase.");
   }
@@ -197,13 +200,13 @@ export async function resetAppUserPassword(profile: HubProfile, password: string
     })
   });
 
-  const payload = (await response.json().catch(() => ({}))) as { error?: string; emailQueued?: boolean };
+  const payload = (await response.json().catch(() => ({}))) as { error?: string; emailSent?: boolean; emailReason?: string };
 
   if (!response.ok) {
     throw new Error(payload.error || "Nao foi possivel redefinir a senha do usuario.");
   }
 
-  return { emailQueued: Boolean(payload.emailQueued) };
+  return { emailSent: Boolean(payload.emailSent), emailReason: payload.emailReason };
 }
 
 function assertSupabase() {
