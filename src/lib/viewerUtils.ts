@@ -1,3 +1,4 @@
+import { OCR_ENABLED } from "../app/appConfig";
 import type { FileResource, FileViewerNote, FileViewerNoteKind } from "../types";
 import type { PdfGlobalSearchMatch, PdfJsLike, PdfSearchPlan, PdfTextRawItem, PdfTextSpan, PdfViewportLike, ViewerPreview } from "../app/appTypes";
 import { formatDateTime, formatFileCategory, normalizeForSearch } from "./formatters";
@@ -261,7 +262,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       src: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(resource.url)}`,
       title: resource.titulo,
       notice:
-        resource.processingStatus === "pending" || resource.processingStatus === "processing"
+        OCR_ENABLED && (resource.processingStatus === "pending" || resource.processingStatus === "processing")
           ? "Arquivo aguardando conversao/OCR para PDF pesquisavel. Enquanto isso, o preview usa Office externo e nao permite busca/grifo interno."
           : "Arquivos Word, Excel e PowerPoint usam o visualizador do Office. Busca, selecao e grifo direto dependem desse preview externo."
     };
@@ -548,6 +549,8 @@ export function summarizeLocalOcrOutput(output: string) {
 export function buildFileDownloadUrl(resource: FileResource) {
   try {
     const url = new URL(resource.url);
+    // Parametro de download so em links http(s) (Supabase); data:/blob: seguem como estao.
+    if (url.protocol !== "https:" && url.protocol !== "http:") return resource.url;
     url.searchParams.set("download", resource.fileName || resource.titulo || "arquivo");
     return url.toString();
   } catch {

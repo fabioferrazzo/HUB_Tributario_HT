@@ -8,6 +8,7 @@ import type {
   FileViewerNoteKind,
   HubUser
 } from "../types";
+import { OCR_ENABLED } from "../app/appConfig";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
@@ -517,6 +518,7 @@ function toSafeStorageFileName(fileName: string) {
 }
 
 function getInitialProcessingStatus(fileName: string, mimeType: string): FileProcessingStatus {
+  if (!OCR_ENABLED) return "none";
   const target = `${mimeType} ${fileName}`.toLowerCase();
   const needsStudyVersion =
     target.includes("pdf") ||

@@ -7,7 +7,7 @@ import { buildFileDownloadUrl, buildViewerNotesMarkdown, buildViewerPreview, get
 import { confirmDeletion, formatDate, formatFileCategory, getErrorMessage, normalizeForSearch } from "../lib/formatters";
 import { deleteAppFileAnnotation, deleteAppFileFolder, deleteAppFileResource, getArquivosSource, listAppFileAnnotations, listAppFileFolders, listAppFileResources, saveAppFileAnnotation, saveAppFileFolder, saveAppFileResource } from "../lib/arquivosRepository";
 import { downloadBlob } from "../lib/reportExport";
-import { fileCategoryOptions } from "../app/appConfig";
+import { fileCategoryOptions, OCR_ENABLED } from "../app/appConfig";
 
 export function ArquivosModule({ user }: { user: HubUser }) {
   const [resources, setResources] = useState<FileResource[]>([]);
@@ -382,7 +382,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
   function buildResource(file?: File): FileResource {
     const now = new Date().toISOString();
     const shouldUseFileName = Boolean(file && (!titulo.trim() || selectedFiles.length > 1));
-    const processingStatus = file ? getInitialFileProcessingStatus(file.name, file.type || "") : "none";
+    const processingStatus = file && OCR_ENABLED ? getInitialFileProcessingStatus(file.name, file.type || "") : "none";
     return {
       id: crypto.randomUUID(),
       titulo: (shouldUseFileName ? file?.name.replace(/\.[^.]+$/, "") : titulo.trim()) || "Arquivo sem titulo",
@@ -430,7 +430,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
     try {
       if (editingResource) {
         const file = selectedFiles[0] || null;
-        const processingStatus = file ? getInitialFileProcessingStatus(file.name, file.type || "") : editingResource.processingStatus;
+        const processingStatus = file ? (OCR_ENABLED ? getInitialFileProcessingStatus(file.name, file.type || "") : "none") : editingResource.processingStatus;
         const updated: FileResource = {
           ...editingResource,
           titulo: titulo.trim() || editingResource.titulo,
@@ -572,7 +572,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
           </article>
         </div>
 
-        {user.role === "admin" ? (
+        {OCR_ENABLED && user.role === "admin" ? (
           <div className="ocr-runner-bar">
             <div>
               <strong>OCR local</strong>
@@ -627,7 +627,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
 
         <div className="file-resource-list">
           {visibleResources.map((resource) => {
-            const processingBadge = getProcessingBadge(resource);
+            const processingBadge = OCR_ENABLED ? getProcessingBadge(resource) : null;
             return (
               <article className="file-resource" key={resource.id}>
                 <div className="file-resource__content">
@@ -648,7 +648,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                     {processingBadge ? (
                       <span className={`processing-badge processing-badge--${processingBadge.tone}`}>{processingBadge.label}</span>
                     ) : null}
-                    {resource.processingMessage ? <span>{resource.processingMessage}</span> : null}
+                    {OCR_ENABLED && resource.processingMessage ? <span>{resource.processingMessage}</span> : null}
                   </div>
                 </div>
                 <div className="record-actions">
@@ -675,7 +675,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                   </button>
                 )}
                 {resource.kind === "upload" && resource.url ? (
-                  <a href={buildFileDownloadUrl(resource)} rel="noreferrer" target="_blank">
+                  <a download={resource.fileName || undefined} href={buildFileDownloadUrl(resource)} rel="noreferrer" target="_blank">
                     <FileArchive size={14} strokeWidth={1.8} />
                     Baixar
                   </a>

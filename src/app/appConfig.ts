@@ -174,6 +174,10 @@ export const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string;
   coord: { title: "Coordenação tributária", src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}` }
 };
 
+// OCR (conversao em PDF pesquisavel) adiado para outra versao: arquivos digitalizados ficam
+// guardados como enviados, para visualizar e baixar. Para reativar, troque para true.
+export const OCR_ENABLED = false;
+
 export const POMODORO_STORAGE_KEY = "pomo_complete_data_v7";
 
 export const POMODORO_ARCHIVE_STORAGE_KEY = "hub_pomodoro_notes_archive";
