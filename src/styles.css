@@ -4143,6 +4143,27 @@ a.aviso-card__file:hover {
   line-height: 1.45;
 }
 
+/* Barra de formatacao compacta no painel estreito do Quadro (cabe em uma linha). */
+.avisos-editor-panel .pauta-format-toolbar {
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 3px 4px;
+}
+
+.avisos-editor-panel .pauta-format-size select {
+  padding: 3px 4px;
+  font-size: 12px;
+}
+
+.avisos-editor-panel .pauta-format-divider {
+  margin: 0 1px;
+}
+
+.avisos-editor-panel .pauta-format-toolbar button {
+  min-width: 27px;
+  padding: 0;
+}
+
 .aviso-kind-switch {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

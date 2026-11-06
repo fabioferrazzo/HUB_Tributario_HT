@@ -230,18 +230,17 @@ async function upsertSupabaseAviso(
     color: aviso.color,
     file_name: aviso.fileName || null,
     file_path: aviso.filePath || null,
-    file_url: aviso.filePath ? null : aviso.fileUrl || null,
-    created_by: user.id || null,
-    created_by_email: normalizeEmail(user.email)
+    file_url: aviso.filePath ? null : aviso.fileUrl || null
   };
 
-  if (aviso.id) payload.id = aviso.id;
-
-  const { data, error } = await client
-    .from("quadro_avisos")
-    .upsert(payload)
-    .select("id")
-    .single();
+  // Na edicao o autor original e mantido (o administrador pode editar avisos de outros).
+  const { data, error } = aviso.id
+    ? await client.from("quadro_avisos").update(payload).eq("id", aviso.id).select("id").single()
+    : await client
+        .from("quadro_avisos")
+        .insert({ ...payload, created_by: user.id || null, created_by_email: normalizeEmail(user.email) })
+        .select("id")
+        .single();
 
   if (error) throw error;
 
@@ -364,4 +363,10 @@ export async function deleteQuadroAviso({
   writeStorage(QUADRO_AVISOS_STORAGE_KEY, remaining);
   notifyQuadroAvisosChanged();
   return remaining.filter((item) => canUserViewAviso(item, user));
+}
+
+export async function removeQuadroAvisoFile(filePath: string, user?: HubUser | null) {
+  if (!filePath || getAvisosSource(user) !== "supabase" || !supabase) return;
+  const { error } = await supabase.storage.from(QUADRO_AVISOS_BUCKET).remove([filePath]);
+  if (error) console.warn("Nao foi possivel remover o arquivo antigo do aviso.", error);
 }

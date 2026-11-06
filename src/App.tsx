@@ -66,7 +66,13 @@ import {
   saveAppFileResource
 } from "./lib/arquivosRepository";
 import { getStoredSession, getSupabaseAccessToken, signIn, signOut } from "./lib/auth";
-import { deleteQuadroAviso, listQuadroAvisos, saveQuadroAviso, uploadQuadroAvisoFile } from "./lib/avisosRepository";
+import {
+  deleteQuadroAviso,
+  listQuadroAvisos,
+  removeQuadroAvisoFile,
+  saveQuadroAviso,
+  uploadQuadroAvisoFile
+} from "./lib/avisosRepository";
 import {
   canUserManageLembrete,
   deleteAppLembrete,
@@ -1308,13 +1314,6 @@ function Dashboard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [pautaTextSize, setPautaTextSize] = useState<PautaInlineSize>("normal");
-  const [pautaTextBold, setPautaTextBold] = useState(false);
-  const [pautaTextItalic, setPautaTextItalic] = useState(false);
-  const [pautaTextHighlight, setPautaTextHighlight] = useState(false);
-  const [pautaTextUnderline, setPautaTextUnderline] = useState(false);
-  const [pautaListState, setPautaListState] = useState<"" | "ul" | "ol">("");
-  const [pautaFormatHint, setPautaFormatHint] = useState("");
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState("normal");
   const [status, setStatus] = useState("aberta");
@@ -1342,6 +1341,8 @@ function Dashboard({
   const [avisosPanel, setAvisosPanel] = useState<"leitura" | "editor" | null>(null);
   const [avisoDeleteId, setAvisoDeleteId] = useState("");
   const [avisoDeleting, setAvisoDeleting] = useState(false);
+  const [avisoEditingId, setAvisoEditingId] = useState<string | null>(null);
+  const [avisoEditorKey, setAvisoEditorKey] = useState(0);
   const avisoFileInputRef = useRef<HTMLInputElement | null>(null);
   const avisoCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const avisoDrawingRef = useRef(false);
@@ -1396,8 +1397,6 @@ function Dashboard({
   const canManagePautas = user.role === "admin";
   const selectedYear = monthCursor.getFullYear();
   const selectedMonth = monthCursor.getMonth();
-  const pautaDescriptionEditorRef = useRef<HTMLDivElement | null>(null);
-  const pautaSelectionRef = useRef<Range | null>(null);
 
   const visiblePautas = useMemo(() => {
     const allowed = pautas.filter((pauta) => canUserViewPauta(pauta, user));
@@ -1454,146 +1453,6 @@ function Dashboard({
     stack.scrollTop = 0;
   }, [autoScroll, filteredPautas.length, pautaFilter, pautaQuery, selectedMonth, selectedYear]);
 
-  useEffect(() => {
-    const editor = pautaDescriptionEditorRef.current;
-    if (!formOpen || !editor) return;
-    editor.innerHTML = sanitizePautaRichHtml(descricao);
-    pautaSelectionRef.current = null;
-  }, [editingId, formOpen]);
-
-  function rememberPautaSelection() {
-    const editor = pautaDescriptionEditorRef.current;
-    const selection = window.getSelection();
-    if (!editor || !selection || selection.rangeCount === 0) return;
-    const anchor = selection.anchorNode;
-    const focus = selection.focusNode;
-    if ((anchor && editor.contains(anchor)) || (focus && editor.contains(focus))) {
-      pautaSelectionRef.current = selection.getRangeAt(0).cloneRange();
-    }
-  }
-
-  function restorePautaSelection() {
-    const editor = pautaDescriptionEditorRef.current;
-    if (!editor) return false;
-    editor.focus();
-    const selection = window.getSelection();
-    if (!selection) return false;
-
-    selection.removeAllRanges();
-    const savedRange = pautaSelectionRef.current;
-    if (savedRange) {
-      selection.addRange(savedRange);
-      return true;
-    }
-
-    const range = document.createRange();
-    range.selectNodeContents(editor);
-    range.collapse(false);
-    selection.addRange(range);
-    pautaSelectionRef.current = range.cloneRange();
-    return true;
-  }
-
-  function syncPautaDescriptionFromEditor() {
-    const editor = pautaDescriptionEditorRef.current;
-    if (!editor) return;
-    setDescricao(sanitizePautaRichHtml(editor.innerHTML));
-    rememberPautaSelection();
-  }
-
-  function updatePautaFormatState() {
-    const editor = pautaDescriptionEditorRef.current;
-    if (!editor) return;
-    const range = getRichSelectionRange(editor);
-    if (!range) return;
-    setPautaTextBold(document.queryCommandState("bold"));
-    setPautaTextItalic(document.queryCommandState("italic"));
-    setPautaTextUnderline(document.queryCommandState("underline"));
-    setPautaTextHighlight(findRichElementsInRange(editor, range, isHighlightElement).length > 0);
-    setPautaTextSize(detectPautaInlineSize(editor, range.startContainer));
-    setPautaListState(
-      document.queryCommandState("insertOrderedList") ? "ol" : document.queryCommandState("insertUnorderedList") ? "ul" : ""
-    );
-  }
-
-  function handlePautaEditorSelection() {
-    rememberPautaSelection();
-    updatePautaFormatState();
-  }
-
-  function handlePautaEditorInput() {
-    syncPautaDescriptionFromEditor();
-    setPautaFormatHint("");
-  }
-
-  function applyPautaTextSize(nextSize: PautaInlineSize) {
-    const size = pautaInlineSizes.find((item) => item.value === nextSize);
-    if (!size) return;
-    setPautaTextSize(nextSize);
-    restorePautaSelection();
-    document.execCommand("styleWithCSS", false, "false");
-    document.execCommand("fontSize", false, size.exec);
-    syncPautaDescriptionFromEditor();
-    setPautaFormatHint(
-      window.getSelection()?.isCollapsed ? "O novo tamanho vale para o texto digitado a partir do cursor." : ""
-    );
-  }
-
-  function applyPautaInlineCommand(
-    command: "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList"
-  ) {
-    restorePautaSelection();
-    document.execCommand(command);
-    syncPautaDescriptionFromEditor();
-    updatePautaFormatState();
-    setPautaFormatHint("");
-  }
-
-  function togglePautaHighlight() {
-    const editor = pautaDescriptionEditorRef.current;
-    if (!editor) return;
-    restorePautaSelection();
-    const range = getRichSelectionRange(editor);
-    if (!range) return;
-
-    const highlighted = findRichElementsInRange(editor, range, isHighlightElement);
-    if (highlighted.length) {
-      removeHighlightFromElements(highlighted);
-    } else if (range.collapsed) {
-      setPautaFormatHint("Selecione o trecho que deseja grifar.");
-      return;
-    } else {
-      const applied = document.execCommand("hiliteColor", false, PAUTA_HIGHLIGHT_COLOR);
-      if (!applied) document.execCommand("backColor", false, PAUTA_HIGHLIGHT_COLOR);
-    }
-
-    setPautaFormatHint("");
-    syncPautaDescriptionFromEditor();
-    updatePautaFormatState();
-  }
-
-  function clearPautaFormatting() {
-    const editor = pautaDescriptionEditorRef.current;
-    if (!editor) return;
-    restorePautaSelection();
-    const range = getRichSelectionRange(editor);
-    if (!range || range.collapsed) {
-      setPautaFormatHint("Selecione o trecho cuja formatação deseja remover.");
-      return;
-    }
-
-    document.execCommand("removeFormat");
-    const after = getRichSelectionRange(editor);
-    if (after) {
-      removeHighlightFromElements(findRichElementsInRange(editor, after, isHighlightElement));
-      findRichElementsInRange(editor, after, isRichFormattingElement).forEach(unwrapElement);
-    }
-
-    setPautaFormatHint("");
-    syncPautaDescriptionFromEditor();
-    updatePautaFormatState();
-  }
-
   function exportPautas(format: ReportFormat) {
     exportReport(format, "Pautas - HUB Depto Tributario", filteredPautas.map(pautaToReportRow));
   }
@@ -1641,13 +1500,6 @@ function Dashboard({
     setEditingId(null);
     setTitulo("");
     setDescricao("");
-    setPautaTextSize("normal");
-    setPautaTextBold(false);
-    setPautaTextItalic(false);
-    setPautaTextHighlight(false);
-    setPautaTextUnderline(false);
-    setPautaListState("");
-    setPautaFormatHint("");
     setPrazo("");
     setPrioridade("normal");
     setStatus("aberta");
@@ -1673,13 +1525,6 @@ function Dashboard({
     setEditingId(pauta.id);
     setTitulo(pauta.tema);
     setDescricao(convertLegacyPautaFormatting(pauta));
-    setPautaTextSize("normal");
-    setPautaTextBold(false);
-    setPautaTextItalic(false);
-    setPautaTextUnderline(false);
-    setPautaTextHighlight(false);
-    setPautaListState("");
-    setPautaFormatHint("");
     setPrazo(toDatetimeLocalValue(pauta.prazo));
     setPrioridade(pauta.prioridade || "normal");
     setStatus(pauta.status || "aberta");
@@ -1989,46 +1834,67 @@ function Dashboard({
   }
 
   async function handleSaveAviso() {
-    const content = avisoDraft.trim();
     setAvisoMessage("");
+    const editingAviso = avisoEditingId ? quadroAvisos.find((aviso) => aviso.id === avisoEditingId) : undefined;
+    const isFileKind = avisoKind === "imagem" || avisoKind === "anexo";
+    const hasText = hasPautaRichContent(avisoDraft);
+    const currentFile =
+      editingAviso && editingAviso.kind === avisoKind && (editingAviso.filePath || editingAviso.fileUrl) ? editingAviso : undefined;
 
-    if (!content && !avisoSelectedFile) {
-      setAvisoMessage("Escreva um aviso antes de salvar.");
+    if (isFileKind && !avisoSelectedFile && !currentFile) {
+      setAvisoMessage(avisoKind === "imagem" ? "Selecione uma imagem antes de salvar." : "Selecione um documento antes de salvar.");
+      return;
+    }
+
+    if (!isFileKind && !hasText) {
+      setAvisoMessage("Escreva o aviso antes de salvar.");
       return;
     }
 
     if (avisosView === "particular" && avisoSelectedUsers.length === 0) {
-      setAvisoMessage("Selecione ao menos um usuario para o quadro particular.");
+      setAvisoMessage("Selecione ao menos um usuário para o quadro particular.");
       return;
     }
 
     setAvisoSaving(true);
     try {
-      const uploadedFile = avisoSelectedFile ? await uploadQuadroAvisoFile(avisoSelectedFile, user) : null;
+      const uploadedFile = isFileKind && avisoSelectedFile ? await uploadQuadroAvisoFile(avisoSelectedFile, user) : null;
+      const fileName = uploadedFile?.fileName || (isFileKind ? currentFile?.fileName : undefined);
+      const filePath = uploadedFile ? uploadedFile.filePath : isFileKind ? currentFile?.filePath : undefined;
+      const fileUrl = uploadedFile ? uploadedFile.fileUrl : isFileKind ? currentFile?.fileUrl : undefined;
       const nextAvisos = await saveQuadroAviso({
         current: quadroAvisos,
         user,
         aviso: {
-          cell: selectedAvisoCell,
+          id: editingAviso?.id,
+          cell: editingAviso?.cell || selectedAvisoCell,
           kind: avisoKind,
           visibility: avisosView,
-          title: avisoKind === "postit" ? "Post-it" : avisoSelectedFile?.name || "Aviso",
-          content: content || avisoSelectedFile?.name || "",
+          title: avisoKind === "postit" ? "Post-it" : fileName || "Aviso",
+          content: hasText ? sanitizePautaRichHtml(avisoDraft) : fileName || "",
           color: avisoKind === "postit" ? avisoColor : "#ffffff",
-          fileName: uploadedFile?.fileName,
-          fileUrl: uploadedFile?.fileUrl,
-          filePath: uploadedFile?.filePath,
+          fileName,
+          fileUrl,
+          filePath,
           selectedUsers: avisosView === "particular" ? avisoSelectedUsers : []
         }
       });
+
+      // Arquivo substituido ou removido na edicao: apaga o antigo do armazenamento.
+      if (editingAviso?.filePath && editingAviso.filePath !== filePath) {
+        void removeQuadroAvisoFile(editingAviso.filePath, user);
+      }
+
       setQuadroAvisos(nextAvisos);
       setAvisoDraft("");
       setAvisoSelectedFile(null);
       if (avisoFileInputRef.current) {
         avisoFileInputRef.current.value = "";
       }
+      setAvisoEditingId(null);
+      setAvisoEditorKey((current) => current + 1);
       setAvisosPanel("leitura");
-      setAvisoMessage("Aviso salvo no quadro.");
+      setAvisoMessage(editingAviso ? "Alterações salvas." : "Aviso salvo no quadro.");
     } catch (saveError) {
       setAvisoMessage(getErrorMessage(saveError));
     } finally {
@@ -2063,6 +1929,13 @@ function Dashboard({
 
   function openAvisoEditor(cell = selectedAvisoCell) {
     setSelectedAvisoCell(cell);
+    setAvisoEditingId(null);
+    setAvisoDraft("");
+    setAvisoSelectedFile(null);
+    if (avisoFileInputRef.current) {
+      avisoFileInputRef.current.value = "";
+    }
+    setAvisoEditorKey((current) => current + 1);
     setAvisosPanel("editor");
     setAvisosDrawMode(false);
     setAvisoDeleteId("");
@@ -2072,6 +1945,27 @@ function Dashboard({
   function closeAvisosPanel() {
     setAvisosPanel(null);
     setAvisoDeleteId("");
+    setAvisoEditingId(null);
+  }
+
+  function startEditAviso(aviso: QuadroAviso) {
+    const isFile = aviso.kind === "imagem" || aviso.kind === "anexo";
+    setSelectedAvisoCell(aviso.cell);
+    setAvisoEditingId(aviso.id);
+    setAvisoKind(aviso.kind);
+    if (aviso.kind === "postit") setAvisoColor(aviso.color || "#fff4b8");
+    setAvisoDraft(isFile ? (aviso.content && aviso.content !== aviso.fileName ? aviso.content : "") : aviso.content);
+    setAvisosView(aviso.visibility);
+    setAvisoSelectedUsers(aviso.selectedUsers);
+    setAvisoSelectedFile(null);
+    if (avisoFileInputRef.current) {
+      avisoFileInputRef.current.value = "";
+    }
+    setAvisoDeleteId("");
+    setAvisoMessage("");
+    setAvisosDrawMode(false);
+    setAvisoEditorKey((current) => current + 1);
+    setAvisosPanel("editor");
   }
 
   async function handleDeleteAviso(aviso: QuadroAviso) {
@@ -2145,7 +2039,9 @@ function Dashboard({
             </span>
           )
         ) : null}
-        {text ? <p className="aviso-card__text">{text}</p> : null}
+        {hasPautaRichContent(text) ? (
+          <div className="aviso-card__text pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(text) }} />
+        ) : null}
         <footer className="aviso-card__meta">
           <span>{mode === "quadro" ? getAvisoAuthorName(aviso).split(" ")[0] : getAvisoAuthorName(aviso)}</span>
           <span>{formatDate(aviso.updatedAt)}</span>
@@ -2166,10 +2062,16 @@ function Dashboard({
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => handleDeleteAviso(aviso)}>
-                <Trash2 size={14} strokeWidth={1.6} />
-                Excluir
-              </button>
+              <>
+                <button type="button" onClick={() => startEditAviso(aviso)}>
+                  <Edit3 size={14} strokeWidth={1.6} />
+                  Editar
+                </button>
+                <button type="button" onClick={() => handleDeleteAviso(aviso)}>
+                  <Trash2 size={14} strokeWidth={1.6} />
+                  Excluir
+                </button>
+              </>
             )}
           </div>
         ) : null}
@@ -2191,6 +2093,7 @@ function Dashboard({
       { kind: "anexo", label: "Anexo", Icon: Paperclip }
     ] as const;
     const isFileKind = avisoKind === "imagem" || avisoKind === "anexo";
+    const editingAviso = avisoEditingId ? quadroAvisos.find((aviso) => aviso.id === avisoEditingId) : undefined;
 
     return (
       <div className="avisos-board">
@@ -2245,7 +2148,7 @@ function Dashboard({
         </div>
 
         {avisoMessage ? (
-          <div className={`avisos-message ${/salvo|excluído/.test(avisoMessage) ? "success" : ""}`}>
+          <div className={`avisos-message ${/salv|excluído/.test(avisoMessage) ? "success" : ""}`}>
             {avisoMessage}
           </div>
         ) : null}
@@ -2371,10 +2274,13 @@ function Dashboard({
             ) : null}
 
             {avisosPanel === "editor" ? (
-              <aside className="avisos-side-panel avisos-editor-panel" aria-label={`Novo aviso no ${selectedCellLabel}`}>
+              <aside
+                className="avisos-side-panel avisos-editor-panel"
+                aria-label={`${editingAviso ? "Editar aviso" : "Novo aviso"} no ${selectedCellLabel}`}
+              >
                 <header className="avisos-side-panel__head">
                   <div>
-                    <h3>Novo aviso</h3>
+                    <h3>{editingAviso ? "Editar aviso" : "Novo aviso"}</h3>
                     <span>{selectedCellLabel} · {boardLabel}</span>
                   </div>
                   <div className="avisos-side-panel__actions">
@@ -2441,24 +2347,29 @@ function Dashboard({
                           </button>
                         </span>
                       ) : (
-                        <small>Nenhum arquivo selecionado.</small>
+                        <small>
+                          {editingAviso?.fileName && editingAviso.kind === avisoKind
+                            ? `Arquivo atual: ${editingAviso.fileName}`
+                            : "Nenhum arquivo selecionado."}
+                        </small>
                       )}
                     </div>
                   ) : null}
-                  <label className="aviso-field">
-                    <span>{isFileKind ? "Legenda (opcional)" : "Texto do aviso"}</span>
-                    <textarea
-                      placeholder={
-                        avisoKind === "postit"
-                          ? "Escreva o texto da nota adesiva."
-                          : isFileKind
-                            ? "Descreva brevemente o arquivo, se quiser."
-                            : "Escreva o aviso, orientação ou recado."
-                      }
-                      value={avisoDraft}
-                      onChange={(event) => setAvisoDraft(event.target.value)}
-                    />
-                  </label>
+                  <RichTextEditor
+                    ariaLabel={isFileKind ? "Legenda do arquivo" : "Texto do aviso"}
+                    editorStyle={avisoKind === "postit" ? { background: avisoColor, borderColor: "rgba(0, 0, 0, 0.12)" } : undefined}
+                    label={isFileKind ? "Legenda (opcional)" : "Texto do aviso"}
+                    placeholder={
+                      avisoKind === "postit"
+                        ? "Escreva o texto da nota adesiva."
+                        : isFileKind
+                          ? "Descreva brevemente o arquivo, se quiser."
+                          : "Escreva o aviso, orientação ou recado."
+                    }
+                    resetKey={avisoEditorKey}
+                    value={avisoDraft}
+                    onChange={setAvisoDraft}
+                  />
                   <fieldset className="member-picker avisos-member-picker">
                     <legend>Publicar em</legend>
                     <label>
@@ -2488,7 +2399,7 @@ function Dashboard({
                     </div>
                   ) : null}
                   <button className="primary-action" disabled={avisoSaving || avisosLoading} type="button" onClick={handleSaveAviso}>
-                    {avisoSaving ? "Salvando..." : "Salvar aviso"}
+                    {avisoSaving ? "Salvando..." : editingAviso ? "Salvar alterações" : "Salvar aviso"}
                   </button>
                 </div>
               </aside>
@@ -2627,122 +2538,14 @@ function Dashboard({
               Titulo
               <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
             </label>
-            <div className="rich-editor-field">
-              <span>Descrição / orientação</span>
-              <div className="pauta-format-toolbar" role="toolbar" aria-label="Formatação da descrição da pauta">
-                <label className="pauta-format-size">
-                  <span className="sr-only">Tamanho da fonte</span>
-                  <select
-                    aria-label="Tamanho da fonte"
-                    title="Tamanho da fonte do trecho selecionado"
-                    value={pautaTextSize}
-                    onMouseDown={rememberPautaSelection}
-                    onChange={(event) => applyPautaTextSize(event.target.value as PautaInlineSize)}
-                  >
-                    {pautaInlineSizes.map((size) => (
-                      <option key={size.value} value={size.value}>
-                        {size.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <span aria-hidden="true" className="pauta-format-divider" />
-                {(
-                  [
-                    { command: "bold", label: "Negrito (Ctrl+B)", Icon: BoldIcon, active: pautaTextBold },
-                    { command: "italic", label: "Itálico (Ctrl+I)", Icon: ItalicIcon, active: pautaTextItalic },
-                    { command: "underline", label: "Sublinhado (Ctrl+U)", Icon: UnderlineIcon, active: pautaTextUnderline }
-                  ] as const
-                ).map(({ command, label, Icon, active }) => (
-                  <button
-                    aria-label={label}
-                    aria-pressed={active}
-                    className={active ? "active" : ""}
-                    key={command}
-                    title={label}
-                    type="button"
-                    onClick={(event) => {
-                      if (event.detail === 0) applyPautaInlineCommand(command);
-                    }}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      applyPautaInlineCommand(command);
-                    }}
-                  >
-                    <Icon size={15} strokeWidth={1.8} />
-                  </button>
-                ))}
-                <button
-                  aria-label={pautaTextHighlight ? "Remover grifo" : "Grifo amarelo"}
-                  aria-pressed={pautaTextHighlight}
-                  className={pautaTextHighlight ? "highlight-active" : ""}
-                  title={pautaTextHighlight ? "Remover grifo do trecho" : "Grifo amarelo no trecho selecionado"}
-                  type="button"
-                  onClick={(event) => {
-                    if (event.detail === 0) togglePautaHighlight();
-                  }}
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    togglePautaHighlight();
-                  }}
-                >
-                  <Highlighter size={15} strokeWidth={1.8} />
-                </button>
-                <span aria-hidden="true" className="pauta-format-divider" />
-                {(
-                  [
-                    { command: "insertUnorderedList", label: "Lista com marcadores", Icon: ListIcon, active: pautaListState === "ul" },
-                    { command: "insertOrderedList", label: "Lista numerada", Icon: ListOrdered, active: pautaListState === "ol" }
-                  ] as const
-                ).map(({ command, label, Icon, active }) => (
-                  <button
-                    aria-label={label}
-                    aria-pressed={active}
-                    className={active ? "active" : ""}
-                    key={command}
-                    title={label}
-                    type="button"
-                    onClick={(event) => {
-                      if (event.detail === 0) applyPautaInlineCommand(command);
-                    }}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      applyPautaInlineCommand(command);
-                    }}
-                  >
-                    <Icon size={15} strokeWidth={1.8} />
-                  </button>
-                ))}
-                <span aria-hidden="true" className="pauta-format-divider" />
-                <button
-                  aria-label="Limpar formatação"
-                  title="Limpar formatação do trecho selecionado"
-                  type="button"
-                  onClick={(event) => {
-                    if (event.detail === 0) clearPautaFormatting();
-                  }}
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    clearPautaFormatting();
-                  }}
-                >
-                  <RemoveFormatting size={15} strokeWidth={1.8} />
-                </button>
-              </div>
-              <div
-                aria-label="Descrição / orientação"
-                className="pauta-description-input pauta-rich-text"
-                contentEditable
-                data-placeholder="Escreva a orientação da pauta..."
-                onBlur={rememberPautaSelection}
-                onInput={handlePautaEditorInput}
-                onKeyUp={handlePautaEditorSelection}
-                onMouseUp={handlePautaEditorSelection}
-                ref={pautaDescriptionEditorRef}
-                suppressContentEditableWarning
-              />
-              {pautaFormatHint ? <small className="pauta-format-hint">{pautaFormatHint}</small> : null}
-            </div>
+            <RichTextEditor
+              ariaLabel="Descrição / orientação"
+              label="Descrição / orientação"
+              placeholder="Escreva a orientação da pauta..."
+              resetKey={`${formOpen}-${editingId || "nova"}`}
+              value={descricao}
+              onChange={setDescricao}
+            />
             {titulo.trim() || hasPautaRichContent(descricao) ? (
               <div className="pauta-format-preview">
                 <span>Previa da formatacao</span>
@@ -8188,6 +7991,279 @@ function convertLegacyPautaFormatting(pauta: Pauta) {
   if (pauta.textItalic) html = `<em>${html}</em>`;
   if (pauta.textBold) html = `<strong>${html}</strong>`;
   return html;
+}
+
+type RichTextEditorProps = {
+  value: string;
+  onChange: (html: string) => void;
+  resetKey: string | number;
+  ariaLabel: string;
+  label?: string;
+  placeholder?: string;
+  editorStyle?: CSSProperties;
+};
+
+// Editor de texto com formatacao por trecho (Pautas e Quadro de Avisos).
+function RichTextEditor({ value, onChange, resetKey, ariaLabel, label, placeholder, editorStyle }: RichTextEditorProps) {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const selectionRef = useRef<Range | null>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const [textSize, setTextSize] = useState<PautaInlineSize>("normal");
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [isHighlight, setIsHighlight] = useState(false);
+  const [listState, setListState] = useState<"" | "ul" | "ol">("");
+  const [hint, setHint] = useState("");
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.innerHTML = sanitizePautaRichHtml(valueRef.current);
+    selectionRef.current = null;
+    setTextSize("normal");
+    setIsBold(false);
+    setIsItalic(false);
+    setIsUnderline(false);
+    setIsHighlight(false);
+    setListState("");
+    setHint("");
+  }, [resetKey]);
+
+  function rememberSelection() {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+    if (!editor || !selection || selection.rangeCount === 0) return;
+    const anchor = selection.anchorNode;
+    const focus = selection.focusNode;
+    if ((anchor && editor.contains(anchor)) || (focus && editor.contains(focus))) {
+      selectionRef.current = selection.getRangeAt(0).cloneRange();
+    }
+  }
+
+  function restoreSelection() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const selection = window.getSelection();
+    if (!selection) return;
+    selection.removeAllRanges();
+    if (selectionRef.current && editor.contains(selectionRef.current.commonAncestorContainer)) {
+      selection.addRange(selectionRef.current);
+      return;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    selection.addRange(range);
+    selectionRef.current = range.cloneRange();
+  }
+
+  function emitChange() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    onChange(sanitizePautaRichHtml(editor.innerHTML));
+    rememberSelection();
+  }
+
+  function updateFormatState() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const range = getRichSelectionRange(editor);
+    if (!range) return;
+    setIsBold(document.queryCommandState("bold"));
+    setIsItalic(document.queryCommandState("italic"));
+    setIsUnderline(document.queryCommandState("underline"));
+    setIsHighlight(findRichElementsInRange(editor, range, isHighlightElement).length > 0);
+    setTextSize(detectPautaInlineSize(editor, range.startContainer));
+    setListState(
+      document.queryCommandState("insertOrderedList") ? "ol" : document.queryCommandState("insertUnorderedList") ? "ul" : ""
+    );
+  }
+
+  function handleSelection() {
+    rememberSelection();
+    updateFormatState();
+  }
+
+  function handleInput() {
+    emitChange();
+    setHint("");
+  }
+
+  function applyTextSize(nextSize: PautaInlineSize) {
+    const size = pautaInlineSizes.find((item) => item.value === nextSize);
+    if (!size) return;
+    setTextSize(nextSize);
+    restoreSelection();
+    document.execCommand("styleWithCSS", false, "false");
+    document.execCommand("fontSize", false, size.exec);
+    emitChange();
+    setHint(window.getSelection()?.isCollapsed ? "O novo tamanho vale para o texto digitado a partir do cursor." : "");
+  }
+
+  function applyCommand(command: "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList") {
+    restoreSelection();
+    document.execCommand(command);
+    emitChange();
+    updateFormatState();
+    setHint("");
+  }
+
+  function toggleHighlight() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    restoreSelection();
+    const range = getRichSelectionRange(editor);
+    if (!range) return;
+
+    const highlighted = findRichElementsInRange(editor, range, isHighlightElement);
+    if (highlighted.length) {
+      removeHighlightFromElements(highlighted);
+    } else if (range.collapsed) {
+      setHint("Selecione o trecho que deseja grifar.");
+      return;
+    } else {
+      const applied = document.execCommand("hiliteColor", false, PAUTA_HIGHLIGHT_COLOR);
+      if (!applied) document.execCommand("backColor", false, PAUTA_HIGHLIGHT_COLOR);
+    }
+
+    setHint("");
+    emitChange();
+    updateFormatState();
+  }
+
+  function clearFormatting() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    restoreSelection();
+    const range = getRichSelectionRange(editor);
+    if (!range || range.collapsed) {
+      setHint("Selecione o trecho cuja formatação deseja remover.");
+      return;
+    }
+
+    document.execCommand("removeFormat");
+    const after = getRichSelectionRange(editor);
+    if (after) {
+      removeHighlightFromElements(findRichElementsInRange(editor, after, isHighlightElement));
+      findRichElementsInRange(editor, after, isRichFormattingElement).forEach(unwrapElement);
+    }
+
+    setHint("");
+    emitChange();
+    updateFormatState();
+  }
+
+  // Botoes agem no mousedown para nao tirar a selecao do texto; o clique por teclado (detail 0) tambem funciona.
+  const toolbarButtonHandlers = (action: () => void) => ({
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (event.detail === 0) action();
+    },
+    onMouseDown: (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      action();
+    }
+  });
+
+  return (
+    <div className="rich-editor-field">
+      {label ? <span>{label}</span> : null}
+      <div className="pauta-format-toolbar" role="toolbar" aria-label={`Formatação: ${ariaLabel}`}>
+        <label className="pauta-format-size">
+          <span className="sr-only">Tamanho da fonte</span>
+          <select
+            aria-label="Tamanho da fonte"
+            title="Tamanho da fonte do trecho selecionado"
+            value={textSize}
+            onMouseDown={rememberSelection}
+            onChange={(event) => applyTextSize(event.target.value as PautaInlineSize)}
+          >
+            {pautaInlineSizes.map((size) => (
+              <option key={size.value} value={size.value}>
+                {size.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span aria-hidden="true" className="pauta-format-divider" />
+        {(
+          [
+            { command: "bold", title: "Negrito (Ctrl+B)", Icon: BoldIcon, active: isBold },
+            { command: "italic", title: "Itálico (Ctrl+I)", Icon: ItalicIcon, active: isItalic },
+            { command: "underline", title: "Sublinhado (Ctrl+U)", Icon: UnderlineIcon, active: isUnderline }
+          ] as const
+        ).map(({ command, title, Icon, active }) => (
+          <button
+            aria-label={title}
+            aria-pressed={active}
+            className={active ? "active" : ""}
+            key={command}
+            title={title}
+            type="button"
+            {...toolbarButtonHandlers(() => applyCommand(command))}
+          >
+            <Icon size={15} strokeWidth={1.8} />
+          </button>
+        ))}
+        <button
+          aria-label={isHighlight ? "Remover grifo" : "Grifo amarelo"}
+          aria-pressed={isHighlight}
+          className={isHighlight ? "highlight-active" : ""}
+          title={isHighlight ? "Remover grifo do trecho" : "Grifo amarelo no trecho selecionado"}
+          type="button"
+          {...toolbarButtonHandlers(toggleHighlight)}
+        >
+          <Highlighter size={15} strokeWidth={1.8} />
+        </button>
+        <span aria-hidden="true" className="pauta-format-divider" />
+        {(
+          [
+            { command: "insertUnorderedList", title: "Lista com marcadores", Icon: ListIcon, active: listState === "ul" },
+            { command: "insertOrderedList", title: "Lista numerada", Icon: ListOrdered, active: listState === "ol" }
+          ] as const
+        ).map(({ command, title, Icon, active }) => (
+          <button
+            aria-label={title}
+            aria-pressed={active}
+            className={active ? "active" : ""}
+            key={command}
+            title={title}
+            type="button"
+            {...toolbarButtonHandlers(() => applyCommand(command))}
+          >
+            <Icon size={15} strokeWidth={1.8} />
+          </button>
+        ))}
+        <span aria-hidden="true" className="pauta-format-divider" />
+        <button
+          aria-label="Limpar formatação"
+          title="Limpar formatação do trecho selecionado"
+          type="button"
+          {...toolbarButtonHandlers(clearFormatting)}
+        >
+          <RemoveFormatting size={15} strokeWidth={1.8} />
+        </button>
+      </div>
+      <div
+        aria-label={ariaLabel}
+        className="pauta-description-input pauta-rich-text"
+        contentEditable
+        data-placeholder={placeholder}
+        onBlur={rememberSelection}
+        onInput={handleInput}
+        onKeyUp={handleSelection}
+        onMouseUp={handleSelection}
+        ref={editorRef}
+        role="textbox"
+        aria-multiline="true"
+        style={editorStyle}
+        suppressContentEditableWarning
+      />
+      {hint ? <small className="pauta-format-hint">{hint}</small> : null}
+    </div>
+  );
 }
 
 function sanitizePautaRichHtml(value: string) {
