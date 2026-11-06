@@ -33,6 +33,18 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const tools = detectTools();
+addToolDirsToPath(tools);
+
+// Coloca a pasta do Tesseract/LibreOffice no PATH deste processo para o OCRmyPDF encontra-los.
+function addToolDirsToPath(found) {
+  const dirs = [found.tesseract, found.soffice]
+    .filter((value) => typeof value === "string" && /[\\/]/.test(value))
+    .map((value) => dirname(value));
+  if (!dirs.length) return;
+  const key = Object.keys(process.env).find((name) => name.toLowerCase() === "path") || "PATH";
+  const sep = process.platform === "win32" ? ";" : ":";
+  process.env[key] = [...dirs, process.env[key] || ""].join(sep);
+}
 
 main().catch((error) => {
   fail(getErrorMessage(error));
@@ -184,6 +196,8 @@ async function processPdf(resource, originalPath, workDir) {
     "--skip-text",
     "--rotate-pages",
     "--deskew",
+    "--output-type",
+    "pdf",
     "-l",
     language,
     originalPath,
@@ -262,6 +276,8 @@ async function processOffice(resource, originalPath, workDir) {
     "--skip-text",
     "--rotate-pages",
     "--deskew",
+    "--output-type",
+    "pdf",
     "-l",
     language,
     convertedPath,

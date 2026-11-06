@@ -15,6 +15,7 @@ const allowedOrigins = new Set(
     "https://hub-depto-tributario-hteix.netlify.app",
     "http://127.0.0.1:5173",
     "http://localhost:5173",
+    "http://127.0.0.1:5180",
     ...(process.env.ARQUIVOS_AGENT_ALLOWED_ORIGINS || "")
       .split(",")
       .map((origin) => origin.trim())
@@ -48,6 +49,15 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === "POST" && url.pathname === "/process") {
+    const requestOrigin = request.headers.origin || "";
+    if (requestOrigin && !allowedOrigins.has(requestOrigin)) {
+      sendJson(response, 403, {
+        ok: false,
+        error: "Origem não autorizada a acionar o OCR deste computador."
+      });
+      return;
+    }
+
     if (running) {
       sendJson(response, 409, {
         ok: false,
