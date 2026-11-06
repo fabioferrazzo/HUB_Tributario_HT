@@ -7,9 +7,11 @@
   Clock3,
   Edit3,
   FileArchive,
+  FileText,
   Filter,
   Highlighter,
   Home,
+  Image as ImageIcon,
   Link2,
   ListChecks,
   LogOut,
@@ -23,9 +25,11 @@
   Search,
   Settings,
   ShieldCheck,
+  StickyNote,
   Tag,
   Timer,
   Trash2,
+  Type as TypeIcon,
   UserRoundCog,
   UserRound,
   X
@@ -56,7 +60,7 @@ import {
   saveAppFileResource
 } from "./lib/arquivosRepository";
 import { getStoredSession, getSupabaseAccessToken, signIn, signOut } from "./lib/auth";
-import { listQuadroAvisos, saveQuadroAviso, uploadQuadroAvisoFile } from "./lib/avisosRepository";
+import { deleteQuadroAviso, listQuadroAvisos, saveQuadroAviso, uploadQuadroAvisoFile } from "./lib/avisosRepository";
 import {
   canUserManageLembrete,
   deleteAppLembrete,
@@ -1309,6 +1313,9 @@ function Dashboard({
   const [avisoSelectedFile, setAvisoSelectedFile] = useState<File | null>(null);
   const [avisoDrawColor, setAvisoDrawColor] = useState("#1d3f6d");
   const [avisoDrawSize, setAvisoDrawSize] = useState(4);
+  const [avisosPanel, setAvisosPanel] = useState<"leitura" | "editor" | null>(null);
+  const [avisoDeleteId, setAvisoDeleteId] = useState("");
+  const [avisoDeleting, setAvisoDeleting] = useState(false);
   const avisoFileInputRef = useRef<HTMLInputElement | null>(null);
   const avisoCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const avisoDrawingRef = useRef(false);
@@ -1929,6 +1936,7 @@ function Dashboard({
       if (avisoFileInputRef.current) {
         avisoFileInputRef.current.value = "";
       }
+      setAvisosPanel("leitura");
       setAvisoMessage("Aviso salvo no quadro.");
     } catch (saveError) {
       setAvisoMessage(getErrorMessage(saveError));
@@ -1937,11 +1945,161 @@ function Dashboard({
     }
   }
 
+  function getAvisoAuthorName(aviso: QuadroAviso) {
+    const email = (aviso.createdByEmail || "").trim().toLowerCase();
+    const profile = hubUsers.find((member) => member.email.trim().toLowerCase() === email);
+    return profile?.nome || aviso.createdByEmail || "Autor não identificado";
+  }
+
+  function getAvisoRecipientNames(aviso: QuadroAviso) {
+    return aviso.selectedUsers.map(
+      (email) => hubUsers.find((member) => member.email.trim().toLowerCase() === email)?.nome || email
+    );
+  }
+
+  function canManageAviso(aviso: QuadroAviso) {
+    if (user.role === "admin") return true;
+    if (aviso.createdBy && user.id && aviso.createdBy === user.id) return true;
+    return Boolean(aviso.createdByEmail) && aviso.createdByEmail === user.email.trim().toLowerCase();
+  }
+
+  function openAvisoCell(cell: number) {
+    setSelectedAvisoCell(cell);
+    setAvisosPanel("leitura");
+    setAvisoDeleteId("");
+    setAvisoMessage("");
+  }
+
+  function openAvisoEditor(cell = selectedAvisoCell) {
+    setSelectedAvisoCell(cell);
+    setAvisosPanel("editor");
+    setAvisosDrawMode(false);
+    setAvisoDeleteId("");
+    setAvisoMessage("");
+  }
+
+  function closeAvisosPanel() {
+    setAvisosPanel(null);
+    setAvisoDeleteId("");
+  }
+
+  async function handleDeleteAviso(aviso: QuadroAviso) {
+    if (avisoDeleteId !== aviso.id) {
+      setAvisoDeleteId(aviso.id);
+      return;
+    }
+
+    setAvisoDeleting(true);
+    setAvisoMessage("");
+    try {
+      const nextAvisos = await deleteQuadroAviso({ current: quadroAvisos, aviso, user });
+      setQuadroAvisos(nextAvisos);
+      setAvisoDeleteId("");
+      setAvisoMessage("Aviso excluído.");
+    } catch (deleteError) {
+      setAvisoMessage(getErrorMessage(deleteError));
+    } finally {
+      setAvisoDeleting(false);
+    }
+  }
+
+  function renderAvisoCard(aviso: QuadroAviso, mode: "quadro" | "leitura") {
+    const isPostit = aviso.kind === "postit";
+    const caption = aviso.content && aviso.content !== aviso.fileName ? aviso.content : "";
+    const text = aviso.kind === "texto" || isPostit ? aviso.content : caption;
+    const stopCellClick = (event: { stopPropagation: () => void }) => event.stopPropagation();
+
+    return (
+      <article
+        className={`aviso-card aviso-card--${aviso.kind} aviso-card--${mode}`}
+        key={aviso.id}
+        style={isPostit ? { background: aviso.color || "#fff4b8" } : undefined}
+      >
+        {aviso.kind === "imagem" ? (
+          aviso.fileUrl ? (
+            <a
+              className="aviso-card__image"
+              href={aviso.fileUrl}
+              rel="noreferrer"
+              target="_blank"
+              title="Abrir imagem em tamanho original"
+              onClick={stopCellClick}
+            >
+              <img alt={caption || aviso.fileName || "Imagem do aviso"} src={aviso.fileUrl} />
+            </a>
+          ) : (
+            <span className="aviso-card__file aviso-card__file--indisponivel">
+              <ImageIcon size={18} strokeWidth={1.6} />
+              <span>Imagem indisponível no momento</span>
+            </span>
+          )
+        ) : null}
+        {aviso.kind === "anexo" ? (
+          aviso.fileUrl ? (
+            <a
+              className="aviso-card__file"
+              href={aviso.fileUrl}
+              rel="noreferrer"
+              target="_blank"
+              title="Abrir anexo"
+              onClick={stopCellClick}
+            >
+              <FileText size={18} strokeWidth={1.6} />
+              <span>{aviso.fileName || "Documento anexado"}</span>
+            </a>
+          ) : (
+            <span className="aviso-card__file aviso-card__file--indisponivel">
+              <FileText size={18} strokeWidth={1.6} />
+              <span>{aviso.fileName || "Documento"} (indisponível no momento)</span>
+            </span>
+          )
+        ) : null}
+        {text ? <p className="aviso-card__text">{text}</p> : null}
+        <footer className="aviso-card__meta">
+          <span>{mode === "quadro" ? getAvisoAuthorName(aviso).split(" ")[0] : getAvisoAuthorName(aviso)}</span>
+          <span>{formatDate(aviso.updatedAt)}</span>
+        </footer>
+        {mode === "leitura" && aviso.visibility === "particular" && aviso.selectedUsers.length ? (
+          <p className="aviso-card__para">Para: {getAvisoRecipientNames(aviso).join(", ")}</p>
+        ) : null}
+        {mode === "leitura" && canManageAviso(aviso) ? (
+          <div className="aviso-card__actions">
+            {avisoDeleteId === aviso.id ? (
+              <>
+                <span>Excluir este aviso definitivamente?</span>
+                <button disabled={avisoDeleting} type="button" onClick={() => setAvisoDeleteId("")}>
+                  Cancelar
+                </button>
+                <button className="danger" disabled={avisoDeleting} type="button" onClick={() => handleDeleteAviso(aviso)}>
+                  {avisoDeleting ? "Excluindo..." : "Confirmar exclusão"}
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={() => handleDeleteAviso(aviso)}>
+                <Trash2 size={14} strokeWidth={1.6} />
+                Excluir
+              </button>
+            )}
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
   function renderQuadroAvisos() {
     const avisoCells = Array.from({ length: 10 }, (_, index) => index + 1);
     const activeProfiles = getActiveProfiles(hubUsers);
     const visibleAvisos = quadroAvisos.filter((aviso) => aviso.visibility === avisosView);
     const selectedCellAvisos = visibleAvisos.filter((aviso) => aviso.cell === selectedAvisoCell);
+    const selectedCellLabel = `Espaço ${String(selectedAvisoCell).padStart(2, "0")}`;
+    const boardLabel = avisosView === "geral" ? "Quadro geral" : "Quadro particular";
+    const avisoKinds = [
+      { kind: "texto", label: "Texto", Icon: TypeIcon },
+      { kind: "postit", label: "Post-it", Icon: StickyNote },
+      { kind: "imagem", label: "Imagem", Icon: ImageIcon },
+      { kind: "anexo", label: "Anexo", Icon: Paperclip }
+    ] as const;
+    const isFileKind = avisoKind === "imagem" || avisoKind === "anexo";
 
     return (
       <div className="avisos-board">
@@ -1969,27 +2127,34 @@ function Dashboard({
             </button>
           </div>
           {!avisosDrawMode ? (
-            <div className="avisos-mode-switch" aria-label="Filtro do quadro de avisos">
-              <button
-                className={avisosView === "geral" ? "active" : ""}
-                type="button"
-                onClick={() => handleAvisosViewChange("geral")}
-              >
-                Quadro geral
-              </button>
-              <button
-                className={avisosView === "particular" ? "active" : ""}
-                type="button"
-                onClick={() => handleAvisosViewChange("particular")}
-              >
-                Quadro particular
+            <div className="avisos-toolbar-side">
+              {avisosLoading ? <span className="avisos-status">Carregando avisos...</span> : null}
+              <div className="avisos-mode-switch" aria-label="Filtro do quadro de avisos">
+                <button
+                  className={avisosView === "geral" ? "active" : ""}
+                  type="button"
+                  onClick={() => handleAvisosViewChange("geral")}
+                >
+                  Quadro geral
+                </button>
+                <button
+                  className={avisosView === "particular" ? "active" : ""}
+                  type="button"
+                  onClick={() => handleAvisosViewChange("particular")}
+                >
+                  Quadro particular
+                </button>
+              </div>
+              <button className="avisos-new" type="button" onClick={() => openAvisoEditor()}>
+                <Plus size={14} strokeWidth={1.8} />
+                Novo aviso
               </button>
             </div>
           ) : null}
         </div>
 
         {avisoMessage ? (
-          <div className={`avisos-message ${avisoMessage.includes("salvo") ? "success" : ""}`}>
+          <div className={`avisos-message ${/salvo|excluído/.test(avisoMessage) ? "success" : ""}`}>
             {avisoMessage}
           </div>
         ) : null}
@@ -2045,155 +2210,198 @@ function Dashboard({
             </div>
           </div>
         ) : (
-          <div className="avisos-workspace">
-            <div className="avisos-grid" aria-label="Quadro de avisos em 10 partes">
-              {avisoCells.map((cell) => (
-                <button
-                  className={`aviso-cell ${selectedAvisoCell === cell ? "active" : ""}`}
-                  key={cell}
-                  type="button"
-                  onClick={() => setSelectedAvisoCell(cell)}
-                >
-                  <span className="aviso-cell__title">Espaco {String(cell).padStart(2, "0")}</span>
-                  <span className="aviso-cell__hint">
-                    {avisosView === "geral" ? "Geral" : "Particular"} - {visibleAvisos.filter((aviso) => aviso.cell === cell).length} aviso(s)
-                  </span>
-                  <span className="aviso-cell__list">
-                    {visibleAvisos
-                      .filter((aviso) => aviso.cell === cell)
-                      .slice(0, 3)
-                      .map((aviso) => (
-                        <span className={`aviso-pill aviso-pill--${aviso.kind}`} key={aviso.id}>
-                          {aviso.kind === "postit" ? "Post-it" : aviso.title}: {aviso.content.slice(0, 42)}
-                        </span>
-                      ))}
-                    {visibleAvisos.filter((aviso) => aviso.cell === cell).length > 3 ? (
-                      <span className="aviso-cell__more">
-                        +{visibleAvisos.filter((aviso) => aviso.cell === cell).length - 3}
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <aside className="avisos-editor-panel">
-              <span className="panel-status">{avisosLoading ? "Carregando" : "Supabase/local"}</span>
-              <h3>Editor do espaco {String(selectedAvisoCell).padStart(2, "0")}</h3>
-              <div className="pauta-format-toolbar avisos-format-toolbar">
-                <label>
-                  Tipo
-                  <select value={avisoKind} onChange={(event) => chooseAvisoKind(event.target.value as QuadroAvisoKind)}>
-                    <option value="texto">Texto</option>
-                    <option value="postit">Post-it</option>
-                    <option value="imagem">Imagem</option>
-                    <option value="anexo">Anexo</option>
-                  </select>
-                </label>
-              </div>
-              {avisoKind === "postit" ? (
-                <div className="aviso-color-swatches" aria-label="Cores da nota adesiva">
-                  {["#fff4b8", "#fde2e2", "#dcfce7", "#dbeafe", "#fef3c7", "#f3e8ff"].map((color) => (
-                    <button
-                      aria-label={`Usar cor ${color}`}
-                      className={avisoColor === color ? "active" : ""}
-                      key={color}
-                      style={{ background: color }}
-                      type="button"
-                      onClick={() => setAvisoColor(color)}
-                    />
-                  ))}
-                </div>
-              ) : null}
-              <textarea
-                placeholder={avisoKind === "postit" ? "Escreva o texto da nota adesiva." : "Escreva um aviso, orientacao ou recado para este espaco."}
-                value={avisoDraft}
-                onChange={(event) => setAvisoDraft(event.target.value)}
-              />
-              {avisoKind === "imagem" || avisoKind === "anexo" ? (
-                <div className="aviso-file-tools">
-                  <button type="button" onClick={() => openAvisoFilePicker(avisoKind)}>
-                    {avisoKind === "imagem" ? "Selecionar imagem" : "Selecionar anexo"}
-                  </button>
-                  {avisoSelectedFile ? (
-                    <span className="aviso-file-chip">
-                      {avisoSelectedFile.name}
+          <div className={`avisos-workspace ${avisosPanel ? "avisos-workspace--com-painel" : ""}`}>
+            <div className="avisos-grid" aria-label="Quadro de avisos em 10 espaços">
+              {avisoCells.map((cell) => {
+                const cellAvisos = visibleAvisos.filter((aviso) => aviso.cell === cell);
+                const cellLabel = `Espaço ${String(cell).padStart(2, "0")}`;
+                return (
+                  <section
+                    className={`aviso-cell ${avisosPanel && selectedAvisoCell === cell ? "active" : ""} ${cellAvisos.length ? "" : "aviso-cell--vazia"}`}
+                    key={cell}
+                    onClick={() => (cellAvisos.length ? openAvisoCell(cell) : openAvisoEditor(cell))}
+                  >
+                    <header className="aviso-cell__head">
                       <button
-                        aria-label="Remover arquivo selecionado"
+                        aria-label={cellAvisos.length ? `Abrir avisos do ${cellLabel}` : `Adicionar aviso no ${cellLabel}`}
+                        className="aviso-cell__title"
                         type="button"
-                        onClick={() => {
-                          setAvisoSelectedFile(null);
-                          if (avisoFileInputRef.current) {
-                            avisoFileInputRef.current.value = "";
-                          }
-                        }}
                       >
-                        x
+                        {cellLabel}
                       </button>
+                      {cellAvisos.length ? (
+                        <span className="aviso-cell__count">
+                          {cellAvisos.length} {cellAvisos.length === 1 ? "aviso" : "avisos"}
+                        </span>
+                      ) : null}
+                    </header>
+                    <div className="aviso-cell__body">
+                      {cellAvisos.length ? (
+                        cellAvisos.map((aviso) => renderAvisoCard(aviso, "quadro"))
+                      ) : (
+                        <span className="aviso-cell__empty">
+                          <Plus size={14} strokeWidth={1.6} />
+                          Adicionar aviso
+                        </span>
+                      )}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+
+            {avisosPanel === "leitura" ? (
+              <aside className="avisos-side-panel" aria-label={`Avisos do ${selectedCellLabel}`}>
+                <header className="avisos-side-panel__head">
+                  <div>
+                    <h3>{selectedCellLabel}</h3>
+                    <span>
+                      {boardLabel} · {selectedCellAvisos.length} {selectedCellAvisos.length === 1 ? "aviso" : "avisos"}
                     </span>
+                  </div>
+                  <div className="avisos-side-panel__actions">
+                    <button type="button" onClick={() => openAvisoEditor(selectedAvisoCell)}>
+                      <Plus size={14} strokeWidth={1.6} />
+                      Novo aviso
+                    </button>
+                    <button aria-label="Fechar painel" className="icon-only" type="button" onClick={closeAvisosPanel}>
+                      <X size={16} strokeWidth={1.6} />
+                    </button>
+                  </div>
+                </header>
+                <div className="avisos-side-panel__body">
+                  {selectedCellAvisos.length ? (
+                    selectedCellAvisos.map((aviso) => renderAvisoCard(aviso, "leitura"))
                   ) : (
-                    <small>Nenhum arquivo selecionado.</small>
+                    <p className="avisos-muted">Nenhum aviso neste espaço.</p>
                   )}
                 </div>
-              ) : null}
-              <div className="avisos-editor-actions">
-                <button type="button" onClick={() => openAvisoFilePicker("imagem")}>Inserir imagem</button>
-                <button type="button" onClick={() => openAvisoFilePicker("anexo")}>Anexar documento</button>
-                <button type="button" onClick={() => chooseAvisoKind("postit")}>Post-it</button>
-              </div>
-              <fieldset className="member-picker avisos-member-picker">
-                <legend>Salvar como</legend>
-                <label>
-                  <input checked={avisosView === "geral"} onChange={() => handleAvisosViewChange("geral")} type="radio" />
-                  Quadro geral
-                </label>
-                <label>
-                  <input checked={avisosView === "particular"} onChange={() => handleAvisosViewChange("particular")} type="radio" />
-                  Quadro particular
-                </label>
-              </fieldset>
-              {avisosView === "particular" ? (
-                <div className="avisos-user-list">
-                  {activeProfiles.map((member) => {
-                    const email = member.email.trim().toLowerCase();
-                    return (
-                      <label key={member.email}>
-                        <input
-                          checked={avisoSelectedUsers.includes(email)}
-                          onChange={() => toggleAvisoUser(member.email)}
-                          type="checkbox"
+              </aside>
+            ) : null}
+
+            {avisosPanel === "editor" ? (
+              <aside className="avisos-side-panel avisos-editor-panel" aria-label={`Novo aviso no ${selectedCellLabel}`}>
+                <header className="avisos-side-panel__head">
+                  <div>
+                    <h3>Novo aviso</h3>
+                    <span>{selectedCellLabel} · {boardLabel}</span>
+                  </div>
+                  <div className="avisos-side-panel__actions">
+                    {selectedCellAvisos.length ? (
+                      <button type="button" onClick={() => openAvisoCell(selectedAvisoCell)}>
+                        <ChevronLeft size={14} strokeWidth={1.6} />
+                        Ver avisos
+                      </button>
+                    ) : null}
+                    <button aria-label="Fechar editor" className="icon-only" type="button" onClick={closeAvisosPanel}>
+                      <X size={16} strokeWidth={1.6} />
+                    </button>
+                  </div>
+                </header>
+                <div className="avisos-side-panel__body">
+                  <div className="aviso-kind-switch" role="radiogroup" aria-label="Tipo de aviso">
+                    {avisoKinds.map(({ kind, label, Icon }) => (
+                      <button
+                        aria-checked={avisoKind === kind}
+                        className={avisoKind === kind ? "active" : ""}
+                        key={kind}
+                        role="radio"
+                        type="button"
+                        onClick={() => chooseAvisoKind(kind)}
+                      >
+                        <Icon size={16} strokeWidth={1.6} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {avisoKind === "postit" ? (
+                    <div className="aviso-color-swatches" aria-label="Cores da nota adesiva">
+                      {["#fff4b8", "#fde2e2", "#dcfce7", "#dbeafe", "#fef3c7", "#f3e8ff"].map((color) => (
+                        <button
+                          aria-label={`Usar cor ${color}`}
+                          className={avisoColor === color ? "active" : ""}
+                          key={color}
+                          style={{ background: color }}
+                          type="button"
+                          onClick={() => setAvisoColor(color)}
                         />
-                        {member.nome}
-                      </label>
-                    );
-                  })}
+                      ))}
+                    </div>
+                  ) : null}
+                  {isFileKind ? (
+                    <div className="aviso-file-tools">
+                      <button type="button" onClick={() => avisoFileInputRef.current?.click()}>
+                        {avisoKind === "imagem" ? "Selecionar imagem" : "Selecionar documento"}
+                      </button>
+                      {avisoSelectedFile ? (
+                        <span className="aviso-file-chip">
+                          {avisoSelectedFile.name}
+                          <button
+                            aria-label="Remover arquivo selecionado"
+                            type="button"
+                            onClick={() => {
+                              setAvisoSelectedFile(null);
+                              if (avisoFileInputRef.current) {
+                                avisoFileInputRef.current.value = "";
+                              }
+                            }}
+                          >
+                            <X size={12} strokeWidth={1.8} />
+                          </button>
+                        </span>
+                      ) : (
+                        <small>Nenhum arquivo selecionado.</small>
+                      )}
+                    </div>
+                  ) : null}
+                  <label className="aviso-field">
+                    <span>{isFileKind ? "Legenda (opcional)" : "Texto do aviso"}</span>
+                    <textarea
+                      placeholder={
+                        avisoKind === "postit"
+                          ? "Escreva o texto da nota adesiva."
+                          : isFileKind
+                            ? "Descreva brevemente o arquivo, se quiser."
+                            : "Escreva o aviso, orientação ou recado."
+                      }
+                      value={avisoDraft}
+                      onChange={(event) => setAvisoDraft(event.target.value)}
+                    />
+                  </label>
+                  <fieldset className="member-picker avisos-member-picker">
+                    <legend>Publicar em</legend>
+                    <label>
+                      <input checked={avisosView === "geral"} onChange={() => handleAvisosViewChange("geral")} type="radio" />
+                      Quadro geral
+                    </label>
+                    <label>
+                      <input checked={avisosView === "particular"} onChange={() => handleAvisosViewChange("particular")} type="radio" />
+                      Quadro particular
+                    </label>
+                  </fieldset>
+                  {avisosView === "particular" ? (
+                    <div className="avisos-user-list" aria-label="Destinatários do aviso particular">
+                      {activeProfiles.map((member) => {
+                        const email = member.email.trim().toLowerCase();
+                        return (
+                          <label key={member.email}>
+                            <input
+                              checked={avisoSelectedUsers.includes(email)}
+                              onChange={() => toggleAvisoUser(member.email)}
+                              type="checkbox"
+                            />
+                            {member.nome}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  <button className="primary-action" disabled={avisoSaving || avisosLoading} type="button" onClick={handleSaveAviso}>
+                    {avisoSaving ? "Salvando..." : "Salvar aviso"}
+                  </button>
                 </div>
-              ) : null}
-              <button className="primary-action" disabled={avisoSaving || avisosLoading} type="button" onClick={handleSaveAviso}>
-                {avisoSaving ? "Salvando..." : "Salvar aviso"}
-              </button>
-              <div className="avisos-saved-list">
-                <strong>Avisos deste espaco</strong>
-                {selectedCellAvisos.length ? selectedCellAvisos.map((aviso) => (
-                  <article
-                    className={`avisos-saved-item avisos-saved-item--${aviso.kind}`}
-                    key={aviso.id}
-                    style={aviso.kind === "postit" ? { background: aviso.color || "#fff4b8" } : undefined}
-                  >
-                    <span>{aviso.kind === "postit" ? "Post-it" : aviso.title}</span>
-                    {aviso.kind === "imagem" && aviso.fileUrl ? (
-                      <img alt={aviso.content || aviso.fileName || "Imagem do aviso"} className="avisos-saved-image" src={aviso.fileUrl} />
-                    ) : null}
-                    {aviso.kind === "anexo" && aviso.fileUrl ? (
-                      <a className="avisos-saved-file" href={aviso.fileUrl} rel="noreferrer" target="_blank">
-                        Abrir anexo: {aviso.fileName || aviso.content}
-                      </a>
-                    ) : null}
-                    {aviso.content ? <p>{aviso.content}</p> : null}
-                    <small>{formatDate(aviso.updatedAt)} - {aviso.visibility === "geral" ? "geral" : "particular"}</small>
-                  </article>
-                )) : <p className="avisos-muted">Nenhum aviso salvo neste espaco.</p>}
-              </div>
-            </aside>
+              </aside>
+            ) : null}
           </div>
         )}
       </div>

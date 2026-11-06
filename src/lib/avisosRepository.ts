@@ -331,3 +331,37 @@ export async function saveQuadroAviso({
   notifyQuadroAvisosChanged();
   return merged.filter((item) => canUserViewAviso(item, user));
 }
+
+export async function deleteQuadroAviso({
+  current,
+  aviso,
+  user
+}: {
+  current: QuadroAviso[];
+  aviso: QuadroAviso;
+  user: HubUser;
+}): Promise<QuadroAviso[]> {
+  if (getAvisosSource(user) === "supabase") {
+    const client = supabase;
+    if (!client) return current;
+
+    const { data, error } = await client.from("quadro_avisos").delete().eq("id", aviso.id).select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error("Sem permissão para excluir este aviso. Somente o autor ou um administrador pode excluí-lo.");
+    }
+
+    if (aviso.filePath) {
+      const { error: storageError } = await client.storage.from(QUADRO_AVISOS_BUCKET).remove([aviso.filePath]);
+      if (storageError) console.warn("Aviso excluido, mas o arquivo anexo nao foi removido.", storageError);
+    }
+
+    notifyQuadroAvisosChanged();
+    return loadSupabaseAvisos(user);
+  }
+
+  const remaining = readStorage<QuadroAviso[]>(QUADRO_AVISOS_STORAGE_KEY, []).filter((item) => item.id !== aviso.id);
+  writeStorage(QUADRO_AVISOS_STORAGE_KEY, remaining);
+  notifyQuadroAvisosChanged();
+  return remaining.filter((item) => canUserViewAviso(item, user));
+}
