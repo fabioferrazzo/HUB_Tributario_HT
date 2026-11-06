@@ -102,7 +102,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111010",
-    titulo: "Reforma Tributária - Ministerio da Fazenda",
+    titulo: "Reforma Tributária - Ministério da Fazenda",
     url: "https://www.gov.br/fazenda/pt-br/acesso-a-informacao/acoes-e-programas/reforma-tributaria",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,

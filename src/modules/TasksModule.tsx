@@ -408,7 +408,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
         if (!response.ok) throw new Error(data?.error || `Não foi possível enviar o calendário para ${to}.`);
       }
 
-      setTaskEmailStatus(`Resumo enviado para ${recipients.length} destinatario(s).`);
+      setTaskEmailStatus(`Resumo enviado para ${recipients.length} destinatário(s).`);
     } catch (sendError) {
       setError(getErrorMessage(sendError));
     } finally {

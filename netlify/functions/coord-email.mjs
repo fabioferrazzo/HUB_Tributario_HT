@@ -14,7 +14,7 @@ const MANAGER_ROLES = new Set(["admin", "gestor"]);
 
 export default async function handler(request) {
   if (request.method !== "POST") {
-    return json(405, { error: "Metodo não permitido." });
+    return json(405, { error: "Método não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -46,7 +46,7 @@ export default async function handler(request) {
     const textBody = String(payload.body || "").trim();
 
     if (!to || !subject || (!htmlBody && !textBody)) {
-      return respond(request, 400, { error: "Destinatario, assunto e corpo são obrigatorios." });
+      return respond(request, 400, { error: "Destinatário, assunto e corpo são obrigatórios." });
     }
 
     const category = inferCategory(subject, payload.collaboratorName);

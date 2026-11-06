@@ -9,7 +9,7 @@ const SCOPES = new Set(["todos", "usuarios"]);
 
 export default async function handler(request) {
   if (request.method !== "POST") {
-    return json(405, { error: "Metodo não permitido." });
+    return json(405, { error: "Método não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");

@@ -23,7 +23,7 @@ export const mockPautas: Pauta[] = [
     acoes: "Verificar comunicados recentes",
     prazo: "2026-05-10",
     prioridade: "Normal",
-    responsavel: "Gestao tributária",
+    responsavel: "Gestão tributária",
     email: "",
     pendenciasObs: "",
     retorno: "",
@@ -129,7 +129,7 @@ const legacyMockLegislacoes: Noticia[] = [
   },
   {
     id: "leg-2",
-    titulo: "Acompanhar atos normativos no Planalto sobre regulamentacao da Reforma Tributária",
+    titulo: "Acompanhar atos normativos no Planalto sobre regulamentação da Reforma Tributária",
     fonte: "Planalto",
     url: "https://www4.planalto.gov.br/legislacao",
     data: "2026-05-07"
@@ -146,7 +146,7 @@ const legacyMockLegislacoes: Noticia[] = [
 export const mockNoticias: Noticia[] = [
   {
     id: "noticia-rfb-curso-rtc",
-    titulo: "Receita Federal e CFC iniciam capacitacao sobre a Reforma Tributária do Consumo",
+    titulo: "Receita Federal e CFC iniciam capacitação sobre a Reforma Tributária do Consumo",
     fonte: "Receita Federal",
     url: "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/maio/receita-federal-e-conselho-federal-de-contabilidade-iniciam-capacitacao-inedita-sobre-a-reforma-tributaria-do-consumo",
     data: "2026-05-12",
@@ -155,7 +155,7 @@ export const mockNoticias: Noticia[] = [
   },
   {
     id: "noticia-rfb-programacao-rtc",
-    titulo: "Receita Federal divulga programacao do Curso Reforma Tributária do Consumo",
+    titulo: "Receita Federal divulga programação do Curso Reforma Tributária do Consumo",
     fonte: "Receita Federal",
     url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/curso/programacao",
     data: "2026-05-06",
@@ -177,7 +177,7 @@ export const mockLegislacoes: Noticia[] = [
   {
     id: "leg-portaria-mf-cgibs-7-2026",
     titulo: "Portaria Conjunta MF/CGIBS nº 7, de 30 de abril de 2026",
-    fonte: "Diário Oficial da Uniao",
+    fonte: "Diário Oficial da União",
     url: "https://www.in.gov.br/web/dou/-/portaria-conjunta-mf/cgibs-n-7-de-30-de-abril-de-2026-702822417",
     data: "2026-04-30",
     tipo: "legislacao",

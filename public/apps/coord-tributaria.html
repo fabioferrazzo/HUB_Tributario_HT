@@ -885,7 +885,7 @@
           </section>
           <aside class="panel">
             <div class="panel-header">
-              <h2>Ações rapidas</h2>
+              <h2>Ações rápidas</h2>
             </div>
             <div class="panel-body">
               <button type="button" class="primary" id="quickAddReminder">+ Lembrete</button>
@@ -915,12 +915,12 @@
             </div>
             <div class="panel-body">
               <form id="emailForm" class="stack-form">
-                <label>Destinatario<input id="emailTo" type="email" required /></label>
+                <label>Destinatário<input id="emailTo" type="email" required /></label>
                 <label>Token de envio opcional<input id="emailToken" type="password" placeholder="EMAIL_DISPATCH_TOKEN, se não houver sessão" /></label>
                 <button type="button" class="primary" id="sendAgendaEmail">Enviar pauta por e-mail</button>
                 <button type="button" id="sendEvaluationEmail">Enviar avaliações por e-mail</button>
               </form>
-              <p class="subtitle">O envio usa a sessão do HUB quando disponível. O token fica apenas como contingencia operacional.</p>
+              <p class="subtitle">O envio usa a sessão do HUB quando disponível. O token fica apenas como contingência operacional.</p>
             </div>
           </aside>
           <section class="panel bonus-panel">
@@ -943,7 +943,7 @@
                 <label>Período<input id="bonusPeriod" placeholder="Ex.: Junho/2026" /></label>
                 <label class="wide">Recomendações<textarea id="bonusRecommendations" placeholder="Recomendações, observações e pontos de acompanhamento."></textarea></label>
               </div>
-              <p id="bonusTemplateNotice" class="subtitle">Envie um XLSX para abrir um espelho editavel ou use Preencher avaliações para criar uma base.</p>
+              <p id="bonusTemplateNotice" class="subtitle">Envie um XLSX para abrir um espelho editável ou use Preencher avaliações para criar uma base.</p>
               <div id="bonusTableWrap" class="bonus-table-wrap"></div>
             </div>
           </section>
@@ -1489,7 +1489,7 @@
         const rowCount = bonusTemplate.rows.length;
         refs.bonusTemplateNotice.textContent = rowCount
           ? `${bonusTemplate.fileName || "Template"} - ${bonusTemplate.sheetName || "Planilha"} - ${rowCount} linha(s) editaveis.`
-          : "Envie um XLSX para abrir um espelho editavel ou use Preencher avaliações para criar uma base.";
+          : "Envie um XLSX para abrir um espelho editável ou use Preencher avaliações para criar uma base.";
 
         if (!rowCount) {
           refs.bonusTableWrap.innerHTML = empty("Nenhum template carregado.");
@@ -1854,7 +1854,7 @@
       function deleteReminder(id) {
         const item = state.reminders.find((reminder) => reminder.id === id);
         if (!item) return;
-        if (!window.confirm("Excluir este lembrete? Ele ficara no histórico por 30 dias.")) return;
+        if (!window.confirm("Excluir este lembrete? Ele ficará no histórico por 30 dias.")) return;
         item.deletedAt = new Date().toISOString();
         item.status = "concluido";
         saveState();
@@ -1954,8 +1954,8 @@
         const to = refs.emailTo.value.trim();
         syncState.token = syncState.token || readStoredAuthToken();
         const token = refs.emailToken.value.trim() || sessionStorage.getItem(EMAIL_TOKEN_KEY) || "";
-        if (!to) return showNotice("Informe o destinatario do e-mail.", true);
-        if (!token && !syncState.token) return showNotice("Sessão do HUB não encontrada. Informe o EMAIL_DISPATCH_TOKEN apenas se precisar usar a contingencia.", true);
+        if (!to) return showNotice("Informe o destinatário do e-mail.", true);
+        if (!token && !syncState.token) return showNotice("Sessão do HUB não encontrada. Informe o EMAIL_DISPATCH_TOKEN apenas se precisar usar a contingência.", true);
 
         if (token) sessionStorage.setItem(EMAIL_TOKEN_KEY, token);
         const report = buildReportText();

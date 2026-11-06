@@ -61,7 +61,7 @@ export function FooterUpdates() {
 }
 
 export function UpdateTicker({ icon, items, onOpen, title }: { icon: React.ReactNode; items: Noticia[]; onOpen: () => void; title: string }) {
-  const tickerItems = items.length ? items : [{ id: `${title}-empty`, titulo: "Aguardando atualizações automaticas", fonte: "HUB", url: "#", data: "" }];
+  const tickerItems = items.length ? items : [{ id: `${title}-empty`, titulo: "Aguardando atualizações automáticas", fonte: "HUB", url: "#", data: "" }];
   const repeatCount = Math.max(2, Math.ceil(6 / tickerItems.length));
   const loopItems = Array.from({ length: repeatCount }, () => tickerItems).flat();
   const textSize = tickerItems.reduce((total, item) => total + item.fonte.length + item.titulo.length, 0);

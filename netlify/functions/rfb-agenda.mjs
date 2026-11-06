@@ -39,7 +39,7 @@ const MONTH_NAMES = {
 
 export default async function handler(request) {
   if (request.method === "OPTIONS") return json(204, {});
-  if (request.method !== "GET") return json(405, { error: "Metodo não permitido." });
+  if (request.method !== "GET") return json(405, { error: "Método não permitido." });
 
   const url = new URL(request.url);
   const year = clampInteger(url.searchParams.get("year"), 2020, 2035, new Date().getFullYear());

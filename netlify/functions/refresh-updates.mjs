@@ -66,7 +66,7 @@ const SOURCES = [
   {
     tipo: "noticia",
     sourceType: "oficial",
-    fonte: "Ministerio da Fazenda",
+    fonte: "Ministério da Fazenda",
     url: "https://www.gov.br/fazenda/pt-br/assuntos/noticias/",
     parser: "html",
     keywords: KEYWORDS
@@ -82,7 +82,7 @@ const SOURCES = [
   {
     tipo: "noticia",
     sourceType: "oficial",
-    fonte: "Camara dos Deputados",
+    fonte: "Câmara dos Deputados",
     url: "https://www.camara.leg.br/noticias/",
     parser: "html",
     keywords: KEYWORDS
@@ -106,7 +106,7 @@ const SOURCES = [
   {
     tipo: "noticia",
     sourceType: "especializada",
-    fonte: "Portal Contabeis",
+    fonte: "Portal Contábeis",
     url: "https://www.contabeis.com.br/rss/noticias/",
     parser: "rss",
     keywords: KEYWORDS
@@ -114,7 +114,7 @@ const SOURCES = [
   {
     tipo: "legislacao",
     sourceType: "oficial",
-    fonte: "SEFAZ/RS Legislacao",
+    fonte: "SEFAZ/RS Legislação",
     url: "http://www.sefaz.rs.gov.br/Rss/alteracaolegislacao.xml",
     parser: "rss",
     keywords: LEGISLATION_KEYWORDS
@@ -138,7 +138,7 @@ const SOURCES = [
   {
     tipo: "legislacao",
     sourceType: "oficial",
-    fonte: "Comite Gestor do IBS",
+    fonte: "Comitê Gestor do IBS",
     url: "https://www.cgibs.gov.br/regulamentos",
     parser: "html",
     keywords: LEGISLATION_KEYWORDS
@@ -150,7 +150,7 @@ const FALLBACK_UPDATES = [
     tipo: "noticia",
     sourceType: "oficial",
     fonte: "Receita Federal",
-    title: "Receita Federal e CFC iniciam capacitacao sobre a Reforma Tributaria do Consumo",
+    title: "Receita Federal e CFC iniciam capacitação sobre a Reforma Tributária do Consumo",
     url: "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/maio/receita-federal-e-conselho-federal-de-contabilidade-iniciam-capacitacao-inedita-sobre-a-reforma-tributaria-do-consumo",
     publishedAt: "2026-05-12"
   },
@@ -158,7 +158,7 @@ const FALLBACK_UPDATES = [
     tipo: "noticia",
     sourceType: "oficial",
     fonte: "Receita Federal",
-    title: "Programacao do Curso Reforma Tributaria do Consumo",
+    title: "Programação do Curso Reforma Tributária do Consumo",
     url: "https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/reforma-tributaria-do-consumo/curso/programacao",
     publishedAt: "2026-05-06"
   },
@@ -173,7 +173,7 @@ const FALLBACK_UPDATES = [
   {
     tipo: "legislacao",
     sourceType: "oficial",
-    fonte: "Comite Gestor do IBS",
+    fonte: "Comitê Gestor do IBS",
     title: "Resolucao CGIBS nº 6, de 30 de abril de 2026",
     url: "https://www.cgibs.gov.br/upload/arquivos/202604/30084927-res-cgibs-n-6-30-abr-2026-regulamenta-o-ibs.pdf",
     publishedAt: "2026-04-30"
@@ -181,7 +181,7 @@ const FALLBACK_UPDATES = [
   {
     tipo: "legislacao",
     sourceType: "oficial",
-    fonte: "Diario Oficial da Uniao",
+    fonte: "Diário Oficial da União",
     title: "Portaria Conjunta MF/CGIBS nº 7, de 30 de abril de 2026",
     url: "https://www.in.gov.br/web/dou/-/portaria-conjunta-mf/cgibs-n-7-de-30-de-abril-de-2026-702822417",
     publishedAt: "2026-04-30"
@@ -209,7 +209,7 @@ export default async function handler() {
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return json(500, { error: "Variaveis Supabase ausentes no servidor." });
+    return json(500, { error: "Variáveis Supabase ausentes no servidor." });
   }
 
   const collected = [];
@@ -926,7 +926,7 @@ function extractSupabaseMessage(data, text, fallback) {
 }
 
 function getErrorMessage(error) {
-  return error instanceof Error ? error.message : "Falha ao atualizar noticias.";
+  return error instanceof Error ? error.message : "Falha ao atualizar notícias.";
 }
 
 function getEnv(name) {

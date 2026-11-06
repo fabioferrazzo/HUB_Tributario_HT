@@ -20,7 +20,7 @@ export default async function handler(request) {
   try {
     if (request.method === "GET") return await handleGet(request);
     if (request.method === "POST") return await handlePost(request);
-    return json(405, { error: "Metodo não permitido." });
+    return json(405, { error: "Método não permitido." });
   } catch (error) {
     return json(500, { error: error?.message || "Falha ao processar agenda tributária." });
   }

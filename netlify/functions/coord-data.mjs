@@ -16,7 +16,7 @@ export default async function handler(request) {
   }
 
   if (!["GET", "PUT"].includes(request.method)) {
-    return json(405, { error: "Metodo não permitido." });
+    return json(405, { error: "Método não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");

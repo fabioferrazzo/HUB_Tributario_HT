@@ -9,7 +9,7 @@ const MANAGER_ROLES = new Set(["admin", "gestor"]);
 
 export default async function handler(request) {
   if (!["GET", "POST"].includes(request.method)) {
-    return json(405, { error: "Metodo não permitido." });
+    return json(405, { error: "Método não permitido." });
   }
 
   const payload = request.method === "POST" ? await parseJsonBody(request) : readQueryPayload(request);

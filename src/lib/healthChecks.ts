@@ -42,13 +42,13 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
     },
     {
       area: "Lembretes",
-      status: lembretesSource === "supabase" ? "Persistencia real" : "Fallback local",
+      status: lembretesSource === "supabase" ? "Persistência real" : "Fallback local",
       detail: "Criação, visibilidade, anexos, confidencialidade e e-mails usam esta origem.",
       tone: lembretesSource === "supabase" ? "ok" : "warning"
     },
     {
       area: "Arquivos",
-      status: arquivosSource === "supabase" ? "Biblioteca multiusuario" : "Fallback local",
+      status: arquivosSource === "supabase" ? "Biblioteca multiusuário" : "Fallback local",
       detail: "Pastas, uploads e anotações do visualizador devem usar Supabase no ambiente publicado.",
       tone: arquivosSource === "supabase" ? "ok" : "warning"
     },
@@ -63,9 +63,9 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
       status: tarefasSource,
       detail:
         tarefasSource === "supabase"
-          ? "Persistencia multiusuario ativa; calendário original sincroniza com Supabase."
+          ? "Persistência multiusuário ativa; calendário original sincroniza com Supabase."
           : tarefasSource === "calendario"
-            ? "Calendário local ativo; Supabase preparado para ativacao por VITE_TAREFAS_SUPABASE=true."
+            ? "Calendário local ativo; Supabase preparado para ativação por VITE_TAREFAS_SUPABASE=true."
             : "Fallback local ativo porque o calendário do navegador não esta disponível.",
       tone: tarefasSource === "supabase" ? "ok" : "info"
     },

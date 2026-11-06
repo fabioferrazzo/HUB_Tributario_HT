@@ -192,7 +192,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
 
     if (viewerStudyResource && !isPdfResource(viewerStudyResource) && !isDocxResource(viewerStudyResource)) {
       setViewerSearchTerm("");
-      setViewerError("Busca interna com navegacao esta disponível para PDF pesquisável e DOCX convertido. Para PPTX, Excel, imagens ou links externos, abra em nova aba ou converta para PDF pesquisável.");
+      setViewerError("Busca interna com navegação está disponível para PDF pesquisável e DOCX convertido. Para PPTX, Excel, imagens ou links externos, abra em nova aba ou converta para PDF pesquisável.");
       return;
     }
 
@@ -977,7 +977,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                 ) : (
                   <div className="document-preview-fallback">
                     <FileArchive size={38} />
-                    <h3>Previa interna indisponível</h3>
+                    <h3>Prévia interna indisponível</h3>
                     <p>{viewerPreview?.detail || "Este arquivo ou link não permite visualização embutida no painel."}</p>
                     <a href={activeViewerResource?.url || viewerResource.url} rel="noreferrer" target="_blank">
                       <Link2 size={15} />

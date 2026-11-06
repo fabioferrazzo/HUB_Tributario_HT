@@ -9,7 +9,7 @@ const ROLES = new Set(["admin", "gestor", "colaborador"]);
 
 export default async function handler(request) {
   if (request.method !== "POST") {
-    return json(405, { error: "Metodo não permitido." });
+    return json(405, { error: "Método não permitido." });
   }
 
   const supabaseUrl = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
@@ -34,7 +34,7 @@ export default async function handler(request) {
   const action = String(body.action || "upsert-user");
 
   if (!profile.email || !profile.nome) {
-    return json(400, { error: "Nome e e-mail são obrigatorios." });
+    return json(400, { error: "Nome e e-mail são obrigatórios." });
   }
 
   if (!ROLES.has(profile.role)) {
@@ -180,7 +180,7 @@ async function revokePasswordAuthorization(supabaseUrl, serviceRoleKey, userId) 
       headers: { ...serviceHeaders(serviceRoleKey), prefer: "return=minimal" }
     });
   } catch (error) {
-    console.warn("Não foi possível remover a autorizacao de senha.", error?.message || error);
+    console.warn("Não foi possível remover a autorização de senha.", error?.message || error);
   }
 }
 

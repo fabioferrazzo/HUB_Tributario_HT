@@ -648,7 +648,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
   async function buildEmailOperationPayload(action: "preview" | "queue-deadlines" | "process" | "daily") {
     const token = dispatchToken.trim();
     const authToken = await getSupabaseAccessToken();
-    if (!token && !authToken) throw new Error("Informe o EMAIL_DISPATCH_TOKEN ou faca login novamente como admin/gestor.");
+    if (!token && !authToken) throw new Error("Informe o EMAIL_DISPATCH_TOKEN ou faça login novamente como admin/gestor.");
     return { action, authToken, limit, token };
   }
 
@@ -720,7 +720,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
   async function sendManualEmail(event: FormEvent) {
     event.preventDefault();
     if (!manualTo.trim() || !manualSubject.trim() || !manualBody.trim()) {
-      setOperationError("Destinatario, assunto e mensagem são obrigatorios.");
+      setOperationError("Destinatário, assunto e mensagem são obrigatórios.");
       return;
     }
 
@@ -733,7 +733,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
       const token = dispatchToken.trim();
 
       if (!authToken && !token) {
-        throw new Error("Informe o token de despacho ou faca login novamente como admin/gestor.");
+        throw new Error("Informe o token de despacho ou faça login novamente como admin/gestor.");
       }
 
       const recipient = activeUsers.find((profile) => profile.email.toLowerCase() === manualTo.trim().toLowerCase());
@@ -783,7 +783,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
           <strong>Fila de e-mails</strong>
           <p>
             Consulte e processe a fila <code>email_outbox</code>. A rotina diária enfileira avisos de vencimento e envia o que estiver
-            pronto. O token abaixo e necessário apenas para comandos manuais no HUB; o agendamento da Netlify usa
+            pronto. O token abaixo é necessário apenas para comandos manuais no HUB; o agendamento da Netlify usa{" "}
             <code>EMAIL_SCHEDULE_ENABLED=true</code>. Se você estiver logado como admin/gestor, os botões também funcionam sem colar o token.
           </p>
           <label>
@@ -827,7 +827,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
           <p>Use para testar entrega ou disparar um aviso operacional pontual sem criar lembrete.</p>
           <form className="manual-email-form" onSubmit={sendManualEmail}>
             <label>
-              Destinatario
+              Destinatário
               <input
                 list="manual-email-users"
                 onChange={(event) => setManualTo(event.target.value)}
@@ -860,7 +860,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
 
       <div className="queue-preview">
         <div className="queue-preview-title">
-          <strong>Previa da fila</strong>
+          <strong>Prévia da fila</strong>
           <span>{queuePreview.length} item(ns)</span>
         </div>
         {queuePreview.length ? (
@@ -869,7 +869,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
               <article key={item.id}>
                 <strong>{item.subject || "Sem assunto"}</strong>
                 <span>
-                  {item.toEmail || "destinatario oculto"} - {formatDateTime(item.scheduledFor || "")}
+                  {item.toEmail || "destinatário oculto"} - {formatDateTime(item.scheduledFor || "")}
                 </span>
                 <small>{item.category || "email"} / {item.targetType || "geral"}</small>
               </article>

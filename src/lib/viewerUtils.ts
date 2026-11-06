@@ -182,7 +182,7 @@ export function getProcessingBadge(resource: FileResource) {
 
   const labels: Record<FileResource["processingStatus"], string> = {
     none: "",
-    pending: "OCR/conversao pendente",
+    pending: "OCR/conversão pendente",
     processing: "Processando OCR",
     ready: "Versão pesquisável pronta",
     error: "Falha no OCR"
@@ -219,7 +219,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       title: resource.titulo,
       notice:
         resource.processingStatus === "ready"
-          ? "Abrindo a versão processada para estudo, com PDF pesquisável quando o OCR/conversao estiver completo."
+          ? "Abrindo a versão processada para estudo, com PDF pesquisável quando o OCR/conversão estiver completo."
           : query
             ? "Pesquisa aplicada a camada de texto do PDF. Se o arquivo for escaneado ou imagem, use OCR para permitir busca/grifo."
             : "PDF renderizado internamente com PDF.js para permitir seleção de texto e grifo visual quando houver camada de texto."
@@ -273,7 +273,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       mode: "iframe",
       src: resource.url,
       title: resource.titulo,
-      notice: "Alguns sites bloqueiam visualização embutida por seguranca. Busca e seleção podem não funcionar dentro do painel."
+      notice: "Alguns sites bloqueiam visualização embutida por segurança. Busca e seleção podem não funcionar dentro do painel."
     };
   }
 
