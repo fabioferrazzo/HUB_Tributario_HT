@@ -68,7 +68,7 @@ export function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
           ref={calendarFrameRef}
           key={calendarVersion}
           src={`/apps/calendar.html?v=tasks-unified-20260625-${calendarVersion}`}
-          title="Calendario de tarefas"
+          title="Calendário de tarefas"
           onLoad={() => {
             void syncCalendarFrame();
           }}
@@ -437,7 +437,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
           <label>
-            Notas / descricao
+            Notas / descrição
             <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
           </label>
           <div className="form-row">
@@ -456,10 +456,10 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
           </div>
           <label className="inline-check task-featured-check">
             <input checked={destaque} onChange={(event) => setDestaque(event.target.checked)} type="checkbox" />
-            Destacar esta tarefa no calendario/lista
+            Destacar esta tarefa no calendário/lista
           </label>
           <fieldset className="member-picker member-picker--compact">
-            <legend>Responsaveis</legend>
+            <legend>Responsáveis</legend>
             <div>
               {getActiveProfiles(hubUsers).map((member) => (
                 <label key={member.email}>
@@ -487,7 +487,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
           ) : null}
           <div className="form-actions-inline">
             <button className="primary-action" disabled={saving || loading} type="submit">
-              {saving ? "Salvando..." : editingId ? "Salvar edicao" : "Salvar tarefa"}
+              {saving ? "Salvando..." : editingId ? "Salvar edição" : "Salvar tarefa"}
             </button>
             <button disabled={saving} type="button" onClick={resetForm}>
               Cancelar
@@ -565,7 +565,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
                 <span className="task-note-preview">{task.descricao || "Sem notas registradas"}</span>
                 <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
                 <div className="lembrete-tags">
-                  {isHistoryTask ? <StatusPill label="historico" /> : null}
+                  {isHistoryTask ? <StatusPill label="histórico" /> : null}
                   {task.destaque ? <StatusPill label="destaque" /> : null}
                   <StatusPill label={task.status} />
                   <StatusPill label={task.prioridade} />
@@ -593,7 +593,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
                   </div>
                 ) : (
                   <div className="record-actions record-actions--readonly">
-                    <span className="readonly-note">Somente visualizacao</span>
+                    <span className="readonly-note">Somente visualização</span>
                   </div>
                 )}
               </div>
@@ -678,7 +678,7 @@ export function TaskLembretesPanel({
         </button>
       </header>
       <div className="task-sidebar-summary">
-        <span>{lembretes.length} visiveis</span>
+        <span>{lembretes.length} visíveis</span>
         <span>{overdueCount} atrasados</span>
       </div>
       <div className="panel-toolbar task-toolbar">

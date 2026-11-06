@@ -79,7 +79,7 @@ export function TopBar({
           <button
             aria-controls="hub-notifications"
             aria-expanded={notificationsOpen}
-            aria-label="Notificacoes"
+            aria-label="Notificações"
             className={`notification-button ${notificationsOpen ? "active" : ""}`}
             type="button"
             onClick={() => setNotificationsOpen((open) => !open)}
@@ -91,7 +91,7 @@ export function TopBar({
             <section className="notification-popover" id="hub-notifications" role="dialog" aria-label="Avisos ativos">
               <header>
                 <div>
-                  <strong>Notificacoes</strong>
+                  <strong>Notificações</strong>
                   <small>{notificationItems.length ? `${notificationItems.length} aviso(s) nao lido(s)` : "Sem avisos ativos"}</small>
                 </div>
                 <div className="notification-actions">
@@ -144,7 +144,7 @@ export function TopBar({
                 ) : (
                   <div className="notification-empty">
                     <CheckCircle2 size={18} />
-                    <span>Nenhuma notificacao pendente.</span>
+                    <span>Nenhuma notificação pendente.</span>
                   </div>
                 )}
               </div>

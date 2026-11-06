@@ -43,19 +43,19 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
     {
       area: "Lembretes",
       status: lembretesSource === "supabase" ? "Persistencia real" : "Fallback local",
-      detail: "Criacao, visibilidade, anexos, confidencialidade e e-mails usam esta origem.",
+      detail: "Criação, visibilidade, anexos, confidencialidade e e-mails usam esta origem.",
       tone: lembretesSource === "supabase" ? "ok" : "warning"
     },
     {
       area: "Arquivos",
       status: arquivosSource === "supabase" ? "Biblioteca multiusuario" : "Fallback local",
-      detail: "Pastas, uploads e anotacoes do visualizador devem usar Supabase no ambiente publicado.",
+      detail: "Pastas, uploads e anotações do visualizador devem usar Supabase no ambiente publicado.",
       tone: arquivosSource === "supabase" ? "ok" : "warning"
     },
     {
       area: "Links uteis",
       status: linksSource === "supabase" ? "Links sincronizados" : "Fallback local",
-      detail: "Links globais e pessoais respeitam permissoes de admin, gestor e colaborador.",
+      detail: "Links globais e pessoais respeitam permissões de admin, gestor e colaborador.",
       tone: linksSource === "supabase" ? "ok" : "warning"
     },
     {
@@ -78,13 +78,13 @@ export function buildOperationalHealthChecks(user: HubUser, users: HubProfile[],
     {
       area: "E-mails",
       status: "Fila ativa",
-      detail: "Lembretes, vencimentos, reset de senha e Coordenacao usam email_outbox; envio real segue em modo teste ate validar dominio proprio.",
+      detail: "Lembretes, vencimentos, reset de senha e Coordenação usam email_outbox; envio real segue em modo teste até validar dominio próprio.",
       tone: supabaseReady ? "ok" : "info"
     },
     {
       area: "Rodapes",
       status: "Automacao ativa",
-      detail: "Noticias tributarias e legislacoes oficiais sao atualizadas pela funcao refresh-updates e exibidas nos rodapes/sidebars.",
+      detail: "Notícias tributárias e legislações oficiais são atualizadas pela função refresh-updates e exibidas nos rodapes/sidebars.",
       tone: "info"
     },
     {

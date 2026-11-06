@@ -199,7 +199,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       mode: "unsupported",
       src: "",
       title: resource.titulo,
-      detail: "O registro nao possui URL ou arquivo anexado disponivel para visualizacao."
+      detail: "O registro não possui URL ou arquivo anexado disponível para visualização."
     };
   }
 
@@ -251,7 +251,7 @@ export function buildViewerPreview(resource: FileResource, page: number, zoom: n
       mode: "unsupported",
       src: "",
       title: resource.titulo,
-      detail: "Pastas do Google Drive normalmente bloqueiam visualizacao embutida. Abra em nova aba para acessar com sua conta Google."
+      detail: "Pastas do Google Drive normalmente bloqueiam visualização embutida. Abra em nova aba para acessar com sua conta Google."
     };
   }
 

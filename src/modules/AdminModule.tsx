@@ -25,7 +25,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
   const [active, setActive] = useState(true);
   const [coordHealth, setCoordHealth] = useState<CoordSyncHealth>({
     status: "Nao consultado",
-    detail: "A sincronizacao da Coordenacao sera conferida neste painel.",
+    detail: "A sincronização da Coordenação será conferida neste painel.",
     tone: "info"
   });
   const source = getUsersSource();
@@ -73,7 +73,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
       if (source !== "supabase") {
         setCoordHealth({
           status: "Modo local",
-          detail: "A Coordenacao so sincroniza entre usuarios quando o HUB esta conectado ao Supabase.",
+          detail: "A Coordenação so sincroniza entre usuários quando o HUB esta conectado ao Supabase.",
           tone: "warning"
         });
         return;
@@ -232,7 +232,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
     <div className="split-page admin-page">
       <section className="panel admin-users-panel">
         <PanelHeader
-          title="Usuarios e perfis"
+          title="Usuários e perfis"
           icon={<UserRoundCog size={18} />}
           action={loading ? "Carregando" : `${source} - ${users.length} usuarios`}
         />
@@ -303,7 +303,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
             ))}
           </div>
           <p className="health-footnote">
-            Use este painel como checklist antes de liberar novo deploy. Ele nao dispara builds nem consome creditos do Netlify.
+            Use este painel como checklist antes de liberar novo deploy. Ele não dispara builds nem consome creditos do Netlify.
           </p>
         </section>
 
@@ -315,7 +315,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
       </section>
 
       <section className="panel narrow-panel">
-        <PanelHeader title={editingKey ? "Editar usuario" : "Novo usuario"} icon={<UserRound size={18} />} action={source} />
+        <PanelHeader title={editingKey ? "Editar usuário" : "Novo usuário"} icon={<UserRound size={18} />} action={source} />
         <form className="stack-form admin-user-form" onSubmit={handleSubmit}>
           {source === "supabase" && editingKey ? (
             <label>
@@ -365,17 +365,17 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
                 type="password"
                 value={temporaryPassword}
               />
-              <small className="form-hint">Preencha somente se quiser redefinir a senha deste usuario.</small>
+              <small className="form-hint">Preencha somente se quiser redefinir a senha deste usuário.</small>
             </label>
           ) : null}
           <label className="toggle-row">
             <input checked={active} onChange={(event) => setActive(event.target.checked)} type="checkbox" />
-            Usuario ativo
+            Usuário ativo
           </label>
 
           <div className="form-actions-inline">
             <button className="primary-action" disabled={saving || loading} type="submit">
-              {saving ? "Salvando..." : editingKey ? "Atualizar usuario" : "Salvar usuario"}
+              {saving ? "Salvando..." : editingKey ? "Atualizar usuário" : "Salvar usuário"}
             </button>
             {editingKey ? (
               <button disabled={saving} type="button" onClick={resetForm}>
@@ -455,7 +455,7 @@ export function OperationalHomologationPanel() {
     <section className="operational-homologation">
       <div className="section-title-row">
         <div>
-          <span className="panel-chip">Homologacao</span>
+          <span className="panel-chip">Homologação</span>
           <h3>Checklist funcional</h3>
         </div>
         <small>{summary.progress}% OK</small>
@@ -487,7 +487,7 @@ export function OperationalHomologationPanel() {
           Copiar resumo
         </button>
         <button onClick={clearChecklist} type="button">
-          Limpar marcacoes
+          Limpar marcações
         </button>
       </div>
 
@@ -561,8 +561,8 @@ export function OperationalGuidePanel() {
     <section className="operational-console operational-guide">
       <div className="section-title-row">
         <div>
-          <span className="panel-chip">Operacao</span>
-          <h3>Guia rapido do administrador</h3>
+          <span className="panel-chip">Operação</span>
+          <h3>Guia rápido do administrador</h3>
         </div>
         <button className="secondary-button" type="button" onClick={copyGuide}>
           Copiar guia
@@ -570,8 +570,8 @@ export function OperationalGuidePanel() {
       </div>
       <div className="operation-grid">
         <article className="operation-card">
-          <strong>Rotina diaria</strong>
-          <p>Sequencia curta para abrir o HUB, conferir riscos e acionar e-mails sem depender de instrucoes externas.</p>
+          <strong>Rotina diária</strong>
+          <p>Sequência curta para abrir o HUB, conferir riscos e acionar e-mails sem depender de instruções externas.</p>
           <ol className="operational-guide-list">
             {dailyOperationalGuide.map((item) => (
               <li key={item.title}>
@@ -583,7 +583,7 @@ export function OperationalGuidePanel() {
         </article>
         <article className="operation-card">
           <strong>Rotina semanal</strong>
-          <p>Revisoes de manutencao para manter dados, acessos, biblioteca e Coordenacao em ordem.</p>
+          <p>Revisões de manutenção para manter dados, acessos, biblioteca e Coordenação em ordem.</p>
           <ol className="operational-guide-list">
             {weeklyOperationalGuide.map((item) => (
               <li key={item.title}>
@@ -769,7 +769,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
     <section className="operational-console">
       <div className="section-title-row">
         <div>
-          <span className="panel-chip">Operacao</span>
+          <span className="panel-chip">Operação</span>
           <h3>Lembretes e e-mails</h3>
         </div>
         <small>Manual + fila</small>
@@ -782,9 +782,9 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
         <article className="operation-card">
           <strong>Fila de e-mails</strong>
           <p>
-            Consulte e processe a fila <code>email_outbox</code>. A rotina diaria enfileira avisos de vencimento e envia o que estiver
-            pronto. O token abaixo e necessario apenas para comandos manuais no HUB; o agendamento da Netlify usa
-            <code>EMAIL_SCHEDULE_ENABLED=true</code>. Se voce estiver logado como admin/gestor, os botoes tambem funcionam sem colar o token.
+            Consulte e processe a fila <code>email_outbox</code>. A rotina diária enfileira avisos de vencimento e envia o que estiver
+            pronto. O token abaixo e necessário apenas para comandos manuais no HUB; o agendamento da Netlify usa
+            <code>EMAIL_SCHEDULE_ENABLED=true</code>. Se você estiver logado como admin/gestor, os botões também funcionam sem colar o token.
           </p>
           <label>
             EMAIL_DISPATCH_TOKEN (opcional para admin/gestor logado)
@@ -817,7 +817,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
               Processar fila agora
             </button>
             <button className="primary-action" disabled={isRunning} onClick={() => runEmailQueueAction("daily")} type="button">
-              Rodar rotina diaria
+              Rodar rotina diária
             </button>
           </div>
         </article>

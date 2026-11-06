@@ -556,7 +556,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
         <div className="file-summary">
           <article>
             <strong>{totals.total}</strong>
-            <span>Total visivel</span>
+            <span>Total visível</span>
           </article>
           <article>
             <strong>{totals.uploads}</strong>
@@ -576,7 +576,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
           <div className="ocr-runner-bar">
             <div>
               <strong>OCR local</strong>
-              <span>Converte PDFs, PowerPoint, Word, Excel e imagens pendentes para versao pesquisavel.</span>
+              <span>Converte PDFs, PowerPoint, Word, Excel e imagens pendentes para versão pesquisável.</span>
             </div>
             <button disabled={ocrRunning || loading} onClick={runLocalOcr} type="button">
               <RefreshCw size={14} />
@@ -864,7 +864,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
               <div>
                 <span>
                   {activeViewerResource?.fileName || formatFileCategory(viewerResource.categoria)}
-                  {viewerResource.processingStatus === "ready" && viewerResource.processedFileName ? " - versao para estudo" : ""}
+                  {viewerResource.processingStatus === "ready" && viewerResource.processedFileName ? " - versão para estudo" : ""}
                 </span>
                 <h2>{viewerResource.titulo}</h2>
               </div>
@@ -882,11 +882,11 @@ export function ArquivosModule({ user }: { user: HubUser }) {
               <button type="button" onClick={() => setViewerZoom((current) => Math.min(200, current + 10))}>
                 +
               </button>
-              <button aria-label="Pagina anterior" disabled={viewerPage <= 1} type="button" onClick={() => setViewerPage((current) => Math.max(1, current - 1))}>
+              <button aria-label="Página anterior" disabled={viewerPage <= 1} type="button" onClick={() => setViewerPage((current) => Math.max(1, current - 1))}>
                 <ChevronLeft size={14} />
               </button>
               <label>
-                Pagina
+                Página
                 <input
                   max={viewerPageTotal || undefined}
                   min={1}
@@ -900,7 +900,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
               </label>
               <span className="document-search-count">{viewerPageTotal ? `de ${viewerPageTotal}` : "de -"}</span>
               <button
-                aria-label="Proxima pagina"
+                aria-label="Próxima página"
                 disabled={Boolean(viewerPageTotal && viewerPage >= viewerPageTotal)}
                 type="button"
                 onClick={() => setViewerPage((current) => (viewerPageTotal ? Math.min(viewerPageTotal, current + 1) : current + 1))}
@@ -928,7 +928,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                 <ChevronLeft size={14} />
               </button>
               <span className="document-search-count">{viewerSearchTerm ? `${viewerSearchTotal ? viewerSearchIndex + 1 : 0}/${viewerSearchTotal}` : "0/0"}</span>
-              <button aria-label="Proximo resultado da busca" disabled={!viewerSearchTotal} type="button" onClick={() => moveViewerSearch(1)}>
+              <button aria-label="Próximo resultado da busca" disabled={!viewerSearchTotal} type="button" onClick={() => moveViewerSearch(1)}>
                 <ChevronRight size={14} />
               </button>
               <button type="button" onClick={() => setViewerFullscreen((current) => !current)}>
@@ -990,7 +990,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
               <aside className="document-study-panel">
                 <div>
                   <span className="panel-chip">Estudo do documento</span>
-                  <h3>Grifos e comentarios</h3>
+                  <h3>Grifos e comentários</h3>
                 </div>
                 <div className="viewer-note-actions">
                   <button disabled={!viewerNotes.length} type="button" onClick={exportViewerNotes}>
@@ -999,7 +999,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                 </div>
 
                 {viewerError ? <div className="form-error">{viewerError}</div> : null}
-                {viewerLoading ? <p className="muted-note">Carregando anotacoes...</p> : null}
+                {viewerLoading ? <p className="muted-note">Carregando anotações...</p> : null}
 
                 <label>
                   Grifo amarelo
@@ -1009,7 +1009,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                     placeholder="Selecione um trecho no documento ou cole o texto a grifar."
                   />
                   <small className="field-note">
-                    O grifo manual fica amarelo no texto renderizado internamente. A busca usa verde e nao cria anotacao salva.
+                    O grifo manual fica amarelo no texto renderizado internamente. A busca usa verde e não cria anotação salva.
                   </small>
                 </label>
                 <div className="viewer-note-actions">
@@ -1026,7 +1026,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
                   <textarea
                     value={viewerComment}
                     onChange={(event) => setViewerComment(event.target.value)}
-                    placeholder="Registre observacoes, riscos ou pontos de estudo."
+                    placeholder="Registre observações, riscos ou pontos de estudo."
                   />
                 </label>
                 <button disabled={viewerSaving} type="button" onClick={() => addViewerNote("comment")}>

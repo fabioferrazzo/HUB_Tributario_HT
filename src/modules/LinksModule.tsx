@@ -121,11 +121,11 @@ export function LinksModule({ user }: { user: HubUser }) {
   return (
     <div className="split-page">
       <section className="panel">
-        <PanelHeader title="Links uteis" icon={<Link2 size={18} />} action={loading ? "carregando" : source} />
+        <PanelHeader title="Links úteis" icon={<Link2 size={18} />} action={loading ? "carregando" : source} />
         <div className="file-summary link-summary">
           <article>
             <strong>{totals.total}</strong>
-            <span>Total visivel</span>
+            <span>Total visível</span>
           </article>
           <article>
             <strong>{totals.global}</strong>

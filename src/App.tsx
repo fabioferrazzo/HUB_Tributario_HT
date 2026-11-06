@@ -249,7 +249,7 @@ export function App() {
         <div className="brand-block">
           <div className="brand-mark">HT</div>
           <div className="brand-copy">
-            <strong>HUB Depto Tributario</strong>
+            <strong>HUB Depto Tributário</strong>
             <span>H. Teixeira</span>
           </div>
           <button

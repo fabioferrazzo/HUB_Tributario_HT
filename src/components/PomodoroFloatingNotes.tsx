@@ -116,7 +116,7 @@ export function PomodoroFloatingNotes({
     <section
       className={`pomodoro-floating-notes ${minimized ? "pomodoro-floating-notes--minimized" : ""}`}
       style={{ left: position.left, top: position.top }}
-      aria-label="Anotacoes flutuantes do Pomodoro"
+      aria-label="Anotações flutuantes do Pomodoro"
     >
       <header
         className="pomodoro-floating-notes__header"
@@ -126,7 +126,7 @@ export function PomodoroFloatingNotes({
         onPointerCancel={stopDrag}
       >
         <div>
-          <strong>Anotacoes</strong>
+          <strong>Anotações</strong>
           <span>Pomodoro</span>
         </div>
         <div className="pomodoro-floating-notes__actions">
@@ -165,13 +165,13 @@ export function PomodoroFloatingNotes({
                 onSaveArchived(activeArchiveId, nextNotes);
               }}
             >
-              Salvar edicao
+              Salvar edição
             </button>
           ) : null}
           <button
               type="button"
               className="pomodoro-floating-notes__icon-action"
-              aria-label={minimized ? "Restaurar anotacoes" : "Minimizar anotacoes"}
+              aria-label={minimized ? "Restaurar anotações" : "Minimizar anotações"}
               title={minimized ? "Restaurar" : "Minimizar"}
               onClick={() => {
                 const nextNotes = commitEditorDraft();
@@ -184,7 +184,7 @@ export function PomodoroFloatingNotes({
           <button
               type="button"
               className="pomodoro-floating-notes__icon-action"
-              aria-label="Fechar anotacoes"
+              aria-label="Fechar anotações"
               title="Fechar"
               onClick={() => {
                 const nextNotes = commitEditorDraft();
@@ -196,7 +196,7 @@ export function PomodoroFloatingNotes({
         </div>
       </header>
       <div className="pomodoro-floating-notes__body" aria-hidden={minimized}>
-        <div className="pomodoro-floating-notes__toolbar" aria-label="Formatacao das anotacoes">
+        <div className="pomodoro-floating-notes__toolbar" aria-label="Formatação das anotações">
             <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => runEditorCommand("bold")}>
               B
             </button>
@@ -253,7 +253,7 @@ export function PomodoroFloatingNotes({
                 ))}
               </div>
             ) : (
-              <p>Nenhuma anotacao arquivada.</p>
+              <p>Nenhuma anotação arquivada.</p>
             )}
           </div>
         ) : null}

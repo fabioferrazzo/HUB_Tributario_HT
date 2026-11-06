@@ -40,20 +40,20 @@ export function FooterUpdates() {
         icon={<Newspaper size={18} />}
         items={noticias}
         onOpen={() => setOpenDrawer("noticia")}
-        title="Noticias Tributarias"
+        title="Notícias Tributárias"
       />
       <UpdateTicker
         icon={<ShieldCheck size={18} />}
         items={legislacoes}
         onOpen={() => setOpenDrawer("legislacao")}
-        title="Legislacoes Reforma Tributaria"
+        title="Legislações Reforma Tributária"
       />
       {openDrawer ? (
         <UpdatesDrawer
           items={drawerItems}
           kind={openDrawer}
           onClose={() => setOpenDrawer(null)}
-          title={openDrawer === "legislacao" ? "Legislacoes recentes" : "Noticias da semana"}
+          title={openDrawer === "legislacao" ? "Legislações recentes" : "Notícias da semana"}
         />
       ) : null}
     </footer>
@@ -108,12 +108,12 @@ export function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[
         <header>
           <div>
             <strong>{title}</strong>
-            <small>{kind === "legislacao" ? "Normas oficiais monitoradas" : "Ultimos 7 dias"} - {items.length} item(ns)</small>
+            <small>{kind === "legislacao" ? "Normas oficiais monitoradas" : "Últimos 7 dias"} - {items.length} item(ns)</small>
           </div>
           <div className="updates-sidebar-actions">
             <button type="button" onClick={() => exportUpdates("pdf")}>PDF</button>
             <button type="button" onClick={() => exportUpdates("excel")}>XLSX</button>
-            <button aria-label="Fechar atualizacoes" type="button" onClick={onClose}>
+            <button aria-label="Fechar atualizações" type="button" onClick={onClose}>
               <X size={18} />
             </button>
           </div>
@@ -128,7 +128,7 @@ export function UpdatesDrawer({ items, kind, onClose, title }: { items: Noticia[
               <small>{item.url}</small>
             </a>
           ))}
-          {!items.length ? <div className="empty-state">Nenhuma atualizacao registrada para a ultima semana.</div> : null}
+          {!items.length ? <div className="empty-state">Nenhuma atualização registrada para a última semana.</div> : null}
         </div>
       </aside>
     </div>

@@ -29,7 +29,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: HubUser) => void }) {
         <div className="login-brand">
           <div className="brand-mark">HT</div>
           <div>
-            <strong>HUB Depto Tributario</strong>
+            <strong>HUB Depto Tributário</strong>
             <span>H. Teixeira</span>
           </div>
         </div>

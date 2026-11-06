@@ -271,7 +271,7 @@ export function InternalPdfViewer({
       {error ? (
         <div className="document-preview-fallback">
           <FileArchive size={38} />
-          <h3>PDF nao renderizado internamente</h3>
+          <h3>PDF não renderizado internamente</h3>
           <p>{error}</p>
           <a href={resource.url} rel="noreferrer" target="_blank">
             <Link2 size={15} />
@@ -286,7 +286,7 @@ export function InternalPdfViewer({
           </div>
           {!loading && !spans.length ? (
             <div className="document-preview-banner document-preview-banner--floating">
-              Nao foi encontrada camada de texto neste PDF. Para grifar trechos, use OCR ou uma versao pesquisavel do arquivo.
+              Não foi encontrada camada de texto neste PDF. Para grifar trechos, use OCR ou uma versão pesquisável do arquivo.
             </div>
           ) : null}
         </div>
@@ -380,7 +380,7 @@ export function InternalDocxViewer({
     return (
       <div className="document-preview-fallback">
         <FileArchive size={38} />
-        <h3>DOCX nao convertido internamente</h3>
+        <h3>DOCX não convertido internamente</h3>
         <p>{error}</p>
         <a href={resource.url} rel="noreferrer" target="_blank">
           <Link2 size={15} />

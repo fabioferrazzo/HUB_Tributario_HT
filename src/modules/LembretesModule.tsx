@@ -293,7 +293,7 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
                 </div>
               ) : (
                 <div className="record-actions record-actions--readonly">
-                  <span className="readonly-note">Somente visualizacao</span>
+                  <span className="readonly-note">Somente visualização</span>
                 </div>
               )}
             </article>
@@ -337,13 +337,13 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
               />
               <span>
                 <strong>Confidencial</strong>
-                <small>Visivel apenas para o admin criador e usuarios marcados.</small>
+                <small>Visível apenas para o admin criador e usuários marcados.</small>
               </span>
             </label>
           ) : null}
 
           <fieldset className="member-picker">
-            <legend>Usuarios marcados</legend>
+            <legend>Usuários marcados</legend>
             <div>
               {getActiveProfiles(hubUsers).map((member) => (
                 <label key={member.email}>

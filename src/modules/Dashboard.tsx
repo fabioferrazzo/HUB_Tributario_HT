@@ -403,7 +403,7 @@ export function Dashboard({
             </span>
           ) : null}
           <em style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
-            {pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuarios"}
+            {pauta.scope === "usuarios" ? formatResponsaveis(pauta.responsaveis || [], hubUsers) : "Todos os usuários"}
           </em>
           {pauta.anexos?.length ? (
             <div className="pauta-attachments">
@@ -432,7 +432,7 @@ export function Dashboard({
               Concluir
             </button>
           ) : null}
-          {hasUserCompletedPauta(pauta, user) ? <span className="readonly-note">Concluida por voce</span> : null}
+          {hasUserCompletedPauta(pauta, user) ? <span className="readonly-note">Concluída por você</span> : null}
           {canUserManagePautaApp(pauta, user) ? (
             <>
               <button disabled={saving} type="button" onClick={() => startEditPauta(pauta)}>
@@ -1169,14 +1169,14 @@ export function Dashboard({
         {pautasView === "avisos" ? renderQuadroAvisos() : (
           <>
             <div className="pautas-monthbar">
-              <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mes anterior">
+              <button type="button" onClick={() => shiftMonth(-1)} aria-label="Mês anterior">
                 <ChevronLeft size={16} />
               </button>
               <strong>{monthCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong>
-              <button type="button" onClick={() => shiftMonth(1)} aria-label="Proximo mes">
+              <button type="button" onClick={() => shiftMonth(1)} aria-label="Próximo mês">
                 <ChevronRight size={16} />
               </button>
-              <button type="button" onClick={() => setMonthCursor(new Date())}>Mes atual</button>
+              <button type="button" onClick={() => setMonthCursor(new Date())}>Mês atual</button>
             </div>
             <div className="panel-toolbar">
               <button className={`filter-pill ${pautaFilter === "todas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("todas")}>
@@ -1206,7 +1206,7 @@ export function Dashboard({
                 Sem prazo ({statusCounts.semPrazo})
               </button>
               <button className={`filter-pill ${pautaFilter === "concluidas" ? "active" : ""}`} type="button" onClick={() => setPautaFilter("concluidas")}>
-                Concluidas ({statusCounts.concluidas})
+                Concluídas ({statusCounts.concluidas})
               </button>
               <label className="panel-search">
                 <Search size={14} />
@@ -1270,7 +1270,7 @@ export function Dashboard({
             />
             {titulo.trim() || hasPautaRichContent(descricao) ? (
               <div className="pauta-format-preview">
-                <span>Previa da formatacao</span>
+                <span>Prévia da formatação</span>
                 {titulo.trim() ? <strong>{titulo}</strong> : null}
                 {hasPautaRichContent(descricao) ? (
                   <div className="pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(descricao) }} />
@@ -1296,7 +1296,7 @@ export function Dashboard({
                 Status
                 <select value={status} onChange={(event) => setStatus(event.target.value)}>
                   <option value="aberta">Aberta</option>
-                  <option value="concluida">Concluida</option>
+                  <option value="concluida">Concluída</option>
                 </select>
               </label>
               <label>
@@ -1345,10 +1345,10 @@ export function Dashboard({
             ) : null}
             <div className="form-actions-inline">
               <button className="primary-action" disabled={saving || loading} type="submit">
-                {saving ? "Salvando..." : editingId ? "Salvar edicao da pauta" : "Salvar pauta"}
+                {saving ? "Salvando..." : editingId ? "Salvar edição da pauta" : "Salvar pauta"}
               </button>
               <button disabled={saving} type="button" onClick={() => { clearForm(); setFormOpen(false); }}>
-                {editingId ? "Cancelar edicao" : "Cancelar"}
+                {editingId ? "Cancelar edição" : "Cancelar"}
               </button>
             </div>
           </form>
