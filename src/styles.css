@@ -2736,7 +2736,7 @@ select {
   --bg-soft: #ebe6db;
   --surface: #ffffff;
   --ink: #1c2a3a;
-  --muted: #7a8aa0;
+  --muted: #5e6d82;
   --line: #e2dccc;
   --line-soft: #efeae0;
   --accent: #1e3a5f;
@@ -3239,7 +3239,7 @@ body {
 }
 
 .filter-pill--warning {
-  color: var(--warning);
+  color: #8a6400;
 }
 
 .panel-search {
@@ -3887,7 +3887,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #8a96a8;
+  color: var(--muted);
   font-size: 12px;
   font-weight: 750;
 }

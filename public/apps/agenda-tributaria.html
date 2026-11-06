@@ -25,7 +25,7 @@
     --ink:#1c2520;--ink-soft:#3b4640;--ink-mute:#6b7268;
     --line:#d9d0bc;--line-soft:#e6dfcd;
     --primary:#1a3a36;--primary-soft:#2f574f;--primary-tint:#d8e4dd;
-    --gold:#a07920;--gold-soft:#c89a3a;--gold-tint:#f0e4c4;
+    --gold:#8a6818;--gold-soft:#c89a3a;--gold-tint:#f0e4c4;
     --crimson:#8b1f2c;--crimson-soft:#a83a48;--crimson-tint:#f0d6d8;
     --indigo:#26385a;--indigo-tint:#d6dde9;
     --terracotta:#9a4a26;--terracotta-tint:#f0dccd;
@@ -280,7 +280,7 @@
   .day.outside .daynum{color:var(--ink-mute);opacity:.4}
   .day.weekend{background:linear-gradient(180deg,#fbf8f1 0%,var(--paper) 100%)}
   .day.has-events{cursor:pointer}
-  .day.has-events:hover{background:var(--gold-tint);transform:scale(1.005);z-index:1;box-shadow:0 4px 14px -6px rgba(28,37,32,.2)}
+  .day.has-events:not(.selected):hover{background:var(--gold-tint);transform:scale(1.005);z-index:1;box-shadow:0 4px 14px -6px rgba(28,37,32,.2)}
   .day.selected{background:var(--ink);color:var(--paper);z-index:2;box-shadow:var(--shadow-lg)}
   .day.selected .daynum{color:var(--gold-soft)}
   .day.selected .daycount{background:var(--gold);color:var(--ink)}
@@ -485,6 +485,10 @@
     .panel{position:relative;max-height:none;page-break-before:always}
     .day:hover{transform:none}
   }
+/* Numeros com leitura inequivoca: na Fraunces o 3 de topo reto se confunde com 5 (13 x 15, 30 x 50). */
+.daynum,.panel-day,.panel-counter{font-family:'Manrope',sans-serif;font-variant-numeric:lining-nums tabular-nums;font-variation-settings:normal;font-feature-settings:normal}
+.daynum{font-weight:600;letter-spacing:-.01em}
+.panel-day{font-weight:600;letter-spacing:-.03em}
 </style>
 </head>
 <body>
@@ -738,8 +742,8 @@
    AGENDA TRIBUTÁRIA · APP STATE
    ======================================================================== */
 const APP = {
-  currentYear: 2026,
-  currentMonth: 5, // 1-12
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth() + 1, // 1-12 (abre no mes atual)
   data: {}, // { "2026-05": { dates: {...}, updated: "...", source: "..." } }
   selectedDay: null,
   filter: "all"
@@ -901,7 +905,7 @@ function renderCalendar(){
   const calSection = document.getElementById('calendarSection');
   const calMonthDisplay = document.getElementById('calMonthDisplay');
 
-  calMonthDisplay.innerHTML = `${MESES_PT[APP.currentMonth-1]}<sup>${String(APP.currentYear).slice(-2)}</sup>`;
+  if (calMonthDisplay) calMonthDisplay.innerHTML = `${MESES_PT[APP.currentMonth-1]}<sup>${String(APP.currentYear).slice(-2)}</sup>`;
 
   // Quando não há dados para o mês
   if(!md){

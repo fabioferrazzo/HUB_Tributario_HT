@@ -129,7 +129,7 @@ function mergeExtraDates(agenda, extraDates) {
     if (!Array.isArray(items)) continue;
     merged[day] = [...(merged[day] || []), ...items.map((item) => ({
       cat: item.cat || "sefaz",
-      title: item.title || "Obrigacao tributaria",
+      title: item.title || "Obrigação tributária",
       periodo: item.periodo || "",
       doc: item.doc || "Sefaz/RS",
       base: item.base || "Fonte oficial",

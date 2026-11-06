@@ -642,6 +642,7 @@ export function App() {
   }
 
   function handlePomodoroArchivedNoteDelete(noteId: string) {
+    if (!confirmDeletion("Excluir esta anotação arquivada do Pomodoro?")) return;
     const nextArchive = pomodoroArchivedNotes.filter((note) => note.id !== noteId);
     setPomodoroArchivedNotes(nextArchive);
     savePomodoroArchivedNotes(nextArchive);
@@ -1628,6 +1629,7 @@ function Dashboard({
 
   async function removePauta(pauta: Pauta) {
     if (!canUserManagePautaApp(pauta, user)) return;
+    if (!confirmDeletion(`Excluir a pauta "${pauta.tema}"?`)) return;
     setSaving(true);
     setError("");
 
@@ -3176,6 +3178,7 @@ function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; o
       setError("Voce pode visualizar esta tarefa, mas apenas o criador, gestor ou administrador pode exclui-la.");
       return;
     }
+    if (!confirmDeletion(`Excluir a tarefa "${task.titulo}"?`)) return;
 
     setSaving(true);
     setError("");
@@ -3753,6 +3756,7 @@ function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: Hub
       setError("Voce pode visualizar este lembrete, mas apenas o criador, gestor ou administrador pode exclui-lo.");
       return;
     }
+    if (!confirmDeletion(`Excluir o lembrete "${target?.titulo || ""}"?`)) return;
 
     setSaving(true);
     setError("");
@@ -3959,6 +3963,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   const [folderName, setFolderName] = useState("");
   const [folderDescription, setFolderDescription] = useState("");
   const [folderScope, setFolderScope] = useState<FileResourceScope>(user.role === "admin" ? "global" : "privado");
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [viewerResource, setViewerResource] = useState<FileResource | null>(null);
   const [viewerZoom, setViewerZoom] = useState(100);
   const [viewerPage, setViewerPage] = useState(1);
@@ -4176,6 +4181,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   async function removeViewerNote(note: FileViewerNote) {
     if (!viewerResource) return;
     if (!canManageViewerNote(note)) return;
+    if (!confirmDeletion("Excluir esta anotação do documento?")) return;
     setViewerSaving(true);
     setViewerError("");
     try {
@@ -4402,6 +4408,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
   async function removeResource(resource: FileResource) {
     const target = resources.find((item) => item.id === resource.id);
     if (!target || !canManageResource(target)) return;
+    if (!confirmDeletion(`Excluir "${target.titulo}" da biblioteca de arquivos? Se for um arquivo enviado, ele também será apagado do armazenamento.`)) return;
     setError("");
     setSaving(true);
     try {
@@ -4420,21 +4427,20 @@ function ArquivosModule({ user }: { user: HubUser }) {
     setSaving(true);
 
     const now = new Date().toISOString();
+    const existingFolder = editingFolderId ? folders.find((item) => item.id === editingFolderId) : undefined;
     const nextFolder: FileFolder = {
-      id: crypto.randomUUID(),
+      id: existingFolder?.id || crypto.randomUUID(),
       nome: folderName.trim(),
       descricao: folderDescription.trim(),
       scope: user.role === "admin" ? folderScope : "privado",
-      createdBy: user.email,
-      createdAt: now,
+      createdBy: existingFolder?.createdBy || user.email,
+      createdAt: existingFolder?.createdAt || now,
       updatedAt: now
     };
 
     try {
       setFolders(await saveAppFileFolder(nextFolder, user));
-      setFolderName("");
-      setFolderDescription("");
-      setFolderScope(user.role === "admin" ? "global" : "privado");
+      cancelFolderEdit();
     } catch (folderError) {
       setError(getErrorMessage(folderError));
     } finally {
@@ -4442,8 +4448,23 @@ function ArquivosModule({ user }: { user: HubUser }) {
     }
   }
 
+  function startEditFolder(folder: FileFolder) {
+    setEditingFolderId(folder.id);
+    setFolderName(folder.nome);
+    setFolderDescription(folder.descricao || "");
+    setFolderScope(folder.scope);
+  }
+
+  function cancelFolderEdit() {
+    setEditingFolderId(null);
+    setFolderName("");
+    setFolderDescription("");
+    setFolderScope(user.role === "admin" ? "global" : "privado");
+  }
+
   async function removeFolder(folder: FileFolder) {
     if (!canManageFolder(folder)) return;
+    if (!confirmDeletion(`Excluir a pasta "${folder.nome}"? Os arquivos dela não serão apagados: passarão para "Sem pasta".`)) return;
     setError("");
     setSaving(true);
     try {
@@ -4451,6 +4472,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
       setFolders(nextFolders);
       if (folderFilter === folder.id) setFolderFilter("todos");
       if (folderId === folder.id) setFolderId("");
+      if (editingFolderId === folder.id) cancelFolderEdit();
       await refreshResources();
     } catch (folderError) {
       setError(getErrorMessage(folderError));
@@ -4708,7 +4730,7 @@ function ArquivosModule({ user }: { user: HubUser }) {
         </form>
 
         <form className="stack-form folder-form" onSubmit={handleFolderSubmit}>
-          <strong>Nova pasta</strong>
+          <strong>{editingFolderId ? "Editar pasta" : "Nova pasta"}</strong>
           <label>
             Nome da pasta
             <input value={folderName} onChange={(event) => setFolderName(event.target.value)} />
@@ -4726,18 +4748,30 @@ function ArquivosModule({ user }: { user: HubUser }) {
             Descricao
             <textarea value={folderDescription} onChange={(event) => setFolderDescription(event.target.value)} />
           </label>
-          <button disabled={saving} type="submit">
-            Criar pasta
-          </button>
+          <div className="form-actions-inline">
+            <button className="primary-action" disabled={saving || !folderName.trim()} type="submit">
+              {editingFolderId ? "Salvar pasta" : "Criar pasta"}
+            </button>
+            {editingFolderId ? (
+              <button disabled={saving} type="button" onClick={cancelFolderEdit}>
+                Cancelar
+              </button>
+            ) : null}
+          </div>
           {folders.length ? (
             <div className="folder-manage-list">
               {folders.map((folder) => (
                 <span key={folder.id}>
                   {folder.nome}
                   {canManageFolder(folder) ? (
-                    <button aria-label={`Excluir pasta ${folder.nome}`} disabled={saving} onClick={() => removeFolder(folder)} type="button">
-                      <X size={12} />
-                    </button>
+                    <>
+                      <button aria-label={`Editar pasta ${folder.nome}`} disabled={saving} onClick={() => startEditFolder(folder)} title="Editar pasta" type="button">
+                        <Edit3 size={12} strokeWidth={1.8} />
+                      </button>
+                      <button aria-label={`Excluir pasta ${folder.nome}`} disabled={saving} onClick={() => removeFolder(folder)} title="Excluir pasta" type="button">
+                        <X size={12} strokeWidth={1.8} />
+                      </button>
+                    </>
                   ) : null}
                 </span>
               ))}
@@ -5958,6 +5992,7 @@ function LinksModule({ user }: { user: HubUser }) {
 
   async function removeLink(link: UsefulLink) {
     if (!canManageLink(link)) return;
+    if (!confirmDeletion(`Excluir o link "${link.titulo}"?`)) return;
     setSaving(true);
     setError("");
 
@@ -8918,6 +8953,11 @@ function summarizeLocalOcrOutput(output: string) {
   if (!lines.length) return "OCR executado. Lista de arquivos atualizada.";
   if (statusLines.length) return [foundLine, ...statusLines].filter(Boolean).join(" ");
   return lines.slice(-2).join(" ");
+}
+
+// Exclusoes sao definitivas: sempre pedir confirmacao antes.
+function confirmDeletion(message: string) {
+  return window.confirm(`${message}\n\nEsta ação não pode ser desfeita.`);
 }
 
 function getErrorMessage(error: unknown) {

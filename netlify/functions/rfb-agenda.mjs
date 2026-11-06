@@ -49,29 +49,68 @@ export default async function handler(request) {
     return json(200, await fetchRfbAgenda(year, month));
   } catch (error) {
     return json(502, {
-      error: error?.message || "Nao foi possivel consultar a Receita Federal.",
+      error: error?.message || "Não foi possível consultar a Receita Federal.",
       sourceUrl: error?.sourceUrl || buildSourceUrl(year, month)
     });
   }
 }
 
-export async function fetchRfbAgenda(year, month) {
-  const sourceUrl = buildSourceUrl(year, month);
-  const response = await fetch(sourceUrl, {
-    headers: {
-      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "user-agent": "HUB-Depto-Tributario/1.0 (+https://hub-depto-tributario-ht.netlify.app)"
-    }
-  });
+const RFB_REQUEST_HEADERS = {
+  accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "user-agent": "HUB-Depto-Tributario/1.0 (+https://hub-depto-tributario-ht.netlify.app)"
+};
 
-  if (!response.ok) {
-    const error = new Error(`Receita Federal respondeu ${response.status}.`);
-    error.sourceUrl = sourceUrl;
-    throw error;
+// A Receita nao padroniza o endereco: ate jul/2026 usa "julho", a partir de ago/2026 usa "Agosto".
+// Tenta as grafias conhecidas e, se nenhuma existir, procura o link do mes na pagina do ano.
+async function fetchRfbMonthPage(year, month) {
+  const slug = MONTH_SLUGS[month];
+  const candidates = [slug, slug.charAt(0).toUpperCase() + slug.slice(1)];
+  if (month === 3) candidates.push("março", "Março");
+
+  let lastStatus = 0;
+  for (const candidate of candidates) {
+    const sourceUrl = buildSourceUrl(year, month, candidate);
+    const response = await fetch(sourceUrl, { headers: RFB_REQUEST_HEADERS });
+    if (response.ok) return { sourceUrl, html: await response.text() };
+    lastStatus = response.status;
   }
 
-  const html = await response.text();
-  const dates = parseAgendaHtml(html, year, month);
+  const discovered = await discoverMonthUrl(year, month);
+  if (discovered) {
+    const response = await fetch(discovered, { headers: RFB_REQUEST_HEADERS });
+    if (response.ok) return { sourceUrl: discovered, html: await response.text() };
+    lastStatus = response.status;
+  }
+
+  const error = new Error(`Receita Federal respondeu ${lastStatus || "sem resposta"}.`);
+  error.sourceUrl = buildSourceUrl(year, month);
+  throw error;
+}
+
+async function discoverMonthUrl(year, month) {
+  try {
+    const indexUrl = `https://www.gov.br/receitafederal/pt-br/assuntos/agenda-tributaria/${year}`;
+    const response = await fetch(indexUrl, { headers: RFB_REQUEST_HEADERS });
+    if (!response.ok) return "";
+    const html = await response.text();
+    const pattern = new RegExp(`href="([^"]*/agenda-tributaria/${year}/([^"/?#]+))"`, "gi");
+    for (const match of html.matchAll(pattern)) {
+      if (normalize(decodeURIComponent(match[2])) === normalize(MONTH_SLUGS[month])) {
+        return new URL(match[1], indexUrl).toString();
+      }
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}
+
+export async function fetchRfbAgenda(year, month) {
+  const { sourceUrl, html } = await fetchRfbMonthPage(year, month);
+  // Desde 2026 a pagina do mes so traz o calendario; os vencimentos ficam em uma subpagina por dia.
+  const dayLinks = findDayPageLinks(html, sourceUrl, year, month);
+  let dates = dayLinks.length ? await fetchDayPages(dayLinks) : {};
+  if (!Object.keys(dates).length) dates = parseAgendaHtml(html, year, month);
 
   if (!Object.keys(dates).length) {
     return {
@@ -85,11 +124,11 @@ export async function fetchRfbAgenda(year, month) {
         1: [
           {
             cat: "pj-fed",
-            title: "Agenda Tributaria RFB - consultar fonte oficial",
+            title: "Agenda Tributária RFB – consultar a fonte oficial",
             periodo: `${MONTH_SLUGS[month]}/${year}`,
             doc: "Receita Federal",
             base: "Fonte oficial",
-            desc: "A pagina oficial foi acessada, mas o parser nao identificou vencimentos estruturados. Abra a fonte oficial para conferir e use a importacao manual se necessario."
+            desc: "A página oficial foi acessada, mas os vencimentos ainda não estão publicados em formato legível. Abra a fonte oficial para conferir e, se necessário, use a importação manual."
           }
         ]
       },
@@ -106,6 +145,144 @@ export async function fetchRfbAgenda(year, month) {
     critical: buildCritical(dates),
     dates
   };
+}
+
+function findDayPageLinks(html, baseUrl, year, month) {
+  const links = new Map();
+  const pattern = /href="([^"]*\/agenda-tributaria\/\d{4}\/[^"/]+\/[^"]*?dia(?:-|%20|\s)(\d{1,2})-(\d{1,2})-(\d{4})[^"]*)"/gi;
+  for (const match of String(html || "").matchAll(pattern)) {
+    const day = Number(match[2]);
+    if (Number(match[3]) !== month || Number(match[4]) !== year || day < 1 || day > 31 || links.has(day)) continue;
+    links.set(day, new URL(decodeEntities(match[1]), baseUrl).toString());
+  }
+  return Array.from(links, ([day, url]) => ({ day, url }));
+}
+
+async function fetchDayPages(dayLinks) {
+  const results = await Promise.all(
+    dayLinks.map(async ({ day, url }) => {
+      try {
+        const response = await fetch(url, { headers: RFB_REQUEST_HEADERS });
+        if (!response.ok) return [day, []];
+        return [day, groupDayRows(parseDayTableRows(await response.text()))];
+      } catch {
+        return [day, []];
+      }
+    })
+  );
+
+  const dates = {};
+  for (const [day, items] of results) {
+    if (items.length) dates[String(day)] = items;
+  }
+  return sortDates(dates);
+}
+
+function parseDayTableRows(html) {
+  // A pagina de cada dia tem dois tipos de tabela:
+  // 1) Tributos: cada registro ocupa duas linhas
+  //      Codigo (rowspan 2) | Grupo | Descricao | Periodo de apuracao
+  //      Documento | Categoria da declaracao/escrituracao | Fundamentacao legal
+  // 2) Declaracoes: Interessado | Declaracao/documento | Periodo de referencia | Base normativa
+  const rows = [];
+  for (const tableMatch of String(html || "").matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi)) {
+    let isDeclaracoes = false;
+    let pending = null;
+    for (const rowMatch of tableMatch[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+      const cells = Array.from(rowMatch[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi), (cell) =>
+        htmlToText(cell[1]).replace(/\s+/g, " ").trim()
+      );
+      const joined = normalize(cells.join(" "));
+      if (/^interessado\b/.test(normalize(cells[0] || "")) && /periodo de referencia/.test(joined)) {
+        isDeclaracoes = true;
+        continue;
+      }
+      if (/codigo de receita|grupo de tributo|documento arrecada|fundamentacao legal/.test(joined) && cells.every((cell) => cell.length < 60)) {
+        pending = null;
+        continue;
+      }
+
+      if (isDeclaracoes) {
+        if (cells.length < 3) continue;
+        const [interessado, nome, periodo, base = ""] = cells;
+        if (nome) rows.push({ tipo: "declaracao", interessado, nome, periodo, base });
+        continue;
+      }
+
+      if (cells.length >= 7) {
+        const [codigo, grupo, descricao, periodo, documento, categoria, fundamento] = cells;
+        rows.push({ tipo: "tributo", codigo, grupo, descricao, periodo, documento, categoria, fundamento });
+        pending = null;
+      } else if (cells.length === 4) {
+        const [codigo, grupo, descricao, periodo] = cells;
+        pending = { tipo: "tributo", codigo, grupo, descricao, periodo, documento: "", categoria: "", fundamento: "" };
+        rows.push(pending);
+      } else if (cells.length === 3 && pending) {
+        [pending.documento, pending.categoria, pending.fundamento] = cells;
+        pending = null;
+      }
+    }
+  }
+  return rows.filter((row) => (row.tipo === "declaracao" ? row.nome : row.grupo || row.descricao));
+}
+
+function categorizeTributo(grupo, descricao) {
+  const g = normalize(grupo);
+  const d = normalize(descricao);
+  if (/simples|pgdas|dasn|simei|\bdas\b/.test(g)) return "simples";
+  if (/^cpss/.test(g)) return "serv";
+  if (/^irpf|carne/.test(g)) return "pf";
+  if (/^(irrf|csrf|iof)\b/.test(g) || /^retencao/.test(d)) return "ret";
+  return "pj-fed";
+}
+
+function categorizeDeclaracao(nome, interessado) {
+  const value = normalize(`${nome} ${interessado}`);
+  if (/pgdas|dasn|simples|simei|\bmei\b|defis/.test(value)) return "simples";
+  if (/irpf|ajuste anual|espolio|carne-leao|ganho de capital/.test(value)) return "pf";
+  return "pj-aces";
+}
+
+function groupDayRows(rows) {
+  const items = [];
+  const groups = new Map();
+
+  for (const row of rows) {
+    if (row.tipo === "declaracao") {
+      items.push({
+        cat: categorizeDeclaracao(row.nome, row.interessado),
+        title: cleanTitle(row.nome),
+        periodo: row.periodo || "",
+        doc: "Declaração / escrituração",
+        base: row.base || "Agenda Tributária da Receita Federal",
+        desc: row.interessado ? `Interessado: ${row.interessado}.` : ""
+      });
+      continue;
+    }
+    const key = [row.grupo, row.periodo, row.documento].map(normalize).join("|");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+
+  for (const groupRows of groups.values()) {
+    const first = groupRows[0];
+    const grupo = first.grupo || "Tributo federal";
+    const title = groupRows.length === 1 ? `${grupo} – ${first.descricao}` : `${grupo} – ${groupRows.length} códigos de receita`;
+    const listed = groupRows.slice(0, 12).map((item) => `${/^[-–\s]*$/.test(item.codigo || "") ? "" : item.codigo} ${item.descricao}`.trim());
+    const more = groupRows.length > 12 ? ` e mais ${groupRows.length - 12}.` : "";
+    const fundamentos = Array.from(new Set(groupRows.map((item) => item.fundamento).filter(Boolean))).slice(0, 4).join("; ");
+    const categorias = Array.from(new Set(groupRows.map((item) => item.categoria).filter((value) => value && !/^-+( \/ -+)?$/.test(value)))).slice(0, 3).join("; ");
+    items.push({
+      cat: categorizeTributo(grupo, first.descricao),
+      title: cleanTitle(title),
+      periodo: first.periodo || "",
+      doc: first.documento || "DARF",
+      base: fundamentos || "Agenda Tributária da Receita Federal",
+      desc: `${groupRows.length === 1 ? "Código" : "Códigos"}: ${listed.join("; ")}${more}${categorias ? ` Declaração/escrituração: ${categorias}.` : ""}`
+    });
+  }
+
+  return items;
 }
 
 function parseAgendaHtml(html, year, month) {
@@ -133,7 +310,7 @@ function parseAgendaHtml(html, year, month) {
       title,
       periodo: event.periodo || `${MONTH_SLUGS[month]}/${year}`,
       doc: "Receita Federal",
-      base: "Agenda Tributaria da Receita Federal",
+      base: "Agenda Tributária da Receita Federal",
       desc: event.desc || "Vencimento identificado na agenda oficial da Receita Federal."
     });
   }
@@ -177,7 +354,7 @@ function chunkToEvent(day, chunk, periodo) {
     .filter(Boolean)
     .filter((line) => !/^(agenda tributaria|receita federal|voltar|compartilhe|publicado em)/i.test(line));
 
-  const title = lines.find((line) => likelyTitle(line)) || lines[0] || "Obrigacao tributaria";
+  const title = lines.find((line) => likelyTitle(line)) || lines[0] || "Obrigação tributária";
   const desc = lines.filter((line) => line !== title).slice(0, 4).join(" ");
 
   return { day, title, desc: desc.slice(0, 420), periodo };
@@ -207,7 +384,7 @@ function buildCritical(dates) {
 
   return {
     day: Number(day),
-    text: `O dia <strong>${String(day).padStart(2, "0")}</strong> concentra ${items.length} obrigacoes/vencimentos identificados na agenda oficial da Receita Federal.`
+    text: `O dia <strong>${String(day).padStart(2, "0")}</strong> concentra ${items.length} obrigações/vencimentos identificados na agenda oficial da Receita Federal.`
   };
 }
 
@@ -266,8 +443,8 @@ function normalize(value) {
     .toLowerCase();
 }
 
-function buildSourceUrl(year, month) {
-  return `https://www.gov.br/receitafederal/pt-br/assuntos/agenda-tributaria/${year}/${MONTH_SLUGS[month]}`;
+function buildSourceUrl(year, month, slug = MONTH_SLUGS[month]) {
+  return `https://www.gov.br/receitafederal/pt-br/assuntos/agenda-tributaria/${year}/${encodeURIComponent(slug)}`;
 }
 
 function clampInteger(value, min, max, fallback) {
