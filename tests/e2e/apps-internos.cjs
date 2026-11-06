@@ -6,7 +6,9 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
 (async () => {
   const browser = await chromium.launch({ executablePath: CHROME, headless: true });
-  for (const app of ["agenda-tributaria", "coord-tributaria", "pomodoro", "calendar"]) {
+  const registry = require("fs").readFileSync(require("path").join(__dirname, "..", "..", "src", "app", "appsRegistry.ts"), "utf8");
+  const fromRegistry = [...registry.matchAll(/src: [`"]\/apps\/([a-z0-9-]+)\.html/g)].map((m) => m[1]);
+  for (const app of [...new Set([...fromRegistry, "calendar"])]) {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { ListChecks, Timer, UserRoundCog } from "lucide-react";
+import { ClipboardCheck, ListChecks, Timer, Truck, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Sistema";
@@ -66,6 +66,27 @@ export const hubApps: HubApp[] = [
     group: "Sistema",
     access: "gestores",
     src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}`,
+    mode: "embutido"
+  },
+  {
+    id: "checklist",
+    label: "Checklist",
+    title: "Checklist",
+    icon: ClipboardCheck,
+    group: "Ferramentas",
+    access: "admin",
+    src: "/apps/checklist.html",
+    mode: "embutido",
+    description: "Checklist pessoal; os dados ficam guardados neste navegador (use o backup do próprio app para levar de um computador a outro)."
+  },
+  {
+    id: "consultor-cte",
+    label: "Consultor CT-e/MDF-e",
+    title: "Consultor CT-e / MDF-e",
+    icon: Truck,
+    group: "Ferramentas",
+    access: "todos",
+    src: "/apps/consultor-cte-mdfe.html",
     mode: "embutido"
   }
 ];
