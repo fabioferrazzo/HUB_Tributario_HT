@@ -11,3 +11,5 @@ vite.config.d.ts
 .netlify/
 .DS_Store
 Thumbs.db
+# saídas dos testes em navegador (capturas de tela)
+tests/e2e/.saida/
