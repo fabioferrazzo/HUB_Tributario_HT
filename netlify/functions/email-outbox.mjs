@@ -186,29 +186,66 @@ async function updateEmail(supabaseUrl, serviceRoleKey, id, patch) {
 
 export async function sendEmail(email) {
   const provider = getEmailProvider();
-
-  if (provider !== "resend") {
-    throw new Error(`Provedor de e-mail não suportado: ${provider}`);
-  }
-
   const forcedRecipient = getEnv("EMAIL_FORCE_TEST_TO");
-  const toEmail = forcedRecipient || email.to_email;
-  const subject = forcedRecipient ? `[TESTE HUB] ${email.subject}` : email.subject;
+  const message = {
+    to: forcedRecipient || email.to_email,
+    subject: forcedRecipient ? `[TESTE HUB] ${email.subject}` : email.subject,
+    html: email.html_body,
+    text: email.text_body || stripHtml(email.html_body),
+    replyTo: getEnv("EMAIL_REPLY_TO") || undefined
+  };
 
+  if (provider === "gmail") return sendWithGmail(message);
+  if (provider === "resend") return sendWithResend(message, email.dedupe_key);
+  throw new Error(`Provedor de e-mail não suportado: ${provider}`);
+}
+
+// Gmail: SMTP com senha de app da conta remetente (GMAIL_USER + GMAIL_APP_PASSWORD).
+let gmailTransport = null;
+async function getGmailTransport() {
+  if (gmailTransport) return gmailTransport;
+  const { default: nodemailer } = await import("nodemailer");
+  const port = Number(getEnv("GMAIL_SMTP_PORT") || 465);
+  gmailTransport = nodemailer.createTransport({
+    host: getEnv("GMAIL_SMTP_HOST") || "smtp.gmail.com",
+    port,
+    secure: port === 465,
+    auth: { user: getEnv("GMAIL_USER"), pass: getEnv("GMAIL_APP_PASSWORD").replace(/\s+/g, "") },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 15000
+  });
+  return gmailTransport;
+}
+
+async function sendWithGmail(message) {
+  const transport = await getGmailTransport();
+  const info = await transport.sendMail({
+    from: { name: getEnv("EMAIL_FROM_NAME") || "HUB Depto Tributário", address: getEnv("GMAIL_USER") },
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+    text: message.text,
+    replyTo: message.replyTo
+  });
+  return { provider: "gmail", id: info?.messageId || "" };
+}
+
+async function sendWithResend(message, dedupeKey) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       authorization: `Bearer ${getEnv("EMAIL_PROVIDER_API_KEY")}`,
-      "idempotency-key": email.dedupe_key,
+      "idempotency-key": dedupeKey,
       "content-type": "application/json"
     },
     body: JSON.stringify({
       from: getEnv("EMAIL_FROM"),
-      to: [toEmail],
-      subject,
-      html: email.html_body,
-      text: email.text_body || stripHtml(email.html_body),
-      reply_to: getEnv("EMAIL_REPLY_TO") || undefined
+      to: [message.to],
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+      reply_to: message.replyTo
     })
   });
 
@@ -219,7 +256,7 @@ export async function sendEmail(email) {
     throw new Error(data?.message || data?.error || text || "Erro ao enviar e-mail.");
   }
 
-  return { provider, id: data?.id || "" };
+  return { provider: "resend", id: data?.id || "" };
 }
 
 async function supabaseRequest(url, options) {
@@ -292,6 +329,12 @@ async function readProfile(supabaseUrl, serviceRoleKey, userId) {
 }
 
 export function assertDeliveryConfig() {
+  if (getEmailProvider() === "gmail") {
+    if (!getEnv("GMAIL_USER")) throw new Error("GMAIL_USER não configurado.");
+    if (!getEnv("GMAIL_APP_PASSWORD")) throw new Error("GMAIL_APP_PASSWORD não configurada.");
+    return;
+  }
+
   if (!getEnv("EMAIL_PROVIDER_API_KEY")) {
     throw new Error("EMAIL_PROVIDER_API_KEY não configurada.");
   }
