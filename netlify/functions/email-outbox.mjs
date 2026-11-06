@@ -324,8 +324,8 @@ function toSafePreview(email) {
 function readToken(request) {
   const auth = request.headers.get("authorization") || "";
   const match = auth.match(/^Bearer\s+(.+)$/i);
-  const urlToken = new URL(request.url).searchParams.get("token") || "";
-  return match?.[1]?.trim() || request.headers.get("x-email-dispatch-token") || urlToken;
+  // A chave so e aceita no cabecalho (enderecos ficam gravados em historicos e logs).
+  return match?.[1]?.trim() || request.headers.get("x-email-dispatch-token") || "";
 }
 
 async function parseJsonBody(request) {

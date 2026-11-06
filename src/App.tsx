@@ -6696,7 +6696,7 @@ function OperationalGuidePanel() {
 }
 
 function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser; users: HubProfile[] }) {
-  const [dispatchToken, setDispatchToken] = useState(() => localStorage.getItem("hub_email_dispatch_token") || "");
+  const [dispatchToken, setDispatchToken] = useState(() => sessionStorage.getItem("hub_email_dispatch_token") || "");
   const [limit, setLimit] = useState(20);
   const [runningAction, setRunningAction] = useState("");
   const [operationError, setOperationError] = useState("");
@@ -6711,9 +6711,9 @@ function OperationalEmailConsole({ currentUser, users }: { currentUser: HubUser;
   useEffect(() => {
     const token = dispatchToken.trim();
     if (token) {
-      localStorage.setItem("hub_email_dispatch_token", token);
+      sessionStorage.setItem("hub_email_dispatch_token", token);
     } else {
-      localStorage.removeItem("hub_email_dispatch_token");
+      sessionStorage.removeItem("hub_email_dispatch_token");
     }
   }, [dispatchToken]);
 

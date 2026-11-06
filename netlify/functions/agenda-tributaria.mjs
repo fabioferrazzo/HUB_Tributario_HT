@@ -51,7 +51,8 @@ async function handleGet(request) {
 async function handlePost(request) {
   const url = new URL(request.url);
   const expectedToken = getEnv("AGENDA_SYNC_TOKEN");
-  const token = request.headers.get("x-agenda-sync-token") || url.searchParams.get("token") || "";
+  // A chave so e aceita no cabecalho (enderecos ficam gravados em historicos e logs).
+  const token = request.headers.get("x-agenda-sync-token") || "";
 
   if (!expectedToken) return json(500, { error: "AGENDA_SYNC_TOKEN nao configurado no Netlify." });
   if (token !== expectedToken) return json(401, { error: "Token invalido para sincronizar agenda." });

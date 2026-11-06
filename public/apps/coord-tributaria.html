@@ -1952,11 +1952,11 @@
       async function sendEmail(kind) {
         const to = refs.emailTo.value.trim();
         syncState.token = syncState.token || readStoredAuthToken();
-        const token = refs.emailToken.value.trim() || localStorage.getItem(EMAIL_TOKEN_KEY) || "";
+        const token = refs.emailToken.value.trim() || sessionStorage.getItem(EMAIL_TOKEN_KEY) || "";
         if (!to) return showNotice("Informe o destinatario do e-mail.", true);
         if (!token && !syncState.token) return showNotice("Sessao do HUB nao encontrada. Informe o EMAIL_DISPATCH_TOKEN apenas se precisar usar a contingencia.", true);
 
-        if (token) localStorage.setItem(EMAIL_TOKEN_KEY, token);
+        if (token) sessionStorage.setItem(EMAIL_TOKEN_KEY, token);
         const report = buildReportText();
         const subject = kind === "pautas" ? "Pautas da Coordenacao Tributaria" : "Avaliacoes da Coordenacao Tributaria";
         const body =
@@ -2040,7 +2040,7 @@
         });
       });
 
-      refs.emailToken.value = localStorage.getItem(EMAIL_TOKEN_KEY) || "";
+      refs.emailToken.value = sessionStorage.getItem(EMAIL_TOKEN_KEY) || "";
       refs.emailTo.value = activeCollaborators()[0]?.email || "";
       render();
       window.addEventListener("message", (event) => {
