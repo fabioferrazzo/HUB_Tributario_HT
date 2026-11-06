@@ -1,7 +1,8 @@
-import { Plus } from "lucide-react";
+import { ExternalLink, Maximize2, Minimize2, Plus, RotateCw } from "lucide-react";
 import { getDueTone } from "../lib/formatters";
 import { getSupabaseAccessToken } from "../lib/auth";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { HubApp } from "../app/appsRegistry";
 
 export function DashboardPanelHeader({
   actionLabel,
@@ -79,24 +80,109 @@ export function DueSignal({ prazo }: { prazo: string }) {
   return <span className={`due-signal due-signal--${tone}`} aria-label={`Prazo ${tone}`} />;
 }
 
-export function ModuleFrame({ title, src }: { title: string; src: string }) {
+// Moldura padrão dos apps incorporados: tela cheia, nova janela e recarregar.
+// Canal reservado HUB <-> app: mensagens "hub:*" (hoje, pedido de login e de tela cheia;
+// as integrações entre apps entram aqui quando forem especificadas).
+export function ModuleFrame({ app }: { app: HubApp }) {
+  const pageRef = useRef<HTMLElement | null>(null);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const popupRef = useRef<Window | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const Icon = app.icon;
+  const embedded = app.mode === "embutido";
+  const lanOnly = /^http:\/\/(192\.168\.|10\.|127\.)/.test(app.src);
 
-  const postAuthToken = useCallback(async () => {
+  const sendAuthToken = useCallback(async (target?: Window | null) => {
     const token = await getSupabaseAccessToken();
-    if (!token || !frameRef.current?.contentWindow) return;
-    frameRef.current.contentWindow.postMessage({ type: "hub-auth-token", token }, window.location.origin);
+    const destination = target || frameRef.current?.contentWindow;
+    if (!token || !destination) return;
+    destination.postMessage({ type: "hub-auth-token", token }, window.location.origin);
   }, []);
 
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await pageRef.current?.requestFullscreen();
+    } catch {
+      // O navegador pode recusar (ex.: sem gesto do usuário); nada a fazer.
+    }
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(pageRef.current) && document.fullscreenElement === pageRef.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      const fromFrame = event.source === frameRef.current?.contentWindow;
+      const fromPopup = Boolean(popupRef.current) && event.source === popupRef.current;
+      if (!fromFrame && !fromPopup) return;
+      const type = typeof event.data?.type === "string" ? event.data.type : "";
+      if (type === "hub:auth-request") void sendAuthToken(event.source as Window);
+      if (type === "hub:fullscreen" && fromFrame) void toggleFullscreen();
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [sendAuthToken, toggleFullscreen]);
+
+  function openWindow() {
+    const width = Math.min(1440, window.screen.availWidth || 1440);
+    const height = Math.min(960, window.screen.availHeight || 960);
+    popupRef.current = window.open(app.src, `hub-app-${app.id}`, `popup=yes,width=${width},height=${height}`);
+  }
+
   return (
-    <section className="frame-page">
+    <section className={`frame-page ${isFullscreen ? "frame-page--fullscreen" : ""}`} ref={pageRef}>
       <header>
-        <h2>{title}</h2>
-        <a href={src} rel="noreferrer" target="_blank">
-          Abrir em nova aba
-        </a>
+        <div className="frame-title">
+          <Icon size={18} strokeWidth={1.6} />
+          <h2>{app.title}</h2>
+        </div>
+        <div className="frame-actions">
+          {embedded ? (
+            <button type="button" onClick={() => void toggleFullscreen()} title={isFullscreen ? "Sair da tela cheia (Esc)" : "Tela cheia"}>
+              {isFullscreen ? <Minimize2 size={15} strokeWidth={1.6} /> : <Maximize2 size={15} strokeWidth={1.6} />}
+              <span>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</span>
+            </button>
+          ) : null}
+          <button type="button" onClick={openWindow} title="Abrir em nova janela">
+            <ExternalLink size={15} strokeWidth={1.6} />
+            <span>Nova janela</span>
+          </button>
+          {embedded ? (
+            <button type="button" onClick={() => setReloadKey((key) => key + 1)} title="Recarregar o app">
+              <RotateCw size={15} strokeWidth={1.6} />
+              <span>Recarregar</span>
+            </button>
+          ) : null}
+        </div>
       </header>
-      <iframe ref={frameRef} src={src} title={title} onLoad={postAuthToken} />
+      {embedded ? (
+        <iframe
+          allow="fullscreen; clipboard-read; clipboard-write"
+          allowFullScreen
+          key={reloadKey}
+          onLoad={() => void sendAuthToken()}
+          ref={frameRef}
+          src={app.src}
+          title={app.title}
+        />
+      ) : (
+        <div className="frame-external">
+          <Icon size={30} strokeWidth={1.4} />
+          <h3>{app.title}</h3>
+          <p>{app.description || "Este app abre em janela própria."}</p>
+          <button className="primary-action" type="button" onClick={openWindow}>
+            <ExternalLink size={15} strokeWidth={1.6} />
+            Abrir {app.label}
+          </button>
+          {lanOnly ? <small>Disponível apenas na rede do escritório.</small> : null}
+        </div>
+      )}
     </section>
   );
 }

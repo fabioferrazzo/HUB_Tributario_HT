@@ -5344,3 +5344,18 @@ a.aviso-card__file:hover {
 .list-row .status-pill--neutral { color: #48554f; }
 .filter-pill--warning { color: #765600; }
 .filter-pill--danger { color: #9b3333; }
+
+/* Moldura padrão dos apps */
+.frame-title { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--accent); }
+.frame-title h2 { color: #1b2a41; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frame-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.frame-actions button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #1b2a41; font-size: 12px; font-weight: 700; cursor: pointer; }
+.frame-actions button:hover, .frame-actions button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.frame-page:fullscreen { height: 100vh; border: 0; border-radius: 0; }
+.frame-page:fullscreen header { padding: 6px 12px; }
+.frame-external { display: grid; place-content: center; justify-items: center; gap: 10px; padding: 32px; text-align: center; color: var(--muted); }
+.frame-external svg { color: var(--accent); }
+.frame-external h3 { margin: 0; color: #1b2a41; font-size: 18px; }
+.frame-external p { margin: 0; max-width: 460px; }
+.frame-external .primary-action { display: inline-flex; align-items: center; gap: 8px; }
+@media (max-width: 760px) { .frame-actions span { display: none; } .frame-actions button { padding: 0 8px; } }

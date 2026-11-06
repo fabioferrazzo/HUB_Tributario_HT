@@ -1,5 +1,6 @@
 import { Bell, CalendarDays, FileArchive, Home, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
 import type { FileResourceCategory, HubRoute, UserRole } from "../types";
+import { getAppRoute, hubApps, type HubAppGroup } from "./appsRegistry";
 import type { HomologationBlock, HomologationStatus } from "./appTypes";
 
 export const HOMOLOGATION_STORAGE_KEY = "hub_homologation_status_v1";
@@ -148,31 +149,29 @@ export const homologationBlocks: HomologationBlock[] = [
   }
 ];
 
-export const routes = [
+// Telas próprias do HUB. Os apps incorporados (Agenda, Pomodoro, Coordenação e os próximos)
+// vêm do cadastro único em ./appsRegistry.ts.
+const nativeRoutes: Array<{ id: HubRoute; label: string; icon: typeof Home }> = [
   { id: "home", label: "Pautas", icon: ListChecks },
   { id: "tarefas", label: "Calendário de Tarefas", icon: CalendarDays },
   { id: "lembretes", label: "Lembretes", icon: Bell },
   { id: "arquivos", label: "Arquivos", icon: FileArchive },
-  { id: "agenda", label: "Agenda tributária", icon: ListChecks },
-  { id: "pomodoro", label: "Pomodoro", icon: Timer },
   { id: "links", label: "Links úteis", icon: Link2 },
-  { id: "coord", label: "Coordenação", icon: UserRoundCog },
   { id: "admin", label: "Configurações", icon: Settings }
-] satisfies Array<{ id: HubRoute; label: string; icon: typeof Home }>;
+];
 
-export const routeGroups = [
-  { label: "Principal", items: ["home"] },
-  { label: "Ferramentas", items: ["tarefas", "arquivos", "agenda", "pomodoro", "links"] },
-  { label: "Sistema", items: ["coord", "admin"] }
-] satisfies Array<{ label: string; items: HubRoute[] }>;
+export const routes: Array<{ id: HubRoute; label: string; icon: typeof Home }> = [
+  ...nativeRoutes,
+  ...hubApps.map((app) => ({ id: getAppRoute(app), label: app.label, icon: app.icon }))
+];
 
-export const coordStandaloneVersion = "2026-07-01-coord-list-cards";
+const appRoutesOf = (group: HubAppGroup) => hubApps.filter((app) => app.group === group).map(getAppRoute);
 
-export const appFrames: Record<"agenda" | "pomodoro" | "coord", { title: string; src: string }> = {
-  agenda: { title: "Agenda tributária", src: "/apps/agenda-tributaria.html" },
-  pomodoro: { title: "Pomodoro Timer", src: "/apps/pomodoro.html" },
-  coord: { title: "Coordenação tributária", src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}` }
-};
+export const routeGroups: Array<{ label: string; items: HubRoute[] }> = [
+  { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
+  { label: "Ferramentas", items: ["tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
+  { label: "Sistema", items: [...appRoutesOf("Sistema"), "admin"] }
+];
 
 // OCR (conversao em PDF pesquisavel) adiado para outra versao: arquivos digitalizados ficam
 // guardados como enviados, para visualizar e baixar. Para reativar, troque para true.

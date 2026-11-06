@@ -236,4 +236,5 @@ export type HubRoute =
   | "pomodoro"
   | "links"
   | "coord"
-  | "admin";
+  | "admin"
+  | `app:${string}`;

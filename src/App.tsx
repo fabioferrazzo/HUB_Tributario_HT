@@ -11,7 +11,8 @@ import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
 import { TasksModule } from "./modules/TasksModule";
 import { TopBar } from "./components/TopBar";
-import { appFrames, routeGroups, routes } from "./app/appConfig";
+import { routeGroups, routes } from "./app/appConfig";
+import { canUserSeeApp, findAppByRoute } from "./app/appsRegistry";
 import { buildSystemNotifications } from "./lib/hubNotifications";
 import { canUserViewPauta } from "./lib/hubRules";
 import { confirmDeletion } from "./lib/formatters";
@@ -144,7 +145,8 @@ export function App() {
 
   const visibleRoutes = routes.filter((item) => {
     if (item.id === "admin") return user.role === "admin";
-    if (item.id === "coord") return user.role !== "colaborador";
+    const app = findAppByRoute(item.id);
+    if (app) return canUserSeeApp(app, user.role);
     return true;
   });
 
@@ -341,8 +343,7 @@ function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onN
   if (route === "arquivos") return <ArquivosModule user={user} />;
   if (route === "links") return <LinksModule user={user} />;
   if (route === "admin") return <AdminModule currentUser={user} />;
-  if (route === "agenda" || route === "pomodoro" || route === "coord") {
-    return <ModuleFrame title={appFrames[route].title} src={appFrames[route].src} />;
-  }
+  const app = findAppByRoute(route);
+  if (app && canUserSeeApp(app, user.role)) return <ModuleFrame app={app} key={app.id} />;
   return <Dashboard hubUsers={hubUsers} user={user} />;
 }
