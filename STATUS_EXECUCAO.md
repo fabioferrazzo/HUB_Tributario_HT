@@ -416,3 +416,46 @@ Os passos 3 a 5 devem ser feitos em sequencia: com o app antigo, os anexos de Pa
 - E-mail de senha provisoria grava a senha em texto na fila `email_outbox`.
 - `src/App.tsx` monolitico (~300 KB): dividir em modulos.
 - Menu Lembretes fora do menu lateral (acesso pelo Calendario de Tarefas e pelo sino): confirmar se e intencional.
+
+## Atualização 06/11/2026 - Melhorias de uso, Agenda automática e segurança
+
+### Publicado no `main` (produção)
+
+- Quadro de Avisos (`7694f3f`, `7e7d532`): layout legível, painéis laterais de leitura e edição, editor com formatação, cor do post-it com prévia, edição e exclusão de avisos (com remoção do arquivo substituído).
+- Pautas (`5814a16`): editor por trecho (5 tamanhos, negrito, itálico, sublinhado, grifo que liga e desliga, listas e limpar formatação), compartilhado com o Quadro; pautas antigas convertidas ao editar.
+- Pomodoro (`1c84f1f`): notificação de fim de ciclo sem `sw.js` próprio (o registro do service worker do Pomodoro sobrescrevia o do HUB).
+- Revisão geral (`1bc0b92`): Agenda Tributária abre no mês atual e não trava após mês sem dados; contrastes corrigidos; confirmação antes de toda exclusão; edição de pastas em Arquivos; mensagem clara quando o e-mail de senha não é enviado.
+- Agenda Tributária automática (`ceeaf9c`): função agendada `agenda-sync` (diária, 06h15 de Brasília) atualiza o mês atual e o seguinte a partir da RFB, soma os prazos do ICMS/RS por regra (`netlify/lib/agenda-regras.mjs`, com feriados e dias não úteis) e o ISS de São Francisco de Paula fixo no dia 20, com observação para consultar a Prefeitura. Avisa os administradores (sino e e-mail) quando há mudança. Execução manual de 06/11 gravou novembro/2026 (12 datas, 60 itens).
+- Lembretes fora do menu lateral, por decisão do usuário (o Quadro de Avisos cumpre a função).
+
+### Branch `seguranca-etapas` (aguardando publicação)
+
+1. Senha provisória (`1f53ec4`): o e-mail é enviado na hora quando o envio real está ativo; a fila `email_outbox` registra apenas "[senha omitida por segurança]". E-mails antigos com senha foram apagados da fila (autorizado pelo usuário).
+2. Chaves de acesso (`18a776e`): tokens da Agenda e da fila de e-mails aceitos somente pelo cabeçalho; o token de disparo fica no `sessionStorage`.
+3. Permissões (`b954225`):
+   - Arquivos: qualquer usuário ativo envia arquivos e cria pastas, para todos (global) ou só para si; editar e excluir somente o autor ou o administrador; os demais apenas visualizam e baixam (botão Baixar).
+   - Anexos (`hub-anexos`): gravação restrita a quem gerencia a pauta (admin), a tarefa ou o lembrete.
+   - Patch `supabase/patch_permissoes_arquivos_anexos.sql`, validado em PostgreSQL simulando o Supabase.
+4. Dependências (`c45d309`): Vite 7.3 e plugin-react 5.2 (`npm audit`: 0 vulnerabilidades); Node 22 no Netlify; ajustes de contraste e ícone do HUB nas páginas internas.
+5. OCR local (`73a028f`): instalador `INSTALAR_OCR_HUB.cmd` (Tesseract com português, LibreOffice, OCRmyPDF sem Ghostscript, protocolo `hubocr://`, início automático e diagnóstico); agente recusa origens não autorizadas.
+6. Código (`6e73dea`, `c4a7af2`): `src/App.tsx` (8.982 linhas) dividido em `src/modules`, `src/components`, `src/lib` e `src/app` sem mudança de comportamento; textos visíveis acentuados.
+
+Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em navegador (Pautas, Quadro, Links, Arquivos com três perfis, Pomodoro, varredura de todas as seções e contraste) aprovados em 06/11/2026.
+
+### Ordem de publicação
+
+1. SQL Editor do Supabase: rodar `supabase/patch_permissoes_arquivos_anexos.sql`.
+2. Juntar o branch `seguranca-etapas` ao `main` (o Netlify publica sozinho).
+3. Conferir: envio de arquivo por colaborador, anexo de tarefa e redefinição de senha.
+
+### Pendências
+
+- Executar `INSTALAR_OCR_HUB.cmd` como administrador no PC novo e testar um PDF digitalizado.
+- E-mails: ativar `EMAIL_SCHEDULE_ENABLED=true`; para envio real, `EMAIL_DELIVERY_ENABLED=true` com `EMAIL_PROVIDER_API_KEY` e `EMAIL_FROM` (Resend).
+- Netlify: corrigir ou remover `APP_BASE_URL` (aponta para `hub-depto-tributario-hteix.netlify.app`, que responde 404); o endereço correto é `https://hub-depto-tributario-ht.netlify.app`.
+- Apagar as pautas e os avisos de teste criados durante a homologação.
+- SEFAZ-RS bloqueia consultas automáticas (WAF); os prazos estaduais seguem regras configuradas e devem ser revistos se a legislação mudar.
+
+### Pendências de 05/11/2026 resolvidas
+
+- `vite`/`esbuild` (item 4 acima), agente OCR (item 5, falta só executar o instalador), gravação em pasta de lembrete alheia (item 3), tokens em URL (item 2), senha na fila de e-mails (item 1), `App.tsx` monolítico (item 6) e Lembretes fora do menu (confirmado como intencional).
