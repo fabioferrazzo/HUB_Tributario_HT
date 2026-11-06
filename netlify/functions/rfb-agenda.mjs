@@ -243,7 +243,22 @@ function categorizeDeclaracao(nome, interessado) {
   return "pj-aces";
 }
 
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// Os textos sao exibidos como HTML na agenda: escapa tudo o que vem do site da Receita.
 function groupDayRows(rows) {
+  return groupDayRowsRaw(rows).map((item) => ({
+    ...item,
+    title: escapeHtml(item.title),
+    periodo: escapeHtml(item.periodo),
+    doc: escapeHtml(item.doc),
+    base: escapeHtml(item.base),
+    desc: escapeHtml(item.desc)
+  }));
+}
+
+function groupDayRowsRaw(rows) {
   const items = [];
   const groups = new Map();
 
@@ -432,7 +447,7 @@ function sortDates(dates) {
   return Object.fromEntries(
     Object.entries(dates)
       .sort(([a], [b]) => Number(a) - Number(b))
-      .map(([day, items]) => [day, items.slice(0, 12)])
+      .map(([day, items]) => [day, items])
   );
 }
 

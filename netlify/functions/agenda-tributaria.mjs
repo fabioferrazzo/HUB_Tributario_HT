@@ -1,4 +1,5 @@
 import { fetchRfbAgenda } from "./rfb-agenda.mjs";
+import { buildCritical, combineAgenda } from "../lib/agenda-regras.mjs";
 
 const JSON_HEADERS = {
   "access-control-allow-origin": "*",
@@ -36,8 +37,15 @@ async function handleGet(request) {
     if (cached) return json(200, { ...cached, cached: true });
   }
 
-  const agenda = await fetchRfbAgenda(year, month);
-  return json(200, { ...agenda, cached: false });
+  // Sem cache (a rotina agenda-sync grava diariamente): consulta a Receita na hora e junta
+  // as regras estaduais e municipais. Se a Receita falhar, devolve ao menos RS e ISS.
+  let federal = null;
+  try {
+    federal = await fetchRfbAgenda(year, month);
+  } catch (error) {
+    federal = { warning: `Receita Federal indisponível no momento (${error?.message || "erro"}).`, sourceUrl: error?.sourceUrl || "" };
+  }
+  return json(200, { ...combineAgenda(federal, year, month), cached: false });
 }
 
 async function handlePost(request) {
@@ -52,13 +60,13 @@ async function handlePost(request) {
   const now = new Date();
   const year = clampInteger(body.year ?? url.searchParams.get("year"), 2020, 2035, now.getFullYear());
   const month = clampInteger(body.month ?? url.searchParams.get("month"), 1, 12, now.getMonth() + 1);
-  const agenda = mergeExtraDates(await fetchRfbAgenda(year, month), body.dates || body.extraDates);
+  const agenda = mergeExtraDates(combineAgenda(await fetchRfbAgenda(year, month), year, month), body.dates || body.extraDates);
   const saved = await upsertCache(agenda, body.updatedBy || "make");
 
   return json(200, { saved: true, ...saved });
 }
 
-async function readCache(year, month) {
+export async function readCache(year, month) {
   const supabase = getSupabaseEnv();
   if (!supabase) return null;
 
@@ -74,7 +82,7 @@ async function readCache(year, month) {
   return rowToAgenda(row);
 }
 
-async function upsertCache(agenda, updatedBy) {
+export async function upsertCache(agenda, updatedBy) {
   const supabase = getSupabaseEnv();
   if (!supabase) throw new Error("VITE_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY nao configurados.");
 
@@ -139,19 +147,19 @@ function mergeExtraDates(agenda, extraDates) {
 
   return {
     ...agenda,
-    source: "Receita Federal / Sefaz-RS",
-    dates: Object.fromEntries(Object.entries(merged).sort(([a], [b]) => Number(a) - Number(b)))
+    dates: Object.fromEntries(Object.entries(merged).sort(([a], [b]) => Number(a) - Number(b))),
+    critical: buildCritical(merged)
   };
 }
 
-function getSupabaseEnv() {
+export function getSupabaseEnv() {
   const url = getEnv("VITE_SUPABASE_URL") || getEnv("SUPABASE_URL");
   const key = getEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return null;
   return { url: url.replace(/\/$/, ""), key };
 }
 
-function supabaseHeaders(key) {
+export function supabaseHeaders(key) {
   return {
     apikey: key,
     authorization: `Bearer ${key}`,
