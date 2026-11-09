@@ -165,7 +165,6 @@ export function ModuleFrame({ app }: { app: HubApp }) {
       {embedded ? (
         <iframe
           allow="fullscreen; clipboard-read; clipboard-write"
-          allowFullScreen
           key={reloadKey}
           onLoad={() => void sendAuthToken()}
           ref={frameRef}

@@ -87,7 +87,33 @@ export function canUserManageTask(task: TaskItem, user?: HubUser | null) {
   return isTaskOwner(task, user);
 }
 
-export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
+// Abrir o Calendário pedia a mesma lista até 5 vezes seguidas (montagem, carga do calendário, "pronto" e barra lateral).
+// Chamadas no mesmo instante reaproveitam a mesma consulta; qualquer gravação descarta o reaproveitamento.
+let taskListCache: { key: string; at: number; promise: Promise<TaskItem[]> } | null = null;
+const TASK_LIST_REUSE_MS = 1500;
+
+function invalidateTaskListCache() {
+  taskListCache = null;
+}
+
+export function listAppTasks(user: HubUser): Promise<TaskItem[]> {
+  const key = `${user.id}|${user.role}|${getTarefasSource(user)}`;
+  const now = Date.now();
+  if (taskListCache && taskListCache.key === key && now - taskListCache.at < TASK_LIST_REUSE_MS) return taskListCache.promise;
+  const promise = listAppTasksFresh(user);
+  taskListCache = { key, at: now, promise };
+  promise.catch(() => {
+    if (taskListCache?.promise === promise) taskListCache = null;
+  });
+  return promise;
+}
+
+function listAppTasksAfterWrite(user: HubUser): Promise<TaskItem[]> {
+  invalidateTaskListCache();
+  return listAppTasks(user);
+}
+
+async function listAppTasksFresh(user: HubUser): Promise<TaskItem[]> {
   const source = getTarefasSource(user);
   if (source === "supabase") {
     await migrateCalendarTasksToSupabaseOnce(user);
@@ -103,6 +129,7 @@ export async function listAppTasks(user: HubUser): Promise<TaskItem[]> {
 }
 
 export async function saveCalendarEventTask(event: unknown, user: HubUser): Promise<TaskItem[]> {
+  invalidateTaskListCache();
   const source = getTarefasSource(user);
   const calendarEvent = normalizeCalendarEvent(event, user);
 
@@ -118,13 +145,14 @@ export async function saveCalendarEventTask(event: unknown, user: HubUser): Prom
       isExisting: Boolean(existing)
     });
     notifyTasksChanged();
-    return listAppTasks(user);
+    return listAppTasksAfterWrite(user);
   }
 
-  return listAppTasks(user);
+  return listAppTasksAfterWrite(user);
 }
 
 export async function deleteCalendarEventTask(id: string, user: HubUser): Promise<TaskItem[]> {
+  invalidateTaskListCache();
   const source = getTarefasSource(user);
 
   if (source === "supabase" && isUuid(id)) {
@@ -140,10 +168,19 @@ export async function deleteCalendarEventTask(id: string, user: HubUser): Promis
     notifyTasksChanged();
   }
 
-  return listAppTasks(user);
+  return listAppTasksAfterWrite(user);
 }
 
-export async function saveAppTask({
+export async function saveAppTask(...args: Parameters<typeof saveAppTaskFresh>) {
+  invalidateTaskListCache();
+  try {
+    return await saveAppTaskFresh(...args);
+  } finally {
+    invalidateTaskListCache();
+  }
+}
+
+async function saveAppTaskFresh({
   current,
   files = [],
   task,
@@ -171,7 +208,7 @@ export async function saveAppTask({
     }
 
     notifyTasksChanged();
-    return listAppTasks(user);
+    return listAppTasksAfterWrite(user);
   }
 
   if (source === "calendario") {
@@ -183,7 +220,7 @@ export async function saveAppTask({
 
     await putCalendarEvent(await taskToCalendarEvent(task, existing, files));
     notifyTasksChanged();
-    return listAppTasks(user);
+    return listAppTasksAfterWrite(user);
   }
 
   const localTask = normalizeTask({
@@ -197,7 +234,16 @@ export async function saveAppTask({
   return filterVisibleTasks(next, user);
 }
 
-export async function deleteAppTask({
+export async function deleteAppTask(...args: Parameters<typeof deleteAppTaskFresh>) {
+  invalidateTaskListCache();
+  try {
+    return await deleteAppTaskFresh(...args);
+  } finally {
+    invalidateTaskListCache();
+  }
+}
+
+async function deleteAppTaskFresh({
   current,
   task,
   user
@@ -217,7 +263,7 @@ export async function deleteAppTask({
     await archiveSupabaseTask(task.id, archivedAt);
     await archiveCalendarMirror(task.id, task, archivedAt);
     notifyTasksChanged();
-    return listAppTasks(user);
+    return listAppTasksAfterWrite(user);
   }
 
   if (source === "calendario") {
@@ -226,7 +272,7 @@ export async function deleteAppTask({
     const archivedTask = normalizeTask({ ...task, archivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     await putCalendarEvent(await taskToCalendarEvent(archivedTask, existing, []));
     notifyTasksChanged();
-    return listAppTasks(user);
+    return listAppTasksAfterWrite(user);
   }
 
   const archivedTask = normalizeTask({ ...task, archivedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
