@@ -91,7 +91,8 @@ export function ModuleFrame({ app }: { app: HubApp }) {
   const [reloadKey, setReloadKey] = useState(0);
   const Icon = app.icon;
   const embedded = app.mode === "embutido";
-  const lanOnly = /^http:\/\/(192\.168\.|10\.|127\.)/.test(app.src);
+  const lanOnly = /^http:\/\/(192\.168\.|10\.)/.test(app.src);
+  const localOnly = /^http:\/\/(127\.0\.0\.1|localhost)[:/]/.test(app.src);
 
   const sendAuthToken = useCallback(async (target?: Window | null) => {
     const token = await getSupabaseAccessToken();
@@ -181,6 +182,7 @@ export function ModuleFrame({ app }: { app: HubApp }) {
             Abrir {app.label}
           </button>
           {lanOnly ? <small>Disponível apenas na rede do escritório.</small> : null}
+          {localOnly ? <small>Disponível apenas no computador onde o programa está instalado.</small> : null}
         </div>
       )}
     </section>

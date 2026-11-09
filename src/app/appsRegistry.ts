@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, CalendarRange, ClipboardCheck, FileSpreadsheet, ListChecks, NotebookPen, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
+import { Award, CalendarRange, FileText, ClipboardCheck, FileSpreadsheet, ListChecks, NotebookPen, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Sistema";
@@ -145,6 +145,17 @@ export const hubApps: HubApp[] = [
     src: "https://script.google.com/macros/s/AKfycbyuiPXfkDNl_n-TKTRw3EQ8Dexk7Mq6vodTDQmxf8LRhJ9lJJw_j6h4M-tcsPc7iwsR/exec",
     mode: "janela",
     description: "Abre em janela própria (Google Apps Script), com a conta Google do usuário."
+  },
+  {
+    id: "informativos",
+    label: "Informativos",
+    title: "Informativos",
+    icon: FileText,
+    group: "Escritório",
+    access: "admin",
+    src: "http://127.0.0.1:8766/",
+    mode: "janela",
+    description: "Programa instalado neste computador. Abra antes o atalho \"Infos HT\" da área de trabalho; depois use o botão abaixo."
   }
 ];
 
