@@ -551,3 +551,12 @@ Base: app "Controle de Apuração" v0.11.8 FIX13 do HTSERVER (com SALVARFECHAR01
   - mensagens com a competência em "MM/AAAA" no HUB e "AAAA-MM" no antigo → corrigido (`supabase/patch_apuracao_etapa4.sql`);
   - arquivar nota ADM ou excluir empresa em mês fechado: o antigo responde erro 500 (a alteração fica presa na fila de sincronização); o HUB responde 400 com a mesma mensagem e a tela descarta a alteração. Mantido o comportamento do HUB.
 - Tela: Salvar (continua aberta), Fechar Apuração, bloqueio de novo período com empresa não concluída, Reabrir, Gerar novo período (tela vai para o novo mês, itens pendentes) e bloqueio de reabertura com mês posterior — 12 verificações.
+
+### Etapa 5 — Painel da empresa, documentos e exportação XLSX (concluída)
+
+- Biblioteca de documentos no Storage do Supabase (pasta privada `apuracao-docs`, até 25 MB por arquivo, mesmas extensões do app antigo). Envio em duas fases (o banco reserva o documento, a tela envia o arquivo, o banco confere o tamanho e ativa); download e exclusão só para quem pode ver a empresa naquela competência; o Storage recusa arquivo sem reserva no banco. SHA-256 registrado.
+- Exportação XLSX gerada no navegador (`exportador.js`, ExcelJS 4.4.0 em `vendor/`, carregado só ao exportar) a partir de `apur_export_data`: mesmas 5 abas, colunas, cores, comentários das notas de célula, filtros, painéis, larguras e nome de arquivo do servidor antigo.
+- Progresso com o mesmo arredondamento do servidor antigo (metade para o par, como no Python).
+- Comparação com o servidor antigo: 8 exportações célula a célula (valores, cores, formatos, comentários, fontes, alinhamento, larguras, alturas, filtros, painéis, mesclagens e página) — todas iguais; envio, download e exclusão de documentos incluídos no roteiro de paridade (58 operações, estado igual).
+- Painel da empresa (checklist, particularidades, observações e janela própria) conferido na tela.
+- Banco: rodar `supabase/patch_apuracao_etapa5.sql` antes de publicar.

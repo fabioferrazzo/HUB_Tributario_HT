@@ -169,6 +169,14 @@
     var q = url.searchParams;
     var m;
 
+    // Identificador inválido no endereço: mesma resposta do servidor antigo para registro inexistente.
+    var idCheck = [[/^\/api\/documents\/([^/]+)(\/download)?$/, "Documento nao encontrado."], [/^\/api\/admin-notes\/([^/]+)$/, "Nota administrativa não encontrada."],
+      [/^\/api\/companies\/([^/]+)$/, "Empresa não encontrada."], [/^\/api\/users\/([^/]+)\/transfer-portfolio$/, "Usuário de origem não encontrado."]];
+    for (var k = 0; k < idCheck.length; k++) {
+      var hit = path.match(idCheck[k][0]);
+      if (hit && hit[1] !== "upload" && hit[1] !== "reorder" && hit[1] !== "order" && !UUID_RE.test(decodeURIComponent(hit[1]))) throw httpError(idCheck[k][1], 404);
+    }
+
     if (path === "/api/health") return META;
     if (path === "/api/bootstrap") {
       var data = await rpc("apur_bootstrap", { p_owner: uuidOrNull(q.get("owner_user_id")) });
@@ -227,8 +235,11 @@
     if (path === "/api/import-companies")
       return rpc("apur_import_companies", { p_owner: uuidOrNull(body.owner_user_id), p_competence: body.competence || null, p_rows: body.companies || [] });
     if (path === "/api/parse-excel") return parseExcel(body);
-    if (/^\/api\/export\//.test(path)) return notYet("A exportação XLSX");
-    if (/^\/api\/documents/.test(path)) return notYet("A biblioteca de documentos");
+    if (path === "/api/export/monthly.xlsx") return exportMonthly(q);
+    if (path === "/api/documents/upload" && method === "POST") return uploadDocument(body);
+    if ((m = path.match(/^\/api\/documents\/([^/]+)\/download$/))) return downloadDocument(decodeURIComponent(m[1]));
+    if ((m = path.match(/^\/api\/documents\/([^/]+)$/)) && method === "DELETE") return deleteDocument(decodeURIComponent(m[1]));
+    if (/^\/api\/export\//.test(path)) throw httpError("Endpoint não encontrado. [" + method + " " + path + "]", 404);
     if (path === "/api/alerts" && method === "GET") return Object.assign({}, META, await rpc("apur_alerts_list", {}));
     if (/^\/api\/alerts/.test(path)) return notYet("O cadastro de alertas gerais");
     if (/^\/api\/(admin\/)?backup/.test(path)) return notYet("O backup");
@@ -268,7 +279,7 @@
     }
     if (bytes.length > MAX_IMPORT_BYTES) throw httpError("Arquivo maior que 8 MB.", 400);
     await loadScript("vendor/xlsx.full.min.js?v=0.20.3");
-    await loadScript("importador.js?v=" + APP_BUILD + "-hub3");
+    await loadScript("importador.js?v=" + APP_BUILD + "-hub4");
     var result;
     try {
       result = window.HubApuracaoImport.parse(window.XLSX, filename, bytes);
@@ -295,6 +306,92 @@
         duplicate_reason: row.reason + " · " + row.source_sheet + ", linha " + row.source_row });
     });
     return { companies: companies, warnings: result.warnings.concat(result.info), count: recognized, importable: importable, skipped: companies.length - importable };
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Documentos (Storage do Supabase, pasta privada "apuracao-docs") e exportação XLSX.
+
+  var DOC_BUCKET = "apuracao-docs";
+  var MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
+
+  function storageUrl(kind, path) {
+    var encoded = String(path || "").split("/").map(encodeURIComponent).join("/");
+    return auth.url.replace(/\/+$/, "") + "/storage/v1/object/" + (kind ? kind + "/" : "") + DOC_BUCKET + (encoded ? "/" + encoded : "");
+  }
+  async function storageFetch(url, init) {
+    var token = await getToken(false);
+    init = init || {};
+    init.headers = Object.assign({ apikey: auth.anonKey, Authorization: "Bearer " + token }, init.headers || {});
+    return realFetch(url, init);
+  }
+  async function sha256Hex(bytes) {
+    if (!(window.crypto && crypto.subtle)) return "";
+    var hash = await crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(hash)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+  }
+
+  // Tipo do arquivo pela extensão quando o navegador não informa (como o servidor antigo).
+  var MIME_BY_EXT = { pdf: "application/pdf", xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xml: "application/xml", csv: "text/csv",
+    txt: "text/plain", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", tif: "image/tiff", tiff: "image/tiff",
+    zip: "application/zip", rar: "application/vnd.rar", ods: "application/vnd.oasis.opendocument.spreadsheet", odt: "application/vnd.oasis.opendocument.text",
+    rtf: "application/rtf", eml: "message/rfc822", p7s: "application/pkcs7-signature", json: "application/json" };
+  function guessMime(name) {
+    var m = String(name || "").toLowerCase().match(/\.([a-z0-9]+)$/);
+    return (m && MIME_BY_EXT[m[1]]) || "application/octet-stream";
+  }
+
+  async function uploadDocument(body) {
+    var bytes;
+    try {
+      var bin = atob(String(body.content_base64 || ""));
+      bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } catch (e) {
+      throw httpError("Conteudo do arquivo invalido.", 400);
+    }
+    if (!bytes.length) throw httpError("Arquivo vazio.", 400);
+    if (bytes.length > MAX_DOCUMENT_BYTES) throw httpError("Cada documento pode ter no maximo 25 MB.", 413);
+    var sha = await sha256Hex(bytes);
+    var mime = String(body.mime_type || "").trim().replace(/\s+/g, " ").slice(0, 120) || guessMime(body.filename);
+    var doc = await rpc("apur_document_begin", { p_company: body.company_id, p_competence: body.competence || null, p_filename: body.filename || "",
+      p_mime: mime, p_size: bytes.length, p_sha256: sha, p_note: body.note || "" });
+    var up = await storageFetch(storageUrl("", doc.storage_path), {
+      method: "POST", headers: { "Content-Type": mime || "application/octet-stream", "x-upsert": "false", "cache-control": "3600" }, body: bytes
+    });
+    if (!up.ok) {
+      var detail = ""; try { detail = (await up.json()).message || ""; } catch (e) {}
+      throw httpError("Não foi possível enviar o arquivo ao armazenamento" + (detail ? " (" + detail + ")" : "") + ". Tente de novo.", 400);
+    }
+    var done = await rpc("apur_document_commit", { p_id: doc.id });
+    return new Response(JSON.stringify(done), { status: 201, headers: { "Content-Type": "application/json" } });
+  }
+
+  async function downloadDocument(id) {
+    var info = await rpc("apur_document_get", { p_id: id });
+    var r = await storageFetch(storageUrl("authenticated", info.storage_path), { method: "GET" });
+    if (!r.ok) throw httpError(r.status === 404 || r.status === 400 ? "Arquivo nao encontrado no armazenamento." : "Erro " + r.status + " ao baixar o documento.", 404);
+    var blob = await r.blob();
+    return new Response(blob, { status: 200, headers: { "Content-Type": info.mime_type || "application/octet-stream",
+      "Content-Disposition": "attachment; filename*=UTF-8''" + encodeURIComponent(info.original_name || "documento") } });
+  }
+
+  async function deleteDocument(id) {
+    var res = await rpc("apur_document_delete", { p_id: id });
+    try {
+      await storageFetch(storageUrl("", ""), { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefixes: [res.storage_path] }) });
+    } catch (e) {}
+    return { ok: true };
+  }
+
+  async function exportMonthly(q) {
+    var data = await rpc("apur_export_data", { p_competence: q.get("competence") || "", p_owner: uuidOrNull(q.get("owner_user_id")) });
+    await loadScript("vendor/exceljs.min.js?v=4.4.0");
+    await loadScript("exportador.js?v=" + APP_BUILD + "-hub4");
+    var out = await window.HubApuracaoExport.build(window.ExcelJS, data);
+    return new Response(new Blob([out.buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), {
+      status: 200, headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": "attachment; filename*=UTF-8''" + encodeURIComponent(out.filename) } });
   }
 
   window.fetch = async function (input, init) {
@@ -358,7 +455,7 @@
         }).observe(login, { attributes: true, attributeFilter: ["class"] });
       }
       var script = document.createElement("script");
-      script.src = "app.js?v=" + APP_BUILD + "-hub3";
+      script.src = "app.js?v=" + APP_BUILD + "-hub4";
       document.body.appendChild(script);
     } catch (e) {
       showBlocker(e.message || "Não foi possível entrar com o usuário do HUB.");
