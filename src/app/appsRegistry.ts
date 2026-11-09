@@ -6,10 +6,10 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { ClipboardCheck, ListChecks, Timer, Truck, UserRoundCog } from "lucide-react";
+import { Award, CalendarRange, ClipboardCheck, FileSpreadsheet, ListChecks, NotebookPen, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
-export type HubAppGroup = "Principal" | "Ferramentas" | "Sistema";
+export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Sistema";
 
 // Quem vê o app no menu: todos, gestores e administradores, ou só administradores.
 export type HubAppAccess = "todos" | "gestores" | "admin";
@@ -88,6 +88,63 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/consultor-cte-mdfe.html",
     mode: "embutido"
+  },
+  // Apps do escritório: por enquanto abrem a versão que roda no HTSERVER ou no site de origem.
+  // A base de dados será unificada no fim do projeto.
+  {
+    id: "controle-apuracao",
+    label: "Controle de Apuração",
+    title: "Controle de Apuração",
+    icon: FileSpreadsheet,
+    group: "Escritório",
+    access: "todos",
+    src: "http://192.168.0.200:8790/",
+    mode: "janela",
+    description: "Abre em janela própria. Funciona nos computadores da rede do escritório; os dados continuam no servidor do escritório (HTSERVER)."
+  },
+  {
+    id: "controle-ferias",
+    label: "Controle de Férias",
+    title: "Controle de Férias",
+    icon: CalendarRange,
+    group: "Escritório",
+    access: "todos",
+    src: "http://192.168.0.200:8805/",
+    mode: "janela",
+    description: "Abre em janela própria. Funciona nos computadores da rede do escritório; os dados continuam no servidor do escritório (HTSERVER)."
+  },
+  {
+    id: "onboarding",
+    label: "Onboarding",
+    title: "Onboarding",
+    icon: UserPlus,
+    group: "Escritório",
+    access: "todos",
+    src: "http://192.168.0.200:8767/",
+    mode: "janela",
+    description: "Abre em janela própria. Funciona nos computadores da rede do escritório; os dados continuam no servidor do escritório (HTSERVER)."
+  },
+  {
+    id: "pautas-app",
+    label: "Pautas (app)",
+    title: "Pautas (app)",
+    icon: NotebookPen,
+    group: "Escritório",
+    access: "todos",
+    src: "https://pautas-hteixeira.netlify.app/",
+    mode: "janela",
+    description: "Abre em janela própria (o site não permite ser exibido dentro de outro). Funciona de qualquer lugar, com o login do próprio app."
+  },
+  {
+    id: "avaliacoes",
+    label: "Avaliações",
+    title: "Avaliações",
+    icon: Award,
+    group: "Escritório",
+    access: "gestores",
+    src: "https://script.google.com/macros/s/AKfycbyuiPXfkDNl_n-TKTRw3EQ8Dexk7Mq6vodTDQmxf8LRhJ9lJJw_j6h4M-tcsPc7iwsR/exec",
+    mode: "janela",
+    description: "Abre em janela própria (Google Apps Script), com a conta Google do usuário."
   }
 ];
 

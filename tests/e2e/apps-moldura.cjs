@@ -47,6 +47,7 @@ const apps = [...registry.matchAll(/\{\s*id: "([^"]+)",[\s\S]*?label: "([^"]+)",
     }
     const [popup] = await Promise.all([page.waitForEvent("popup", { timeout: 5000 }).catch(() => null), frame.getByRole("button", { name: /Nova janela/ }).click()]);
     check(`${app.id}: abre em nova janela`, Boolean(popup), popup ? popup.url().replace(BASE, "") : "sem janela");
+    if (popup && app.mode !== "embutido") await popup.close().catch(() => {});
     if (popup && app.mode === "embutido") {
       await popup.waitForLoadState("load").catch(() => {});
       await popup.waitForTimeout(800);
@@ -55,6 +56,8 @@ const apps = [...registry.matchAll(/\{\s*id: "([^"]+)",[\s\S]*?label: "([^"]+)",
     }
   }
   // dentro do HUB o app não mostra o botão próprio (a moldura já tem)
+  await menu(apps.find((a) => a.mode === "embutido").label).click();
+  await page.waitForTimeout(1200);
   const inner = page.frameLocator(".frame-page iframe");
   check("dentro do HUB sem botão duplicado", (await inner.locator(".hub-fs-btn").count()) === 0);
 

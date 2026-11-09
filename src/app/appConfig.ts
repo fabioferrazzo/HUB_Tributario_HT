@@ -170,6 +170,7 @@ const appRoutesOf = (group: HubAppGroup) => hubApps.filter((app) => app.group ==
 export const routeGroups: Array<{ label: string; items: HubRoute[] }> = [
   { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
   { label: "Ferramentas", items: ["tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
+  { label: "Escritório", items: appRoutesOf("Escritório") },
   { label: "Sistema", items: [...appRoutesOf("Sistema"), "admin"] }
 ];
 
