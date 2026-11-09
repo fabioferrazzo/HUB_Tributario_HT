@@ -543,3 +543,11 @@ Base: app "Controle de Apuração" v0.11.8 FIX13 do HTSERVER (com SALVARFECHAR01
 - "+ Empresa", editar, duplicidades (CNPJ, Domínio, nome) e CNPJ inválido conferidos na tela.
 - "Excluir todas": texto ajustado ao HUB (sem backup local; as empresas ficam marcadas como excluídas, com o histórico preservado).
 - Sem SQL novo nesta etapa.
+
+### Etapa 4 — Ciclo mensal (concluída)
+
+- Comparação passo a passo entre o servidor antigo (0.11.8.13, base nova) e o HUB: dois roteiros com 109 operações (cadastro, status, notas, grifos, nota ADM, Salvar/Fechar/Reabrir/Gerar novo período em 09, 10, 11 e 12/2026, regra até 10/2026 × a partir de 11/2026, trava FIX13, reabertura com mês posterior, alterações históricas do ADM, exclusão e ordem no mês, + Coluna, transferência e excluir todas). Depois de cada operação são comparados o resultado, a mensagem e o estado completo das carteiras, o Dashboard ADM (5 competências) e o Histórico ADM.
+- Resultado: estado, Dashboard e Histórico iguais em todas as operações. Diferenças encontradas e tratadas:
+  - mensagens com a competência em "MM/AAAA" no HUB e "AAAA-MM" no antigo → corrigido (`supabase/patch_apuracao_etapa4.sql`);
+  - arquivar nota ADM ou excluir empresa em mês fechado: o antigo responde erro 500 (a alteração fica presa na fila de sincronização); o HUB responde 400 com a mesma mensagem e a tela descarta a alteração. Mantido o comportamento do HUB.
+- Tela: Salvar (continua aberta), Fechar Apuração, bloqueio de novo período com empresa não concluída, Reabrir, Gerar novo período (tela vai para o novo mês, itens pendentes) e bloqueio de reabertura com mês posterior — 12 verificações.
