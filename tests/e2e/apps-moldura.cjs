@@ -35,17 +35,19 @@ const apps = [...registry.matchAll(/\{\s*id: "([^"]+)",[\s\S]*?label: "([^"]+)",
     const frame = page.locator(".frame-page");
     check(`${app.id}: moldura aberta`, (await frame.count()) === 1);
     if (app.mode === "embutido") {
-      await frame.getByRole("button", { name: /Tela cheia/ }).click();
+      // ações da moldura ficam na barra do topo do HUB (sem cabeçalho duplicado no app)
+      check(`${app.id}: sem cabeçalho duplicado na moldura`, (await frame.locator("header").count()) === 0);
+      await page.locator(".top-page-actions").getByRole("button", { name: /Tela cheia/ }).click();
       await page.waitForTimeout(400);
       const fs1 = await page.evaluate(() => Boolean(document.fullscreenElement && document.fullscreenElement.classList.contains("frame-page")));
       check(`${app.id}: tela cheia ativa`, fs1);
       await page.evaluate(() => document.fullscreenElement && document.exitFullscreen());
       await page.waitForTimeout(300);
-      await frame.getByRole("button", { name: /Recarregar/ }).click();
+      await page.locator(".top-page-actions").getByRole("button", { name: /Recarregar/ }).click();
       await page.waitForTimeout(800);
       check(`${app.id}: recarregar mantém o app`, (await page.locator(".frame-page iframe").count()) === 1);
     }
-    const [popup] = await Promise.all([page.waitForEvent("popup", { timeout: 5000 }).catch(() => null), frame.getByRole("button", { name: /Nova janela/ }).click()]);
+    const [popup] = await Promise.all([page.waitForEvent("popup", { timeout: 5000 }).catch(() => null), (app.mode === "embutido" ? page.locator(".top-page-actions").getByRole("button", { name: /Abrir em nova janela/ }) : frame.getByRole("button", { name: /Abrir/ })).click()]);
     check(`${app.id}: abre em nova janela`, Boolean(popup), popup ? popup.url().replace(BASE, "") : "sem janela");
     if (popup && app.mode !== "embutido") await popup.close().catch(() => {});
     if (popup && app.mode === "embutido") {

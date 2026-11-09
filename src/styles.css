@@ -2585,7 +2585,7 @@ select {
 .frame-page {
   height: calc(100vh - 126px);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .frame-page header {
@@ -5509,3 +5509,21 @@ a.aviso-card__file:hover {
 .aval-fb-resposta--lida span { color: var(--accent); font-size: 12px; font-weight: 700; }
 .aval-fb-resposta--lida p { margin: 0; color: #2a3b55; font-size: 13px; font-weight: 400; white-space: pre-wrap; }
 .aval-head-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 8px; }
+
+/* Revisão 11/2026: o menu lateral rola quando não cabe na altura (notebooks 720/768 px e celular). */
+.sidebar .side-nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent; }
+.sidebar .side-nav::-webkit-scrollbar { width: 6px; }
+.sidebar .side-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 6px; }
+.sidebar .brand-block, .sidebar .sign-out { flex-shrink: 0; }
+
+/* Revisão 11/2026: barra do topo no celular — título numa linha só e ações da tela recolhidas. */
+@media (max-width: 820px) {
+  .topbar-left { min-width: 0; flex: 1 1 auto; }
+  .topbar h1 { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 18px; }
+  .topbar-actions { gap: 8px; flex-shrink: 0; }
+  .top-page-actions { gap: 4px; }
+  .top-page-actions button { width: 32px; height: 32px; }
+}
+@media (max-width: 560px) {
+  .top-page-actions button[aria-label="Tela cheia"], .top-page-actions button[aria-label="Sair da tela cheia"], .top-page-actions button[aria-label="Abrir em nova janela"] { display: none; }
+}

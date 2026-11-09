@@ -49,7 +49,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   // app incorporado: os botões ficam na moldura, não na barra do topo
   await menu("Agenda tributária").click();
   await page.waitForTimeout(800);
-  check("apps usam a moldura própria", (await page.locator(".top-page-actions").count()) === 0 && (await page.locator(".frame-actions").count()) === 1);
+  check("apps usam as ações da barra do topo", (await page.locator(".top-page-actions button").count()) === 3 && (await page.locator(".frame-page header").count()) === 0);
 
   // guarda de acesso pelo endereço
   await page.getByRole("button", { name: /Sair/ }).first().click();

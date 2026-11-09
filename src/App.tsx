@@ -7,7 +7,7 @@ import { LembretesModule } from "./modules/LembretesModule";
 import { LinksModule } from "./modules/LinksModule";
 import { LogOut, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
-import { ModuleFrame } from "./components/common";
+import { ModuleFrame, dispatchFrameAction } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
 import { TasksModule } from "./modules/TasksModule";
@@ -191,7 +191,9 @@ export function App() {
   });
   // Rota digitada no endereço sem permissão volta para Pautas.
   const currentRoute: HubRoute = visibleRoutes.some((item) => item.id === route) ? route : "home";
-  const isHubScreen = !findAppByRoute(currentRoute);
+  const currentApp = findAppByRoute(currentRoute);
+  const isHubScreen = !currentApp;
+  const appEmbedded = currentApp?.mode === "embutido";
 
   function openRouteWindow() {
     const width = Math.min(1440, window.screen.availWidth || 1440);
@@ -383,8 +385,9 @@ export function App() {
           route={currentRoute}
           user={user}
           isFullscreen={workspaceFullscreen}
-          onFullscreen={isHubScreen ? () => void toggleWorkspaceFullscreen() : undefined}
-          onOpenWindow={isHubScreen ? openRouteWindow : undefined}
+          onFullscreen={isHubScreen ? () => void toggleWorkspaceFullscreen() : appEmbedded ? () => dispatchFrameAction(currentApp!.id, "fullscreen") : undefined}
+          onOpenWindow={isHubScreen ? openRouteWindow : currentApp ? () => dispatchFrameAction(currentApp.id, "window") : undefined}
+          onReload={appEmbedded ? () => dispatchFrameAction(currentApp!.id, "reload") : undefined}
           menuOpen={menuOpen}
           onMenu={() => setMenuOpen((open) => !open)}
           onNavigate={handleRoute}

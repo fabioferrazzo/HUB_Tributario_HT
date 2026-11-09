@@ -648,3 +648,11 @@ body.hub-embedded .hub-user-note{display:block;margin:0 0 12px;padding:10px 12px
 body.hub-embedded #newUserForm,body.hub-embedded #passwordResetSection,body.hub-embedded #adminPolicyInfo,
 body.hub-embedded #userEditorForm>.form-grid,body.hub-embedded #userEditorForm>.user-active-check,
 body.hub-embedded #userEditorForm>fieldset:not(#userPortfolioSection),body.hub-embedded #saveUserBtn,body.hub-embedded #userDangerZone{display:none!important}
+/* HUB — revisão 11/2026: sem a tela de senha antiga (nem por um instante), sem o título repetido
+   (o HUB já mostra "Controle de Apuração") e botões que quebram linha no celular. */
+#loginView{display:none!important}
+body.hub-embedded .header-center-brand{display:none!important}
+@media (max-width:600px){
+  .workspace-lower .toolbar-buttons{flex-wrap:wrap!important;overflow:visible!important}
+  .month-nav input{min-width:9.5em}
+}

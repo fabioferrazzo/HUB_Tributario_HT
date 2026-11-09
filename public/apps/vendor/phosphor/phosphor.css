@@ -1,0 +1,201 @@
+/* Phosphor Icons 2.1.1 (MIT) — só os ícones usados pelo Pomodoro do HUB */
+@font-face {
+  font-family: "Phosphor";
+  src: url("./Phosphor.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+.ph {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "Phosphor" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Enable Ligatures ================ */
+  letter-spacing: 0;
+  -webkit-font-feature-settings: "liga";
+  -moz-font-feature-settings: "liga=1";
+  -moz-font-feature-settings: "liga";
+  -ms-font-feature-settings: "liga" 1;
+  font-feature-settings: "liga";
+  -webkit-font-variant-ligatures: discretionary-ligatures;
+  font-variant-ligatures: discretionary-ligatures;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.ph.ph-arrow-counter-clockwise:before {
+  content: "\e038";
+}
+.ph.ph-arrow-square-out:before {
+  content: "\e5de";
+}
+.ph.ph-bell-ringing:before {
+  content: "\e5e8";
+}
+.ph.ph-browsers:before {
+  content: "\e0f6";
+}
+.ph.ph-gear:before {
+  content: "\e270";
+}
+.ph.ph-highlighter:before {
+  content: "\ec76";
+}
+.ph.ph-microphone:before {
+  content: "\e326";
+}
+.ph.ph-microphone-stage:before {
+  content: "\e75c";
+}
+.ph.ph-notepad:before {
+  content: "\e63e";
+}
+.ph.ph-paint-bucket:before {
+  content: "\e392";
+}
+.ph.ph-paperclip:before {
+  content: "\e39a";
+}
+.ph.ph-pause:before {
+  content: "\e39e";
+}
+.ph.ph-play:before {
+  content: "\e3d0";
+}
+.ph.ph-play-circle:before {
+  content: "\e3d2";
+}
+.ph.ph-square:before {
+  content: "\e45e";
+}
+.ph.ph-stop:before {
+  content: "\e46c";
+}
+.ph.ph-text-b:before {
+  content: "\e5be";
+}
+.ph.ph-text-italic:before {
+  content: "\e5c0";
+}
+.ph.ph-text-strikethrough:before {
+  content: "\e5c2";
+}
+.ph.ph-text-t:before {
+  content: "\e48a";
+}
+.ph.ph-timer:before {
+  content: "\e492";
+}
+.ph.ph-trash:before {
+  content: "\e4a6";
+}
+.ph.ph-x:before {
+  content: "\e4f6";
+}
+@font-face {
+  font-family: "Phosphor-Fill";
+  src: url("./Phosphor-Fill.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+.ph-fill {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "Phosphor-Fill" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Enable Ligatures ================ */
+  letter-spacing: 0;
+  -webkit-font-feature-settings: "liga";
+  -moz-font-feature-settings: "liga=1";
+  -moz-font-feature-settings: "liga";
+  -ms-font-feature-settings: "liga" 1;
+  font-feature-settings: "liga";
+  -webkit-font-variant-ligatures: discretionary-ligatures;
+  font-variant-ligatures: discretionary-ligatures;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.ph-fill.ph-arrow-counter-clockwise:before {
+  content: "\e038";
+}
+.ph-fill.ph-arrow-square-out:before {
+  content: "\e5de";
+}
+.ph-fill.ph-bell-ringing:before {
+  content: "\e5e8";
+}
+.ph-fill.ph-browsers:before {
+  content: "\e0f6";
+}
+.ph-fill.ph-gear:before {
+  content: "\e270";
+}
+.ph-fill.ph-highlighter:before {
+  content: "\ec76";
+}
+.ph-fill.ph-microphone:before {
+  content: "\e326";
+}
+.ph-fill.ph-microphone-stage:before {
+  content: "\e75c";
+}
+.ph-fill.ph-notepad:before {
+  content: "\e63e";
+}
+.ph-fill.ph-paint-bucket:before {
+  content: "\e392";
+}
+.ph-fill.ph-paperclip:before {
+  content: "\e39a";
+}
+.ph-fill.ph-pause:before {
+  content: "\e39e";
+}
+.ph-fill.ph-play:before {
+  content: "\e3d0";
+}
+.ph-fill.ph-play-circle:before {
+  content: "\e3d2";
+}
+.ph-fill.ph-square:before {
+  content: "\e45e";
+}
+.ph-fill.ph-stop:before {
+  content: "\e46c";
+}
+.ph-fill.ph-text-b:before {
+  content: "\e5be";
+}
+.ph-fill.ph-text-italic:before {
+  content: "\e5c0";
+}
+.ph-fill.ph-text-strikethrough:before {
+  content: "\e5c2";
+}
+.ph-fill.ph-text-t:before {
+  content: "\e48a";
+}
+.ph-fill.ph-timer:before {
+  content: "\e492";
+}
+.ph-fill.ph-trash:before {
+  content: "\e4a6";
+}
+.ph-fill.ph-x:before {
+  content: "\e4f6";
+}

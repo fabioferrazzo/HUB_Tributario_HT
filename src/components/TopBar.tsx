@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, CheckCircle2, ExternalLink, Link2, Maximize2, Menu, Minimize2, X } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, ExternalLink, Link2, Maximize2, Menu, Minimize2, RotateCw, X } from "lucide-react";
 import type { HubNotification, HubRoute, HubUser } from "../types";
 import { downloadDocxReport } from "../lib/reportExport";
 import { getErrorMessage, getInitials } from "../lib/formatters";
@@ -17,7 +17,8 @@ export function TopBar({
   onNotificationsReadAll,
   isFullscreen = false,
   onFullscreen,
-  onOpenWindow
+  onOpenWindow,
+  onReload
 }: {
   route: HubRoute;
   notificationItems: HubNotification[];
@@ -30,6 +31,7 @@ export function TopBar({
   isFullscreen?: boolean;
   onFullscreen?: () => void;
   onOpenWindow?: () => void;
+  onReload?: () => void;
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -71,7 +73,7 @@ export function TopBar({
         <span>{"Depto Tribut\u00e1rio"}</span>
       </div>
       <div className="topbar-actions">
-        {onFullscreen || onOpenWindow ? (
+        {onFullscreen || onOpenWindow || onReload ? (
           <div className="top-page-actions">
             {onFullscreen ? (
               <button type="button" onClick={onFullscreen} title={isFullscreen ? "Sair da tela cheia (Esc)" : "Tela cheia"} aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
@@ -81,6 +83,11 @@ export function TopBar({
             {onOpenWindow ? (
               <button type="button" onClick={onOpenWindow} title="Abrir em nova janela" aria-label="Abrir em nova janela">
                 <ExternalLink size={16} strokeWidth={1.6} />
+              </button>
+            ) : null}
+            {onReload ? (
+              <button type="button" onClick={onReload} title="Recarregar o app" aria-label="Recarregar o app">
+                <RotateCw size={16} strokeWidth={1.6} />
               </button>
             ) : null}
           </div>

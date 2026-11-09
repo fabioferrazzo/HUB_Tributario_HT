@@ -31,7 +31,7 @@ const { chromium } = require("playwright-core");
     permissao: Notification.permission
   }));
   console.log(JSON.stringify(result));
-  console.log(result.notificacoes.length === 1 && /Sess.o Conclu.da/.test(result.notificacoes[0].title) ? "OK    notificacao do fim do ciclo disparada" : "FALHA notificacao nao disparada");
+  console.log(result.notificacoes.length === 1 && /Sess.o conclu.da/i.test(result.notificacoes[0].title) ? "OK    notificacao do fim do ciclo disparada" : "FALHA notificacao nao disparada");
   console.log(errors.length === 0 ? "OK    sem erros no console" : "FALHA erros: " + errors.join(" | "));
   await browser.close();
 })().catch((e) => { console.error(e); process.exit(1); });

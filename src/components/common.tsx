@@ -1,4 +1,4 @@
-import { ExternalLink, Maximize2, Minimize2, Plus, RotateCw } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
 import { getDueTone } from "../lib/formatters";
 import { getSupabaseAccessToken } from "../lib/auth";
 import { supabasePublicConfig } from "../lib/supabase";
@@ -81,7 +81,14 @@ export function DueSignal({ prazo }: { prazo: string }) {
   return <span className={`due-signal due-signal--${tone}`} aria-label={`Prazo ${tone}`} />;
 }
 
-// Moldura padrão dos apps incorporados: tela cheia, nova janela e recarregar.
+// Ações da moldura disparadas pela barra do topo do HUB (tela cheia, nova janela, recarregar).
+export type FrameAction = "fullscreen" | "window" | "reload";
+export function dispatchFrameAction(appId: string, action: FrameAction) {
+  window.dispatchEvent(new CustomEvent("hub:frame-action", { detail: { appId, action } }));
+}
+
+// Moldura padrão dos apps incorporados: o app ocupa toda a área; tela cheia, nova janela e recarregar
+// ficam na barra do topo do HUB (mesmo lugar das telas do HUB).
 // Canal reservado HUB <-> app: mensagens "hub:*" (hoje, pedido de login e de tela cheia;
 // as integrações entre apps entram aqui quando forem especificadas).
 export function ModuleFrame({ app }: { app: HubApp }) {
@@ -140,32 +147,21 @@ export function ModuleFrame({ app }: { app: HubApp }) {
     popupRef.current = window.open(app.src, `hub-app-${app.id}`, `popup=yes,width=${width},height=${height}`);
   }
 
+  useEffect(() => {
+    function onAction(event: Event) {
+      const detail = (event as CustomEvent<{ appId?: string; action?: FrameAction }>).detail || {};
+      if (detail.appId !== app.id) return;
+      if (detail.action === "fullscreen" && embedded) void toggleFullscreen();
+      if (detail.action === "window") openWindow();
+      if (detail.action === "reload" && embedded) setReloadKey((key) => key + 1);
+    }
+    window.addEventListener("hub:frame-action", onAction);
+    return () => window.removeEventListener("hub:frame-action", onAction);
+  });
+
   return (
-    <section className={`frame-page ${isFullscreen ? "frame-page--fullscreen" : ""}`} ref={pageRef}>
-      <header>
-        <div className="frame-title">
-          <Icon size={18} strokeWidth={1.6} />
-          <h2>{app.title}</h2>
-        </div>
-        <div className="frame-actions">
-          {embedded ? (
-            <button type="button" onClick={() => void toggleFullscreen()} title={isFullscreen ? "Sair da tela cheia (Esc)" : "Tela cheia"}>
-              {isFullscreen ? <Minimize2 size={15} strokeWidth={1.6} /> : <Maximize2 size={15} strokeWidth={1.6} />}
-              <span>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</span>
-            </button>
-          ) : null}
-          <button type="button" onClick={openWindow} title="Abrir em nova janela">
-            <ExternalLink size={15} strokeWidth={1.6} />
-            <span>Nova janela</span>
-          </button>
-          {embedded ? (
-            <button type="button" onClick={() => setReloadKey((key) => key + 1)} title="Recarregar o app">
-              <RotateCw size={15} strokeWidth={1.6} />
-              <span>Recarregar</span>
-            </button>
-          ) : null}
-        </div>
-      </header>
+    <section className={`frame-page ${embedded ? "frame-page--app" : "frame-page--external"} ${isFullscreen ? "frame-page--fullscreen" : ""}`} ref={pageRef}>
+      <h2 className="sr-only">{app.title}</h2>
       {embedded ? (
         <iframe
           allow="fullscreen; clipboard-read; clipboard-write"
