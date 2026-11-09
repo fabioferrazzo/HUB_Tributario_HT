@@ -102,6 +102,19 @@ export const hubApps: HubApp[] = [
     mode: "embutido",
     description: "Versão no HUB (em construção): usa o login do HUB e funciona de qualquer lugar."
   },
+  // Controle de Férias no HUB: mesma tela e mesmas regras do app do servidor, com os usuários do HUB.
+  // Administradores e gestores do HUB são ADM do app. Começa sem histórico (o do servidor fica para consulta).
+  {
+    id: "ferias",
+    label: "Controle de Férias",
+    title: "Controle de Férias",
+    icon: CalendarRange,
+    group: "Escritório",
+    access: "todos",
+    src: "/apps/ferias/index.html",
+    mode: "embutido",
+    description: "Férias e ausências da equipe, com saldo por semestre. Usa o login do HUB e funciona de qualquer lugar."
+  },
   // Apps do escritório: por enquanto abrem a versão que roda no HTSERVER ou no site de origem.
   // A base de dados será unificada no fim do projeto.
   {
@@ -117,14 +130,14 @@ export const hubApps: HubApp[] = [
   },
   {
     id: "controle-ferias",
-    label: "Controle de Férias",
-    title: "Controle de Férias",
+    label: "Controle de Férias (servidor)",
+    title: "Controle de Férias (servidor)",
     icon: CalendarRange,
     group: "Escritório",
     access: "todos",
     src: "http://192.168.0.200:8805/",
     mode: "janela",
-    description: "Abre em janela própria. Funciona nos computadores da rede do escritório; os dados continuam no servidor do escritório (HTSERVER)."
+    description: "Versão antiga, para consulta. Abre em janela própria e funciona só nos computadores da rede do escritório (HTSERVER). Os novos lançamentos vão no Controle de Férias do HUB."
   },
   {
     id: "onboarding",
