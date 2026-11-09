@@ -74,7 +74,7 @@ export const hubApps: HubApp[] = [
     title: "Checklist",
     icon: ClipboardCheck,
     group: "Ferramentas",
-    access: "admin",
+    access: "todos",
     src: "/apps/checklist.html",
     mode: "embutido",
     description: "Checklist pessoal; os dados ficam guardados neste navegador (use o backup do próprio app para levar de um computador a outro)."
@@ -141,7 +141,7 @@ export const hubApps: HubApp[] = [
     title: "Avaliações",
     icon: Award,
     group: "Escritório",
-    access: "gestores",
+    access: "todos",
     src: "https://script.google.com/macros/s/AKfycbyuiPXfkDNl_n-TKTRw3EQ8Dexk7Mq6vodTDQmxf8LRhJ9lJJw_j6h4M-tcsPc7iwsR/exec",
     mode: "janela",
     description: "Abre em janela própria (Google Apps Script), com a conta Google do usuário."
@@ -152,7 +152,7 @@ export const hubApps: HubApp[] = [
     title: "Informativos",
     icon: FileText,
     group: "Escritório",
-    access: "admin",
+    access: "todos",
     src: "http://127.0.0.1:8766/",
     mode: "janela",
     description: "Programa instalado neste computador. Abra antes o atalho \"Infos HT\" da área de trabalho; depois use o botão abaixo."

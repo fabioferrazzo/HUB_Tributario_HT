@@ -5359,3 +5359,17 @@ a.aviso-card__file:hover {
 .frame-external p { margin: 0; max-width: 460px; }
 .frame-external .primary-action { display: inline-flex; align-items: center; gap: 8px; }
 @media (max-width: 760px) { .frame-actions span { display: none; } .frame-actions button { padding: 0 8px; } }
+
+/* Tela cheia e nova janela das telas do HUB */
+.top-page-actions { display: flex; gap: 6px; }
+.top-page-actions button { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: #1b2a41; cursor: pointer; }
+.top-page-actions button:hover, .top-page-actions button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.workspace-body:fullscreen, .workspace-body--fullscreen { overflow: auto; padding: 16px; background: var(--bg); }
+.window-mode { min-height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--bg); }
+.window-mode-bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: #fff; }
+.window-mode-bar strong { color: #1b2a41; font-size: 15px; }
+.window-mode-bar span { color: var(--muted); font-size: 12px; }
+.window-mode-bar button { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #1b2a41; font-size: 12px; font-weight: 700; cursor: pointer; }
+.window-mode-bar button:hover { border-color: var(--accent); color: var(--accent); }
+.window-mode-body { padding: 16px; min-height: 0; overflow: auto; }
+.window-mode .frame-page { height: calc(100vh - 32px); }

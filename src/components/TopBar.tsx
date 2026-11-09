@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, CheckCircle2, Link2, Menu, X } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, ExternalLink, Link2, Maximize2, Menu, Minimize2, X } from "lucide-react";
 import type { HubNotification, HubRoute, HubUser } from "../types";
 import { downloadDocxReport } from "../lib/reportExport";
 import { getErrorMessage, getInitials } from "../lib/formatters";
@@ -14,7 +14,10 @@ export function TopBar({
   onMenu,
   onNavigate,
   onNotificationRead,
-  onNotificationsReadAll
+  onNotificationsReadAll,
+  isFullscreen = false,
+  onFullscreen,
+  onOpenWindow
 }: {
   route: HubRoute;
   notificationItems: HubNotification[];
@@ -24,6 +27,9 @@ export function TopBar({
   onNavigate: (route: HubRoute) => void;
   onNotificationRead: (notificationId: string) => void;
   onNotificationsReadAll: () => void;
+  isFullscreen?: boolean;
+  onFullscreen?: () => void;
+  onOpenWindow?: () => void;
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -65,6 +71,20 @@ export function TopBar({
         <span>{"Depto Tribut\u00e1rio"}</span>
       </div>
       <div className="topbar-actions">
+        {onFullscreen || onOpenWindow ? (
+          <div className="top-page-actions">
+            {onFullscreen ? (
+              <button type="button" onClick={onFullscreen} title={isFullscreen ? "Sair da tela cheia (Esc)" : "Tela cheia"} aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+                {isFullscreen ? <Minimize2 size={16} strokeWidth={1.6} /> : <Maximize2 size={16} strokeWidth={1.6} />}
+              </button>
+            ) : null}
+            {onOpenWindow ? (
+              <button type="button" onClick={onOpenWindow} title="Abrir em nova janela" aria-label="Abrir em nova janela">
+                <ExternalLink size={16} strokeWidth={1.6} />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="top-chip">
           <CalendarDays size={14} />
           <span>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" })}</span>

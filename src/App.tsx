@@ -4,7 +4,7 @@ import { Dashboard } from "./modules/Dashboard";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
 import { LembretesModule } from "./modules/LembretesModule";
 import { LinksModule } from "./modules/LinksModule";
-import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LogOut, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
 import { ModuleFrame } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
@@ -23,11 +23,50 @@ import { listAppPautas } from "./lib/pautasRepository";
 import { listAppTasks } from "./lib/tarefasRepository";
 import { listAppUsers } from "./lib/usersRepository";
 import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+// A rota fica no endereço (#/rota) para abrir qualquer menu em nova janela ou por link.
+function readRouteFromHash(): HubRoute | null {
+  const id = decodeURIComponent(window.location.hash.replace(/^#\/?/, ""));
+  return routes.some((item) => item.id === id) ? (id as HubRoute) : null;
+}
+
+const windowMode = new URLSearchParams(window.location.search).get("janela") === "1";
 
 export function App() {
   const [user, setUser] = useState<HubUser | null>(() => getStoredSession());
-  const [route, setRoute] = useState<HubRoute>("home");
+  const [route, setRoute] = useState<HubRoute>(() => readRouteFromHash() || "home");
+  const workspaceRef = useRef<HTMLElement | null>(null);
+  const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
+
+  useEffect(() => {
+    const next = `#/${route}`;
+    if (window.location.hash !== next) window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${next}`);
+  }, [route]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = readRouteFromHash();
+      if (next) setRoute(next);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setWorkspaceFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleWorkspaceFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await (windowMode ? document.documentElement : workspaceRef.current)?.requestFullscreen();
+    } catch {
+      // O navegador pode recusar; nada a fazer.
+    }
+  }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const [lembretesVersion, setLembretesVersion] = useState(0);
@@ -149,6 +188,37 @@ export function App() {
     if (app) return canUserSeeApp(app, user.role);
     return true;
   });
+  // Rota digitada no endereço sem permissão volta para Pautas.
+  const currentRoute: HubRoute = visibleRoutes.some((item) => item.id === route) ? route : "home";
+  const isHubScreen = !findAppByRoute(currentRoute);
+
+  function openRouteWindow() {
+    const width = Math.min(1440, window.screen.availWidth || 1440);
+    const height = Math.min(960, window.screen.availHeight || 960);
+    window.open(`${window.location.pathname}?janela=1#/${currentRoute}`, `hub-${currentRoute}`, `popup=yes,width=${width},height=${height}`);
+  }
+
+  if (windowMode) {
+    const title = visibleRoutes.find((item) => item.id === currentRoute)?.label || "HUB";
+    document.title = `${title} - HUB Depto Tributário`;
+    return (
+      <div className="window-mode">
+        {isHubScreen ? (
+          <header className="window-mode-bar">
+            <strong>{title}</strong>
+            <span>HUB Depto Tributário</span>
+            <button type="button" onClick={() => void toggleWorkspaceFullscreen()} title={workspaceFullscreen ? "Sair da tela cheia (Esc)" : "Tela cheia"}>
+              {workspaceFullscreen ? <Minimize2 size={15} strokeWidth={1.6} /> : <Maximize2 size={15} strokeWidth={1.6} />}
+              <span>{workspaceFullscreen ? "Sair da tela cheia" : "Tela cheia"}</span>
+            </button>
+          </header>
+        ) : null}
+        <section className="workspace-body window-mode-body" ref={workspaceRef}>
+          {renderRoute(currentRoute, user, hubUsers, handleRoute)}
+        </section>
+      </div>
+    );
+  }
 
   function handleRoute(nextRoute: HubRoute) {
     setRoute(nextRoute);
@@ -281,7 +351,7 @@ export function App() {
                     const Icon = item.icon;
                     return (
                       <button
-                        className={route === item.id ? "active" : ""}
+                        className={currentRoute === item.id ? "active" : ""}
                         key={item.id}
                         type="button"
                         onClick={() => handleRoute(item.id)}
@@ -309,15 +379,20 @@ export function App() {
       <main className="workspace">
         <TopBar
           notificationItems={notificationItems}
-          route={route}
+          route={currentRoute}
           user={user}
+          isFullscreen={workspaceFullscreen}
+          onFullscreen={isHubScreen ? () => void toggleWorkspaceFullscreen() : undefined}
+          onOpenWindow={isHubScreen ? openRouteWindow : undefined}
           menuOpen={menuOpen}
           onMenu={() => setMenuOpen((open) => !open)}
           onNavigate={handleRoute}
           onNotificationRead={handleNotificationRead}
           onNotificationsReadAll={handleAllNotificationsRead}
         />
-        <section className="workspace-body">{renderRoute(route, user, hubUsers, handleRoute)}</section>
+        <section className={`workspace-body ${workspaceFullscreen && isHubScreen ? "workspace-body--fullscreen" : ""}`} ref={workspaceRef}>
+          {renderRoute(currentRoute, user, hubUsers, handleRoute)}
+        </section>
       </main>
       <PomodoroFloatingNotes
         archivedNotes={pomodoroArchivedNotes}
