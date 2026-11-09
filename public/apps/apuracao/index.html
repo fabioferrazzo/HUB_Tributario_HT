@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#183b4e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="HT Fiscal">
+  <meta name="format-detection" content="telephone=no">
+  <title>H. Teixeira — Controle Fiscal</title>
+  <link rel="icon" href="../../hub-icon.svg">
+  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub2">
+</head>
+<body>
+  <div id="loginView" class="screen center-screen">
+    <form id="loginForm" class="card login-card">
+      <div class="brand"><span class="brand-mark">HT</span><div><strong>Controle Fiscal</strong><small>H. Teixeira Contabilidade</small></div></div>
+      <h1>Entrar</h1>
+      <label>Usuário ou e-mail<input id="loginUser" autocomplete="username" required value="fiscal10.hteixeira@gmail.com"></label>
+      <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></label>
+      <button class="primary full" type="submit">Entrar</button>
+      <button id="forgotPasswordBtn" class="text-link" type="button">Esqueci minha senha</button>
+      <p id="loginMsg" class="form-msg"></p>
+      <small class="muted">O modo offline fica disponível após um primeiro acesso bem-sucedido neste computador.</small>
+    </form>
+  </div>
+
+  <dialog id="passwordRecoveryDialog" class="auth-dialog">
+    <form id="passwordRecoveryForm" class="dialog-form">
+      <div class="dialog-head"><h2>Recuperar senha</h2><button type="button" class="icon-btn" data-close="passwordRecoveryDialog">×</button></div>
+      <p class="muted">Informe seu usuário ou e-mail. A solicitação será encaminhada ao administrador principal.</p>
+      <label>Usuário ou e-mail<input id="passwordRecoveryIdentifier" required autocomplete="username" placeholder="usuario ou email@empresa.com"></label>
+      <div class="recovery-primary-hint">Administrador principal: se você não consegue entrar, use <b>06_RECUPERAR_SENHA_ADMIN.bat</b> no computador servidor.</div>
+      <p id="passwordRecoveryMsg" class="form-msg"></p>
+      <div class="dialog-actions"><span></span><button type="button" data-close="passwordRecoveryDialog">Cancelar</button><button class="primary" type="submit">Solicitar redefinição</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="installHelpDialog" class="auth-dialog install-help-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><h2>Instalar como aplicativo</h2><button type="button" class="icon-btn" data-close="installHelpDialog">×</button></div>
+      <div id="installHelpText" class="install-help-text"></div>
+      <div class="dialog-actions"><span></span><span></span><button type="button" data-close="installHelpDialog">Fechar</button></div>
+    </div>
+  </dialog>
+
+  <div id="appView" class="screen hidden">
+    <header class="topbar">
+      <div class="brand compact"><span class="brand-mark">HT</span><div><strong>Controle Fiscal</strong><small id="userLabel"></small></div></div>
+      <div class="header-center-brand" aria-label="Planilha de Controle de Apuração Tributária">
+        <span class="header-center-mark" aria-hidden="true">HT</span>
+        <span class="header-center-title"><strong>Planilha de Controle de Apuração</strong><span>Tributária</span></span>
+      </div>
+      <div class="top-actions">
+        <span id="syncBadge" class="badge">Sincronizando…</span>
+        <button id="syncNowBtn" class="ghost" type="button" title="Enviar alterações pendentes e atualizar dados">Sincronizar</button>
+        <button id="themeBtn" class="ghost" type="button" title="Alternar modo claro/escuro">Modo escuro</button>
+        <button id="accountBtn" class="ghost" type="button" title="Minha conta e alteração de senha">Minha conta</button><button id="localBackupBtn" class="ghost" type="button" title="Criar agora um backup da base deste computador (pasta backups). Também é feito automaticamente ao fechar a apuração.">Backup</button>
+        <button id="homeBtn" class="ghost hidden" type="button" title="Voltar ao app principal">Home</button>
+        <button id="nativeFullscreenBtn" class="ghost hidden" type="button" title="Checklist em tela cheia">[]</button>
+        <button id="installBtn" class="ghost hidden">Instalar app</button>
+        <button id="logoutBtn" class="ghost">Sair</button>
+      </div>
+    </header>
+
+    <section id="alertsBar" class="alerts-bar hidden" aria-live="polite"></section>
+
+    <main>
+      <section class="workspace-bar card" aria-label="Controles e totalizadores">
+        <div class="toolbar">
+          <div class="field compact-field"><label>Competência</label><div class="month-nav"><button id="prevMonthBtn" type="button" title="Competência anterior">‹</button><input id="competenceInput" type="month"><button id="nextMonthBtn" type="button" title="Próxima competência">›</button><button id="currentMonthBtn" type="button" class="ghost small-btn">Atual</button></div><span id="competenceBadge" class="competence-badge">N&atilde;o iniciada</span></div>
+          <div id="ownerField" class="field compact-field hidden"><label>Responsável</label><select id="ownerSelect"></select></div>
+          <div class="field compact-field"><label>Situação</label><select id="statusFilter"><option value="ALL">Todas</option><option value="PENDING">Pendentes</option><option value="ALERT">Com alerta/pendência</option><option value="DONE">Concluídas</option></select></div>
+          <div class="field compact-field sort-field"><label>Ordenar</label><select id="sortSelect"><optgroup label="Ordenação"><option value="MANUAL">Ordem manual (arrastar)</option><option value="NAME">Empresa A-Z</option><option value="ATTENTION">Alertas/pendências primeiro</option><option value="PROGRESS_ASC">Menor progresso</option><option value="PROGRESS_DESC">Maior progresso</option></optgroup><optgroup label="Filtrar por regime"><option value="REGIME_SN">Regime: Simples Nacional</option><option value="REGIME_LP">Regime: Lucro Presumido</option><option value="REGIME_LR">Regime: Lucro Real</option></optgroup></select></div>
+          <div class="field search-field"><label>Pesquisar</label><input id="searchInput" placeholder="Empresa, Domínio, responsável, observação…" title="Atalho: Ctrl+K"></div>
+        </div>
+        <div class="workspace-lower">
+          <div class="toolbar-buttons">
+            <button id="saveCompetenceBtn" type="button" class="primary" title="Fecha e registra a fotografia mensal da apuração">Salvar apuração</button>
+            <button id="closeCompetenceBtn" type="button" class="hidden" title="Encerra a apuração para edição: registra a fotografia do mês e libera gerar o novo período. Pode ser reaberta depois.">Fechar Apuração</button>
+            <button id="generatePeriodBtn" type="button" title="Gera o mês seguinte com base na última apuração salva">+ Gerar novo período</button>
+            <button id="reopenCompetenceBtn" type="button" class="ghost hidden" title="Reabre a última apuração salva para correções">Reabrir apuração</button>
+            <button id="importBtn">Importar XLS/XLSX</button>
+            <input id="fileInput" type="file" accept=".xls,.xlsx" hidden>
+            <button id="clearFiltersBtn" type="button" class="ghost hidden" title="Limpar pesquisa, situação e filtro/ordenação">Limpar filtros</button>
+            <button id="compactBtn" type="button" class="ghost">Modo compacto</button>
+            <button id="expandChecklistBtn" type="button" class="ghost" title="Abrir checklist em janela flutuante">Janela flutuante</button>
+            <span class="workspace-row-tools" title="Ajustar altura das linhas"><span>Altura</span><button type="button" class="ghost mini-grid-btn" data-row-height-delta="-4" title="Diminuir altura das linhas">−</button><button type="button" class="ghost mini-grid-btn" data-row-height-delta="4" title="Aumentar altura das linhas">+</button><button type="button" class="ghost mini-grid-reset" data-reset-grid-layout title="Restaurar ordem, larguras e altura padrão">Layout</button></span>
+            <button id="newCompanyBtn" class="primary" title="Adicionar uma nova empresa/linha à competência aberta">+ Empresa</button>
+            <button id="newChecklistColumnBtn" class="ghost" type="button" title="Criar um novo item/coluna em todas as empresas desta carteira">+ Coluna</button>
+            <button id="deleteAllCompaniesBtn" class="hidden danger" type="button" title="ADM: excluir de uma só vez todas as empresas da carteira do responsável selecionado">Excluir todas</button>
+            <button id="exportMonthlyBtn" class="ghost" type="button" title="Exportar a competência completa em XLSX">Exportar XLSX</button>
+            <span class="workspace-font-tools" title="Selecione uma ou mais colunas clicando no cabeçalho e ajuste o tamanho da fonte"><span data-font-selection-label>Fonte</span><button type="button" class="ghost mini-font-btn" data-col-font-delta="-1" title="Diminuir fonte das colunas selecionadas">−</button><button type="button" class="ghost mini-font-btn" data-col-font-delta="1" title="Aumentar fonte das colunas selecionadas">+</button></span>
+            <button id="adminDashboardBtn" class="hidden ghost" type="button">Dashboard ADM</button>
+            <button id="adminHistoryBtn" class="hidden ghost" type="button">Histórico ADM</button>
+            <button id="adminBtn" class="hidden">Administração</button>
+          </div>
+          <span id="resultInfo" class="workspace-result-info"></span>
+          <section class="summary-grid" aria-label="Resumo e filtros rápidos">
+            <button type="button" class="metric metric-filter" data-summary-filter="ALL"><span>Total</span><strong id="mTotal">0</strong></button>
+            <button type="button" class="metric metric-filter done" data-summary-filter="DONE"><span>Concluídas</span><strong id="mDone">0</strong></button>
+            <button type="button" class="metric metric-filter alert" data-summary-filter="ALERT"><span>Alertas/pend.</span><strong id="mAlert">0</strong></button>
+            <button type="button" class="metric metric-filter pending" data-summary-filter="PENDING"><span>Pendentes</span><strong id="mPending">0</strong></button>
+          </section>
+        </div>
+      </section>
+
+      <section id="gridCard" class="card grid-card">
+        <div id="tableWrap" class="table-wrap"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="accountDialog" class="auth-dialog">
+    <form id="accountForm" class="dialog-form">
+      <div class="dialog-head"><div><h2>Minha conta</h2><p id="accountIdentity" class="muted"></p></div><button type="button" class="icon-btn" data-close="accountDialog">×</button></div>
+      <label>Senha atual<input id="accountCurrentPassword" type="password" autocomplete="current-password" required></label>
+      <label>Nova senha<input id="accountNewPassword" type="password" autocomplete="new-password" minlength="6" required></label>
+      <label>Confirmar nova senha<input id="accountConfirmPassword" type="password" autocomplete="new-password" minlength="6" required></label>
+      <p id="accountMsg" class="form-msg"></p>
+      <div class="dialog-actions"><span></span><button type="button" data-close="accountDialog">Cancelar</button><button class="primary" type="submit">Alterar senha</button></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="checklistColumnDialog" class="auth-dialog checklist-column-dialog">
+    <form id="checklistColumnForm" class="dialog-form">
+      <div class="dialog-head"><div><h2>Nova coluna do checklist</h2><p id="checklistColumnScope" class="muted"></p></div><button type="button" class="icon-btn" data-close="checklistColumnDialog">×</button></div>
+      <label>Título da coluna<input id="checklistColumnTitle" maxlength="80" autocomplete="off" placeholder="Ex.: Conferir parcelamento" required></label>
+      <small class="muted">A nova coluna será adicionada a todas as empresas da carteira selecionada e, como o checklist é cadastral/global, aparecerá em todas as competências.</small>
+      <p id="checklistColumnValidation" class="validation-msg"></p>
+      <div class="dialog-actions"><span></span><button type="button" data-close="checklistColumnDialog">Cancelar</button><button class="primary" type="submit">Criar coluna</button></div>
+      <hr>
+      <label><span>Renomear uma coluna existente <small class="muted">(ou dê dois cliques no título da coluna)</small></span><select id="renameColumnSelect"></select></label>
+      <div class="dialog-actions"><span></span><button type="button" id="renameColumnFromDialogBtn">Renomear…</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="cellNoteDialog" class="auth-dialog checklist-column-dialog">
+    <form id="cellNoteForm" class="dialog-form">
+      <div class="dialog-head"><div><h2>Nota da célula</h2><p id="cellNoteScope" class="muted"></p></div><button type="button" class="icon-btn" data-close="cellNoteDialog">×</button></div>
+      <label>Observação<textarea id="cellNoteText" rows="4" maxlength="1000" placeholder="Ex.: compras acima da média - verificar"></textarea></label>
+      <small class="muted">Fica salva só nesta linha, nesta coluna e nesta competência. Mudar o status (✓, alerta…) não apaga a nota. Deixe em branco e salve para remover.</small>
+      <p id="cellNoteValidation" class="validation-msg"></p>
+      <div class="dialog-actions"><span></span><button type="button" data-close="cellNoteDialog">Cancelar</button><button class="primary" type="submit">Salvar nota</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="renameColumnDialog" class="auth-dialog checklist-column-dialog">
+    <form id="renameColumnForm" class="dialog-form">
+      <div class="dialog-head"><div><h2>Renomear coluna</h2><p id="renameColumnScope" class="muted"></p></div><button type="button" class="icon-btn" data-close="renameColumnDialog">×</button></div>
+      <label>Novo título<input id="renameColumnTitle" maxlength="80" autocomplete="off" required></label>
+      <small class="muted">Vale para todas as empresas da carteira. Os status marcados, a ordem e a largura da coluna são mantidos. Competências já salvas continuam com o título da época.</small>
+      <p id="renameColumnValidation" class="validation-msg"></p>
+      <div class="dialog-actions"><span></span><button type="button" data-close="renameColumnDialog">Cancelar</button><button class="primary" type="submit">Renomear</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="companyDialog">
+    <form id="companyForm" method="dialog" class="dialog-form">
+      <div class="dialog-head"><h2 id="companyDialogTitle">Empresa</h2><button type="button" class="icon-btn" data-close="companyDialog">×</button></div>
+      <input id="companyId" type="hidden">
+      <div class="form-grid">
+        <label class="span2">Empresa *<input id="companyName" required></label>
+        <label>CNPJ<input id="companyCnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"><small id="companyCnpjHint" class="field-hint"></small></label>
+        <label>Código Domínio<input id="companyDominio" autocomplete="off"></label>
+        <label>Regime<select id="companyRegime"><option>SIMPLES NACIONAL</option><option>LUCRO PRESUMIDO</option><option>LUCRO REAL</option><option>COOPERATIVA</option><option>OUTROS</option></select></label>
+        <label>Envio<input id="companyEnvio" placeholder="WhatsApp, e-mail, protocolo…"></label>
+        <label id="companyOwnerLabel" class="hidden">Responsável<select id="companyOwner"></select></label>
+        <label class="span2">Particularidades<textarea id="companyParticularities" rows="3"></textarea></label>
+        <label class="span2">Observações<textarea id="companyNotes" rows="3"></textarea></label>
+        <label class="span2">Itens a conferir <small>(um por linha)</small> <button id="applyRegimeItemsBtn" type="button" class="ghost mini-grid-btn" title="Acrescenta os itens do regime selecionado e mantém os itens personalizados">Atualizar pelo regime</button><textarea id="companyChecklist" rows="9"></textarea><small id="companyChecklistHint" class="checklist-regime-hint"></small></label>
+      </div>
+      <p id="companyValidation" class="validation-msg"></p>
+      <div class="dialog-actions"><button type="button" class="danger hidden" id="deleteCompanyBtn">Excluir empresa</button><span></span><button type="button" data-close="companyDialog">Cancelar</button><button class="primary" id="saveCompanyBtn" type="submit">Salvar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="historyDialog" class="wide-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><div><h2 id="historyTitle">Hist&oacute;rico da empresa</h2><p id="historyMeta" class="muted history-meta"></p></div><button type="button" class="icon-btn" data-close="historyDialog">&times;</button></div>
+      <div id="historyContent" class="history-content"></div>
+    </div>
+  </dialog>
+
+  <dialog id="monthlyNoteDialog">
+    <form id="monthlyNoteForm" method="dialog" class="dialog-form">
+      <div class="dialog-head"><div><h2 id="monthlyNoteTitle">Pendência / observação mensal</h2><p id="monthlyNoteMeta" class="muted history-meta"></p></div><button type="button" class="icon-btn" data-close="monthlyNoteDialog">&times;</button></div>
+      <input id="monthlyNoteCompanyId" type="hidden">
+      <label class="pending-toggle"><input id="monthlyNotePending" type="checkbox"><span>Marcar como pendência desta competência</span></label>
+      <label>Observação operacional do mês<textarea id="monthlyNoteText" rows="7" maxlength="4000" placeholder="Ex.: aguardando XML, cliente não enviou documentos, conferir retenção antes do fechamento..."></textarea></label>
+      <small class="muted">Esta observação pertence somente à competência selecionada. Não altera as observações permanentes do cadastro.</small>
+      <div class="dialog-actions"><button type="button" id="clearMonthlyNoteBtn" class="ghost">Limpar</button><span></span><button type="button" data-close="monthlyNoteDialog">Cancelar</button><button class="primary" type="submit">Salvar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="documentDialog" class="wide-dialog document-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><div><h2 id="documentTitle">Documentos</h2><p id="documentMeta" class="muted history-meta"></p></div><button type="button" class="icon-btn" data-close="documentDialog">×</button></div>
+      <div class="document-upload-panel">
+        <div class="document-upload-fields">
+          <label>Arquivos<input id="documentFileInput" type="file" multiple accept=".pdf,.xls,.xlsx,.doc,.docx,.xml,.csv,.txt,.jpg,.jpeg,.png,.webp,.tif,.tiff,.zip,.rar,.ods,.odt,.rtf,.eml,.msg,.p7s,.json"></label>
+          <label>Vincular a<select id="documentScope"><option id="documentCompetenceCurrent" value="CURRENT">Competência atual</option><option value="GENERAL">Geral / sem competência</option></select></label>
+          <label class="document-note-field">Descrição opcional<input id="documentNote" maxlength="500" placeholder="Ex.: guia paga, demonstrativo do PGDAS, XML relevante..."></label>
+          <button id="documentUploadBtn" type="button" class="primary">Guardar arquivo(s)</button>
+        </div>
+        <div class="document-upload-foot"><span id="documentUploadMsg" class="muted"></span><span id="documentCountText" class="muted"></span><span>Máx. 25 MB por arquivo</span></div>
+      </div>
+      <div id="documentList" class="document-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="deleteAllDialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><h2>Excluir todas as empresas</h2><button type="button" class="icon-btn" data-close="deleteAllDialog">×</button></div>
+      <p id="deleteAllSummary"></p>
+      <p class="muted">As empresas saem do cadastro atual e da competência aberta. Competências já salvas e a auditoria são preservadas. Um backup da base é criado automaticamente antes da exclusão.</p>
+      <label><span>Digite <strong>EXCLUIR</strong> para confirmar</span><input id="deleteAllConfirmInput" type="text" autocomplete="off" spellcheck="false"></label>
+      <div class="dialog-actions"><span></span><button type="button" data-close="deleteAllDialog">Cancelar</button><button id="confirmDeleteAllBtn" type="button" class="danger" disabled>Excluir todas</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="importDialog" class="wide-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><h2>Prévia da importação</h2><button type="button" class="icon-btn" data-close="importDialog">×</button></div>
+      <p id="importSummary"></p><p id="importDestination" class="muted"></p>
+      <div id="importWarnings"></div>
+      <div id="importPreview" class="import-preview"></div>
+      <div class="dialog-actions"><span></span><button data-close="importDialog">Cancelar</button><button id="confirmImportBtn" class="primary">Importar empresas</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="adminDashboardDialog" class="wide-dialog admin-dashboard-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><div><h2>Dashboard administrativo</h2><p id="adminDashboardMeta" class="muted history-meta"></p></div><button type="button" class="icon-btn" data-close="adminDashboardDialog">×</button></div>
+      <div id="adminDashboardTotals" class="admin-dashboard-totals"></div>
+      <div id="adminDashboardUsers" class="admin-user-dashboard"></div>
+    </div>
+  </dialog>
+
+  <dialog id="adminHistoryDialog" class="wide-dialog admin-history-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><div><h2>Histórico administrativo</h2><p class="muted history-meta">Histórico mensal das carteiras e registro das notas feitas pelo administrador.</p></div><button type="button" class="icon-btn" data-close="adminHistoryDialog">×</button></div>
+      <div class="admin-history-filters">
+        <label>Usuário<select id="adminHistoryUserFilter"><option value="">Todos os usuários</option></select></label>
+        <label>Competência<select id="adminHistoryCompetenceFilter"><option value="">Todas as competências</option></select></label>
+      </div>
+      <h3>Histórico mensal</h3>
+      <div id="adminHistoryMonthly" class="admin-history-content"></div>
+      <h3>Notas do administrador</h3>
+      <div id="adminHistoryNotes" class="admin-history-content"></div>
+    </div>
+  </dialog>
+
+  <dialog id="adminNoteDialog" class="wide-dialog admin-note-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><div><h2 id="adminNoteTitle">Notas do administrador</h2><p id="adminNoteMeta" class="muted history-meta"></p></div><button type="button" class="icon-btn" data-close="adminNoteDialog">×</button></div>
+      <div id="adminNoteExisting" class="admin-note-list"></div>
+      <form id="adminNoteForm" class="admin-note-form">
+        <input id="adminNoteId" type="hidden">
+        <input id="adminNoteCompanyId" type="hidden">
+        <input id="adminNoteItemId" type="hidden" value="__ROW__">
+        <div class="admin-note-form-grid">
+          <label>Vincular a<select id="adminNoteTarget"></select></label>
+          <label>Tipo<select id="adminNoteType"><option value="MESSAGE">Recado</option><option value="DIRECTIVE">Determinação</option><option value="RECORD">Registro</option></select></label>
+        </div>
+        <label>Nota<textarea id="adminNoteText" rows="5" maxlength="4000" placeholder="Recado, determinação ou registro para o responsável desta empresa..."></textarea></label>
+        <div class="dialog-actions"><span></span><button type="button" data-close="adminNoteDialog">Fechar</button><button id="saveAdminNoteBtn" type="submit" class="primary">Registrar nota</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="adminDialog" class="wide-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><h2>Administração</h2><button type="button" class="icon-btn" data-close="adminDialog">×</button></div>
+      <div class="admin-columns">
+        <section class="admin-users-section">
+          <div class="admin-users-heading">
+            <div><h3>Usuários</h3><p>Crie, edite, desative, transfira carteiras e exclua acessos sem apagar o histórico fiscal.</p></div>
+            <label>Exibir<select id="userListFilter"><option value="ACTIVE" selected>Ativos</option><option value="INACTIVE">Inativos</option><option value="DELETED">Excluídos</option><option value="ALL">Todos</option></select></label>
+          </div>
+          <div id="adminPolicyInfo" class="admin-policy-info"></div>
+          <div id="userSummary" class="user-summary-grid"></div>
+          <div id="usersList" class="users-admin-list"></div>
+          <div id="passwordResetSection" class="password-reset-section hidden"><h4>Solicitações de redefinição</h4><div id="passwordResetRequests"></div></div>
+          <form id="newUserForm" class="mini-form user-create-form">
+            <div class="user-form-title"><h4>Novo usuário</h4><small>O login deve ser único. A senha é definida já no cadastro.</small></div>
+            <label>Nome de exibição<input id="newUserName" maxlength="120" placeholder="Ex.: Fábio" required></label>
+            <div class="user-form-grid"><label>Usuário<input id="newUsername" maxlength="160" autocomplete="off" placeholder="fabio ou email@empresa.com" required></label><label>E-mail<input id="newUserEmail" type="email" maxlength="200" placeholder="E-mail (obrigatório para ADM)"></label></div>
+            <div class="user-form-grid"><label>Senha<input id="newUserPassword" type="password" minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required></label><label>Confirmar senha<input id="newUserPasswordConfirm" type="password" minlength="6" autocomplete="new-password" required></label></div>
+            <label>Perfil<select id="newUserRole"><option value="USER">Usuário</option><option value="ADMIN">Administrador</option></select></label>
+            <p id="newUserMsg" class="form-msg"></p>
+            <button id="createUserBtn" class="primary" type="submit">Criar usuário</button>
+          </form>
+        </section>
+        <section class="admin-alerts-section">
+          <div class="admin-alerts-heading">
+            <div><h3>Alertas gerais</h3><p>Faixas direcionadas aos usuários, exibidas somente durante a vigência definida.</p></div>
+            <label class="admin-alert-history-filter">Exibir
+              <select id="alertHistoryFilter">
+                <option value="ACTIVE" selected>Ativos agora</option>
+                <option value="SCHEDULED">Agendados</option>
+                <option value="INACTIVE">Pausados</option>
+                <option value="ENDED">Encerrados</option>
+                <option value="ALL">Todos</option>
+              </select>
+            </label>
+          </div>
+          <div id="adminAlertsList" class="admin-alerts-list"></div>
+          <form id="newAlertForm" class="mini-form alert-editor-form">
+            <input id="newAlertId" type="hidden">
+            <div class="alert-editor-title-row"><h4 id="alertFormTitle">Novo alerta</h4><small>O alerta aparece entre o cabeçalho e os menus.</small></div>
+            <label>Título<input id="newAlertTitle" maxlength="140" placeholder="Ex.: Atenção ao prazo da EFD" required></label>
+            <label>Mensagem<textarea id="newAlertMessage" maxlength="2000" placeholder="Texto que percorrerá a faixa de alertas" rows="4"></textarea></label>
+            <div class="alert-editor-grid">
+              <label>Classificação<select id="newAlertSeverity"><option value="INFO">Informativo</option><option value="WARNING">Atenção</option><option value="CRITICAL">Crítico</option></select></label>
+              <label>Início<input id="newAlertStart" type="date"></label>
+              <label>Fim<input id="newAlertEnd" type="date"></label>
+            </div>
+            <fieldset class="alert-editor-fieldset">
+              <legend>Público do alerta</legend>
+              <label class="alert-editor-check alert-target-all"><input id="newAlertTargetAll" type="checkbox" checked><span><b>Todos os usuários ativos</b><small>Inclui usuários comuns e administradores.</small></span></label>
+              <div id="newAlertTargets" class="alert-target-list" aria-label="Selecionar usuários destinatários"></div>
+              <small id="alertAudienceHint" class="alert-editor-hint"></small>
+            </fieldset>
+            <fieldset class="alert-editor-fieldset">
+              <legend>Visual da faixa</legend>
+              <input id="newAlertFontSize" type="hidden" value="15">
+              <div class="alert-format-row">
+                <div class="alert-font-control"><span>Fonte</span><button id="newAlertFontDown" type="button" class="ghost" title="Diminuir fonte">A−</button><output id="newAlertFontValue">15 px</output><button id="newAlertFontUp" type="button" class="ghost" title="Aumentar fonte">A+</button></div>
+                <label class="alert-editor-check compact"><input id="newAlertBold" type="checkbox"><span>Negrito</span></label>
+                <label class="alert-editor-check compact"><input id="newAlertHighlight" type="checkbox"><span>Grifo amarelo</span></label>
+              </div>
+              <div id="alertPreview" class="alert-preview" aria-label="Prévia do alerta"></div>
+            </fieldset>
+            <label class="alert-editor-check"><input id="newAlertActive" type="checkbox" checked><span><b>Alerta ativo</b><small>Desmarque para salvar como pausado.</small></span></label>
+            <div class="alert-editor-actions"><button id="cancelAlertEditBtn" type="button" class="ghost hidden">Cancelar edição</button><button id="saveAlertBtn" type="submit" class="primary">Publicar alerta</button></div>
+          </form>
+        </section>
+      </div>
+      <section class="admin-backup-section">
+        <div class="admin-backup-heading">
+          <div><h3>Backup e restauração</h3><p>Gere backups de todos os usuários ou de uma carteira específica, com retenção dos últimos 3 ou 12 meses. O pacote inclui os cadastros, apurações e documentos já sincronizados com o servidor.</p></div>
+          <span class="admin-only-tag">Somente ADM</span>
+        </div>
+        <div class="admin-backup-config">
+          <label>Escopo<select id="adminBackupScope"><option value="">Todos os usuários (backup completo)</option></select></label>
+          <label>Período<select id="adminBackupMonths"><option value="3">Últimos 3 meses</option><option value="12" selected>Últimos 12 meses</option></select></label>
+        </div>
+        <div id="adminBackupStatus" class="admin-backup-status"><span>Consultando período disponível…</span></div>
+        <div class="admin-backup-actions">
+          <button id="generateAdminBackupBtn" type="button" class="primary">Gerar backup</button>
+          <button id="chooseAdminRestoreBtn" type="button">Restaurar backup</button>
+          <input id="adminRestoreFile" class="hidden" type="file" accept=".htbackup,.zip,application/zip,application/octet-stream">
+        </div>
+        <p id="adminBackupMsg" class="form-msg"></p>
+        <small class="muted">Backup completo restaura todo o app. Backup de usuário restaura somente aquela carteira e preserva os demais usuários. Antes de restaurar, confirme que os usuários sincronizaram e fecharam o app; o servidor cria automaticamente uma cópia de segurança do estado atual.</small>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="backupRestoreDialog" class="backup-restore-dialog">
+    <div class="dialog-form">
+      <div class="dialog-head"><div><h2>Restaurar backup</h2><p class="muted">Valide o arquivo antes de substituir os dados atuais.</p></div><button type="button" class="icon-btn" data-close="backupRestoreDialog">×</button></div>
+      <div class="restore-warning"><b>Atenção</b><p id="restoreWarningText">O arquivo será validado antes da restauração. O app informará se o pacote é completo ou de um usuário específico.</p></div>
+      <dl class="restore-file-meta"><div><dt>Arquivo</dt><dd id="restoreBackupFilename">—</dd></div><div><dt>Tamanho</dt><dd id="restoreBackupSize">—</dd></div><div><dt>Escopo</dt><dd id="restoreBackupScope">—</dd></div><div><dt>Período</dt><dd id="restoreBackupPeriod">—</dd></div><div><dt>Modo</dt><dd id="restoreBackupMode">—</dd></div></dl>
+      <label class="restore-confirm-check"><input id="restoreBackupConfirm" type="checkbox"><span id="restoreBackupConfirmText">Confirmo a restauração deste backup.</span></label>
+      <p id="restoreBackupMsg" class="form-msg"></p>
+      <div class="dialog-actions"><button type="button" data-close="backupRestoreDialog">Cancelar</button><button id="confirmAdminRestoreBtn" type="button" class="danger" disabled>Restaurar agora</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="userEditorDialog" class="user-editor-dialog">
+    <form id="userEditorForm" class="dialog-form">
+      <div class="dialog-head"><div><h2>Editar usuário</h2><p id="userEditorMeta" class="muted"></p></div><button type="button" class="icon-btn" data-close="userEditorDialog">×</button></div>
+      <input id="userEditId" type="hidden">
+      <div class="form-grid">
+        <label>Nome de exibição<input id="userEditName" maxlength="120" required></label>
+        <label>Usuário de login<input id="userEditUsername" maxlength="160" required></label>
+        <label>E-mail<input id="userEditEmail" type="email" maxlength="200"></label>
+        <label>Perfil<select id="userEditRole"><option value="USER">Usuário</option><option value="ADMIN">Administrador</option></select></label>
+      </div>
+      <label class="user-active-check"><input id="userEditActive" type="checkbox"><span><b>Conta ativa</b><small>Desativar encerra as sessões do usuário. Contas com empresas ativas precisam transferir a carteira primeiro.</small></span></label>
+      <fieldset class="user-editor-fieldset"><legend>Senha</legend><p class="muted">Deixe os campos vazios para manter a senha atual.</p><div class="form-grid"><label>Nova senha<input id="userEditPassword" type="password" minlength="6" autocomplete="new-password"></label><label>Confirmar nova senha<input id="userEditPasswordConfirm" type="password" minlength="6" autocomplete="new-password"></label></div></fieldset>
+      <fieldset id="userPortfolioSection" class="user-editor-fieldset"><legend>Carteira</legend><div class="user-portfolio-summary"><span>Empresas ativas</span><strong id="userPortfolioCount">0</strong></div><div id="userTransferControls" class="user-transfer-controls"><label>Transferir toda a carteira para<select id="userTransferTarget"></select></label><button id="userTransferBtn" type="button">Transferir carteira</button></div><small id="userPortfolioHint" class="muted"></small></fieldset>
+      <p id="userEditorMsg" class="form-msg"></p>
+      <div class="user-editor-footer"><button type="button" data-close="userEditorDialog">Cancelar</button><button id="saveUserBtn" type="submit" class="primary">Salvar alterações</button></div>
+      <section id="userDangerZone" class="user-danger-zone"><div><b>Excluir acesso</b><small>A exclusão é lógica: o usuário perde acesso, mas notas, auditoria e histórico permanecem íntegros.</small></div><button id="deleteUserBtn" type="button" class="danger">Excluir usuário</button><div id="userDeleteConfirm" class="user-delete-confirm hidden"><p id="userDeleteConfirmText">Confirme a exclusão deste acesso. Esta ação encerra sessões e remove o usuário das listas operacionais.</p><div><button id="cancelDeleteUserBtn" type="button">Cancelar</button><button id="confirmDeleteUserBtn" type="button" class="danger">Confirmar exclusão</button></div></div></section>
+    </form>
+  </dialog>
+
+  <dialog id="checklistDialog" class="checklist-dialog">
+    <div id="checklistDialogShell" class="checklist-dialog-shell">
+      <div class="dialog-head expanded-head" id="floatingChecklistHandle"><div><h2>Checklist — janela flutuante</h2><p id="expandedMeta" class="muted history-meta"></p><small class="floating-hint">Arraste pelo cabeçalho · redimensione pela borda inferior direita</small></div><div class="expanded-actions"><button id="expandedFullscreenBtn" type="button" class="ghost">Tela cheia</button><button type="button" class="icon-btn" data-close="checklistDialog">×</button></div></div>
+      <div class="grid-help expanded-help"><span><b>Clique:</b> avançar status · <b>botão direito:</b> status/grifo · <b>Arraste cabeçalhos:</b> reordenar · <b>Borda direita:</b> largura</span><span class="grid-layout-tools"><span>Altura</span><button type="button" class="ghost mini-grid-btn" data-row-height-delta="-4">−</button><button type="button" class="ghost mini-grid-btn" data-row-height-delta="4">+</button><button type="button" class="ghost mini-grid-reset" data-reset-grid-layout>Layout padrão</button></span><span class="legend pending-dot">Pendente</span><span class="legend done-dot">Concluído</span><span class="legend alert-dot">Alerta</span><span class="legend na-dot">N/A</span><span class="legend yellow-dot">Atenção</span><span class="legend orange-dot">Prioridade</span><span id="expandedResultInfo" class="result-info"></span></div>
+      <div id="expandedTableWrap" class="table-wrap expanded-table-wrap"></div>
+    </div>
+  </dialog>
+
+
+  <aside id="companyChecklistPanel" class="company-checklist-panel hidden" aria-hidden="true" aria-label="Checklist da empresa" tabindex="-1">
+    <div class="company-panel-head">
+      <div><span class="company-panel-kicker">Checklist da empresa</span><h2 id="companyChecklistPanelTitle">Empresa</h2><p id="companyChecklistPanelMeta"></p></div>
+      <div class="company-panel-head-actions"><button id="companyChecklistPanelPopout" type="button" class="company-panel-popout" title="Abrir esta sidebar em janela independente" aria-label="Abrir sidebar em janela independente">[]</button><button id="companyChecklistPanelClose" type="button" class="company-panel-close" title="Recolher painel" aria-label="Recolher painel">×</button></div>
+    </div>
+    <div id="companyPanelViewControls" class="company-panel-view-controls hidden" aria-label="Controles de visualização do checklist da empresa">
+      <div class="company-panel-view-group" aria-label="Tamanho da fonte"><span>Fonte</span><button type="button" class="ghost" data-company-panel-font-delta="-10" title="Diminuir fonte">A−</button><output id="companyPanelFontValue">120%</output><button type="button" class="ghost" data-company-panel-font-delta="10" title="Aumentar fonte">A+</button></div>
+      <div class="company-panel-view-group" data-company-panel-zoom-group aria-label="Zoom da interface"><span>Zoom</span><button type="button" class="ghost" data-company-panel-zoom-delta="-10" title="Diminuir zoom">−</button><output id="companyPanelZoomValue">110%</output><button type="button" class="ghost" data-company-panel-zoom-delta="10" title="Aumentar zoom">+</button></div>
+      <button id="companyPanelViewReset" type="button" class="ghost company-panel-view-reset" title="Restaurar visualização recomendada">Padrão</button>
+    </div>
+    <div id="companyChecklistPanelProgress" class="company-panel-progress"></div>
+    <div id="companyChecklistPanelNotices" class="company-panel-notices"></div>
+    <div class="company-panel-master-fields" aria-label="Informações permanentes da empresa">
+      <details id="companyPanelParticularitiesDetails" class="company-panel-detail">
+        <summary>Particularidades <span id="companyPanelParticularitiesFlag" class="company-panel-detail-flag"></span></summary>
+        <div class="company-panel-detail-body">
+          <textarea id="companyPanelParticularitiesText" rows="3" maxlength="4000" placeholder="Particularidades permanentes desta empresa..."></textarea>
+          <div class="company-panel-detail-actions"><small>Reflete a coluna Particularidades em todas as competências.</small><button id="companyPanelSaveParticularities" type="button" class="primary">Salvar</button></div>
+        </div>
+      </details>
+      <details id="companyPanelNotesDetails" class="company-panel-detail">
+        <summary>Observações <span id="companyPanelNotesFlag" class="company-panel-detail-flag"></span></summary>
+        <div class="company-panel-detail-body">
+          <textarea id="companyPanelNotesText" rows="3" maxlength="4000" placeholder="Observações permanentes desta empresa..."></textarea>
+          <div class="company-panel-detail-actions"><small>Reflete a coluna Observações em todas as competências.</small><button id="companyPanelSaveNotes" type="button" class="primary">Salvar</button></div>
+        </div>
+      </details>
+    </div>
+    <div id="companyChecklistPanelItems" class="company-panel-items"></div>
+    <div class="company-panel-footer">
+      <button id="companyChecklistPanelHistory" type="button" class="ghost">Histórico</button>
+      <button id="companyChecklistPanelPending" type="button" class="ghost">Pend./Obs.</button>
+      <button id="companyChecklistPanelDocs" type="button" class="ghost">📎</button>
+    </div>
+  </aside>
+
+  <dialog id="incompletePeriodDialog" class="period-block-dialog" aria-labelledby="incompletePeriodTitle">
+    <div class="period-block-content">
+      <div class="period-block-icon" aria-hidden="true">!</div>
+      <p class="period-block-kicker">NOVO PERÍODO BLOQUEADO</p>
+      <h2 id="incompletePeriodTitle">Não foi possível gerar novo período</h2>
+      <p class="period-block-competence">Competência: <strong id="incompletePeriodCompetence">-</strong></p>
+      <div class="period-block-count"><strong id="incompletePeriodCount">0</strong><span id="incompletePeriodCountLabel">empresas não concluídas</span></div>
+      <p id="incompletePeriodMessage" class="period-block-message"></p>
+      <p class="period-block-help">Revise as empresas pendentes ou entre em contato com o usuário ADM.</p>
+      <button id="incompletePeriodReviewBtn" type="button" class="primary period-block-action">Voltar e revisar</button>
+    </div>
+  </dialog>
+
+  <div id="statusMenu" class="status-menu hidden" role="menu" aria-label="Escolher situação">
+    <button type="button" data-direct-status="PENDING"><span>○</span>Pendente</button>
+    <button type="button" data-direct-status="DONE"><span>✓</span>Concluído</button>
+    <button type="button" data-direct-status="ALERT"><span>!</span>Alerta</button>
+    <button type="button" data-direct-status="NA"><span>—</span>N/A</button>
+    <div class="menu-separator"></div><div class="menu-label">Grifar item</div>
+    <button type="button" data-item-highlight="NONE"><span>×</span>Sem grifo</button>
+    <button type="button" data-item-highlight="YELLOW"><span class="swatch yellow"></span>Amarelo</button>
+    <button type="button" data-item-highlight="ORANGE"><span class="swatch orange"></span>Laranja</button>
+    <div class="menu-separator"></div><button id="cellNoteFromItemBtn" type="button"><span>📝</span>Nota da célula…</button>
+    <div id="adminNoteMenuSection" class="hidden"><div class="menu-separator"></div><button id="adminNoteFromItemBtn" type="button"><span>ADM</span>Nota do administrador</button></div>
+  </div>
+  <div id="rowHighlightMenu" class="status-menu highlight-menu hidden" role="menu" aria-label="Grifar linha">
+    <div class="menu-label">Grifar linha</div>
+    <button type="button" data-row-highlight="NONE"><span>×</span>Sem grifo</button>
+    <button type="button" data-row-highlight="YELLOW"><span class="swatch yellow"></span>Amarelo</button>
+    <button type="button" data-row-highlight="ORANGE"><span class="swatch orange"></span>Laranja</button>
+    <button type="button" data-row-highlight="GREEN"><span class="swatch green"></span>Verde</button>
+  </div>
+  <div id="toast" class="toast"></div>
+  <div class="hub-apuracao-loading">Carregando o Controle de Apuração…</div>
+  <div id="hubApuracaoBlocker" class="hub-apuracao-blocker" hidden><div><h2>Controle de Apuração</h2><p></p><button type="button" onclick="location.reload()">Tentar novamente</button></div></div>
+  <script src="hub-apuracao.js?v=0.11.8.13-hub2"></script>
+  <script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

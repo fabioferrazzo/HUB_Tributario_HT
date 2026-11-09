@@ -14,6 +14,17 @@ export const configuredSupabaseHost = (() => {
   }
 })();
 
+// Endereço e chave pública do Supabase para os apps em public/apps (ex.: Controle de Apuração).
+// A chave anônima é pública por natureza; o acesso aos dados depende do login e das regras do banco.
+export const supabasePublicConfig = { url: supabaseUrl || "", anonKey: supabaseAnonKey || "" };
+if (isSupabaseConfigured && typeof window !== "undefined") {
+  try {
+    window.localStorage.setItem("hub_supabase_public", JSON.stringify(supabasePublicConfig));
+  } catch {
+    // Navegador sem armazenamento local: os apps recebem a configuração pela moldura do HUB.
+  }
+}
+
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {

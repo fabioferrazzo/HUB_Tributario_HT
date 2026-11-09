@@ -525,3 +525,13 @@ Base: app "Controle de Apuração" v0.11.8 FIX13 do HTSERVER (com SALVARFECHAR01
   - migração da base antiga em lotes (`apur_migrate_rows`, somente ADM, pode ser repetida).
 - Usuários: administrador do HUB = ADM do app; demais usuários ativos = donos de carteira. Login, senha e cadastro de usuários ficam com o HUB.
 - Testes: `tests/sql/apuracao_etapa1.sql` (50 verificações no simulador Postgres, todas conforme o app antigo).
+
+### Etapa 2 — Grade mensal no HUB (concluída)
+
+- Novo item no menu (Escritório): **Controle de Apuração**, embutido no HUB (`public/apps/apuracao/`). O item antigo passa a se chamar **Controle de Apuração (servidor)** e continua abrindo o HTSERVER.
+- A tela é a mesma do app 0.11.8.13 (`index.html`, `app.js`, `styles.css` copiados com ajustes mínimos: janelas flutuantes no endereço do HUB, sem service worker próprio, sem login/conta/backup local).
+- `hub-apuracao.js` atende os endereços `/api/...` da tela com as funções `apur_*` do Supabase e o login do HUB (o HUB envia o token, o endereço e a chave pública; fora da moldura, usa a sessão salva no navegador). Ao trocar de usuário no mesmo navegador, o cache local do usuário anterior é descartado.
+- Funciona nesta etapa: carga da carteira, status dos itens, notas de célula, pendência do mês, grifos, notas do ADM, ordem das empresas, + Empresa / editar / excluir, + Coluna e renomear, Salvar / Fechar / Reabrir / Gerar novo período, Excluir todas, Dashboard ADM, Histórico ADM, alertas gerais (exibição), janela flutuante e painel da empresa.
+- Ainda não (avisam "entra numa próxima etapa"): leitura de planilha XLS/XLSX (etapa 3), documentos e exportação XLSX (etapa 5), cadastro de alertas, backup e auditoria (etapa 6). Usuários são cadastrados no HUB.
+- Banco: rodar `supabase/patch_apuracao_etapa2.sql` (depois da etapa 1; pode rodar mais de uma vez): `apur_bootstrap`, `apur_me`, `apur_alerts_list` e nota ADM com o id gerado pela tela (reenvio não duplica).
+- Testes: simulador do HUB com a tela real (26 verificações: usuária comum, troca de usuário, ADM, nota ADM, dashboard, salvar, janela flutuante) e a suíte e2e do HUB.

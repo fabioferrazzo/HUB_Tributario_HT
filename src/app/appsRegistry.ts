@@ -89,12 +89,25 @@ export const hubApps: HubApp[] = [
     src: "/apps/consultor-cte-mdfe.html",
     mode: "embutido"
   },
+  // Controle de Apuração reconstruído no HUB: mesma tela do app do servidor, dados no Supabase.
+  // Fica em paralelo com a versão do HTSERVER até a validação e a migração da base.
+  {
+    id: "apuracao",
+    label: "Controle de Apuração",
+    title: "Controle de Apuração",
+    icon: FileSpreadsheet,
+    group: "Escritório",
+    access: "todos",
+    src: "/apps/apuracao/index.html",
+    mode: "embutido",
+    description: "Versão no HUB (em construção): usa o login do HUB e funciona de qualquer lugar."
+  },
   // Apps do escritório: por enquanto abrem a versão que roda no HTSERVER ou no site de origem.
   // A base de dados será unificada no fim do projeto.
   {
     id: "controle-apuracao",
-    label: "Controle de Apuração",
-    title: "Controle de Apuração",
+    label: "Controle de Apuração (servidor)",
+    title: "Controle de Apuração (servidor)",
     icon: FileSpreadsheet,
     group: "Escritório",
     access: "todos",

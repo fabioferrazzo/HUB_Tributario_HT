@@ -1,6 +1,7 @@
 import { ExternalLink, Maximize2, Minimize2, Plus, RotateCw } from "lucide-react";
 import { getDueTone } from "../lib/formatters";
 import { getSupabaseAccessToken } from "../lib/auth";
+import { supabasePublicConfig } from "../lib/supabase";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HubApp } from "../app/appsRegistry";
 
@@ -98,7 +99,10 @@ export function ModuleFrame({ app }: { app: HubApp }) {
     const token = await getSupabaseAccessToken();
     const destination = target || frameRef.current?.contentWindow;
     if (!token || !destination) return;
-    destination.postMessage({ type: "hub-auth-token", token }, window.location.origin);
+    destination.postMessage(
+      { type: "hub-auth-token", token, supabaseUrl: supabasePublicConfig.url, supabaseAnonKey: supabasePublicConfig.anonKey },
+      window.location.origin
+    );
   }, []);
 
   const toggleFullscreen = useCallback(async () => {
