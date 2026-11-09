@@ -241,9 +241,18 @@
     if ((m = path.match(/^\/api\/documents\/([^/]+)$/)) && method === "DELETE") return deleteDocument(decodeURIComponent(m[1]));
     if (/^\/api\/export\//.test(path)) throw httpError("Endpoint não encontrado. [" + method + " " + path + "]", 404);
     if (path === "/api/alerts" && method === "GET") return Object.assign({}, META, await rpc("apur_alerts_list", {}));
-    if (/^\/api\/alerts/.test(path)) return notYet("O cadastro de alertas gerais");
+    if (path === "/api/alerts" && method === "POST") {
+      var created = await rpc("apur_alert_save", { p_id: uuidOrNull(body.id), p: body, p_is_update: false });
+      return new Response(JSON.stringify(created), { status: 201, headers: { "Content-Type": "application/json" } });
+    }
+    if ((m = path.match(/^\/api\/alerts\/([^/]+)$/))) {
+      var alertId = decodeURIComponent(m[1]);
+      if (!UUID_RE.test(alertId)) throw httpError("Alerta não encontrado.", 404);
+      if (method === "PUT") { var upd = await rpc("apur_alert_save", { p_id: alertId, p: body, p_is_update: true }); return { ok: true, alert: upd.alert }; }
+      if (method === "DELETE") return rpc("apur_alert_delete", { p_id: alertId });
+    }
+    if (path === "/api/audit") return rpc("apur_audit_list", {});
     if (/^\/api\/(admin\/)?backup/.test(path)) return notYet("O backup");
-    if (path === "/api/audit") return notYet("A auditoria");
 
     throw httpError("Endpoint não encontrado. [" + method + " " + path + "]", 404);
   }
@@ -279,7 +288,7 @@
     }
     if (bytes.length > MAX_IMPORT_BYTES) throw httpError("Arquivo maior que 8 MB.", 400);
     await loadScript("vendor/xlsx.full.min.js?v=0.20.3");
-    await loadScript("importador.js?v=" + APP_BUILD + "-hub4");
+    await loadScript("importador.js?v=" + APP_BUILD + "-hub5");
     var result;
     try {
       result = window.HubApuracaoImport.parse(window.XLSX, filename, bytes);
@@ -387,7 +396,7 @@
   async function exportMonthly(q) {
     var data = await rpc("apur_export_data", { p_competence: q.get("competence") || "", p_owner: uuidOrNull(q.get("owner_user_id")) });
     await loadScript("vendor/exceljs.min.js?v=4.4.0");
-    await loadScript("exportador.js?v=" + APP_BUILD + "-hub4");
+    await loadScript("exportador.js?v=" + APP_BUILD + "-hub5");
     var out = await window.HubApuracaoExport.build(window.ExcelJS, data);
     return new Response(new Blob([out.buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), {
       status: 200, headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -455,7 +464,7 @@
         }).observe(login, { attributes: true, attributeFilter: ["class"] });
       }
       var script = document.createElement("script");
-      script.src = "app.js?v=" + APP_BUILD + "-hub4";
+      script.src = "app.js?v=" + APP_BUILD + "-hub5";
       document.body.appendChild(script);
     } catch (e) {
       showBlocker(e.message || "Não foi possível entrar com o usuário do HUB.");

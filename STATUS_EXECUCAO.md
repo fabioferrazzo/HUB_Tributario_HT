@@ -560,3 +560,12 @@ Base: app "Controle de Apuração" v0.11.8 FIX13 do HTSERVER (com SALVARFECHAR01
 - Comparação com o servidor antigo: 8 exportações célula a célula (valores, cores, formatos, comentários, fontes, alinhamento, larguras, alturas, filtros, painéis, mesclagens e página) — todas iguais; envio, download e exclusão de documentos incluídos no roteiro de paridade (58 operações, estado igual).
 - Painel da empresa (checklist, particularidades, observações e janela própria) conferido na tela.
 - Banco: rodar `supabase/patch_apuracao_etapa5.sql` antes de publicar.
+
+### Etapa 6 — Administração (parte 1 concluída: alertas, usuários, auditoria)
+
+- Alertas gerais: criar, editar (público, vigência, pausa, fonte, negrito, grifo) e excluir pela Administração, com as mesmas validações e mensagens do servidor antigo (`apur_alert_save`, `apur_alert_delete`). Roteiro de paridade com 22 operações (inclusive 10 recusas) — igual em todas.
+- Usuários: cadastro, perfil, senha e ativação ficam no HUB (Configurações → Usuários e perfis); na Administração do app ficam a lista com as carteiras e a transferência de carteira (o formulário de novo usuário, a política de ADM, a senha e a exclusão foram ocultados no HUB, com aviso).
+- Auditoria: `apur_audit_list` (últimos 300 registros, somente ADM).
+- Tela: 13 verificações (alerta pela tela, público só da Bia, Davi não vê, editor de usuário só com a carteira, transferência, exclusão, auditoria).
+- Banco: rodar `supabase/patch_apuracao_etapa6.sql`.
+- Parte 2 (a seguir): backup e restauração no HUB e migração da base do HTSERVER.

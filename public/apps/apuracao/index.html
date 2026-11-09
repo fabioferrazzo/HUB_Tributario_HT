@@ -11,7 +11,7 @@
   <meta name="format-detection" content="telephone=no">
   <title>H. Teixeira — Controle Fiscal</title>
   <link rel="icon" href="../../favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub4">
+  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub5">
 </head>
 <body>
   <div id="loginView" class="screen center-screen">
@@ -278,7 +278,7 @@
       <div class="admin-columns">
         <section class="admin-users-section">
           <div class="admin-users-heading">
-            <div><h3>Usuários</h3><p>Crie, edite, desative, transfira carteiras e exclua acessos sem apagar o histórico fiscal.</p></div>
+            <div><h3>Usuários</h3><p>Cadastro, perfil, senha e ativação dos usuários ficam no HUB (Configurações → Usuários e perfis). Aqui você acompanha as carteiras e pode transferi-las.</p></div>
             <label>Exibir<select id="userListFilter"><option value="ACTIVE" selected>Ativos</option><option value="INACTIVE">Inativos</option><option value="DELETED">Excluídos</option><option value="ALL">Todos</option></select></label>
           </div>
           <div id="adminPolicyInfo" class="admin-policy-info"></div>
@@ -376,6 +376,7 @@
     <form id="userEditorForm" class="dialog-form">
       <div class="dialog-head"><div><h2>Editar usuário</h2><p id="userEditorMeta" class="muted"></p></div><button type="button" class="icon-btn" data-close="userEditorDialog">×</button></div>
       <input id="userEditId" type="hidden">
+      <p class="hub-user-note">Nome, login, perfil, senha e ativação deste usuário são alterados no HUB (Configurações → Usuários e perfis). Aqui fica a transferência da carteira.</p>
       <div class="form-grid">
         <label>Nome de exibição<input id="userEditName" maxlength="120" required></label>
         <label>Usuário de login<input id="userEditUsername" maxlength="160" required></label>
@@ -471,7 +472,7 @@
   <div id="toast" class="toast"></div>
   <div class="hub-apuracao-loading">Carregando o Controle de Apuração…</div>
   <div id="hubApuracaoBlocker" class="hub-apuracao-blocker" hidden><div><h2>Controle de Apuração</h2><p></p><button type="button" onclick="location.reload()">Tentar novamente</button></div></div>
-  <script src="hub-apuracao.js?v=0.11.8.13-hub4"></script>
+  <script src="hub-apuracao.js?v=0.11.8.13-hub5"></script>
   <script src="/apps/hub-app-shell.js" defer></script>
 </body>
 </html>
