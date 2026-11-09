@@ -5484,3 +5484,28 @@ a.aviso-card__file:hover {
 .aval-table-tools button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 6px; background: #fff; color: var(--accent); font-size: 12px; font-weight: 700; cursor: pointer; }
 .aval-table-tools button:hover { background: #eef1f6; }
 .aval-table-tools + .aval-table-wrap { padding-top: 8px; }
+
+/* Avaliações: seções minimizáveis e resposta da coordenação ao feedback */
+.aval-sections { align-items: start; }
+.aval-secao-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-height: 28px; }
+.aval-secao-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #1b2a41; text-align: left; cursor: pointer; }
+.aval-secao-toggle h3 { margin: 0; color: #1b2a41; font-size: 14px; }
+.aval-secao-toggle svg { flex: 0 0 auto; color: var(--muted); transition: transform 0.15s ease; }
+.aval-secao.is-minimizada .aval-secao-toggle svg { transform: rotate(-90deg); }
+.aval-secao-toggle:hover h3, .aval-secao-toggle:hover svg { color: var(--accent); }
+.aval-secao-resumo { color: var(--muted); font-size: 12px; }
+.aval-secao-acoes { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.aval-secao-acoes small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.aval-secao-body { display: grid; gap: 10px; }
+.aval-secao--tabela { padding-top: 12px; }
+.aval-secao--tabela > .aval-secao-head { padding: 0 16px; }
+.aval-secao--tabela .aval-secao-body { gap: 0; }
+.aval-secao--tabela .aval-table-wrap { padding-top: 8px; }
+.aval-tool-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--accent); border-radius: 6px; background: #fff; color: var(--accent); font-size: 12px; font-weight: 700; cursor: pointer; }
+.aval-tool-btn:hover { background: #eef1f6; }
+.aval-fb-item { display: grid; gap: 6px; }
+.aval-box label.aval-fb-resposta, .aval-fb-resposta { display: grid; gap: 4px; margin-left: 12px; padding-left: 10px; border-left: 3px solid var(--accent); color: var(--accent); font-size: 12px; font-weight: 700; }
+.aval-fb-resposta textarea { font-size: 13px; }
+.aval-fb-resposta--lida span { color: var(--accent); font-size: 12px; font-weight: 700; }
+.aval-fb-resposta--lida p { margin: 0; color: #2a3b55; font-size: 13px; font-weight: 400; white-space: pre-wrap; }
+.aval-head-actions { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; gap: 8px; }

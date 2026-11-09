@@ -32,7 +32,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(300);
   const notaInputs = page.locator('input[aria-label^="Nota de autoavaliação"]');
   check("7 critérios do modelo", (await notaInputs.count()) === 7);
-  const feedbackLabels = await page.locator(".aval-box").first().locator("label").allInnerTexts();
+  const feedbackLabels = await page.locator(".aval-feedback .aval-fb-item > label").allInnerTexts();
   check("feedback com 4 itens (inclui Sugestões e críticas)", feedbackLabels.length === 4 && /4\) Sugestões e críticas/.test(feedbackLabels[3]), String(feedbackLabels.length));
   await page.getByRole("button", { name: /Salvar e enviar/ }).click();
   await page.waitForTimeout(400);
@@ -41,7 +41,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
     await notaInputs.nth(i).fill(String(notas[i]));
     await page.locator('textarea[aria-label^="Justificativa - "]').nth(i).fill(`Justificativa ${i + 1} com acentuação: está ótimo.`);
   }
-  const fb = page.locator(".aval-box").first().locator("textarea");
+  const fb = page.locator('textarea[aria-label^="Feedback "]');
   await fb.nth(0).fill("Apuração do ICMS");
   await fb.nth(3).fill("Sugiro reuniões quinzenais.");
   await page.getByRole("button", { name: "Salvar rascunho" }).click();
@@ -68,7 +68,9 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(500);
   check("admin vê a avaliação enviada", (await page.locator(".aval-head h2").innerText()).length > 0);
   check("admin vê coluna do coordenador", (await page.locator(".aval-table thead th", { hasText: "Coordenador" }).count()) === 1);
-  check("admin vê o item 4 do feedback", /Sugiro reuniões quinzenais/.test(await page.locator(".aval-box").first().locator("textarea").nth(3).inputValue()));
+  check("admin vê o item 4 do feedback", /Sugiro reuniões quinzenais/.test(await page.locator('textarea[aria-label="Feedback 4"]').inputValue()));
+  check("admin tem campo de resposta para cada item do feedback", (await page.locator('textarea[aria-label^="Resposta da coordenação "]').count()) === 4);
+  await page.locator('textarea[aria-label="Resposta da coordenação 4"]').fill("Ótima sugestão: vamos testar em dezembro.");
   await page.locator('input[aria-label^="Nota de autoavaliação"]').first().fill("8");
   const coordInputs = page.locator('input[aria-label^="Nota do coordenador"]');
   await coordInputs.nth(2).fill("7");
@@ -120,6 +122,18 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(800);
   check("réplica salva", /Réplicas salvas/.test(await notice()));
   check("réplica permanece após recarregar", (await page.locator('textarea[aria-label="Réplica à recomendação 1"]').inputValue()).includes("curso da reforma"));
+  check("colaborador vê a resposta da coordenação ao feedback", /vamos testar em dezembro/.test(await page.locator(".aval-feedback").innerText()));
+  check("colaborador não edita a resposta da coordenação", (await page.locator('textarea[aria-label^="Resposta da coordenação "]').count()) === 0);
+  // seções minimizáveis
+  await page.getByRole("button", { name: "Notas de referência" }).click();
+  check("minimiza uma seção", (await page.locator(".aval-escala").count()) === 0);
+  await page.getByRole("button", { name: "Notas de referência" }).click();
+  check("expande a seção", (await page.locator(".aval-escala").count()) === 1);
+  await page.getByRole("button", { name: "Minimizar tudo" }).click();
+  check("minimizar tudo oculta tabela, feedback e recomendações", (await page.locator(".aval-table").count()) === 0 && (await page.locator(".aval-fb-item").count()) === 0 && (await page.locator(".aval-rec").count()) === 0);
+  check("média geral continua visível", (await page.locator(".aval-media-geral").count()) === 1);
+  await page.getByRole("button", { name: "Expandir tudo" }).click();
+  check("expandir tudo mostra de novo", (await page.locator(".aval-table").count()) === 1 && (await page.locator(".aval-rec").count()) === 2);
   await logout();
 
   // 4) administrador vê a réplica

@@ -229,6 +229,11 @@ function buildDevolvidaHtml(av, coord, appUrl) {
   ).join("");
   const recs = recomendacoes(coord);
   const recHtml = recs.length ? `<ol>${recs.map((r) => `<li>${esc(r.texto)}</li>`).join("")}</ol>` : "<p>—</p>";
+  const respostas = FEEDBACK.filter(([id]) => coord?.feedback_respostas?.[id]?.trim());
+  const respHtml = respostas.length
+    ? `<p><strong>Respostas da coordenação ao seu feedback</strong></p>` +
+      respostas.map(([id, q]) => `<p><strong>${esc(q)}</strong><br>${esc(coord.feedback_respostas[id])}</p>`).join("")
+    : "";
   return (
     `<div style="font-family:Arial,sans-serif;font-size:12pt;color:#1b2a41">${cabecalho("Sua avaliação foi avaliada pela coordenação", av)}` +
     `<table style="border-collapse:collapse;width:100%"><thead><tr>` +
@@ -236,7 +241,7 @@ function buildDevolvidaHtml(av, coord, appUrl) {
     `<tbody>${linhas}</tbody><tfoot><tr><td style="${CELL}"><strong>Média aritmética</strong></td>` +
     `<td style="${CELL};text-align:center"><strong>${fmt(media(auto))}</strong></td><td style="${CELL};text-align:center"><strong>${fmt(media(co))}</strong></td><td style="${CELL}"></td></tr></tfoot></table>` +
     `<p><strong>Média geral: ${fmt(mediaGeral(av, coord))}</strong></p>` +
-    `<p><strong>Recomendações da coordenação</strong></p>${recHtml}` +
+    `<p><strong>Recomendações da coordenação</strong></p>${recHtml}${respHtml}` +
     `<p>No HUB você pode registrar a sua réplica a cada recomendação.</p>${link(appUrl)}</div>`
   );
 }
@@ -246,7 +251,10 @@ function buildDevolvidaText(av, coord, appUrl) {
   const co = coord?.coordenador || {};
   const linhas = CRITERIOS.map(([id, nome], i) => `${i + 1}. ${nome}: autoavaliação ${fmt(auto[id]?.nota)} | coordenador ${fmt(co[id]?.nota)} ${co[id]?.justificativa ? `- ${co[id].justificativa}` : ""}`).join("\n");
   const recs = recomendacoes(coord).map((r, i) => `${i + 1}. ${r.texto}`).join("\n") || "—";
-  return `Sua avaliação foi avaliada pela coordenação\nCompetência: ${av.competencia}\n\n${linhas}\n\nMédia geral: ${fmt(mediaGeral(av, coord))}\n\nRecomendações\n${recs}${appUrl ? `\n\n${appUrl}/#/avaliacoes` : ""}`;
+  const respostas = FEEDBACK.filter(([id]) => coord?.feedback_respostas?.[id]?.trim())
+    .map(([id, q]) => `${q}\n${coord.feedback_respostas[id]}`)
+    .join("\n\n");
+  return `Sua avaliação foi avaliada pela coordenação\nCompetência: ${av.competencia}\n\n${linhas}\n\nMédia geral: ${fmt(mediaGeral(av, coord))}\n\nRecomendações\n${recs}${respostas ? `\n\nRespostas da coordenação ao seu feedback\n${respostas}` : ""}${appUrl ? `\n\n${appUrl}/#/avaliacoes` : ""}`;
 }
 
 function buildReplicaHtml(av, coord, appUrl) {

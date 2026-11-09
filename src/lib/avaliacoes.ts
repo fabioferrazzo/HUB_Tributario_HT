@@ -60,6 +60,7 @@ export type AvaliacaoCoordenacao = {
   coordenador: NotasPorCriterio;
   subcoordenacao: NotasPorCriterio;
   recomendacoes: Recomendacao[];
+  respostasFeedback: Partial<Record<FeedbackId, string>>; // resposta da coordenação a cada item do feedback
   updatedAt?: string;
 };
 
@@ -165,7 +166,7 @@ export function novaAvaliacao(user: HubUser, competencia = competenciaAtual()): 
 const LOCAL_KEY = "hub_avaliacoes";
 const AVALIACAO_COLS =
   "id,user_id,colaborador_nome,competencia,status,autoavaliacao,feedback,replicas,replicas_em,enviada_em,devolvida_em,corrigida_em,updated_at";
-const COORD_COLS = "avaliacao_id,coordenador,subcoordenacao,recomendacoes,recomendacoes_itens,updated_at";
+const COORD_COLS = "avaliacao_id,coordenador,subcoordenacao,recomendacoes,recomendacoes_itens,feedback_respostas,updated_at";
 
 type AvaliacaoRow = {
   id: string;
@@ -189,6 +190,7 @@ type CoordenacaoRow = {
   subcoordenacao: NotasPorCriterio | null;
   recomendacoes: string | null;
   recomendacoes_itens: Recomendacao[] | null;
+  feedback_respostas: Partial<Record<FeedbackId, string>> | null;
   updated_at: string | null;
 };
 
@@ -231,6 +233,7 @@ function mapRow(row: AvaliacaoRow, coord?: CoordenacaoRow): Avaliacao {
           coordenador: coord.coordenador || {},
           subcoordenacao: coord.subcoordenacao || {},
           recomendacoes: itensDeRecomendacoes(coord.recomendacoes_itens, coord.recomendacoes, row.id),
+          respostasFeedback: coord.feedback_respostas || {},
           updatedAt: coord.updated_at || undefined
         }
       : undefined
@@ -349,7 +352,10 @@ export async function salvarReplicas(avaliacao: Avaliacao, replicas: Record<stri
 export async function salvarCoordenacao(avaliacao: Avaliacao, coordenacao: AvaliacaoCoordenacao, status: AvaliacaoStatus, user: HubUser): Promise<Avaliacao> {
   if (!isAvaliador(user)) throw new Error("Somente a coordenação pode avaliar.");
   const recomendacoes = coordenacao.recomendacoes.map((r) => ({ id: r.id, texto: r.texto.trim() })).filter((r) => r.texto);
-  const coordLimpa: AvaliacaoCoordenacao = { ...coordenacao, recomendacoes };
+  const respostasFeedback = Object.fromEntries(
+    Object.entries(coordenacao.respostasFeedback || {}).filter(([, texto]) => typeof texto === "string" && texto.trim())
+  ) as AvaliacaoCoordenacao["respostasFeedback"];
+  const coordLimpa: AvaliacaoCoordenacao = { ...coordenacao, recomendacoes, respostasFeedback };
 
   if (getAvaliacoesSource() === "local") {
     const todas = readLocal();
@@ -386,6 +392,7 @@ export async function salvarCoordenacao(avaliacao: Avaliacao, coordenacao: Avali
         coordenador: coordLimpa.coordenador,
         subcoordenacao: coordLimpa.subcoordenacao,
         recomendacoes_itens: recomendacoes,
+        feedback_respostas: respostasFeedback,
         recomendacoes: recomendacoes.map((r, i) => `${i + 1}. ${r.texto}`).join("\n"),
         updated_at: new Date().toISOString()
       },

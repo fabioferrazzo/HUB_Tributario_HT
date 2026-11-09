@@ -1,5 +1,23 @@
-import { Award, ExternalLink, FilePlus2, LayoutDashboard, ListChecks, MessageSquareReply, Plus, Printer, RotateCcw, Save, Send, Trash2, Undo2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Award,
+  ChevronDown,
+  ExternalLink,
+  FilePlus2,
+  LayoutDashboard,
+  ListChecks,
+  Maximize2,
+  MessageSquareReply,
+  Minimize2,
+  Plus,
+  Printer,
+  RotateCcw,
+  Save,
+  Send,
+  Trash2,
+  Undo2,
+  X
+} from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { HubUser } from "../types";
 import { PanelHeader, StatusPill } from "../components/common";
 import { confirmDeletion, getErrorMessage } from "../lib/formatters";
@@ -39,7 +57,60 @@ import {
 
 const APP_ANTIGO_URL = "https://script.google.com/macros/s/AKfycbyuiPXfkDNl_n-TKTRw3EQ8Dexk7Mq6vodTDQmxf8LRhJ9lJJw_j6h4M-tcsPc7iwsR/exec";
 
-const coordVazia = (): AvaliacaoCoordenacao => ({ coordenador: {}, subcoordenacao: {}, recomendacoes: [] });
+const coordVazia = (): AvaliacaoCoordenacao => ({ coordenador: {}, subcoordenacao: {}, recomendacoes: [], respostasFeedback: {} });
+
+// Seções que podem ser minimizadas (a escolha fica guardada neste navegador).
+const SECOES = ["notas", "feedback", "escala", "recomendacoes"] as const;
+const MIN_KEY = "hub_aval_secoes_minimizadas";
+
+function lerMinimizadas(): Record<string, boolean> {
+  try {
+    const valor = JSON.parse(window.localStorage.getItem(MIN_KEY) || "{}");
+    return valor && typeof valor === "object" ? valor : {};
+  } catch {
+    return {};
+  }
+}
+
+function gravarMinimizadas(valor: Record<string, boolean>) {
+  try {
+    window.localStorage.setItem(MIN_KEY, JSON.stringify(valor));
+  } catch {
+    // sem armazenamento local: vale só nesta sessão
+  }
+}
+
+function Secao({
+  titulo,
+  resumo,
+  aberta,
+  onAlternar,
+  acoes,
+  className = "",
+  children
+}: {
+  titulo: string;
+  resumo?: string;
+  aberta: boolean;
+  onAlternar: () => void;
+  acoes?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`aval-secao ${className} ${aberta ? "" : "is-minimizada"}`}>
+      <header className="aval-secao-head">
+        <button aria-expanded={aberta} className="aval-secao-toggle" type="button" onClick={onAlternar} title={aberta ? "Minimizar" : "Expandir"}>
+          <ChevronDown size={16} strokeWidth={1.6} />
+          <h3>{titulo}</h3>
+        </button>
+        {!aberta && resumo ? <small className="aval-secao-resumo">{resumo}</small> : null}
+        {aberta && acoes ? <div className="aval-secao-acoes">{acoes}</div> : null}
+      </header>
+      {aberta ? <div className="aval-secao-body">{children}</div> : null}
+    </section>
+  );
+}
 
 function temNotas(notas: NotasPorCriterio | undefined) {
   return AVALIACAO_CRITERIOS.some((c) => typeof notas?.[c.id]?.nota === "number" || Boolean(notas?.[c.id]?.justificativa?.trim()));
@@ -64,6 +135,22 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
   const [coord, setCoord] = useState<AvaliacaoCoordenacao>(coordVazia());
   const [filtroCompetencia, setFiltroCompetencia] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<"" | AvaliacaoStatus>("");
+  const [minimizadas, setMinimizadas] = useState<Record<string, boolean>>(lerMinimizadas);
+  const todasMinimizadas = SECOES.every((id) => minimizadas[id]);
+
+  function alternarSecao(id: (typeof SECOES)[number]) {
+    setMinimizadas((atual) => {
+      const proximo = { ...atual, [id]: !atual[id] };
+      gravarMinimizadas(proximo);
+      return proximo;
+    });
+  }
+
+  function alternarTodas() {
+    const proximo = Object.fromEntries(SECOES.map((id) => [id, !todasMinimizadas]));
+    gravarMinimizadas(proximo);
+    setMinimizadas(proximo);
+  }
 
   async function carregar(selecionarId?: string) {
     setLoading(true);
@@ -86,6 +173,7 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
   function abrir(avaliacao: Avaliacao | null) {
     setDraft(avaliacao ? structuredClone(avaliacao) : null);
     const base = avaliacao?.coordenacao ? structuredClone(avaliacao.coordenacao) : coordVazia();
+    base.respostasFeedback = base.respostasFeedback || {};
     // A coordenação começa com cinco campos de recomendação em branco (pode incluir ou excluir).
     if (admin && !base.recomendacoes.length) base.recomendacoes = Array.from({ length: RECOMENDACOES_PADRAO }, () => novaRecomendacao());
     setCoord(base);
@@ -142,6 +230,10 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
   function setFeedback(id: FeedbackId, valor: string) {
     if (!draft) return;
     setDraft({ ...draft, feedback: { ...draft.feedback, [id]: valor } });
+  }
+
+  function setRespostaFeedback(id: FeedbackId, texto: string) {
+    setCoord({ ...coord, respostasFeedback: { ...coord.respostasFeedback, [id]: texto } });
   }
 
   function setRecomendacao(id: string, texto: string) {
@@ -409,6 +501,10 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
                 </div>
               </div>
               <div className="aval-head-actions">
+                <button type="button" onClick={alternarTodas} title={todasMinimizadas ? "Expandir todas as seções" : "Minimizar todas as seções"}>
+                  {todasMinimizadas ? <Maximize2 size={15} strokeWidth={1.6} /> : <Minimize2 size={15} strokeWidth={1.6} />}
+                  {todasMinimizadas ? "Expandir tudo" : "Minimizar tudo"}
+                </button>
                 <button type="button" onClick={imprimir} title="Imprimir ou salvar em PDF">
                   <Printer size={15} strokeWidth={1.6} />
                   Imprimir / PDF
@@ -422,15 +518,21 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
               <div className="module-notice">Avaliação enviada. A coordenação vai avaliar e devolver; até lá ela fica bloqueada para edição.</div>
             ) : null}
 
-            {admin ? (
-              <div className="aval-table-tools">
-                <button type="button" onClick={preencherCoordCom10} title="Lança 10 em todos os critérios na coluna do coordenador; depois reduza só as notas necessárias.">
-                  <ListChecks size={15} strokeWidth={1.6} />
-                  Preencher notas do coordenador com 10
-                </button>
-              </div>
-            ) : null}
-
+            <Secao
+              aberta={!minimizadas.notas}
+              className="aval-secao--tabela"
+              onAlternar={() => alternarSecao("notas")}
+              resumo={`Autoavaliação ${formatNota(mediaAuto)}${mostraCoord ? ` · Coordenador ${formatNota(mediaCoord)}` : ""}`}
+              titulo="Notas por critério"
+              acoes={
+                admin ? (
+                  <button className="aval-tool-btn" type="button" onClick={preencherCoordCom10} title="Lança 10 em todos os critérios na coluna do coordenador; depois reduza só as notas necessárias.">
+                    <ListChecks size={15} strokeWidth={1.6} />
+                    Preencher notas do coordenador com 10
+                  </button>
+                ) : null
+              }
+            >
             <div className="aval-table-wrap">
               <table className="aval-table">
                 <thead>
@@ -559,6 +661,7 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
               </table>
             </div>
             {admin && !mostraSub ? <p className="aval-hint">A coluna Subcoordenação aparecerá quando houver usuário autorizado a preenchê-la.</p> : null}
+            </Secao>
 
             {mostraCoord ? (
               <div className="aval-media-geral" aria-label="Média geral">
@@ -576,31 +679,60 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
             ) : null}
 
             <div className="aval-sections">
-              <section className="aval-box">
-                <h3>Feedback do colaborador</h3>
-                {AVALIACAO_FEEDBACK.map((f, i) => (
-                  <label key={f.id}>
-                    {i + 1}) {f.pergunta}
-                    {podeEditarAuto ? (
-                      <textarea rows={2} value={draft.feedback[f.id] || ""} onChange={(e) => setFeedback(f.id, e.target.value)} />
-                    ) : (
-                      <p>{draft.feedback[f.id] || "—"}</p>
-                    )}
-                  </label>
-                ))}
-              </section>
-              <section className="aval-box">
-                <h3>Notas de referência</h3>
+              <Secao
+                aberta={!minimizadas.feedback}
+                className="aval-box aval-feedback"
+                onAlternar={() => alternarSecao("feedback")}
+                resumo={`${AVALIACAO_FEEDBACK.filter((f) => draft.feedback[f.id]?.trim()).length} de ${AVALIACAO_FEEDBACK.length} respondidos`}
+                titulo="Feedback do colaborador"
+              >
+                {AVALIACAO_FEEDBACK.map((f, i) => {
+                  const resposta = coord.respostasFeedback?.[f.id] || "";
+                  return (
+                    <div className="aval-fb-item" key={f.id}>
+                      <label>
+                        {i + 1}) {f.pergunta}
+                        {podeEditarAuto ? (
+                          <textarea aria-label={`Feedback ${i + 1}`} rows={2} value={draft.feedback[f.id] || ""} onChange={(e) => setFeedback(f.id, e.target.value)} />
+                        ) : (
+                          <p>{draft.feedback[f.id] || "—"}</p>
+                        )}
+                      </label>
+                      {mostraCoord && admin ? (
+                        <label className="aval-fb-resposta">
+                          Resposta da coordenação
+                          <textarea
+                            aria-label={`Resposta da coordenação ${i + 1}`}
+                            rows={2}
+                            value={resposta}
+                            onChange={(e) => setRespostaFeedback(f.id, e.target.value)}
+                            placeholder="Opcional: resposta ao colaborador sobre este item."
+                          />
+                        </label>
+                      ) : mostraCoord && resposta.trim() ? (
+                        <div className="aval-fb-resposta aval-fb-resposta--lida">
+                          <span>Resposta da coordenação</span>
+                          <p>{resposta}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </Secao>
+              <Secao aberta={!minimizadas.escala} className="aval-box" onAlternar={() => alternarSecao("escala")} resumo="Péssimo a Excelente" titulo="Notas de referência">
                 <EscalaReferencia />
-              </section>
+              </Secao>
             </div>
 
             {mostraCoord ? (
-              <section className="aval-box aval-recomendacoes">
-                <div className="aval-box-head">
-                  <h3>Recomendações da coordenação</h3>
-                  {podeReplicar ? <small>Responda a cada recomendação com a sua justificativa ou a conclusão definida.</small> : null}
-                </div>
+              <Secao
+                aberta={!minimizadas.recomendacoes}
+                className="aval-box aval-recomendacoes"
+                onAlternar={() => alternarSecao("recomendacoes")}
+                resumo={`${recomendacoesVisiveis.filter((r) => r.texto.trim()).length} recomendação(ões) · ${recomendacoesVisiveis.filter((r) => draft.replicas[r.id]?.trim()).length} réplica(s)`}
+                titulo="Recomendações da coordenação"
+                acoes={podeReplicar ? <small>Responda a cada recomendação com a sua justificativa ou a conclusão definida.</small> : null}
+              >
                 {recomendacoesVisiveis.length ? (
                   <ol className="aval-rec-list">
                     {recomendacoesVisiveis.map((r, i) => {
@@ -651,7 +783,7 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
                   </button>
                 ) : null}
                 {draft.replicasEm ? <small className="aval-hint-inline">Réplicas atualizadas em {new Date(draft.replicasEm).toLocaleString("pt-BR")}.</small> : null}
-              </section>
+              </Secao>
             ) : null}
 
             <footer className="aval-actions">
@@ -861,7 +993,10 @@ function montarImpressao(av: Avaliacao, coord: AvaliacaoCoordenacao | null) {
   const geralHtml = coord
     ? `<p class="geral"><strong>Média geral:</strong> ${e(formatNota(geral))}${geral !== null ? ` (${e(faixaDaNota(geral))})` : ""} — média das médias da autoavaliação, do coordenador${sub ? " e da subcoordenação" : ""}.</p>`
     : "";
-  const feedback = AVALIACAO_FEEDBACK.map((f, i) => `<p><strong>${i + 1}) ${e(f.pergunta)}</strong><br>${e(av.feedback[f.id] || "—")}</p>`).join("");
+  const feedback = AVALIACAO_FEEDBACK.map((f, i) => {
+    const resposta = coord?.respostasFeedback?.[f.id]?.trim();
+    return `<p><strong>${i + 1}) ${e(f.pergunta)}</strong><br>${e(av.feedback[f.id] || "—")}</p>${resposta ? `<p class="rep"><strong>Resposta da coordenação:</strong> ${e(resposta)}</p>` : ""}`;
+  }).join("");
   const recs = (coord?.recomendacoes || []).filter((r) => r.texto.trim());
   const recomendacoes = coord
     ? `<h2>Recomendações da coordenação</h2>${
