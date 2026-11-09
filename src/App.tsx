@@ -1,5 +1,6 @@
 import { AdminModule } from "./modules/AdminModule";
 import { ArquivosModule } from "./modules/ArquivosModule";
+import { AvaliacoesModule } from "./modules/AvaliacoesModule";
 import { Dashboard } from "./modules/Dashboard";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
 import { LembretesModule } from "./modules/LembretesModule";
@@ -417,6 +418,7 @@ function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onN
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
   if (route === "arquivos") return <ArquivosModule user={user} />;
   if (route === "links") return <LinksModule user={user} />;
+  if (route === "avaliacoes") return <AvaliacoesModule user={user} />;
   if (route === "admin") return <AdminModule currentUser={user} />;
   const app = findAppByRoute(route);
   if (app && canUserSeeApp(app, user.role)) return <ModuleFrame app={app} key={app.id} />;

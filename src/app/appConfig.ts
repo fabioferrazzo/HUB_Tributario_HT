@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, FileArchive, Home, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
+import { Award, Bell, CalendarDays, FileArchive, Home, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
 import type { FileResourceCategory, HubRoute, UserRole } from "../types";
 import { getAppRoute, hubApps, type HubAppGroup } from "./appsRegistry";
 import type { HomologationBlock, HomologationStatus } from "./appTypes";
@@ -157,6 +157,7 @@ const nativeRoutes: Array<{ id: HubRoute; label: string; icon: typeof Home }> = 
   { id: "lembretes", label: "Lembretes", icon: Bell },
   { id: "arquivos", label: "Arquivos", icon: FileArchive },
   { id: "links", label: "Links úteis", icon: Link2 },
+  { id: "avaliacoes", label: "Avaliações", icon: Award },
   { id: "admin", label: "Configurações", icon: Settings }
 ];
 
@@ -170,7 +171,7 @@ const appRoutesOf = (group: HubAppGroup) => hubApps.filter((app) => app.group ==
 export const routeGroups: Array<{ label: string; items: HubRoute[] }> = [
   { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
   { label: "Ferramentas", items: ["tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
-  { label: "Escritório", items: appRoutesOf("Escritório") },
+  { label: "Escritório", items: ["avaliacoes", ...appRoutesOf("Escritório")] },
   { label: "Sistema", items: [...appRoutesOf("Sistema"), "admin"] }
 ];
 

@@ -237,4 +237,5 @@ export type HubRoute =
   | "links"
   | "coord"
   | "admin"
+  | "avaliacoes"
   | `app:${string}`;

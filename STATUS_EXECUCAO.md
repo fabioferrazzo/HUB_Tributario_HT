@@ -477,3 +477,21 @@ Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em nav
 - Trocar a chave `service_role` (Supabase e Netlify), por causa da cópia no backup.
 - Conferir em 07/11/2026 as rotinas agendadas no Node 22 (Agenda 06h15, fila de e-mails 09h, notícias).
 - OCR em versão futura.
+
+## Atualização 09/11/2026 — telas do HUB e Avaliações
+
+- Todas as telas e apps abrem dentro do HUB, com botões **Tela cheia** e **Abrir em nova janela** (`?janela=1#/rota`). Os apps ficam cadastrados em `src/app/appsRegistry.ts` (modo `embutido` ou `janela`).
+- Acesso: todos os menus para todos os usuários; Configurações (administrador) e Coordenação (gestores) continuam restritos. A edição é controlada por permissões em cada módulo.
+- Rotinas agendadas conferidas em 09/11/2026: Agenda às 06h15 rodou normalmente.
+- **Avaliações** (menu Escritório, `src/modules/AvaliacoesModule.tsx`):
+  - colaborador preenche competência, notas de 0 a 10 e justificativas dos 7 critérios e o feedback; salva rascunho ou envia à coordenação (trava após o envio e avisa os administradores por e-mail e notificação — Function `avaliacao-email`);
+  - administrador vê todas, filtra por competência e situação, corrige a autoavaliação, lança notas e justificativas do coordenador e recomendações, e devolve ou reabre ao colaborador;
+  - as notas da coordenação só ficam visíveis ao colaborador depois da devolução (tabela separada `avaliacoes_coordenacao`, protegida por RLS);
+  - mostra média aritmética, faixa (Péssimo a Excelente) e notas de referência; imprime ou gera PDF pelo navegador;
+  - coluna Subcoordenação preparada para um usuário com permissão específica (versão futura);
+  - o app anterior (Apps Script) continua disponível pelo link "App anterior".
+- Banco: rodar `supabase/patch_avaliacoes.sql` no SQL Editor (pode rodar mais de uma vez).
+
+### Próximas etapas
+
+- Reconstruir dentro do HUB, um por vez: Controle de Apuração, Controle de Férias e Onboarding (dados no Supabase agora; base migra para o servidor no fim do projeto).

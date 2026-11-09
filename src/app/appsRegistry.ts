@@ -136,17 +136,6 @@ export const hubApps: HubApp[] = [
     description: "Abre em janela própria (o site não permite ser exibido dentro de outro). Funciona de qualquer lugar, com o login do próprio app."
   },
   {
-    id: "avaliacoes",
-    label: "Avaliações",
-    title: "Avaliações",
-    icon: Award,
-    group: "Escritório",
-    access: "todos",
-    src: "https://script.google.com/macros/s/AKfycbyuiPXfkDNl_n-TKTRw3EQ8Dexk7Mq6vodTDQmxf8LRhJ9lJJw_j6h4M-tcsPc7iwsR/exec",
-    mode: "janela",
-    description: "Abre em janela própria (Google Apps Script), com a conta Google do usuário."
-  },
-  {
     id: "informativos",
     label: "Informativos",
     title: "Informativos",
