@@ -87,7 +87,8 @@ export default async function handler(request) {
       subject = `Sua avaliação ${avaliacao.competencia} foi avaliada pela coordenação`;
       html = buildDevolvidaHtml(avaliacao, coordenacao, appUrl);
       text = buildDevolvidaText(avaliacao, coordenacao, appUrl);
-      dedupe = `avaliacao-devolvida:${avaliacao.id}:${avaliacao.devolvida_em || ""}`;
+      // A cada "Salvar e devolver" (updated_at muda) sai um novo aviso, inclusive após correções.
+      dedupe = `avaliacao-devolvida:${avaliacao.id}:${avaliacao.updated_at || avaliacao.devolvida_em || ""}`;
       aviso = { titulo: `Avaliação ${avaliacao.competencia} avaliada pela coordenação`, body: "Abra o HUB em Avaliações para ver as notas, a média geral e as recomendações." };
       okMessage = "O colaborador recebeu o aviso por e-mail.";
     } else {

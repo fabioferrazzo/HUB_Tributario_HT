@@ -1,4 +1,4 @@
-import { Award, ExternalLink, FilePlus2, MessageSquareReply, Plus, Printer, RotateCcw, Save, Send, Trash2, Undo2, X } from "lucide-react";
+import { Award, ExternalLink, FilePlus2, LayoutDashboard, MessageSquareReply, Plus, Printer, RotateCcw, Save, Send, Trash2, Undo2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { HubUser } from "../types";
 import { PanelHeader, StatusPill } from "../components/common";
@@ -193,14 +193,15 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
     }
   }
 
-  async function salvarAdmin(status: AvaliacaoStatus, mensagem: string, confirmar?: string) {
+  async function salvarAdmin(status: AvaliacaoStatus, mensagem: string, confirmar?: string, avisar = false) {
     if (!draft) return;
     if (confirmar && !window.confirm(confirmar)) return;
     setSaving(true);
     setError("");
     setNotice("");
     try {
-      const devolvendo = status === "devolvida" && draft.status !== "devolvida";
+      // "Salvar e devolver" sempre avisa o colaborador (inclusive ao devolver de novo após correções).
+      const devolvendo = avisar && status === "devolvida";
       const salvo = await salvarCoordenacao(draft, coord, status, user);
       let texto = mensagem;
       if (devolvendo) texto += await avisarPorEmail(salvo, "devolvida", "O colaborador verá a devolutiva no HUB.");
@@ -278,6 +279,20 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
             Nova autoavaliação
           </button>
           {admin ? (
+            <button
+              className={`aval-painel-btn ${!draft ? "active" : ""}`}
+              type="button"
+              onClick={() => {
+                setNotice("");
+                abrir(null);
+              }}
+              title="Painel da coordenação: avaliações aguardando análise, devolvidas e com réplica"
+            >
+              <LayoutDashboard size={15} strokeWidth={1.6} />
+              Painel
+            </button>
+          ) : null}
+          {admin ? (
             <a className="aval-old-app" href={APP_ANTIGO_URL} rel="noreferrer" target="_blank" title="Abrir o app de avaliações anterior (Google)">
               <ExternalLink size={14} strokeWidth={1.6} />
               App anterior
@@ -333,7 +348,16 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
       </section>
 
       <section className="panel aval-main-panel">
-        {!draft ? (
+        {!draft && admin ? (
+          <PainelCoordenacao
+            competencia={filtroCompetencia}
+            itens={items.filter((a) => !filtroCompetencia || a.competencia === filtroCompetencia)}
+            onAbrir={(a) => {
+              setNotice("");
+              abrir(a);
+            }}
+          />
+        ) : !draft ? (
           <div className="aval-empty">
             <Award size={30} strokeWidth={1.4} />
             <h3>{AVALIACAO_TITULO}</h3>
@@ -661,7 +685,8 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
                           void salvarAdmin(
                             "devolvida",
                             "Avaliação devolvida: o colaborador já pode ver as notas e as correções.",
-                            "Devolver a avaliação ao colaborador?\nEle passará a ver as notas, as justificativas e as recomendações da coordenação, e receberá um aviso."
+                            "Devolver a avaliação ao colaborador?\nEle passará a ver as notas, as justificativas e as recomendações da coordenação, e receberá um aviso por e-mail e no HUB.",
+                            true
                           )
                         }
                       >
@@ -690,6 +715,96 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+function temReplica(a: Avaliacao) {
+  return Object.values(a.replicas || {}).some((t) => t?.trim());
+}
+
+function dataCurta(valor?: string) {
+  return valor ? new Date(valor).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+}
+
+// Painel da coordenação: situação das avaliações (aguardando análise, devolvidas, com réplica, em preenchimento).
+function PainelCoordenacao({ itens, competencia, onAbrir }: { itens: Avaliacao[]; competencia: string; onAbrir: (a: Avaliacao) => void }) {
+  const porData = (campo: (a: Avaliacao) => string | undefined, crescente = false) => (a: Avaliacao, b: Avaliacao) => {
+    const x = campo(a) || "";
+    const y = campo(b) || "";
+    return crescente ? x.localeCompare(y) : y.localeCompare(x);
+  };
+  const colunas = [
+    {
+      id: "enviada",
+      titulo: "Aguardando análise",
+      descricao: "Enviadas pelo colaborador para a coordenação avaliar.",
+      itens: itens.filter((a) => a.status === "enviada").sort(porData((a) => a.enviadaEm, true)),
+      data: (a: Avaliacao) => (a.enviadaEm ? `Enviada em ${dataCurta(a.enviadaEm)}` : "")
+    },
+    {
+      id: "devolvida",
+      titulo: "Avaliadas e devolvidas",
+      descricao: "Devolvidas ao colaborador, ainda sem réplica.",
+      itens: itens.filter((a) => a.status === "devolvida" && !temReplica(a)).sort(porData((a) => a.devolvidaEm)),
+      data: (a: Avaliacao) => (a.devolvidaEm ? `Devolvida em ${dataCurta(a.devolvidaEm)}` : "")
+    },
+    {
+      id: "replica",
+      titulo: "Com réplica do colaborador",
+      descricao: "O colaborador respondeu às recomendações.",
+      itens: itens.filter((a) => a.status === "devolvida" && temReplica(a)).sort(porData((a) => a.replicasEm)),
+      data: (a: Avaliacao) => (a.replicasEm ? `Réplica em ${dataCurta(a.replicasEm)}` : "")
+    },
+    {
+      id: "rascunho",
+      titulo: "Em preenchimento",
+      descricao: "Salvas pelo colaborador como rascunho, ainda não enviadas.",
+      itens: itens.filter((a) => a.status === "rascunho").sort(porData((a) => a.updatedAt)),
+      data: (a: Avaliacao) => (a.updatedAt ? `Atualizada em ${dataCurta(a.updatedAt)}` : "")
+    }
+  ];
+
+  return (
+    <div className="aval-painel">
+      <header className="aval-painel-head">
+        <div>
+          <span className="aval-kicker">{AVALIACAO_TITULO}</span>
+          <h2>Painel da coordenação</h2>
+          <small>{competencia ? `Competência ${competencia}` : "Todas as competências"} · use o filtro à esquerda para escolher a competência.</small>
+        </div>
+      </header>
+      <div className="aval-painel-colunas">
+        {colunas.map((c) => (
+          <section className={`aval-painel-col aval-painel-col--${c.id}`} key={c.id} aria-label={c.titulo}>
+            <h3>
+              {c.titulo}
+              <em>{c.itens.length}</em>
+            </h3>
+            <p>{c.descricao}</p>
+            <div className="aval-painel-lista">
+              {c.itens.map((a) => {
+                const geral = mediaGeralDaAvaliacao(a);
+                return (
+                  <button className="aval-painel-item" key={a.id} type="button" onClick={() => onAbrir(a)}>
+                    <strong>{a.colaboradorNome}</strong>
+                    <span>
+                      Competência {a.competencia}
+                      {c.data(a) ? ` · ${c.data(a)}` : ""}
+                    </span>
+                    <small>
+                      Autoavaliação {formatNota(mediaNotas(a.autoavaliacao))}
+                      {a.coordenacao && mediaNotas(a.coordenacao.coordenador) !== null ? ` · Coordenador ${formatNota(mediaNotas(a.coordenacao.coordenador))}` : ""}
+                      {geral !== null ? ` · Geral ${formatNota(geral)}` : ""}
+                    </small>
+                  </button>
+                );
+              })}
+              {!c.itens.length ? <div className="aval-painel-vazio">Nenhuma.</div> : null}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

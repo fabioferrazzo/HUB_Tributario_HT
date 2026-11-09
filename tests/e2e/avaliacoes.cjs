@@ -61,7 +61,10 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
   // 2) administrador corrige, avalia, registra recomendações e devolve
   await login("");
-  await page.locator(".aval-item").first().click();
+  const col = (id) => page.locator(`.aval-painel-col--${id}`);
+  check("admin abre no painel da coordenação", (await page.locator(".aval-painel").count()) === 1);
+  check("painel: aguardando análise", (await col("enviada").locator(".aval-painel-item").count()) === 1 && (await col("devolvida").locator(".aval-painel-item").count()) === 0);
+  await col("enviada").locator(".aval-painel-item").first().click();
   await page.waitForTimeout(500);
   check("admin vê a avaliação enviada", (await page.locator(".aval-head h2").innerText()).length > 0);
   check("admin vê coluna do coordenador", (await page.locator(".aval-table thead th", { hasText: "Coordenador" }).count()) === 1);
@@ -85,6 +88,9 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(800);
   check("devolvida ao colaborador", /devolvida/i.test(await notice()));
   check("após salvar, só as recomendações preenchidas ficam", (await page.locator('textarea[aria-label^="Recomendação "]').count()) === 2);
+  await page.getByRole("button", { name: "Painel", exact: true }).click();
+  await page.waitForTimeout(300);
+  check("painel: avaliada e devolvida", (await col("devolvida").locator(".aval-painel-item").count()) === 1 && (await col("enviada").locator(".aval-painel-item").count()) === 0);
   await logout();
 
   // 3) colaborador vê a devolutiva, a média geral e responde às recomendações
@@ -112,6 +118,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
   // 4) administrador vê a réplica
   await login("");
+  check("painel: com réplica do colaborador", (await col("replica").locator(".aval-painel-item").count()) === 1 && (await col("devolvida").locator(".aval-painel-item").count()) === 0);
   const item = page.locator(".aval-item").first();
   check("lista indica réplica", /com réplica/.test(await item.innerText()));
   await item.click();

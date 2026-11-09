@@ -504,3 +504,5 @@ Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em nav
 - Réplica do colaborador a cada recomendação depois da devolução ("Salvar réplicas" ou "Salvar e avisar a coordenação"); o banco só permite ao colaborador alterar as réplicas de uma avaliação devolvida.
 - Avisos (e-mail e sino): envio do colaborador → administradores; devolução → colaborador; réplica → administradores. A autoavaliação do próprio administrador não dispara o aviso de envio.
 - Banco: rodar `supabase/patch_avaliacoes_v2.sql` (depois de `patch_avaliacoes.sql`; pode rodar mais de uma vez) antes de publicar esta versão.
+- Painel da coordenação (administrador): ao abrir Avaliações, quatro colunas — Aguardando análise, Avaliadas e devolvidas, Com réplica do colaborador e Em preenchimento —, com filtro por competência; botão "Painel" volta a ele.
+- "Salvar e devolver ao colaborador" sempre envia o aviso (e-mail e sino), inclusive ao devolver de novo uma avaliação já devolvida.
