@@ -71,7 +71,13 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("admin vê o item 4 do feedback", /Sugiro reuniões quinzenais/.test(await page.locator(".aval-box").first().locator("textarea").nth(3).inputValue()));
   await page.locator('input[aria-label^="Nota de autoavaliação"]').first().fill("8");
   const coordInputs = page.locator('input[aria-label^="Nota do coordenador"]');
-  for (let i = 0; i < 7; i++) await coordInputs.nth(i).fill("10");
+  await coordInputs.nth(2).fill("7");
+  await page.getByRole("button", { name: "Preencher notas do coordenador com 10" }).click();
+  await page.waitForTimeout(200);
+  const valoresCoord = [];
+  for (let i = 0; i < 7; i++) valoresCoord.push(await coordInputs.nth(i).inputValue());
+  check("botão preenche as 7 notas do coordenador com 10", valoresCoord.every((v) => v === "10"), valoresCoord.join(","));
+  check("autoavaliação não é alterada pelo botão", (await page.locator('input[aria-label^="Nota de autoavaliação"]').nth(2).inputValue()) === "10");
   await page.locator('textarea[aria-label^="Justificativa do coordenador"]').first().fill("Ótima produção.");
   const geralAdmin = await page.locator(".aval-media-geral strong").innerText();
   check("média geral = média das médias (8,71 e 10)", geralAdmin.trim() === "9,36", geralAdmin);

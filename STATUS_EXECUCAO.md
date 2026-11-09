@@ -506,3 +506,4 @@ Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em nav
 - Banco: rodar `supabase/patch_avaliacoes_v2.sql` (depois de `patch_avaliacoes.sql`; pode rodar mais de uma vez) antes de publicar esta versão.
 - Painel da coordenação (administrador): ao abrir Avaliações, quatro colunas — Aguardando análise, Avaliadas e devolvidas, Com réplica do colaborador e Em preenchimento —, com filtro por competência; botão "Painel" volta a ele.
 - "Salvar e devolver ao colaborador" sempre envia o aviso (e-mail e sino), inclusive ao devolver de novo uma avaliação já devolvida.
+- Botão "Preencher notas do coordenador com 10" (administrador), acima da tabela: lança 10 nos 7 critérios da coluna do coordenador, mantendo as justificativas; depois basta reduzir as notas necessárias e salvar.

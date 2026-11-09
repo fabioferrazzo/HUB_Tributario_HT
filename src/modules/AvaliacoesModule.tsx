@@ -1,4 +1,4 @@
-import { Award, ExternalLink, FilePlus2, LayoutDashboard, MessageSquareReply, Plus, Printer, RotateCcw, Save, Send, Trash2, Undo2, X } from "lucide-react";
+import { Award, ExternalLink, FilePlus2, LayoutDashboard, ListChecks, MessageSquareReply, Plus, Printer, RotateCcw, Save, Send, Trash2, Undo2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { HubUser } from "../types";
 import { PanelHeader, StatusPill } from "../components/common";
@@ -124,6 +124,19 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
     const atual = coord.coordenador[id] || { nota: null, justificativa: "" };
     const proximo = campo === "nota" ? { ...atual, nota: lerNota(valor) } : { ...atual, justificativa: valor };
     setCoord({ ...coord, coordenador: { ...coord.coordenador, [id]: proximo } });
+  }
+
+  // Atalho da coordenação: lança 10 em todos os critérios (mantém as justificativas já escritas).
+  function preencherCoordCom10() {
+    const jaLancadas = AVALIACAO_CRITERIOS.some((c) => {
+      const nota = coord.coordenador[c.id]?.nota;
+      return typeof nota === "number" && nota !== 10;
+    });
+    if (jaLancadas && !window.confirm("Substituir as notas do coordenador já lançadas por 10 em todos os critérios?\nAs justificativas serão mantidas.")) return;
+    const coordenador = { ...coord.coordenador };
+    for (const c of AVALIACAO_CRITERIOS) coordenador[c.id] = { nota: 10, justificativa: coordenador[c.id]?.justificativa || "" };
+    setCoord({ ...coord, coordenador });
+    setNotice("Notas do coordenador preenchidas com 10. Ajuste as que precisar e salve.");
   }
 
   function setFeedback(id: FeedbackId, valor: string) {
@@ -407,6 +420,15 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
             {notice ? <div className="module-notice">{notice}</div> : null}
             {!admin && draft.status === "enviada" ? (
               <div className="module-notice">Avaliação enviada. A coordenação vai avaliar e devolver; até lá ela fica bloqueada para edição.</div>
+            ) : null}
+
+            {admin ? (
+              <div className="aval-table-tools">
+                <button type="button" onClick={preencherCoordCom10} title="Lança 10 em todos os critérios na coluna do coordenador; depois reduza só as notas necessárias.">
+                  <ListChecks size={15} strokeWidth={1.6} />
+                  Preencher notas do coordenador com 10
+                </button>
+              </div>
             ) : null}
 
             <div className="aval-table-wrap">
