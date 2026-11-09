@@ -1,5 +1,6 @@
 // Avaliação por desempenho (modelo "AVALIAÇÃO POR DESEMPENHO - Depto de Gestão e Planejamento Tributário").
-// Autoavaliação do colaborador + notas do coordenador (e, no futuro, da subcoordenação) e recomendações.
+// Autoavaliação do colaborador + notas do coordenador (e, no futuro, da subcoordenação), recomendações
+// em itens e réplica do colaborador a cada recomendação depois da devolução.
 import type { HubUser } from "../types";
 import { getSupabaseAccessToken } from "./auth";
 import { readStorage, writeStorage } from "./storage";
@@ -30,10 +31,14 @@ export type CriterioId = (typeof AVALIACAO_CRITERIOS)[number]["id"];
 export const AVALIACAO_FEEDBACK = [
   { id: "gosta", pergunta: "Dentre as atividades que você realiza hoje, o que você mais gosta?" },
   { id: "naoGosta", pergunta: "O que você não gosta e gostaria de deixar de fazer?" },
-  { id: "gostaria", pergunta: "Qual atividade você não faz, mas gostaria de realizar, tendo em vista o seu perfil pessoal e profissional?" }
+  { id: "gostaria", pergunta: "Qual atividade você não faz, mas gostaria de realizar, tendo em vista o seu perfil pessoal e profissional?" },
+  { id: "sugestoes", pergunta: "Sugestões e críticas" }
 ] as const;
 
 export type FeedbackId = (typeof AVALIACAO_FEEDBACK)[number]["id"];
+
+// Quantidade de campos de recomendação oferecidos ao abrir uma avaliação sem recomendações.
+export const RECOMENDACOES_PADRAO = 5;
 
 // Notas de referência: a faixa vale a partir do valor indicado ("acima de").
 export const AVALIACAO_ESCALA = [
@@ -48,11 +53,13 @@ export const AVALIACAO_ESCALA = [
 export type NotaJustificativa = { nota: number | null; justificativa: string };
 export type NotasPorCriterio = Partial<Record<CriterioId, NotaJustificativa>>;
 export type AvaliacaoStatus = "rascunho" | "enviada" | "devolvida";
+export type Recomendacao = { id: string; texto: string };
+export type TipoEmailAvaliacao = "envio" | "devolvida" | "replica";
 
 export type AvaliacaoCoordenacao = {
   coordenador: NotasPorCriterio;
   subcoordenacao: NotasPorCriterio;
-  recomendacoes: string;
+  recomendacoes: Recomendacao[];
   updatedAt?: string;
 };
 
@@ -64,6 +71,8 @@ export type Avaliacao = {
   status: AvaliacaoStatus;
   autoavaliacao: NotasPorCriterio;
   feedback: Partial<Record<FeedbackId, string>>;
+  replicas: Record<string, string>; // réplica do colaborador por recomendação (id da recomendação)
+  replicasEm?: string;
   enviadaEm?: string;
   devolvidaEm?: string;
   corrigidaEm?: string;
@@ -89,6 +98,21 @@ export function mediaNotas(notas: NotasPorCriterio | undefined): number | null {
   const valores = AVALIACAO_CRITERIOS.map((c) => notas?.[c.id]?.nota).filter((n): n is number => typeof n === "number" && !Number.isNaN(n));
   if (!valores.length) return null;
   return valores.reduce((soma, n) => soma + n, 0) / valores.length;
+}
+
+// Média geral: média das médias disponíveis (autoavaliação, coordenador e subcoordenação, quando houver).
+export function mediaGeral(medias: Array<number | null | undefined>): number | null {
+  const valores = medias.filter((n): n is number => typeof n === "number" && !Number.isNaN(n));
+  if (!valores.length) return null;
+  return valores.reduce((soma, n) => soma + n, 0) / valores.length;
+}
+
+export function mediaGeralDaAvaliacao(avaliacao: Avaliacao, coordenacao = avaliacao.coordenacao): number | null {
+  if (!coordenacao) return null;
+  const coord = mediaNotas(coordenacao.coordenador);
+  const sub = mediaNotas(coordenacao.subcoordenacao);
+  if (coord === null && sub === null) return null;
+  return mediaGeral([mediaNotas(avaliacao.autoavaliacao), coord, sub]);
 }
 
 export function faixaDaNota(nota: number | null): string {
@@ -118,6 +142,10 @@ export function inputParaCompetencia(valor: string) {
   return ano && mes ? `${mes}/${ano}` : "";
 }
 
+export function novaRecomendacao(texto = ""): Recomendacao {
+  return { id: crypto.randomUUID(), texto };
+}
+
 export function novaAvaliacao(user: HubUser, competencia = competenciaAtual()): Avaliacao {
   return {
     id: crypto.randomUUID(),
@@ -126,7 +154,8 @@ export function novaAvaliacao(user: HubUser, competencia = competenciaAtual()): 
     competencia,
     status: "rascunho",
     autoavaliacao: {},
-    feedback: {}
+    feedback: {},
+    replicas: {}
   };
 }
 
@@ -134,6 +163,9 @@ export function novaAvaliacao(user: HubUser, competencia = competenciaAtual()): 
 // Repositório (Supabase ou, no modo demonstração, armazenamento local)
 
 const LOCAL_KEY = "hub_avaliacoes";
+const AVALIACAO_COLS =
+  "id,user_id,colaborador_nome,competencia,status,autoavaliacao,feedback,replicas,replicas_em,enviada_em,devolvida_em,corrigida_em,updated_at";
+const COORD_COLS = "avaliacao_id,coordenador,subcoordenacao,recomendacoes,recomendacoes_itens,updated_at";
 
 type AvaliacaoRow = {
   id: string;
@@ -143,6 +175,8 @@ type AvaliacaoRow = {
   status: AvaliacaoStatus;
   autoavaliacao: NotasPorCriterio | null;
   feedback: Avaliacao["feedback"] | null;
+  replicas: Record<string, string> | null;
+  replicas_em: string | null;
   enviada_em: string | null;
   devolvida_em: string | null;
   corrigida_em: string | null;
@@ -154,6 +188,7 @@ type CoordenacaoRow = {
   coordenador: NotasPorCriterio | null;
   subcoordenacao: NotasPorCriterio | null;
   recomendacoes: string | null;
+  recomendacoes_itens: Recomendacao[] | null;
   updated_at: string | null;
 };
 
@@ -165,6 +200,17 @@ function sortAvaliacoes(items: Avaliacao[]) {
   return [...items].sort((a, b) => chave(b).localeCompare(chave(a)) || a.colaboradorNome.localeCompare(b.colaboradorNome, "pt-BR"));
 }
 
+// Recomendações antigas (texto livre, uma por linha) viram itens com identificador estável.
+function itensDeRecomendacoes(itens: Recomendacao[] | null | undefined, texto: string | null | undefined, avaliacaoId: string): Recomendacao[] {
+  const validos = (itens || []).filter((r) => r && typeof r.texto === "string" && r.texto.trim());
+  if (validos.length) return validos.map((r) => ({ id: String(r.id || crypto.randomUUID()), texto: r.texto }));
+  return String(texto || "")
+    .split(/\r?\n/)
+    .map((linha) => linha.trim())
+    .filter(Boolean)
+    .map((linha, i) => ({ id: `${avaliacaoId}-texto-${i + 1}`, texto: linha }));
+}
+
 function mapRow(row: AvaliacaoRow, coord?: CoordenacaoRow): Avaliacao {
   return {
     id: row.id,
@@ -174,6 +220,8 @@ function mapRow(row: AvaliacaoRow, coord?: CoordenacaoRow): Avaliacao {
     status: row.status,
     autoavaliacao: row.autoavaliacao || {},
     feedback: row.feedback || {},
+    replicas: row.replicas || {},
+    replicasEm: row.replicas_em || undefined,
     enviadaEm: row.enviada_em || undefined,
     devolvidaEm: row.devolvida_em || undefined,
     corrigidaEm: row.corrigida_em || undefined,
@@ -182,7 +230,7 @@ function mapRow(row: AvaliacaoRow, coord?: CoordenacaoRow): Avaliacao {
       ? {
           coordenador: coord.coordenador || {},
           subcoordenacao: coord.subcoordenacao || {},
-          recomendacoes: coord.recomendacoes || "",
+          recomendacoes: itensDeRecomendacoes(coord.recomendacoes_itens, coord.recomendacoes, row.id),
           updatedAt: coord.updated_at || undefined
         }
       : undefined
@@ -195,7 +243,7 @@ function assertSupabase() {
 }
 
 function readLocal(): Avaliacao[] {
-  return readStorage<Avaliacao[]>(LOCAL_KEY, []);
+  return readStorage<Avaliacao[]>(LOCAL_KEY, []).map((a) => ({ ...a, replicas: a.replicas || {} }));
 }
 
 // Modo demonstração: aplica as mesmas regras de visibilidade do banco.
@@ -210,16 +258,14 @@ export async function listAvaliacoes(user: HubUser): Promise<Avaliacao[]> {
   if (getAvaliacoesSource() === "local") return sortAvaliacoes(visibleLocal(readLocal(), user));
 
   const client = assertSupabase();
-  const { data, error } = await client
-    .from("avaliacoes")
-    .select("id,user_id,colaborador_nome,competencia,status,autoavaliacao,feedback,enviada_em,devolvida_em,corrigida_em,updated_at");
+  const { data, error } = await client.from("avaliacoes").select(AVALIACAO_COLS);
   if (error) throw error;
   const rows = (data || []) as AvaliacaoRow[];
   const coordMap = new Map<string, CoordenacaoRow>();
   if (rows.length) {
     const { data: coord, error: coordError } = await client
       .from("avaliacoes_coordenacao")
-      .select("avaliacao_id,coordenador,subcoordenacao,recomendacoes,updated_at")
+      .select(COORD_COLS)
       .in(
         "avaliacao_id",
         rows.map((r) => r.id)
@@ -241,7 +287,14 @@ export async function salvarAutoavaliacao(avaliacao: Avaliacao, user: HubUser, e
     const duplicada = todas.find((a) => a.id !== avaliacao.id && a.userId === avaliacao.userId && a.competencia === avaliacao.competencia);
     if (duplicada) throw new Error(`Já existe uma avaliação de ${avaliacao.competencia} para este colaborador.`);
     const now = new Date().toISOString();
-    const salvo: Avaliacao = { ...avaliacao, coordenacao: atual?.coordenacao, status, updatedAt: now, enviadaEm: enviar ? now : avaliacao.enviadaEm };
+    const salvo: Avaliacao = {
+      ...avaliacao,
+      replicas: atual?.replicas || {},
+      coordenacao: atual?.coordenacao,
+      status,
+      updatedAt: now,
+      enviadaEm: enviar ? now : avaliacao.enviadaEm
+    };
     writeStorage(LOCAL_KEY, [salvo, ...todas.filter((a) => a.id !== avaliacao.id)]);
     return salvo;
   }
@@ -259,7 +312,7 @@ export async function salvarAutoavaliacao(avaliacao: Avaliacao, user: HubUser, e
   const query = existente
     ? client.from("avaliacoes").update(payload).eq("id", avaliacao.id)
     : client.from("avaliacoes").insert({ ...payload, user_id: avaliacao.userId });
-  const { data, error } = await query.select("id,user_id,colaborador_nome,competencia,status,autoavaliacao,feedback,enviada_em,devolvida_em,corrigida_em,updated_at");
+  const { data, error } = await query.select(AVALIACAO_COLS);
   if (error) {
     if (String(error.message || "").includes("avaliacoes_user_id_competencia_key") || error.code === "23505") {
       throw new Error(`Você já tem uma avaliação de ${avaliacao.competencia}. Abra-a na lista para continuar.`);
@@ -270,9 +323,33 @@ export async function salvarAutoavaliacao(avaliacao: Avaliacao, user: HubUser, e
   return mapRow(data[0] as AvaliacaoRow);
 }
 
+// Colaborador (dono da avaliação devolvida): grava as réplicas às recomendações da coordenação.
+export async function salvarReplicas(avaliacao: Avaliacao, replicas: Record<string, string>, user: HubUser): Promise<Avaliacao> {
+  const limpas = Object.fromEntries(Object.entries(replicas).filter(([, texto]) => texto.trim()));
+
+  if (getAvaliacoesSource() === "local") {
+    const todas = readLocal();
+    const atual = todas.find((a) => a.id === avaliacao.id);
+    if (!atual || atual.status !== "devolvida") throw new Error("As réplicas só podem ser registradas depois da devolução.");
+    if (!isAvaliador(user) && atual.userId !== (user.id || user.email)) throw new Error("Sem permissão para esta avaliação.");
+    const now = new Date().toISOString();
+    const salvo: Avaliacao = { ...atual, replicas: limpas, replicasEm: now, updatedAt: now };
+    writeStorage(LOCAL_KEY, [salvo, ...todas.filter((a) => a.id !== avaliacao.id)]);
+    return salvo;
+  }
+
+  const client = assertSupabase();
+  const { data, error } = await client.from("avaliacoes").update({ replicas: limpas }).eq("id", avaliacao.id).select(AVALIACAO_COLS);
+  if (error) throw error;
+  if (!data || !data.length) throw new Error("As réplicas não puderam ser salvas.");
+  return mapRow(data[0] as AvaliacaoRow, undefined);
+}
+
 // Administrador: corrige a autoavaliação, lança as notas da coordenação e define a situação.
 export async function salvarCoordenacao(avaliacao: Avaliacao, coordenacao: AvaliacaoCoordenacao, status: AvaliacaoStatus, user: HubUser): Promise<Avaliacao> {
   if (!isAvaliador(user)) throw new Error("Somente a coordenação pode avaliar.");
+  const recomendacoes = coordenacao.recomendacoes.map((r) => ({ id: r.id, texto: r.texto.trim() })).filter((r) => r.texto);
+  const coordLimpa: AvaliacaoCoordenacao = { ...coordenacao, recomendacoes };
 
   if (getAvaliacoesSource() === "local") {
     const todas = readLocal();
@@ -282,8 +359,9 @@ export async function salvarCoordenacao(avaliacao: Avaliacao, coordenacao: Avali
       atual && (JSON.stringify(atual.autoavaliacao) !== JSON.stringify(avaliacao.autoavaliacao) || JSON.stringify(atual.feedback) !== JSON.stringify(avaliacao.feedback));
     const salvo: Avaliacao = {
       ...avaliacao,
+      replicas: atual?.replicas || avaliacao.replicas || {},
       status,
-      coordenacao: { ...coordenacao, updatedAt: now },
+      coordenacao: { ...coordLimpa, updatedAt: now },
       updatedAt: now,
       devolvidaEm: status === "devolvida" && atual?.status !== "devolvida" ? now : avaliacao.devolvidaEm,
       corrigidaEm: corrigiu ? now : avaliacao.corrigidaEm
@@ -297,7 +375,7 @@ export async function salvarCoordenacao(avaliacao: Avaliacao, coordenacao: Avali
     .from("avaliacoes")
     .update({ autoavaliacao: avaliacao.autoavaliacao, feedback: avaliacao.feedback, status, colaborador_nome: avaliacao.colaboradorNome })
     .eq("id", avaliacao.id)
-    .select("id,user_id,colaborador_nome,competencia,status,autoavaliacao,feedback,enviada_em,devolvida_em,corrigida_em,updated_at");
+    .select(AVALIACAO_COLS);
   if (error) throw error;
   if (!data || !data.length) throw new Error("A avaliação não foi encontrada ou você não tem permissão.");
   const { data: coord, error: coordError } = await client
@@ -305,14 +383,15 @@ export async function salvarCoordenacao(avaliacao: Avaliacao, coordenacao: Avali
     .upsert(
       {
         avaliacao_id: avaliacao.id,
-        coordenador: coordenacao.coordenador,
-        subcoordenacao: coordenacao.subcoordenacao,
-        recomendacoes: coordenacao.recomendacoes,
+        coordenador: coordLimpa.coordenador,
+        subcoordenacao: coordLimpa.subcoordenacao,
+        recomendacoes_itens: recomendacoes,
+        recomendacoes: recomendacoes.map((r, i) => `${i + 1}. ${r.texto}`).join("\n"),
         updated_at: new Date().toISOString()
       },
       { onConflict: "avaliacao_id" }
     )
-    .select("avaliacao_id,coordenador,subcoordenacao,recomendacoes,updated_at");
+    .select(COORD_COLS);
   if (coordError) throw coordError;
   return mapRow(data[0] as AvaliacaoRow, (coord || [])[0] as CoordenacaoRow | undefined);
 }
@@ -334,17 +413,20 @@ export async function excluirAvaliacao(avaliacao: Avaliacao, user: HubUser) {
   if (!data || !data.length) throw new Error("A avaliação não pôde ser excluída (só rascunhos podem ser excluídos pelo colaborador).");
 }
 
-// Envia a avaliação por e-mail à coordenação (função do servidor). No modo demonstração não envia.
-export async function enviarAvaliacaoPorEmail(avaliacao: Avaliacao): Promise<string> {
+// Avisos por e-mail e no sino do HUB (função do servidor). No modo demonstração não envia.
+// - envio: colaborador enviou a autoavaliação → coordenação;
+// - devolvida: coordenação devolveu → colaborador;
+// - replica: colaborador respondeu às recomendações → coordenação.
+export async function enviarAvaliacaoPorEmail(avaliacao: Avaliacao, tipo: TipoEmailAvaliacao = "envio"): Promise<string> {
   if (getAvaliacoesSource() === "local") return "Modo demonstração: o e-mail não é enviado.";
   const token = await getSupabaseAccessToken();
   if (!token) throw new Error("Sessão expirada. Entre novamente para enviar.");
   const response = await fetch("/.netlify/functions/avaliacao-email", {
     method: "POST",
     headers: { accept: "application/json", "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify({ id: avaliacao.id })
+    body: JSON.stringify({ id: avaliacao.id, tipo })
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || "Não foi possível enviar o e-mail da avaliação.");
-  return data?.message || "E-mail enviado à coordenação.";
+  return data?.message || "E-mail enviado.";
 }

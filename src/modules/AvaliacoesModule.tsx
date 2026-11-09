@@ -1,4 +1,4 @@
-import { Award, ExternalLink, FilePlus2, Printer, RotateCcw, Save, Send, Trash2, Undo2 } from "lucide-react";
+import { Award, ExternalLink, FilePlus2, MessageSquareReply, Plus, Printer, RotateCcw, Save, Send, Trash2, Undo2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { HubUser } from "../types";
 import { PanelHeader, StatusPill } from "../components/common";
@@ -9,6 +9,7 @@ import {
   AVALIACAO_ESCALA,
   AVALIACAO_FEEDBACK,
   AVALIACAO_TITULO,
+  RECOMENDACOES_PADRAO,
   STATUS_LABEL,
   competenciaAtual,
   competenciaParaInput,
@@ -20,10 +21,14 @@ import {
   inputParaCompetencia,
   isAvaliador,
   listAvaliacoes,
+  mediaGeral,
+  mediaGeralDaAvaliacao,
   mediaNotas,
   novaAvaliacao,
+  novaRecomendacao,
   salvarAutoavaliacao,
   salvarCoordenacao,
+  salvarReplicas,
   type Avaliacao,
   type AvaliacaoCoordenacao,
   type AvaliacaoStatus,
@@ -34,7 +39,7 @@ import {
 
 const APP_ANTIGO_URL = "https://script.google.com/macros/s/AKfycbyuiPXfkDNl_n-TKTRw3EQ8Dexk7Mq6vodTDQmxf8LRhJ9lJJw_j6h4M-tcsPc7iwsR/exec";
 
-const coordVazia = (): AvaliacaoCoordenacao => ({ coordenador: {}, subcoordenacao: {}, recomendacoes: "" });
+const coordVazia = (): AvaliacaoCoordenacao => ({ coordenador: {}, subcoordenacao: {}, recomendacoes: [] });
 
 function temNotas(notas: NotasPorCriterio | undefined) {
   return AVALIACAO_CRITERIOS.some((c) => typeof notas?.[c.id]?.nota === "number" || Boolean(notas?.[c.id]?.justificativa?.trim()));
@@ -80,7 +85,10 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
 
   function abrir(avaliacao: Avaliacao | null) {
     setDraft(avaliacao ? structuredClone(avaliacao) : null);
-    setCoord(avaliacao?.coordenacao ? structuredClone(avaliacao.coordenacao) : coordVazia());
+    const base = avaliacao?.coordenacao ? structuredClone(avaliacao.coordenacao) : coordVazia();
+    // A coordenação começa com cinco campos de recomendação em branco (pode incluir ou excluir).
+    if (admin && !base.recomendacoes.length) base.recomendacoes = Array.from({ length: RECOMENDACOES_PADRAO }, () => novaRecomendacao());
+    setCoord(base);
     setError("");
   }
 
@@ -102,6 +110,8 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
   const podeEditarAuto = Boolean(draft) && ((souDono && draft!.status === "rascunho") || admin);
   const mostraCoord = Boolean(draft) && (admin || draft!.status === "devolvida");
   const mostraSub = temNotas(coord.subcoordenacao);
+  const podeReplicar = Boolean(draft) && souDono && persistida && draft!.status === "devolvida";
+  const recomendacoesVisiveis = admin ? coord.recomendacoes : coord.recomendacoes.filter((r) => r.texto.trim());
 
   function setAuto(id: CriterioId, campo: "nota" | "justificativa", valor: string) {
     if (!draft) return;
@@ -121,12 +131,40 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
     setDraft({ ...draft, feedback: { ...draft.feedback, [id]: valor } });
   }
 
+  function setRecomendacao(id: string, texto: string) {
+    setCoord({ ...coord, recomendacoes: coord.recomendacoes.map((r) => (r.id === id ? { ...r, texto } : r)) });
+  }
+
+  function incluirRecomendacao() {
+    setCoord({ ...coord, recomendacoes: [...coord.recomendacoes, novaRecomendacao()] });
+  }
+
+  function excluirRecomendacao(id: string) {
+    const item = coord.recomendacoes.find((r) => r.id === id);
+    const temReplica = Boolean(draft?.replicas[id]?.trim());
+    if ((item?.texto.trim() || temReplica) && !window.confirm(temReplica ? "Excluir esta recomendação? A réplica do colaborador a ela também deixará de aparecer." : "Excluir esta recomendação?")) return;
+    setCoord({ ...coord, recomendacoes: coord.recomendacoes.filter((r) => r.id !== id) });
+  }
+
+  function setReplica(id: string, texto: string) {
+    if (!draft) return;
+    setDraft({ ...draft, replicas: { ...draft.replicas, [id]: texto } });
+  }
+
   function validarEnvio(av: Avaliacao) {
     const faltando = AVALIACAO_CRITERIOS.filter((c) => typeof av.autoavaliacao[c.id]?.nota !== "number").map((c) => c.nome);
     if (faltando.length) return `Informe a nota de: ${faltando.join(", ")}.`;
     const semJust = AVALIACAO_CRITERIOS.filter((c) => !av.autoavaliacao[c.id]?.justificativa?.trim()).map((c) => c.nome);
     if (semJust.length) return `Escreva a justificativa de: ${semJust.join(", ")}.`;
     return "";
+  }
+
+  async function avisarPorEmail(salvo: Avaliacao, tipo: "envio" | "devolvida" | "replica", destino: string) {
+    try {
+      return ` ${await enviarAvaliacaoPorEmail(salvo, tipo)}`;
+    } catch (err) {
+      return ` Atenção: o e-mail não foi enviado (${getErrorMessage(err)}). ${destino}`;
+    }
   }
 
   async function salvarColaborador(enviar: boolean) {
@@ -145,13 +183,7 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
     try {
       const salvo = await salvarAutoavaliacao(draft, user, enviar);
       let mensagem = enviar ? "Autoavaliação enviada à coordenação." : "Rascunho salvo.";
-      if (enviar) {
-        try {
-          mensagem += ` ${await enviarAvaliacaoPorEmail(salvo)}`;
-        } catch (err) {
-          mensagem += ` Atenção: o e-mail não foi enviado (${getErrorMessage(err)}). A coordenação verá a avaliação no HUB.`;
-        }
-      }
+      if (enviar) mensagem += await avisarPorEmail(salvo, "envio", "A coordenação verá a avaliação no HUB.");
       setNotice(mensagem);
       await carregar(salvo.id);
     } catch (err) {
@@ -168,7 +200,33 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
     setError("");
     setNotice("");
     try {
+      const devolvendo = status === "devolvida" && draft.status !== "devolvida";
       const salvo = await salvarCoordenacao(draft, coord, status, user);
+      let texto = mensagem;
+      if (devolvendo) texto += await avisarPorEmail(salvo, "devolvida", "O colaborador verá a devolutiva no HUB.");
+      setNotice(texto);
+      await carregar(salvo.id);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function gravarReplicas(avisar: boolean) {
+    if (!draft) return;
+    setError("");
+    setNotice("");
+    const preenchidas = coord.recomendacoes.filter((r) => draft.replicas[r.id]?.trim());
+    if (avisar && !preenchidas.length) {
+      setError("Escreva ao menos uma réplica antes de avisar a coordenação.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const salvo = await salvarReplicas(draft, draft.replicas, user);
+      let mensagem = "Réplicas salvas.";
+      if (avisar) mensagem += await avisarPorEmail(salvo, "replica", "A coordenação verá as réplicas no HUB.");
       setNotice(mensagem);
       await carregar(salvo.id);
     } catch (err) {
@@ -207,6 +265,8 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
   const mediaAuto = draft ? mediaNotas(draft.autoavaliacao) : null;
   const mediaCoord = mediaNotas(coord.coordenador);
   const mediaSub = mediaNotas(coord.subcoordenacao);
+  const temAvaliacaoCoord = mediaCoord !== null || mediaSub !== null;
+  const geral = temAvaliacaoCoord ? mediaGeral([mediaAuto, mediaCoord, mediaSub]) : null;
 
   return (
     <div className="aval-page">
@@ -249,17 +309,25 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
           </div>
         ) : null}
         <div className="aval-list">
-          {visiveis.map((a) => (
-            <button className={`aval-item ${draft?.id === a.id ? "active" : ""}`} key={a.id} type="button" onClick={() => abrir(a)}>
-              <strong>{admin ? a.colaboradorNome : `Competência ${a.competencia}`}</strong>
-              <span>{admin ? `Competência ${a.competencia}` : STATUS_LABEL[a.status]}</span>
-              <em className={`aval-status aval-status--${a.status}`}>{STATUS_LABEL[a.status]}</em>
-              <small>
-                Autoavaliação {formatNota(mediaNotas(a.autoavaliacao))}
-                {a.coordenacao ? ` · Coordenador ${formatNota(mediaNotas(a.coordenacao.coordenador))}` : ""}
-              </small>
-            </button>
-          ))}
+          {visiveis.map((a) => {
+            const geralItem = mediaGeralDaAvaliacao(a);
+            const temReplicas = Object.values(a.replicas || {}).some((t) => t?.trim());
+            return (
+              <button className={`aval-item ${draft?.id === a.id ? "active" : ""}`} key={a.id} type="button" onClick={() => abrir(a)}>
+                <strong>{admin ? a.colaboradorNome : `Competência ${a.competencia}`}</strong>
+                <span>{admin ? `Competência ${a.competencia}` : STATUS_LABEL[a.status]}</span>
+                <em className={`aval-status aval-status--${a.status}`}>
+                  {STATUS_LABEL[a.status]}
+                  {temReplicas ? " · com réplica" : ""}
+                </em>
+                <small>
+                  Autoavaliação {formatNota(mediaNotas(a.autoavaliacao))}
+                  {a.coordenacao ? ` · Coordenador ${formatNota(mediaNotas(a.coordenacao.coordenador))}` : ""}
+                  {geralItem !== null ? ` · Geral ${formatNota(geralItem)}` : ""}
+                </small>
+              </button>
+            );
+          })}
           {!loading && !visiveis.length ? <div className="empty-state">Nenhuma avaliação {admin ? "para o filtro atual" : "ainda"}.</div> : null}
         </div>
       </section>
@@ -446,6 +514,21 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
             </div>
             {admin && !mostraSub ? <p className="aval-hint">A coluna Subcoordenação aparecerá quando houver usuário autorizado a preenchê-la.</p> : null}
 
+            {mostraCoord ? (
+              <div className="aval-media-geral" aria-label="Média geral">
+                <div>
+                  <span>Média geral</span>
+                  <strong>{formatNota(geral)}</strong>
+                  {geral !== null ? <em>{faixaDaNota(geral)}</em> : null}
+                </div>
+                <small>
+                  {geral === null
+                    ? "Aparece quando a coordenação lançar as notas."
+                    : `Média das médias: autoavaliação ${formatNota(mediaAuto)} · coordenador ${formatNota(mediaCoord)}${mediaSub !== null ? ` · subcoordenação ${formatNota(mediaSub)}` : ""}.`}
+                </small>
+              </div>
+            ) : null}
+
             <div className="aval-sections">
               <section className="aval-box">
                 <h3>Feedback do colaborador</h3>
@@ -463,18 +546,67 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
               <section className="aval-box">
                 <h3>Notas de referência</h3>
                 <EscalaReferencia />
-                {mostraCoord ? (
-                  <label className="aval-recomendacoes">
-                    Recomendações da coordenação
-                    {admin ? (
-                      <textarea rows={6} value={coord.recomendacoes} onChange={(e) => setCoord({ ...coord, recomendacoes: e.target.value })} placeholder="Uma recomendação por linha." />
-                    ) : (
-                      <p>{coord.recomendacoes || "—"}</p>
-                    )}
-                  </label>
-                ) : null}
               </section>
             </div>
+
+            {mostraCoord ? (
+              <section className="aval-box aval-recomendacoes">
+                <div className="aval-box-head">
+                  <h3>Recomendações da coordenação</h3>
+                  {podeReplicar ? <small>Responda a cada recomendação com a sua justificativa ou a conclusão definida.</small> : null}
+                </div>
+                {recomendacoesVisiveis.length ? (
+                  <ol className="aval-rec-list">
+                    {recomendacoesVisiveis.map((r, i) => {
+                      const replica = draft.replicas[r.id] || "";
+                      return (
+                        <li className="aval-rec" key={r.id}>
+                          <span className="aval-rec-num">{i + 1}</span>
+                          <div className="aval-rec-body">
+                            {admin ? (
+                              <div className="aval-rec-edit">
+                                <textarea aria-label={`Recomendação ${i + 1}`} rows={2} value={r.texto} onChange={(e) => setRecomendacao(r.id, e.target.value)} placeholder="Escreva a recomendação." />
+                                <button className="aval-icon-btn" type="button" onClick={() => excluirRecomendacao(r.id)} title="Excluir recomendação" aria-label={`Excluir recomendação ${i + 1}`}>
+                                  <X size={15} strokeWidth={1.6} />
+                                </button>
+                              </div>
+                            ) : (
+                              <p>{r.texto}</p>
+                            )}
+                            {podeReplicar && r.texto.trim() ? (
+                              <label className="aval-replica">
+                                Réplica do colaborador
+                                <textarea
+                                  aria-label={`Réplica à recomendação ${i + 1}`}
+                                  rows={2}
+                                  value={replica}
+                                  onChange={(e) => setReplica(r.id, e.target.value)}
+                                  placeholder="Justificativa ou conclusão definida."
+                                />
+                              </label>
+                            ) : replica.trim() ? (
+                              <div className="aval-replica aval-replica--lida">
+                                <span>Réplica do colaborador</span>
+                                <p>{replica}</p>
+                              </div>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className="aval-hint-inline">{admin ? "Nenhuma recomendação. Use “Incluir recomendação”." : "A coordenação não registrou recomendações."}</p>
+                )}
+                {admin ? (
+                  <button className="aval-add-btn" type="button" onClick={incluirRecomendacao}>
+                    <Plus size={15} strokeWidth={1.6} />
+                    Incluir recomendação
+                  </button>
+                ) : null}
+                {draft.replicasEm ? <small className="aval-hint-inline">Réplicas atualizadas em {new Date(draft.replicasEm).toLocaleString("pt-BR")}.</small> : null}
+              </section>
+            ) : null}
 
             <footer className="aval-actions">
               {souDono && draft.status === "rascunho" && !admin ? (
@@ -493,6 +625,18 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
                       Excluir rascunho
                     </button>
                   ) : null}
+                </>
+              ) : null}
+              {podeReplicar && recomendacoesVisiveis.some((r) => r.texto.trim()) ? (
+                <>
+                  <button disabled={saving} type="button" onClick={() => void gravarReplicas(false)}>
+                    <Save size={15} strokeWidth={1.6} />
+                    Salvar réplicas
+                  </button>
+                  <button className={admin ? "" : "primary-action"} disabled={saving} type="button" onClick={() => void gravarReplicas(true)}>
+                    <MessageSquareReply size={15} strokeWidth={1.6} />
+                    Salvar e avisar a coordenação
+                  </button>
                 </>
               ) : null}
               {admin ? (
@@ -514,7 +658,11 @@ export function AvaliacoesModule({ user }: { user: HubUser }) {
                         disabled={saving}
                         type="button"
                         onClick={() =>
-                          void salvarAdmin("devolvida", "Avaliação devolvida: o colaborador já pode ver as notas e as correções.", "Devolver a avaliação ao colaborador?\nEle passará a ver as notas, as justificativas e as recomendações da coordenação.")
+                          void salvarAdmin(
+                            "devolvida",
+                            "Avaliação devolvida: o colaborador já pode ver as notas e as correções.",
+                            "Devolver a avaliação ao colaborador?\nEle passará a ver as notas, as justificativas e as recomendações da coordenação, e receberá um aviso."
+                          )
                         }
                       >
                         <Undo2 size={15} strokeWidth={1.6} />
@@ -572,15 +720,34 @@ function montarImpressao(av: Avaliacao, coord: AvaliacaoCoordenacao | null) {
     const m = mediaNotas(n);
     return `<td class="n"><strong>${e(formatNota(m))}</strong></td><td>${e(faixaDaNota(m))}</td>`;
   };
+  const geral = coord ? mediaGeralDaAvaliacao(av, coord) : null;
+  const geralHtml = coord
+    ? `<p class="geral"><strong>Média geral:</strong> ${e(formatNota(geral))}${geral !== null ? ` (${e(faixaDaNota(geral))})` : ""} — média das médias da autoavaliação, do coordenador${sub ? " e da subcoordenação" : ""}.</p>`
+    : "";
   const feedback = AVALIACAO_FEEDBACK.map((f, i) => `<p><strong>${i + 1}) ${e(f.pergunta)}</strong><br>${e(av.feedback[f.id] || "—")}</p>`).join("");
+  const recs = (coord?.recomendacoes || []).filter((r) => r.texto.trim());
+  const recomendacoes = coord
+    ? `<h2>Recomendações da coordenação</h2>${
+        recs.length
+          ? `<ol>${recs
+              .map((r) => {
+                const replica = av.replicas?.[r.id]?.trim();
+                return `<li><p>${e(r.texto)}</p>${replica ? `<p class="rep"><strong>Réplica do colaborador:</strong> ${e(replica)}</p>` : ""}</li>`;
+              })
+              .join("")}</ol>`
+          : "<p>—</p>"
+      }`
+    : "";
   const escala = AVALIACAO_ESCALA.map((f) => `<li>${e(formatNota(f.minimo))}: ${e(f.rotulo)}</li>`).join("");
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Avaliação ${e(av.colaboradorNome)} ${e(av.competencia)}</title>
 <style>body{font-family:Arial,sans-serif;font-size:11pt;color:#1b2a41;margin:24px}h1{font-size:14pt;margin:0 0 4px}h2{font-size:12pt;margin:18px 0 6px}
 table{border-collapse:collapse;width:100%}th,td{border:1px solid #9aa6b8;padding:6px;vertical-align:top;text-align:left}th small{display:block;font-weight:normal;color:#5e6d82}
-td.n{text-align:center;width:52px}thead th{background:#eef1f6}tfoot th,tfoot td{background:#f7f8fa}ul{margin:4px 0;padding-left:18px}</style></head><body>
+td.n{text-align:center;width:52px}thead th{background:#eef1f6}tfoot th,tfoot td{background:#f7f8fa}ul,ol{margin:4px 0;padding-left:18px}
+p{white-space:pre-wrap}.geral{margin:10px 0;padding:8px 10px;border:1px solid #9aa6b8;background:#f7f8fa}.rep{margin:4px 0 8px;padding-left:10px;border-left:3px solid #9aa6b8;color:#2a3b55}</style></head><body>
 <h1>${e(AVALIACAO_TITULO)}</h1><p><strong>Colaborador:</strong> ${e(av.colaboradorNome)} &nbsp; <strong>Competência:</strong> ${e(av.competencia)} &nbsp; <strong>Situação:</strong> ${e(STATUS_LABEL[av.status])}</p>
 <table><thead>${cab}</thead><tbody>${linhas}</tbody><tfoot><tr><th>Média aritmética</th>${media(av.autoavaliacao)}${coord ? media(coord.coordenador) : ""}${sub && coord ? media(coord.subcoordenacao) : ""}</tr></tfoot></table>
+${geralHtml}
 <h2>Feedback do colaborador</h2>${feedback}
-${coord ? `<h2>Recomendações da coordenação</h2><p>${e(coord.recomendacoes || "—").replace(/\n/g, "<br>")}</p>` : ""}
+${recomendacoes}
 <h2>Notas de referência</h2><ul>${escala}</ul></body></html>`;
 }

@@ -495,3 +495,12 @@ Testes desta rodada: `tsc` e `npm.cmd run build` OK; testes automatizados em nav
 ### Próximas etapas
 
 - Reconstruir dentro do HUB, um por vez: Controle de Apuração, Controle de Férias e Onboarding (dados no Supabase agora; base migra para o servidor no fim do projeto).
+
+### Avaliações — ajustes de 09/11/2026 (tarde)
+
+- Média geral: média das médias da autoavaliação, do coordenador e da subcoordenação (quando houver); aparece para o administrador e, após a devolução, para o colaborador; também na lista, na impressão e no e-mail de devolução.
+- Feedback com o item 4 "Sugestões e críticas".
+- Recomendações da coordenação em itens: 5 campos por padrão, com inclusão, edição e exclusão; só os preenchidos são gravados e mostrados ao colaborador.
+- Réplica do colaborador a cada recomendação depois da devolução ("Salvar réplicas" ou "Salvar e avisar a coordenação"); o banco só permite ao colaborador alterar as réplicas de uma avaliação devolvida.
+- Avisos (e-mail e sino): envio do colaborador → administradores; devolução → colaborador; réplica → administradores. A autoavaliação do próprio administrador não dispara o aviso de envio.
+- Banco: rodar `supabase/patch_avaliacoes_v2.sql` (depois de `patch_avaliacoes.sql`; pode rodar mais de uma vez) antes de publicar esta versão.
