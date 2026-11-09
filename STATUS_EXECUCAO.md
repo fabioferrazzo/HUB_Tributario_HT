@@ -535,3 +535,11 @@ Base: app "Controle de Apuração" v0.11.8 FIX13 do HTSERVER (com SALVARFECHAR01
 - Ainda não (avisam "entra numa próxima etapa"): leitura de planilha XLS/XLSX (etapa 3), documentos e exportação XLSX (etapa 5), cadastro de alertas, backup e auditoria (etapa 6). Usuários são cadastrados no HUB.
 - Banco: rodar `supabase/patch_apuracao_etapa2.sql` (depois da etapa 1; pode rodar mais de uma vez): `apur_bootstrap`, `apur_me`, `apur_alerts_list` e nota ADM com o id gerado pela tela (reenvio não duplica).
 - Testes: simulador do HUB com a tela real (26 verificações: usuária comum, troca de usuário, ADM, nota ADM, dashboard, salvar, janela flutuante) e a suíte e2e do HUB.
+
+### Etapa 3 — Cadastro, importação XLS/XLSX e excluir todas (concluída)
+
+- "Importar XLS/XLSX" funciona no HUB: a planilha é lida no próprio navegador (`public/apps/apuracao/importador.js`, tradução do importador IMPORT02 do servidor antigo, com a biblioteca SheetJS 0.20.3 em `vendor/`, carregada só ao importar). As duplicidades com a carteira são conferidas pelo banco (`apur_import_preview`) e a gravação continua em `apur_import_companies`.
+- Paridade conferida com o servidor antigo: o modelo do app, 5 planilhas de teste (seções por regime, abas mensais, aba de controle, cabeçalho legado, fórmulas, .xls) e 6 planilhas reais do departamento geram a mesma prévia. Única diferença: número gravado como decimal aparece "430" em vez de "430.0" nas linhas ignoradas.
+- "+ Empresa", editar, duplicidades (CNPJ, Domínio, nome) e CNPJ inválido conferidos na tela.
+- "Excluir todas": texto ajustado ao HUB (sem backup local; as empresas ficam marcadas como excluídas, com o histórico preservado).
+- Sem SQL novo nesta etapa.

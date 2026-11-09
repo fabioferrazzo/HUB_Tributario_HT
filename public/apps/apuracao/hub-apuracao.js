@@ -226,7 +226,7 @@
 
     if (path === "/api/import-companies")
       return rpc("apur_import_companies", { p_owner: uuidOrNull(body.owner_user_id), p_competence: body.competence || null, p_rows: body.companies || [] });
-    if (path === "/api/parse-excel") return notYet("A leitura de planilhas XLS/XLSX");
+    if (path === "/api/parse-excel") return parseExcel(body);
     if (/^\/api\/export\//.test(path)) return notYet("A exportação XLSX");
     if (/^\/api\/documents/.test(path)) return notYet("A biblioteca de documentos");
     if (path === "/api/alerts" && method === "GET") return Object.assign({}, META, await rpc("apur_alerts_list", {}));
@@ -235,6 +235,66 @@
     if (path === "/api/audit") return notYet("A auditoria");
 
     throw httpError("Endpoint não encontrado. [" + method + " " + path + "]", 404);
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Importação de planilha: lida aqui no navegador (mesmo importador do servidor antigo);
+  // as duplicidades com a carteira são conferidas pelo banco.
+
+  var MAX_IMPORT_BYTES = 8 * 1024 * 1024;
+  var scriptsLoading = {};
+  function loadScript(src) {
+    if (!scriptsLoading[src]) {
+      scriptsLoading[src] = new Promise(function (resolve, reject) {
+        var el = document.createElement("script");
+        el.src = src;
+        el.onload = function () { resolve(); };
+        el.onerror = function () { delete scriptsLoading[src]; reject(httpError("Não foi possível carregar o leitor de planilhas. Verifique a conexão e tente de novo.", 400)); };
+        document.head.appendChild(el);
+      });
+    }
+    return scriptsLoading[src];
+  }
+
+  async function parseExcel(body) {
+    var filename = String(body.filename || "").trim();
+    var bytes;
+    try {
+      var bin = atob(String(body.content_base64 || ""));
+      bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } catch (e) {
+      throw httpError("Conteúdo da planilha inválido.", 400);
+    }
+    if (bytes.length > MAX_IMPORT_BYTES) throw httpError("Arquivo maior que 8 MB.", 400);
+    await loadScript("vendor/xlsx.full.min.js?v=0.20.3");
+    await loadScript("importador.js?v=" + APP_BUILD + "-hub3");
+    var result;
+    try {
+      result = window.HubApuracaoImport.parse(window.XLSX, filename, bytes);
+    } catch (e) {
+      throw httpError(/Formato não suportado/.test(e.message) ? e.message : "Não foi possível ler a planilha: " + e.message, 400);
+    }
+    var rows = window.HubApuracaoImport.sheetDuplicates(result.companies);
+    var send = rows.map(function (r) { var x = Object.assign({}, r); delete x._sheet_reason; return x; });
+    var checked = send.length ? await rpc("apur_import_preview", { p_owner: uuidOrNull(body.owner_user_id), p_rows: send }) : [];
+    var companies = rows.map(function (r, k) {
+      var db = checked[k] || {};
+      var item = Object.assign({}, r);
+      var reason = r._sheet_reason || db.duplicate_reason || "";
+      delete item._sheet_reason;
+      item.importable = !reason;
+      item.duplicate_reason = reason;
+      return item;
+    });
+    var importable = companies.filter(function (c) { return c.importable; }).length;
+    var recognized = companies.length;
+    // Linhas que não viraram empresa aparecem na prévia com o motivo (nunca são importadas).
+    result.ignored.forEach(function (row) {
+      companies.push({ legal_name: row.text, cnpj: "", dominio_code: "", tax_regime: "", envio: "", importable: false, ignored_line: true,
+        duplicate_reason: row.reason + " · " + row.source_sheet + ", linha " + row.source_row });
+    });
+    return { companies: companies, warnings: result.warnings.concat(result.info), count: recognized, importable: importable, skipped: companies.length - importable };
   }
 
   window.fetch = async function (input, init) {
@@ -298,7 +358,7 @@
         }).observe(login, { attributes: true, attributeFilter: ["class"] });
       }
       var script = document.createElement("script");
-      script.src = "app.js?v=" + APP_BUILD + "-hub2";
+      script.src = "app.js?v=" + APP_BUILD + "-hub3";
       document.body.appendChild(script);
     } catch (e) {
       showBlocker(e.message || "Não foi possível entrar com o usuário do HUB.");

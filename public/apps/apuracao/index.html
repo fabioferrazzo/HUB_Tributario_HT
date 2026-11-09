@@ -10,8 +10,8 @@
   <meta name="apple-mobile-web-app-title" content="HT Fiscal">
   <meta name="format-detection" content="telephone=no">
   <title>H. Teixeira — Controle Fiscal</title>
-  <link rel="icon" href="../../hub-icon.svg">
-  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub2">
+  <link rel="icon" href="../../favicon.svg">
+  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub3">
 </head>
 <body>
   <div id="loginView" class="screen center-screen">
@@ -216,7 +216,7 @@
     <div class="dialog-form">
       <div class="dialog-head"><h2>Excluir todas as empresas</h2><button type="button" class="icon-btn" data-close="deleteAllDialog">×</button></div>
       <p id="deleteAllSummary"></p>
-      <p class="muted">As empresas saem do cadastro atual e da competência aberta. Competências já salvas e a auditoria são preservadas. Um backup da base é criado automaticamente antes da exclusão.</p>
+      <p class="muted">As empresas saem do cadastro atual e da competência aberta. Competências já salvas e a auditoria são preservadas. Os registros não são apagados do banco: ficam marcados como excluídos, com o histórico preservado.</p>
       <label><span>Digite <strong>EXCLUIR</strong> para confirmar</span><input id="deleteAllConfirmInput" type="text" autocomplete="off" spellcheck="false"></label>
       <div class="dialog-actions"><span></span><button type="button" data-close="deleteAllDialog">Cancelar</button><button id="confirmDeleteAllBtn" type="button" class="danger" disabled>Excluir todas</button></div>
     </div>
@@ -471,7 +471,7 @@
   <div id="toast" class="toast"></div>
   <div class="hub-apuracao-loading">Carregando o Controle de Apuração…</div>
   <div id="hubApuracaoBlocker" class="hub-apuracao-blocker" hidden><div><h2>Controle de Apuração</h2><p></p><button type="button" onclick="location.reload()">Tentar novamente</button></div></div>
-  <script src="hub-apuracao.js?v=0.11.8.13-hub2"></script>
+  <script src="hub-apuracao.js?v=0.11.8.13-hub3"></script>
   <script src="/apps/hub-app-shell.js" defer></script>
 </body>
 </html>
