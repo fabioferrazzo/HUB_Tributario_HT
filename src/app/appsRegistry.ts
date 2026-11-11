@@ -90,7 +90,7 @@ export const hubApps: HubApp[] = [
     mode: "embutido"
   },
   // Controle de Apuração reconstruído no HUB: mesma tela do app do servidor, dados no Supabase.
-  // Fica em paralelo com a versão do HTSERVER até a validação e a migração da base.
+  // A versão do HTSERVER segue em uso à parte, fora do HUB.
   {
     id: "apuracao",
     label: "Controle de Apuração",
@@ -103,7 +103,7 @@ export const hubApps: HubApp[] = [
     description: "Versão no HUB (em construção): usa o login do HUB e funciona de qualquer lugar."
   },
   // Controle de Férias no HUB: mesma tela e mesmas regras do app do servidor, com os usuários do HUB.
-  // Administradores e gestores do HUB são ADM do app. Começa sem histórico (o do servidor fica para consulta).
+  // Administradores e gestores do HUB são ADM do app. Começa sem histórico (o app do servidor segue em uso à parte).
   {
     id: "ferias",
     label: "Controle de Férias",
@@ -115,30 +115,8 @@ export const hubApps: HubApp[] = [
     mode: "embutido",
     description: "Férias e ausências da equipe, com saldo por semestre. Usa o login do HUB e funciona de qualquer lugar."
   },
-  // Apps do escritório: por enquanto abrem a versão que roda no HTSERVER ou no site de origem.
-  // A base de dados será unificada no fim do projeto.
-  {
-    id: "controle-apuracao",
-    label: "Controle de Apuração (servidor)",
-    title: "Controle de Apuração (servidor)",
-    icon: FileSpreadsheet,
-    group: "Escritório",
-    access: "todos",
-    src: "http://192.168.0.200:8790/",
-    mode: "janela",
-    description: "Abre em janela própria. Funciona nos computadores da rede do escritório; os dados continuam no servidor do escritório (HTSERVER)."
-  },
-  {
-    id: "controle-ferias",
-    label: "Controle de Férias (servidor)",
-    title: "Controle de Férias (servidor)",
-    icon: CalendarRange,
-    group: "Escritório",
-    access: "todos",
-    src: "http://192.168.0.200:8805/",
-    mode: "janela",
-    description: "Versão antiga, para consulta. Abre em janela própria e funciona só nos computadores da rede do escritório (HTSERVER). Os novos lançamentos vão no Controle de Férias do HUB."
-  },
+  // Apps do escritório que ainda não estão dentro do HUB: abrem a versão que roda no HTSERVER ou no site de origem.
+  // As versões antigas do Controle de Apuração e do Controle de Férias saíram do menu (são usadas à parte).
   {
     id: "onboarding",
     label: "Onboarding",
