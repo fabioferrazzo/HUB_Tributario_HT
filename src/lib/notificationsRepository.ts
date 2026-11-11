@@ -170,7 +170,7 @@ function normalizeStoredNotification(item: StoredNotification): HubNotification 
     detail: item.detail || "",
     meta: item.meta || "",
     tone: item.tone || "info",
-    route: item.route || "home",
+    route: notificationRoute(item.route, item.tipo, item.targetType),
     targetType: item.targetType || "",
     targetRef: item.targetRef || "",
     active: item.active ?? true,
@@ -178,6 +178,13 @@ function normalizeStoredNotification(item: StoredNotification): HubNotification 
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || now
   };
+}
+
+// Pautas saiu da tela inicial (agora Quadro geral): avisos antigos de pauta gravados com "home" abrem Pautas.
+function notificationRoute(route: string | null | undefined, tipo?: string | null, targetType?: string | null): HubRoute {
+  const value = (route || "home") as HubRoute;
+  if (value === "home" && (/^pauta/.test(tipo || "") || targetType === "pauta")) return "pautas";
+  return value;
 }
 
 function mapRows(rows: NotificationRow[] = []) {
@@ -193,7 +200,7 @@ function mapRow(row: NotificationRow): HubNotification {
     detail: row.body,
     meta: row.meta || "",
     tone: row.tone || "info",
-    route: row.route || "home",
+    route: notificationRoute(row.route, row.tipo, row.target_type),
     targetType: row.target_type || "",
     targetRef: row.target_ref || "",
     active: row.active,

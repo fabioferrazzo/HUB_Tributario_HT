@@ -108,7 +108,7 @@ export function buildPautaNotifications(pautas: Pauta[], user: HubUser): HubNoti
         detail: tone === "danger" ? `Pauta atrasada: ${formatDate(pauta.prazo)}` : `Pauta vence em até 24h: ${formatDate(pauta.prazo)}`,
         meta: pauta.responsavel || pauta.email || "Sem responsável definido",
         tone,
-        route: "home",
+        route: "pautas",
         tipo: tone === "danger" ? "pauta_overdue" : "pauta_due",
         targetType: "pauta",
         targetRef: pauta.id

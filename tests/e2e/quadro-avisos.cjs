@@ -12,7 +12,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error" && !/favicon/.test(m.location().url)) errors.push(m.text()); });
-  await page.goto(BASE + "/");
+  await page.goto(BASE + "/#/pautas");
   await page.fill('input[type="password"]', "hub-demo-2026");
   await page.click('button[type="submit"]');
   await page.waitForTimeout(1200);

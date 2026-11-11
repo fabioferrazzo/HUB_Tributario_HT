@@ -1,4 +1,4 @@
-// Testes funcionais: criar, editar e excluir (com confirmacao) em varias secoes (modo local, localhost).
+// Testes funcionais (comeca em Pautas): criar, editar e excluir (com confirmacao) em varias secoes (modo local, localhost).
 const { CHROME, BASE, OUT } = require("./_config.cjs");
 const { chromium } = require("playwright-core");
 const results = [];
@@ -14,7 +14,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   const dialogs = [];
   page.on("dialog", async (d) => { dialogs.push(d.message().split("\n")[0]); dialogAnswer ? await d.accept() : await d.dismiss(); });
 
-  await page.goto(BASE + "/");
+  await page.goto(BASE + "/#/pautas");
   await page.fill('input[type="password"]', "hub-demo-2026");
   await page.click('button[type="submit"]');
   await page.waitForTimeout(1200);

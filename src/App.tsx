@@ -1,6 +1,7 @@
 import { AdminModule } from "./modules/AdminModule";
 import { ArquivosModule } from "./modules/ArquivosModule";
 import { AvaliacoesModule } from "./modules/AvaliacoesModule";
+import { QuadroGeral } from "./modules/QuadroGeral";
 import { Dashboard } from "./modules/Dashboard";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
 import { LembretesModule } from "./modules/LembretesModule";
@@ -189,7 +190,7 @@ export function App() {
     if (app) return canUserSeeApp(app, user.role);
     return true;
   });
-  // Rota digitada no endereço sem permissão volta para Pautas.
+  // Rota digitada no endereço sem permissão volta para o Quadro geral.
   const currentRoute: HubRoute = visibleRoutes.some((item) => item.id === route) ? route : "home";
   const currentApp = findAppByRoute(currentRoute);
   const isHubScreen = !currentApp;
@@ -416,7 +417,8 @@ export function App() {
 }
 
 function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
-  if (route === "home") return <Dashboard hubUsers={hubUsers} user={user} />;
+  if (route === "home") return <QuadroGeral hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
+  if (route === "pautas") return <Dashboard hubUsers={hubUsers} user={user} />;
   if (route === "tarefas") return <TasksModule hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
   if (route === "arquivos") return <ArquivosModule user={user} />;
@@ -425,5 +427,5 @@ function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onN
   if (route === "admin") return <AdminModule currentUser={user} />;
   const app = findAppByRoute(route);
   if (app && canUserSeeApp(app, user.role)) return <ModuleFrame app={app} key={app.id} />;
-  return <Dashboard hubUsers={hubUsers} user={user} />;
+  return <QuadroGeral hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
 }

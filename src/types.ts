@@ -229,6 +229,7 @@ export type HubNotification = {
 
 export type HubRoute =
   | "home"
+  | "pautas"
   | "tarefas"
   | "lembretes"
   | "arquivos"

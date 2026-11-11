@@ -1,4 +1,4 @@
-import { Award, Bell, CalendarDays, FileArchive, Home, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
+import { Award, Bell, CalendarDays, ClipboardList, FileArchive, Home, LayoutDashboard, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
 import type { FileResourceCategory, HubRoute, UserRole } from "../types";
 import { getAppRoute, hubApps, type HubAppGroup } from "./appsRegistry";
 import type { HomologationBlock, HomologationStatus } from "./appTypes";
@@ -152,7 +152,8 @@ export const homologationBlocks: HomologationBlock[] = [
 // Telas próprias do HUB. Os apps incorporados (Agenda, Pomodoro, Coordenação e os próximos)
 // vêm do cadastro único em ./appsRegistry.ts.
 const nativeRoutes: Array<{ id: HubRoute; label: string; icon: typeof Home }> = [
-  { id: "home", label: "Pautas", icon: ListChecks },
+  { id: "home", label: "Quadro geral", icon: LayoutDashboard },
+  { id: "pautas", label: "Pautas", icon: ClipboardList },
   { id: "tarefas", label: "Calendário de Tarefas", icon: CalendarDays },
   { id: "lembretes", label: "Lembretes", icon: Bell },
   { id: "arquivos", label: "Arquivos", icon: FileArchive },
@@ -170,7 +171,7 @@ const appRoutesOf = (group: HubAppGroup) => hubApps.filter((app) => app.group ==
 
 export const routeGroups: Array<{ label: string; items: HubRoute[] }> = [
   { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
-  { label: "Ferramentas", items: ["tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
+  { label: "Ferramentas", items: ["pautas", "tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
   { label: "Escritório", items: ["avaliacoes", ...appRoutesOf("Escritório")] },
   { label: "Sistema", items: [...appRoutesOf("Sistema"), "admin"] }
 ];
