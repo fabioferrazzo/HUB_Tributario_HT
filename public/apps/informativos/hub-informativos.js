@@ -14,7 +14,10 @@
   var BUCKET = "hub-informativos";
   var CFG_KEY = "hub_supabase_public";
   // Recursos liberados por etapa da recriação.
-  var RECURSOS = { editar: true, template: true, importar: true, exportarDocx: false, exportarHtml: false };
+  var RECURSOS = { editar: true, template: true, importar: true, exportarDocx: true, exportarHtml: true,
+                   // A base do Infos HT já foi trazida (12/11/2026). Importar de novo sobrescreveria o que foi editado
+                   // no HUB nos informativos migrados, por isso o botão fica desligado.
+                   migracao: false };
   var MAX_UPLOAD = 25 * 1024 * 1024;
   var realFetch = window.fetch.bind(window);
 
@@ -305,7 +308,7 @@
       var incluir = q.get("include_archived") === "1";
       return json({ documents: await rpc("inf_documentos_listar", { p_incluir_arquivados: incluir }), include_archived: incluir });
     }
-    if (path === "/api/export/html.zip") return RECURSOS.exportarHtml ? emBreve("A exportação em lote") : emBreve("A exportação em HTML (ZIP)");
+    if (path === "/api/export/html.zip") return RECURSOS.exportarHtml ? exportarTodosHtml() : emBreve("A exportação em HTML (ZIP)");
     if (path.indexOf("/api/admin/") === 0) return json({ error: "Usuários, backup e restauração são feitos pelo HUB (Configurações)." }, 403);
     if (path === "/api/import" || path === "/api/import/file" || path === "/api/import/docx") {
       if (method !== "POST") return json({ error: "Rota não encontrada" }, 404);
@@ -356,8 +359,9 @@
           if (!a) return json({ error: "Imagem não encontrada" }, 404);
           return arquivo(await baixarArquivo(a.caminho), a.source_name || partes[4], a.mime_type);
         }
-        if (acao === "export.docx" || acao === "export") return RECURSOS.exportarDocx ? emBreve("A exportação DOCX") : emBreve("A exportação DOCX");
-        if (acao === "export.html") return emBreve("A exportação HTML");
+        var tipoExp = tipoExportacao(partes);
+        if (tipoExp === "docx") return RECURSOS.exportarDocx ? exportarDocumento(id, "docx") : emBreve("A exportação DOCX");
+        if (tipoExp === "html") return RECURSOS.exportarHtml ? exportarDocumento(id, "html") : emBreve("A exportação HTML");
       }
       if (method === "POST") {
         if (acao === "metadata") return json(await rpc("inf_metadados", { p_id: id, p: corpo || {} }));
@@ -548,6 +552,104 @@
                   open_url: abrirUrl(id, true) });
   }
 
+  // -------------------------------------------------------------------------------------------
+  // Exportação da versão publicada (inf-exportar.js): HTML autônomo, DOCX e ZIP com todos em HTML
+
+  var ALIASES_EXPORT = { "export.docx": "docx", "export-docx": "docx", "export_docx": "docx", "export.html": "html", "export-html": "html", "export_html": "html" };
+  function tipoExportacao(partes) {
+    if (partes.length === 4) return ALIASES_EXPORT[String(partes[3]).toLowerCase()] || null;
+    if (partes.length === 5 && String(partes[3]).toLowerCase() === "export") {
+      var k = String(partes[4]).toLowerCase();
+      return k === "docx" || k === "html" ? k : null;
+    }
+    return null;
+  }
+  var logoPromise = null;
+  function logoInstitucional() {
+    if (!logoPromise) {
+      logoPromise = realFetch(new URL("logo-ht-azul-escuro.png", location.href).href).then(function (r) {
+        if (!r.ok) throw new Error("logo " + r.status);
+        return r.arrayBuffer();
+      }).then(function (b) {
+        return "data:image/png;base64," + window.InfExportar.base64(new Uint8Array(b));
+      }).catch(function (e) {
+        console.warn("Informativos: logo institucional não carregado", e);
+        logoPromise = null;
+        return "";
+      });
+    }
+    return logoPromise;
+  }
+  // Baixa as imagens do informativo; as que faltarem no armazenamento ficam de fora (como no programa original).
+  async function imagensDoSnapshot(mapa) {
+    var out = {}, faltando = [];
+    var ids = Object.keys(mapa || {});
+    for (var i = 0; i < ids.length; i += 6) {
+      await Promise.all(ids.slice(i, i + 6).map(async function (id) {
+        var a = mapa[id];
+        try {
+          var blob = await baixarArquivo(a.caminho);
+          out[id] = { data: new Uint8Array(await blob.arrayBuffer()), source_name: a.source_name || "", mime_type: a.mime_type || "" };
+        } catch (e) {
+          faltando.push(a.source_name || id);
+        }
+      }));
+    }
+    return { assets: out, faltando: faltando };
+  }
+  function exportadorPronto() {
+    if (!window.InfExportar || !window.InfImportar || !window.JSZip) throw erro("O exportador dos Informativos não carregou. Recarregue a página.", 503);
+    return window.InfExportar;
+  }
+  async function exportarDocumento(id, tipo) {
+    var E = exportadorPronto();
+    var snap = await rpc("inf_documento_obter", { p_id: id, p_qual: "published" });
+    if (!snap || !snap.published_at) return json({ error: "Este informativo ainda não possui versão publicada" }, 409);
+    var doc = snap._doc || {};
+    var imgs = await imagensDoSnapshot(snap._assets);
+    var titulo = (snap.metadata && snap.metadata.title) || doc.title || "Informativo";
+    try {
+      if (tipo === "docx") {
+        var bytes = await E.buildDocx(snap, imgs.assets, window.JSZip);
+        var tipoDocx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        return arquivo(new Blob([bytes], { type: tipoDocx }), E.safeExportFilename(titulo), tipoDocx);
+      }
+      var html = E.buildHtml(snap, imgs.assets, await logoInstitucional());
+      return arquivo(new Blob([html], { type: "text/html;charset=utf-8" }), E.safeExportFilename(titulo, ".html"), "text/html; charset=utf-8");
+    } catch (e) {
+      console.warn("Informativos: exportação", e);
+      return json({ error: "Falha ao exportar " + tipo.toUpperCase() + ": " + ((e && e.message) || e) }, 500);
+    }
+  }
+  function chaveNocase(t) { return String(t || "").replace(/[A-Z]/g, function (c) { return c.toLowerCase(); }); }
+  function carimbo() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "_" + p(d.getHours()) + "-" + p(d.getMinutes()) + "-" + p(d.getSeconds());
+  }
+  async function exportarTodosHtml() {
+    var E = exportadorPronto();
+    var lista = (await rpc("inf_publicados_conteudo", {})) || [];
+    if (!lista.length) return json({ error: "Nenhum informativo publicado disponível para exportar." }, 409);
+    lista.sort(function (a, b) {
+      var ta = chaveNocase((a._doc || {}).title), tb = chaveNocase((b._doc || {}).title);
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return String(a.document_id) < String(b.document_id) ? -1 : String(a.document_id) > String(b.document_id) ? 1 : 0;
+    });
+    var docs = [];
+    for (var i = 0; i < lista.length; i++) {
+      var s = lista[i], d = s._doc || {};
+      var imgs = await imagensDoSnapshot(s._assets);
+      docs.push({ id: s.document_id, title: d.title, published_at: d.published_at, snapshot: s, assets: imgs.assets, faltando: imgs.faltando });
+    }
+    try {
+      var bytes = await E.buildHtmlZip(docs, await logoInstitucional(), window.JSZip);
+      return arquivo(new Blob([bytes], { type: "application/zip" }), "H_Teixeira_Informativos_HTML_" + carimbo() + ".zip", "application/zip");
+    } catch (e) {
+      if (/Nenhum informativo/.test((e && e.message) || "")) return json({ error: e.message }, 409);
+      return json({ error: "Falha ao exportar HTML em lote: " + ((e && e.message) || e) }, 500);
+    }
+  }
+
   window.fetch = async function (input, init) {
     var raw = typeof input === "string" ? input : input && input.url;
     var u;
@@ -720,7 +822,7 @@
   function aoCarregar() {
     estilo();
     sessao().then(function (s) {
-      if (s.papel === "admin" && document.getElementById("bulkHtmlExport")) botaoMigracao();
+      if ((RECURSOS.migracao || /[?&]migracao=1(&|$)/.test(location.search)) && s.papel === "admin" && document.getElementById("bulkHtmlExport")) botaoMigracao();
     }).catch(function () {});
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", aoCarregar);

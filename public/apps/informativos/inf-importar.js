@@ -1845,7 +1845,9 @@
   var api = {
     parseDocx: parseDocx, parseHtml: parseHtml, parsePdf: parsePdf, sha256: sha256, nomeSeguro: nomeSeguro, sufixo: sufixo, stem: stem,
     aplicarPerfil: aplicarPerfil, prefixarAssets: prefixarAssets, extensaoAsset: extensaoAsset,
-    _interno: { unescape: unescape, construirArvore: construirArvore, pyRound: pyRound, decodeHtmlBytes: decodeHtmlBytes, linhasDaPagina: linhasDaPagina }
+    _interno: { unescape: unescape, construirArvore: construirArvore, pyRound: pyRound, decodeHtmlBytes: decodeHtmlBytes, linhasDaPagina: linhasDaPagina },
+    // utilidades no comportamento do Python, usadas também pela exportação (inf-exportar.js)
+    py: py, pyStrip: pyStrip, pySplit: pySplit, cpLen: cpLen, cpSlice: cpSlice, tokenizar: tokenizar, escTexto: escTexto, PYS: PYS
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.InfImportar = api;
