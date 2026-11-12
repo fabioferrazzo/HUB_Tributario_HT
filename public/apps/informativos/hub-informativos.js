@@ -14,7 +14,8 @@
   var BUCKET = "hub-informativos";
   var CFG_KEY = "hub_supabase_public";
   // Recursos liberados por etapa da recriação.
-  var RECURSOS = { editar: true, template: true, importar: false, exportarDocx: false, exportarHtml: false };
+  var RECURSOS = { editar: true, template: true, importar: true, exportarDocx: false, exportarHtml: false };
+  var MAX_UPLOAD = 25 * 1024 * 1024;
   var realFetch = window.fetch.bind(window);
 
   // -------------------------------------------------------------------------------------------
@@ -306,7 +307,11 @@
     }
     if (path === "/api/export/html.zip") return RECURSOS.exportarHtml ? emBreve("A exportação em lote") : emBreve("A exportação em HTML (ZIP)");
     if (path.indexOf("/api/admin/") === 0) return json({ error: "Usuários, backup e restauração são feitos pelo HUB (Configurações)." }, 403);
-    if (path.indexOf("/api/import") === 0) return emBreve("A importação de DOCX, PDF e HTML");
+    if (path === "/api/import" || path === "/api/import/file" || path === "/api/import/docx") {
+      if (method !== "POST") return json({ error: "Rota não encontrada" }, 404);
+      if (!RECURSOS.importar) return emBreve("A importação de DOCX, PDF e HTML");
+      return importarArquivo(init, q, path === "/api/import/docx");
+    }
     var corpo = method === "POST" ? await lerCorpo(init) : {};
 
     if (method === "POST" && path === "/api/templates/default/create") {
@@ -376,10 +381,171 @@
           try { limpo = window.InfNucleo.sanitizeSnapshot(corpo); } catch (e) { return json({ error: e.message }, 400); }
           return json(await rpc("inf_rascunho_salvar", { p_id: id, p_snapshot: limpo }));
         }
-        if (acao === "replace-docx") return emBreve("A substituição do DOCX");
+        if (acao === "replace-docx") return RECURSOS.importar ? substituirDocx(id, init) : emBreve("A substituição do DOCX");
       }
     }
     return json({ error: "Rota não encontrada" }, 404);
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // Importação de DOCX, PDF e HTML (lida no navegador por inf-importar.js) e substituição do DOCX
+
+  function cabecalho(init, nome) {
+    var h = init && init.headers;
+    if (!h) return "";
+    if (typeof h.get === "function") return h.get(nome) || "";
+    var alvo = nome.toLowerCase();
+    for (var k in h) if (Object.prototype.hasOwnProperty.call(h, k) && k.toLowerCase() === alvo) return String(h[k] == null ? "" : h[k]);
+    return "";
+  }
+  async function lerUpload(init) {
+    var body = init && init.body;
+    if (!body || typeof body.arrayBuffer !== "function") throw erro("Envie o arquivo pelo formulário de importação do aplicativo.", 400);
+    if (body.size > MAX_UPLOAD) throw erro("O upload deve ter no máximo 25 MB.", 400);
+    var nome = cabecalho(init, "X-HTI-Filename");
+    if (nome) {
+      try { nome = decodeURIComponent(nome); } catch (e) { throw erro("Nome do arquivo enviado é inválido.", 400); }
+    } else nome = body.name || "informativo";
+    var bytes = new Uint8Array(await body.arrayBuffer());
+    if (!bytes.length) throw erro("Arquivo vazio.", 400);
+    return { nome: nome, bytes: bytes, declarado: cabecalho(init, "X-HTI-Source-Type").trim().toLowerCase() };
+  }
+  async function hashArquivo(bytes) {
+    try {
+      var d = await crypto.subtle.digest("SHA-256", bytes);
+      return Array.prototype.map.call(new Uint8Array(d), function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    } catch (e) {
+      return window.InfImportar.sha256(bytes);
+    }
+  }
+  var pdfjsPromise = null;
+  function carregarPdfjs() {
+    if (!pdfjsPromise) {
+      var base = new URL("vendor/pdfjs/", location.href).href;
+      pdfjsPromise = import(base + "pdf.min.js").then(function (m) {
+        m.GlobalWorkerOptions.workerSrc = base + "pdf.worker.min.js";
+        return m;
+      }).catch(function (e) {
+        pdfjsPromise = null;
+        console.warn("Informativos: pdf.js", e);
+        throw erro("Não foi possível carregar o leitor de PDF. Recarregue a página e tente de novo.", 503);
+      });
+    }
+    return pdfjsPromise;
+  }
+  async function lerConteudo(tipo, bytes, nome) {
+    var I = window.InfImportar;
+    if (!I) throw erro("O leitor de arquivos dos Informativos não carregou. Recarregue a página.", 503);
+    try {
+      if (tipo === "docx") return await I.parseDocx(bytes, nome, window.JSZip);
+      if (tipo === "html") return I.parseHtml(bytes, nome);
+      var pdfjs = await carregarPdfjs();
+      return await I.parsePdf(bytes, nome, pdfjs);
+    } catch (e) {
+      if (e && e.status) throw e;
+      console.warn("Informativos: leitura do arquivo", e);
+      throw erro((e && e.message) || "Não foi possível ler o arquivo.", 400);
+    }
+  }
+  function abrirUrl(id, rascunho) { return "informativo.html?document=" + encodeURIComponent(id) + (rascunho ? "&draft=1" : ""); }
+  function novoId() {
+    return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(16).slice(2, 10);
+  }
+  async function enviarAssets(docId, assets, permitirMais, enviados) {
+    var I = window.InfImportar, out = [];
+    for (var i = 0; i < assets.length; i++) {
+      var a = assets[i];
+      var c = docId + "/assets/" + a.id + I.extensaoAsset(a, permitirMais);
+      var tipo = String(a.mime_type || "application/octet-stream").slice(0, 100);
+      await enviarArquivo(c, new Blob([a.bytes], { type: tipo }), tipo);
+      enviados.push(c);
+      out.push({ id: a.id, source_name: String(a.source_name || "").slice(0, 180), mime_type: tipo, caminho: c, sha256: String(a.sha256 || "").slice(0, 64), tamanho: a.bytes.length });
+    }
+    return out;
+  }
+
+  async function importarArquivo(init, q, soDocx) {
+    var s = await sessao();
+    if (s.papel !== "admin" && s.papel !== "editor") return json({ error: "Somente administradores e gestores do HUB importam informativos." }, 403);
+    var I = window.InfImportar, N = window.InfNucleo;
+    var up = await lerUpload(init);
+    var info;
+    try { info = I.nomeSeguro(up.nome); } catch (e) { return json({ error: e.message }, 400); }
+    if (soDocx && info.tipo !== "docx") return json({ error: "Somente arquivos com extensão .docx são aceitos." }, 400);
+    if (up.declarado && up.declarado !== info.tipo && !(info.tipo === "html" && up.declarado === "htm"))
+      return json({ error: "Tipo declarado não corresponde à extensão do arquivo." }, 400);
+    var sha = await hashArquivo(up.bytes);
+    var existente = await rpc("inf_documento_por_hash", { p_sha: sha });
+    if (existente) {
+      return json({ error: "Este arquivo já foi importado.", existing_document_id: existente.id, document: existente,
+                    open_url: abrirUrl(existente.id, existente.status === "draft" || existente.status === "archived") }, 409);
+    }
+    var parsed = await lerConteudo(info.tipo, up.bytes, info.nome);
+    I.aplicarPerfil(parsed, N.DEFAULT_TEMPLATE_PROFILE);
+    var snap = N.sanitizeSnapshot({ metadata: parsed.metadata, elements: parsed.elements, model: parsed.model });
+    var lista = await rpc("inf_documentos_listar", { p_incluir_arquivados: true });
+    snap.metadata.document_number = N.nextDocumentNumber(lista, snap.metadata.date || "", snap.metadata.document_number || "");
+    var id = novoId();
+    var ext = I.sufixo(info.nome).toLowerCase();
+    var tipoArq = tipoPorNome(info.nome);
+    var orig = id + "/original" + ext, fonte = id + "/sources/rev-001" + ext;
+    var enviados = [], criado;
+    try {
+      await enviarArquivo(orig, new Blob([up.bytes], { type: tipoArq }), tipoArq); enviados.push(orig);
+      await enviarArquivo(fonte, new Blob([up.bytes], { type: tipoArq }), tipoArq); enviados.push(fonte);
+      var assets = await enviarAssets(id, parsed.assets || [], info.tipo !== "docx", enviados);
+      var meta = snap.metadata;
+      var pasta = q.get("folder_id");
+      criado = await rpc("inf_documento_criar", { p: {
+        id: id, title: meta.title || I.stem(info.nome), document_number: meta.document_number || "", date: meta.date || "",
+        department: meta.department || "Departamento Tributário", source_type: info.tipo, original_filename: info.nome, original_sha256: sha,
+        original_caminho: orig, folder_id: pasta && /^\d+$/.test(pasta) ? Number(pasta) : null, snapshot: snap,
+        publicado: { metadata: meta, elements: {} }, assets: assets,
+        fonte: { original_filename: info.nome, sha256: sha, caminho: fonte, stats: parsed.stats || {}, warnings: parsed.warnings || [] }
+      } });
+    } catch (e) {
+      await apagarArquivos(enviados);
+      throw e;
+    }
+    return json({ duplicate: false, document: criado.document, stats: parsed.stats || {}, warnings: parsed.warnings || [], review: parsed.review || {},
+                  open_url: abrirUrl(id, true) }, 201);
+  }
+
+  async function substituirDocx(id, init) {
+    var s = await sessao();
+    if (s.papel !== "admin" && s.papel !== "editor") return json({ error: "Somente administradores e gestores do HUB substituem a fonte DOCX." }, 403);
+    var I = window.InfImportar, N = window.InfNucleo;
+    var up = await lerUpload(init);
+    var nome = up.nome.split(/[\\/]/).pop().slice(0, 180);
+    if (!/\.docx$/i.test(nome)) return json({ error: "Somente arquivos com extensão .docx são aceitos." }, 400);
+    if (up.declarado && up.declarado !== "docx") return json({ error: "Tipo declarado não corresponde a um arquivo DOCX." }, 400);
+    var sha = await hashArquivo(up.bytes);
+    var prep = await rpc("inf_fonte_preparar", { p_id: id, p_sha: sha });
+    var rev = Number(prep.revisao);
+    var parsed = await lerConteudo("docx", up.bytes, nome);
+    I.prefixarAssets(parsed, "r" + rev);
+    I.aplicarPerfil(parsed, N.DEFAULT_TEMPLATE_PROFILE);
+    var snap = N.sanitizeSnapshot({ metadata: parsed.metadata, elements: parsed.elements, model: parsed.model });
+    var meta = snap.metadata;
+    var tipoArq = tipoPorNome(nome);
+    var fonte = id + "/sources/rev-" + String(rev).padStart(3, "0") + ".docx";
+    var enviados = [], r;
+    try {
+      await enviarArquivo(fonte, new Blob([up.bytes], { type: tipoArq }), tipoArq); enviados.push(fonte);
+      var assets = await enviarAssets(id, parsed.assets || [], false, enviados);
+      r = await rpc("inf_fonte_substituir", { p_id: id, p: {
+        revisao: rev, original_filename: nome, sha256: sha, caminho: fonte, title: meta.title || I.stem(nome),
+        document_number: meta.document_number || "", date: meta.date || "", department: meta.department || "Departamento Tributário",
+        snapshot: snap, assets: assets, stats: parsed.stats || {}, warnings: parsed.warnings || []
+      } });
+    } catch (e) {
+      await apagarArquivos(enviados);
+      throw e;
+    }
+    await apagarArquivos(r.apagar || []);
+    assetsPorDoc.delete(id);
+    return json({ document_id: id, source_revision: rev, stats: parsed.stats || {}, warnings: parsed.warnings || [], review: parsed.review || {},
+                  open_url: abrirUrl(id, true) });
   }
 
   window.fetch = async function (input, init) {

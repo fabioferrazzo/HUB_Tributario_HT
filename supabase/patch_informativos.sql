@@ -545,6 +545,9 @@ declare
 begin
   if v_id !~ '^[A-Za-z0-9-]{8,64}$' then raise exception 'Identificador inválido.'; end if;
   if exists (select 1 from public.inf_documentos where id = v_id) then raise exception 'Informativo já existe.'; end if;
+  if nullif(p->>'original_sha256', '') is not null and exists (select 1 from public.inf_documentos where original_sha256 = p->>'original_sha256') then
+    raise exception 'Este arquivo já foi importado.' using errcode = 'P0001';
+  end if;
   perform public.inf_validar_snapshot(v_snap);
   insert into public.inf_documentos (id, titulo, numero, data_doc, departamento, status, source_type, original_filename, original_sha256,
                                      original_caminho, pasta_id, pasta_em, criado_por, atualizado_por)
@@ -570,6 +573,99 @@ begin
   perform public.inf_auditar(case when d.source_type = 'template' then 'Criou pelo Template' else 'Importou' end, v_id, d.titulo,
                              jsonb_strip_nulls(jsonb_build_object('arquivo', d.original_filename)));
   return jsonb_build_object('ok', true, 'document', public.inf_doc_json(d));
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------
+-- Importação (Etapa 3): o arquivo é lido no navegador; o banco guarda o resultado e confere duplicidade.
+
+-- Informativo que já tem este arquivo como original (importação repetida).
+create or replace function public.inf_documento_por_hash(p_sha text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare v text := public.inf_exigir('editor'); d public.inf_documentos;
+begin
+  select * into d from public.inf_documentos where original_sha256 = p_sha and coalesce(p_sha, '') <> '' order by criado_em limit 1;
+  if d.id is null then return null; end if;
+  return public.inf_doc_json(d);
+end;
+$$;
+
+-- Conferências da substituição do DOCX (como replace_docx_document); devolve a próxima revisão.
+create or replace function public.inf_fonte_validar(d public.inf_documentos, p_sha text)
+returns integer language plpgsql stable security definer set search_path = public as $$
+declare v_outro public.inf_documentos; v_rev integer;
+begin
+  if d.status = 'archived' then raise exception 'Desarquive o informativo antes de substituir o DOCX.' using errcode = 'P0001'; end if;
+  if coalesce(p_sha, '') !~ '^[0-9a-f]{64}$' then raise exception 'Arquivo inválido.'; end if;
+  if d.original_sha256 = p_sha then raise exception 'Este DOCX já é a fonte atual do informativo.' using errcode = 'P0001'; end if;
+  select * into v_outro from public.inf_documentos where original_sha256 = p_sha and id <> d.id limit 1;
+  if v_outro.id is not null then
+    raise exception 'Este DOCX já está associado a outro informativo da Biblioteca (%).', v_outro.titulo using errcode = 'P0001';
+  end if;
+  select revisao into v_rev from public.inf_fontes where documento_id = d.id and original_sha256 = p_sha limit 1;
+  if v_rev is not null then raise exception 'Este DOCX já consta no histórico de fontes (revisão %).', v_rev using errcode = 'P0001'; end if;
+  select coalesce(max(revisao), 0) + 1 into v_rev from public.inf_fontes where documento_id = d.id;
+  return v_rev;
+end;
+$$;
+
+create or replace function public.inf_fonte_preparar(p_id text, p_sha text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare v text := public.inf_exigir('editor'); d public.inf_documentos := public.inf_doc(p_id);
+begin
+  return jsonb_build_object('revisao', public.inf_fonte_validar(d, p_sha));
+end;
+$$;
+
+-- Grava a nova fonte DOCX no rascunho; a publicação atual fica preservada.
+-- p: {revisao, original_filename, sha256, caminho, title, document_number, date, department, snapshot, assets[], stats, warnings}
+create or replace function public.inf_fonte_substituir(p_id text, p jsonb)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v text := public.inf_exigir('editor');
+  d public.inf_documentos := public.inf_doc(p_id);
+  v_rev integer;
+  v_snap jsonb := p->'snapshot';
+  v_pub timestamptz;
+  v_antigo text := d.original_caminho;
+  v_nome text := left(coalesce(nullif(p->>'original_filename', ''), 'informativo.docx'), 180);
+  a jsonb;
+  ts timestamptz := now();
+begin
+  perform 1 from public.inf_documentos where id = p_id for update;
+  v_rev := public.inf_fonte_validar(d, p->>'sha256');
+  if v_rev <> coalesce((p->>'revisao')::int, -1) then
+    raise exception 'Outra substituição deste informativo foi feita ao mesmo tempo. Tente novamente.' using errcode = 'P0001';
+  end if;
+  perform public.inf_validar_snapshot(v_snap);
+  for a in select * from jsonb_array_elements(coalesce(p->'assets', '[]'::jsonb)) loop
+    insert into public.inf_assets (documento_id, id, source_name, mime_type, caminho, sha256, tamanho)
+    values (p_id, a->>'id', coalesce(a->>'source_name', ''), coalesce(nullif(a->>'mime_type', ''), 'application/octet-stream'),
+            a->>'caminho', coalesce(a->>'sha256', ''), coalesce((a->>'tamanho')::bigint, 0))
+    on conflict (documento_id, id) do nothing;
+  end loop;
+  insert into public.inf_fontes (documento_id, revisao, original_filename, original_sha256, caminho, importado_por, stats, warnings)
+  values (p_id, v_rev, v_nome, p->>'sha256', p->>'caminho', auth.uid(), coalesce(p->'stats', '{}'::jsonb), coalesce(p->'warnings', '[]'::jsonb));
+  update public.inf_conteudo set rascunho = v_snap, rascunho_em = ts, atualizado_em = ts where documento_id = p_id returning publicado_em into v_pub;
+  if v_pub is null or d.status = 'draft' then
+    update public.inf_documentos set
+      titulo = left(btrim(coalesce(nullif(p->>'title', ''), d.titulo)), 180),
+      numero = left(btrim(coalesce(p->>'document_number', '')), 40),
+      data_doc = left(btrim(coalesce(p->>'date', '')), 20),
+      departamento = left(btrim(coalesce(nullif(p->>'department', ''), 'Departamento Tributário')), 100),
+      source_type = 'docx', original_filename = v_nome, original_sha256 = p->>'sha256', original_caminho = p->>'caminho',
+      atualizado_em = ts, atualizado_por = auth.uid()
+    where id = p_id;
+  else
+    update public.inf_documentos set source_type = 'docx', original_filename = v_nome, original_sha256 = p->>'sha256', original_caminho = p->>'caminho',
+      atualizado_em = ts, atualizado_por = auth.uid()
+    where id = p_id;
+  end if;
+  perform public.inf_auditar('Substituiu o DOCX (rascunho)', p_id, d.titulo, jsonb_build_object('arquivo', v_nome, 'revisao', v_rev));
+  return jsonb_build_object('ok', true, 'document_id', p_id, 'source_revision', v_rev,
+    'apagar', case when v_antigo is not null and v_antigo <> coalesce(p->>'caminho', '')
+                    and not exists (select 1 from public.inf_fontes where documento_id = p_id and caminho = v_antigo)
+                   then jsonb_build_array(v_antigo) else '[]'::jsonb end);
 end;
 $$;
 
@@ -746,7 +842,8 @@ begin
     'inf_fontes_listar(text)', 'inf_publicados_conteudo()', 'inf_rascunho_salvar(text, jsonb)', 'inf_publicar(text, text)',
     'inf_restaurar(text, bigint)', 'inf_metadados(text, jsonb)', 'inf_arquivar(text, boolean)', 'inf_excluir(text)', 'inf_descartar(text)',
     'inf_mover(text, bigint)', 'inf_pasta_salvar(bigint, text)', 'inf_pasta_excluir(bigint)', 'inf_documento_criar(jsonb)',
-    'inf_proximo_numero(integer)', 'inf_migrar_documento(jsonb)', 'inf_migrar_pastas(jsonb)', 'inf_migrar_historico(jsonb)', 'inf_storage_ler(text)', 'inf_storage_gravar()'
+    'inf_proximo_numero(integer)', 'inf_migrar_documento(jsonb)', 'inf_migrar_pastas(jsonb)', 'inf_migrar_historico(jsonb)', 'inf_storage_ler(text)', 'inf_storage_gravar()',
+    'inf_documento_por_hash(text)', 'inf_fonte_preparar(text, text)', 'inf_fonte_substituir(text, jsonb)'
   ] loop
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;
