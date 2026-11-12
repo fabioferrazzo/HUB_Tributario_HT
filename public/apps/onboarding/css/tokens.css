@@ -1,0 +1,34 @@
+:root {
+  --navy-950: #11163b;
+  --navy-900: #1b2252;
+  --navy-800: #252c62;
+  --navy-700: #34417b;
+  --brand-turquoise: #4ab1a6;
+  --cyan-600: #0b7f79;
+  --cyan-500: #4ab1a6;
+  --cyan-100: #dff3f1;
+  --cyan-50: #f0faf8;
+  --ink-900: #202736;
+  --ink-700: #445064;
+  --ink-500: #707b8d;
+  --line: #dce4ea;
+  --line-soft: #e9eef2;
+  --canvas: #f2f5f7;
+  --paper: #ffffff;
+  --success: #197a62;
+  --success-soft: #e8f6f1;
+  --warning: #a76b19;
+  --warning-soft: #fff5df;
+  --danger: #b23c4f;
+  --danger-soft: #fff0f2;
+  --shadow-sm: 0 4px 18px rgba(18, 28, 63, .06);
+  --shadow-md: 0 16px 42px rgba(18, 28, 63, .10);
+  --shadow-lg: 0 30px 90px rgba(8, 16, 41, .24);
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --sidebar-width: 272px;
+  --sidebar-collapsed-width: 84px;
+  --topbar-height: 92px;
+  --font-sans: "Segoe UI", Aptos, Arial, sans-serif;
+}

@@ -119,6 +119,8 @@ export const hubApps: HubApp[] = [
   },
   // Apps do escritório que ainda não estão dentro do HUB: abrem a versão que roda no HTSERVER ou no site de origem.
   // As versões antigas do Controle de Apuração e do Controle de Férias saíram do menu (são usadas à parte).
+  // Onboarding: só o ambiente contratual (Contrato, Adendo, matriz, checklist) entra no HUB. Clientes, portal e
+  // pacotes continuam no Onboarding do servidor (HTSERVER), aberto por um botão dentro do próprio app.
   {
     id: "onboarding",
     label: "Onboarding",
@@ -126,9 +128,9 @@ export const hubApps: HubApp[] = [
     icon: UserPlus,
     group: "Escritório",
     access: "todos",
-    src: "http://192.168.0.200:8767/",
-    mode: "janela",
-    description: "Abre em janela própria. Funciona nos computadores da rede do escritório; os dados continuam no servidor do escritório (HTSERVER)."
+    src: "/apps/onboarding/index.html",
+    mode: "embutido",
+    description: "Ambiente contratual do onboarding: Contrato, Adendo, matriz de responsabilidades e checklist (recriação do Onboarding 1.1.35)."
   },
   {
     id: "pautas-app",
