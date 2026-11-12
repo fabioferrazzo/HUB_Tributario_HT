@@ -122,11 +122,19 @@
 
   async function rpc(fn, args, retried) {
     var b = await base();
-    var response = await fetch(b.url + "/rest/v1/rpc/" + fn, {
-      method: "POST",
-      headers: { apikey: auth.anonKey, Authorization: "Bearer " + b.token, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(args || {})
-    });
+    var corpo = JSON.stringify(args || {});
+    var response;
+    try {
+      response = await fetch(b.url + "/rest/v1/rpc/" + fn, {
+        method: "POST",
+        headers: { apikey: auth.anonKey, Authorization: "Bearer " + b.token, "Content-Type": "application/json", Accept: "application/json" },
+        body: corpo,
+        // Pequenas gravações seguem mesmo se a tela for fechada logo depois.
+        keepalive: corpo.length < 60000
+      });
+    } catch (e) {
+      throw erro("Sem conexão com o HUB.", 0, "REDE");
+    }
     var text = await response.text();
     var data = null;
     try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }

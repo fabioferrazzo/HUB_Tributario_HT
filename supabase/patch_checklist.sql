@@ -169,7 +169,7 @@ begin
                                   || ':' || (select count(*)::text || '/' || coalesce(max(extract(epoch from a.criado_em))::text, '')
                                              from public.chk_anexos a where a.lista_id = l.id)
                                   || ':' || l.compartilhar_todos::text
-                                  || ':' || (select count(*) from public.chk_compartilhamentos c where c.lista_id = l.id)::text)
+                                  || ':' || coalesce((select string_agg(c.user_id::text, ',' order by c.user_id) from public.chk_compartilhamentos c where c.lista_id = l.id), ''))
     from public.chk_listas l where public.chk_pode_ver(l.id)), '{}'::jsonb);
 end;
 $$;

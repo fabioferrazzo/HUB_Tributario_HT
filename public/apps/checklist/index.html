@@ -1184,7 +1184,8 @@
       try{
         const r=await HC.salvarLista(payloadOf(list));
         list._versao=r.versao; list._meta=metaFromServer(r); list.updatedAt=r.atualizado_em||list.updatedAt;
-        list._base=snapshotList(list); marcarVersao(list.id,r.versao);
+        list._base=snapshotList(list); falhas.delete(list.id);
+        if(lastVersoes[list.id]) marcarVersao(list.id,r.versao); else atualizarVersoes();
         return;
       }catch(e){
         if(!HC.ehConflito(e)) throw e;
@@ -1200,6 +1201,26 @@
   }
 
   async function ensureDatabaseReady(){ return true; }
+
+  /* Gravações que falharam (sem internet, servidor fora): ficam guardadas e são tentadas de novo. */
+  const falhas=new Map();
+  let avisoFalhaEm=0;
+  function registrarFalha(list,e){
+    const st=Number(e?.status)||0;
+    const definitiva=st>=400 && st<500 && st!==401 && st!==408 && st!==429;
+    if(definitiva){ falhas.delete(list.id); toast('Não foi possível salvar: '+(e?.message||'erro'),'error'); return; }
+    falhas.set(list.id,list);
+    if(Date.now()-avisoFalhaEm>15000){ avisoFalhaEm=Date.now(); toast('Sem conexão com o HUB: a alteração ainda não foi salva. Vou tentar de novo sozinho; não feche a tela.','error'); }
+  }
+  async function tentarFalhas(){
+    if(!falhas.size || !navigator.onLine) return;
+    for(const [id,list] of [...falhas]){
+      try{ await enqueueListWrite(id,()=>salvarNoBanco(list)); falhas.delete(id); toast('Alterações pendentes salvas.','ok'); }
+      catch(e){ registrarFalha(list,e); break; }
+    }
+  }
+  window.addEventListener('online',()=>{ tentarFalhas(); });
+  window.addEventListener('beforeunload',e=>{ if(falhas.size||saveTimers.size||writeQueues.size){ e.preventDefault(); e.returnValue=''; } });
 
   async function recoverAppData({manual=false,force=false,reason=''}={}){
     if(recoveryPromise) return recoveryPromise;
@@ -1373,6 +1394,7 @@
 
   async function refresh({keepSelection=true}={}){
     await flushAllPendingSaves();
+    if(falhas.size){ await tentarFalhas(); if(falhas.size) return; } /* não troca a tela por dados do banco sem antes gravar o que está pendente */
     lists=await getAllLists();
     sortLists();
     if(!keepSelection || (selectedId && !lists.some(l=>l.id===selectedId))) selectedId=null;
@@ -1590,7 +1612,7 @@
   }
   async function loadSavedFloatingPrints(listId,force=false){
     if(!force && floatingPrintSavedCache.has(listId)) return floatingPrintSavedCache.get(listId);
-    const saved=await Promise.all(Array.from({length:FLOATING_PRINT_SLOTS},(_,idx)=>getAttachment(floatingPrintId(listId,idx))));
+    const saved=await Promise.all(Array.from({length:FLOATING_PRINT_SLOTS},(_,idx)=>getAttachment(floatingPrintId(listId,idx)).catch(e=>{console.warn('Print não carregado:',e);return null;})));
     floatingPrintSavedCache.set(listId,saved);
     return saved;
   }
@@ -2024,7 +2046,7 @@
     if(entry){clearTimeout(entry.timer);saveTimers.delete(listId);}
   }
   async function persistList(list,rerenderSidebar=false){
-    await putList(list);
+    try{ await putList(list); }catch(e){ registrarFalha(list,e); throw e; }
     const idx=lists.findIndex(l=>l.id===list.id);
     if(idx>=0) lists[idx]=list; else lists.push(list);
     sortLists();
@@ -2039,7 +2061,7 @@
       if(saveTimers.get(list.id)!==entry) return;
       saveTimers.delete(list.id);
       try{await persistList(entry.list,entry.rerenderSidebar);}
-      catch(e){console.warn(e);toast(e?.message?('Falha ao salvar: '+e.message):'Falha ao salvar alterações.','error');}
+      catch(e){console.warn('Checklist: gravação pendente',e);}
     },SAVE_DELAY_MS);
     saveTimers.set(list.id,entry);
   }
@@ -2047,7 +2069,7 @@
     const entry=saveTimers.get(listId); if(!entry)return;
     clearTimeout(entry.timer); saveTimers.delete(listId);
     try{await persistList(entry.list,entry.rerenderSidebar);}
-    catch(e){console.warn(e);toast(e?.message?('Falha ao salvar: '+e.message):'Falha ao salvar alterações.','error');}
+    catch(e){console.warn('Checklist: gravação pendente',e);}
   }
   async function saveListNow(list,rerenderSidebar=false){
     cancelPendingSave(list.id);
@@ -2129,7 +2151,8 @@
     }));
   }
   async function downloadAttachment(id){
-    const a=await getAttachment(id); if(!a)return;
+    let a; try{ a=await getAttachment(id); }catch(e){ console.warn(e); toast(e?.message||'Não foi possível baixar o anexo.','error'); return; }
+    if(!a)return;
     const url=URL.createObjectURL(a.blob); const link=document.createElement('a'); link.href=url; link.download=a.name; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000);
   }
 
@@ -2417,7 +2440,7 @@
   window.addEventListener('keydown',e=>{ if(IS_FLOATING && e.key==='Escape') closeFloatingChecklistMenu(); });
   document.addEventListener('click',e=>{ if(IS_FLOATING && !e.target.closest?.('.floating-checklist-switcher')) closeFloatingChecklistMenu(); });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#shareBackdrop')?.classList.contains('show'))closeShareModal();});
-  function isEditing(){const a=document.activeElement;return a?.id==='titleInput'||a?.classList?.contains('task-editor')||a?.classList?.contains('board-obs-text')||!!document.querySelector('#detalhesBackdrop.show')||!!document.querySelector('#shareBackdrop.show');}
+  function isEditing(){const a=document.activeElement;return a?.id==='titleInput'||a?.classList?.contains('task-editor')||a?.classList?.contains('board-obs-text')||!!document.querySelector('#detalhesBackdrop.show')||!!document.querySelector('#shareBackdrop.show')||!!document.querySelector('#confirmBackdrop.show');}
   async function applyRemoteRefresh(){
     if(isEditing()){remoteRefreshPending=true;return;}
     remoteRefreshPending=false; await refresh({keepSelection:true});
@@ -2455,7 +2478,7 @@
 
   async function init(){
     try{
-      await refresh({keepSelection:false}); await cleanupExpired(); lastRecoveryAt=Date.now();
+      await refresh({keepSelection:false}); if(await cleanupExpired()) await refresh({keepSelection:false}); lastRecoveryAt=Date.now();
       if(IS_FLOATING){
         const preferred=FLOATING_LIST_ID && lists.some(l=>l.id===FLOATING_LIST_ID) ? FLOATING_LIST_ID : (lists.find(l=>!l.archivedAt)?.id || lists[0]?.id || null);
         selectedId=preferred;
@@ -2481,6 +2504,7 @@
       setInterval(async()=>{try{if(isEditing())return;const removed=await cleanupExpired();if(removed)await refresh({keepSelection:true});}catch(e){console.warn(e);}},60*60*1000);
       /* Alterações feitas por outras pessoas (checklists compartilhados) ou em outro computador. */
       setInterval(async()=>{
+        if(falhas.size){ await tentarFalhas(); return; }
         if(document.hidden || isEditing() || saveTimers.size || writeQueues.size || recoveryPromise) return;
         try{
           const v=await HC.versoes()||{};
