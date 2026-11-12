@@ -555,7 +555,8 @@ begin
           (select id from public.inf_pastas where id = nullif(p->>'folder_id', '')::bigint), case when nullif(p->>'folder_id', '') is not null then now() end,
           auth.uid(), auth.uid())
   returning * into d;
-  insert into public.inf_conteudo (documento_id, rascunho, publicado, rascunho_em) values (v_id, v_snap, '{}'::jsonb, now());
+  insert into public.inf_conteudo (documento_id, rascunho, publicado, rascunho_em)
+  values (v_id, v_snap, case when jsonb_typeof(p->'publicado') = 'object' then p->'publicado' else '{}'::jsonb end, now());
   for a in select * from jsonb_array_elements(coalesce(p->'assets', '[]'::jsonb)) loop
     insert into public.inf_assets (documento_id, id, source_name, mime_type, caminho, sha256, tamanho)
     values (v_id, a->>'id', coalesce(a->>'source_name', ''), coalesce(nullif(a->>'mime_type', ''), 'application/octet-stream'),

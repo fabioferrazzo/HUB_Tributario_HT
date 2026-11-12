@@ -14,7 +14,7 @@
   var BUCKET = "hub-informativos";
   var CFG_KEY = "hub_supabase_public";
   // Recursos liberados por etapa da recriação.
-  var RECURSOS = { editar: false, template: false, importar: false, exportarDocx: false, exportarHtml: false };
+  var RECURSOS = { editar: true, template: true, importar: false, exportarDocx: false, exportarHtml: false };
   var realFetch = window.fetch.bind(window);
 
   // -------------------------------------------------------------------------------------------
@@ -307,9 +307,22 @@
     if (path === "/api/export/html.zip") return RECURSOS.exportarHtml ? emBreve("A exportação em lote") : emBreve("A exportação em HTML (ZIP)");
     if (path.indexOf("/api/admin/") === 0) return json({ error: "Usuários, backup e restauração são feitos pelo HUB (Configurações)." }, 403);
     if (path.indexOf("/api/import") === 0) return emBreve("A importação de DOCX, PDF e HTML");
-    if (path === "/api/templates/default/create") return emBreve("A criação pelo Template");
-
     var corpo = method === "POST" ? await lerCorpo(init) : {};
+
+    if (method === "POST" && path === "/api/templates/default/create") {
+      if (!RECURSOS.template) return emBreve("A criação pelo Template");
+      var lista = await rpc("inf_documentos_listar", { p_incluir_arquivados: true });
+      var snap = window.InfNucleo.templateSnapshot(corpo || {}, lista);
+      var novoId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random().toString(16).slice(2, 10));
+      var meta = snap.metadata;
+      var criado = await rpc("inf_documento_criar", { p: {
+        id: novoId, title: meta.title || "Novo informativo", document_number: meta.document_number || "", date: meta.date || "",
+        department: meta.department || "Departamento Tributário", source_type: "template",
+        folder_id: corpo.folder_id ? Number(corpo.folder_id) : null, snapshot: snap, publicado: { metadata: meta, elements: {} }
+      } });
+      return json({ ok: true, template_profile: window.InfNucleo.DEFAULT_TEMPLATE_PROFILE, document: criado.document,
+                    open_url: "informativo.html?document=" + encodeURIComponent(novoId) + "&draft=1&edit=1" }, 201);
+    }
 
     // Pastas
     if (method === "POST" && path === "/api/folders") return json({ ok: true, folder: await rpc("inf_pasta_salvar", { p_id: null, p_nome: corpo.name || "" }) }, 201);
@@ -359,6 +372,9 @@
         if (acao === "restore") return json(await rpc("inf_restaurar", { p_id: id, p_versao: Number(corpo.version_id) }));
         if (acao === "draft") {
           if (!RECURSOS.editar) return emBreve("A edição");
+          var limpo;
+          try { limpo = window.InfNucleo.sanitizeSnapshot(corpo); } catch (e) { return json({ error: e.message }, 400); }
+          return json(await rpc("inf_rascunho_salvar", { p_id: id, p_snapshot: limpo }));
         }
         if (acao === "replace-docx") return emBreve("A substituição do DOCX");
       }
