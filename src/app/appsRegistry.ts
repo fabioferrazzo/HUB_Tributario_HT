@@ -68,6 +68,8 @@ export const hubApps: HubApp[] = [
     src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}`,
     mode: "embutido"
   },
+  // Checklist no HUB: cada usuário tem os seus (no banco do HUB) e pode compartilhar com colegas.
+  // Começa sem histórico; o Checklist pessoal do Fábio segue em uso à parte, fora do HUB.
   {
     id: "checklist",
     label: "Checklist",
@@ -75,9 +77,9 @@ export const hubApps: HubApp[] = [
     icon: ClipboardCheck,
     group: "Ferramentas",
     access: "todos",
-    src: "/apps/checklist.html",
+    src: "/apps/checklist/index.html",
     mode: "embutido",
-    description: "Checklist pessoal; os dados ficam guardados neste navegador (use o backup do próprio app para levar de um computador a outro)."
+    description: "Checklists pessoais guardados no HUB (abrem de qualquer computador). Só você vê, a menos que compartilhe com colegas ou com a equipe."
   },
   {
     id: "consultor-cte",
