@@ -11,10 +11,14 @@ import { confirmDeletion, formatResponsaveis, getErrorMessage, parseBrazilianDat
 import { pautaRichTextToPlain, sanitizePautaRichHtml } from "../lib/richText";
 import { AGENDA_CATEGORIA_ROTULO, carregarAgendaSemana, type AgendaSemana } from "../lib/agendaSemana";
 import {
+  AVISO_CORES,
+  AVISO_FONTES,
   loadAvisoCoordenacao,
   publishAvisoCoordenacao,
   removeAvisoCoordenacao,
+  type AvisoCoordenacaoCor,
   type AvisoCoordenacaoEstado,
+  type AvisoCoordenacaoFonte,
   type AvisoCoordenacaoNivel
 } from "../lib/avisoCoordenacaoRepository";
 import { getAppRoute, hubApps } from "../app/appsRegistry";
@@ -455,14 +459,18 @@ function formatarDataCurta(valor: string) {
 // Aviso da Coordenação
 
 function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
-  const [estado, setEstado] = useState<AvisoCoordenacaoEstado>({ aviso: null, podeEditar: false });
+  const [estado, setEstado] = useState<AvisoCoordenacaoEstado>({ aviso: null, podeEditar: false, guardaEstilo: true });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [conteudo, setConteudo] = useState("");
   const [nivel, setNivel] = useState<AvisoCoordenacaoNivel>("normal");
+  const [cor, setCor] = useState<AvisoCoordenacaoCor>("padrao");
+  const [fonte, setFonte] = useState<AvisoCoordenacaoFonte>("normal");
   const [validade, setValidade] = useState("");
+  const [editarId, setEditarId] = useState("");
+  const [notificar, setNotificar] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const [recolhido, setRecolhido] = useState(lerRecolhido);
 
@@ -496,7 +504,11 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
     const aviso = novo ? null : estado.aviso;
     setConteudo(aviso?.conteudo || "");
     setNivel(aviso?.nivel || "normal");
+    setCor(aviso?.cor || "padrao");
+    setFonte(aviso?.fonte || "normal");
     setValidade(aviso?.validade || "");
+    setEditarId(aviso?.id || "");
+    setNotificar(false);
     setEditorKey((valor) => valor + 1);
     setEditando(true);
     setRecolhido(false);
@@ -507,8 +519,20 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
     setSalvando(true);
     setErro("");
     try {
-      setEstado(await publishAvisoCoordenacao(user, { conteudo: sanitizePautaRichHtml(conteudo), nivel, validade }));
+      const novoEstado = await publishAvisoCoordenacao(user, {
+        conteudo: sanitizePautaRichHtml(conteudo),
+        nivel,
+        cor,
+        fonte,
+        validade,
+        editarId: editarId || undefined,
+        notificar
+      });
+      setEstado(novoEstado);
       setEditando(false);
+      if (!novoEstado.guardaEstilo && (cor !== "padrao" || fonte !== "normal")) {
+        setErro("Aviso publicado, mas a cor e o tamanho do texto só ficam guardados depois de rodar no Supabase o SQL patch_aviso_coordenacao.sql atualizado.");
+      }
     } catch (falha) {
       setErro(getErrorMessage(falha));
     } finally {
@@ -533,9 +557,17 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
   const importante = aviso?.nivel === "importante";
   const publicado = aviso ? lerData(aviso.publicadoEm) : null;
   const validadeData = aviso?.validade ? lerData(aviso.validade) : null;
+  // Na edição, o quadro já mostra a cor e o tamanho escolhidos (prévia).
+  const corAtiva = editando ? cor : aviso?.cor || "padrao";
+  const fonteAtiva = editando ? fonte : aviso?.fonte || "normal";
 
   return (
-    <section className={`panel qg-aviso${importante && !editando ? " qg-aviso--importante" : ""}`} aria-labelledby="qg-aviso-titulo">
+    <section
+      className={`panel qg-aviso${importante && !editando ? " qg-aviso--importante" : ""}`}
+      data-cor={corAtiva}
+      data-fonte={fonteAtiva}
+      aria-labelledby="qg-aviso-titulo"
+    >
       <header className="qg-aviso-head">
         <Megaphone size={18} strokeWidth={1.6} />
         <h2 id="qg-aviso-titulo">Aviso da Coordenação</h2>
@@ -589,6 +621,9 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
 
       {editando ? (
         <div className="qg-aviso-editor">
+          {!estado.guardaEstilo ? (
+            <p className="qg-aviso-linha">Para guardar a cor e o tamanho do texto, rode no Supabase o SQL patch_aviso_coordenacao.sql atualizado.</p>
+          ) : null}
           <RichTextEditor
             ariaLabel="Texto do Aviso da Coordenação"
             onChange={setConteudo}
@@ -605,16 +640,51 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
               </select>
             </label>
             <label>
+              Tamanho do texto
+              <select value={fonte} onChange={(evento) => setFonte(evento.target.value as AvisoCoordenacaoFonte)}>
+                {AVISO_FONTES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="qg-aviso-cores-campo">
+              <span id="qg-aviso-cor-rotulo">Cor do quadro</span>
+              <div className="qg-aviso-cores" role="radiogroup" aria-labelledby="qg-aviso-cor-rotulo">
+                {AVISO_CORES.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={cor === item.value}
+                    aria-label={item.label}
+                    title={item.label}
+                    className={`qg-cor${cor === item.value ? " qg-cor--ativa" : ""}`}
+                    data-cor={item.value}
+                    onClick={() => setCor(item.value)}
+                  />
+                ))}
+              </div>
+            </div>
+            <label>
               Válido até (opcional)
               <input type="date" value={validade} min={isoLocal(new Date())} onChange={(evento) => setValidade(evento.target.value)} />
             </label>
-            <span className="qg-aviso-dica">Ao publicar, todos recebem uma notificação no sino.</span>
+            {editarId ? (
+              <label className="qg-aviso-check">
+                <input type="checkbox" checked={notificar} onChange={(evento) => setNotificar(evento.target.checked)} />
+                Notificar a equipe sobre esta alteração
+              </label>
+            ) : (
+              <span className="qg-aviso-dica">Ao publicar, todos recebem uma notificação no sino.</span>
+            )}
             <span className="qg-aviso-botoes">
               <button type="button" className="btn-mini" onClick={() => setEditando(false)} disabled={salvando}>
                 Cancelar
               </button>
               <button type="button" className="btn-mini primary" onClick={() => void publicar()} disabled={salvando}>
-                {salvando ? "Publicando…" : "Publicar"}
+                {salvando ? "Salvando…" : editarId ? "Salvar alterações" : "Publicar"}
               </button>
             </span>
           </div>
@@ -628,7 +698,7 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
               {estado.podeEditar ? " Use “Novo aviso” para escrever um recado a toda a equipe." : ""}
             </p>
           ) : null}
-          {aviso ? <div className="qg-aviso-texto rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(aviso.conteudo) }} /> : null}
+          {aviso ? <div className="qg-aviso-texto rich-text pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(aviso.conteudo) }} /> : null}
         </div>
       )}
     </section>

@@ -37,15 +37,38 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   const agendaTexto = await page.locator(".qg-coluna").nth(2).innerText();
   check("agenda mostra o vencimento do dia (sem HTML)", agendaTexto.includes("[TESTE] DARF de exemplo") && !agendaTexto.includes("<strong>"), agendaTexto.replace(/\s+/g, " ").slice(0, 120));
 
-  // Aviso da Coordenação: publicar, recolher, retirar
+  // Aviso da Coordenação: publicar (com cor e tamanho), editar, recolher, retirar
   await page.click(".qg-aviso button:has-text('Novo aviso')");
   await page.locator(".qg-aviso-editor [contenteditable]").first().click();
   await page.keyboard.type("[TESTE] Reunião geral na sexta às 9h");
-  await page.selectOption(".qg-aviso-opcoes select", "importante");
+  await page.locator(".qg-aviso-opcoes label", { hasText: "Destaque" }).locator("select").selectOption("importante");
+  await page.locator(".qg-aviso-opcoes label", { hasText: "Tamanho do texto" }).locator("select").selectOption("extra-grande");
+  await page.click(".qg-aviso-cores button[aria-label='Azul claro']");
+  check("prévia da cor no quadro durante a edição", (await page.locator(".qg-aviso").getAttribute("data-cor")) === "azul");
   await page.click(".qg-aviso button:has-text('Publicar')");
   await page.waitForTimeout(500);
   check("aviso publicado aparece no alto", (await page.locator(".qg-aviso-texto").innerText()).includes("Reunião geral na sexta às 9h"));
   check("aviso importante destacado", (await page.locator(".qg-aviso--importante").count()) === 1);
+  const estilo = await page.evaluate(() => ({
+    fundo: getComputedStyle(document.querySelector(".qg-aviso")).backgroundColor,
+    fonte: getComputedStyle(document.querySelector(".qg-aviso-texto")).fontSize
+  }));
+  check("quadro inteiro em azul claro", estilo.fundo === "rgb(229, 239, 251)", estilo.fundo);
+  check("texto extra grande (30px)", estilo.fonte === "30px", estilo.fonte);
+
+  // Editar: corrige o mesmo aviso (sem notificar de novo, salvo se marcar)
+  await page.click(".qg-aviso button:has-text('Editar')");
+  check("edição oferece notificar a equipe (desmarcado)", (await page.locator(".qg-aviso-check input").count()) === 1 && !(await page.locator(".qg-aviso-check input").isChecked()));
+  await page.click(".qg-aviso-cores button[aria-label='Verde claro']");
+  await page.locator(".qg-aviso-opcoes label", { hasText: "Tamanho do texto" }).locator("select").selectOption("grande");
+  await page.click(".qg-aviso button:has-text('Salvar alterações')");
+  await page.waitForTimeout(500);
+  const depois = await page.evaluate(() => ({
+    cor: document.querySelector(".qg-aviso").getAttribute("data-cor"),
+    fonte: getComputedStyle(document.querySelector(".qg-aviso-texto")).fontSize,
+    texto: document.querySelector(".qg-aviso-texto").innerText
+  }));
+  check("edição troca a cor e o tamanho e mantém o texto", depois.cor === "verde" && depois.fonte === "19px" && depois.texto.includes("Reunião geral"), JSON.stringify(depois));
   await page.click(".qg-aviso button[aria-label='Recolher o aviso']");
   check("aviso recolhe", (await page.locator(".qg-aviso-texto").count()) === 0);
   await page.reload();

@@ -5,6 +5,7 @@
 -- Só administradores e gestores do HUB publicam, trocam ou retiram o aviso.
 -- Cada publicação fica guardada (histórico); a tela mostra só o aviso em vigor.
 -- Ao publicar, cada usuário recebe uma notificação no sino do HUB.
+-- O aviso pode ter cor de fundo (destaque visual) e tamanho de texto próprios.
 
 begin;
 
@@ -19,6 +20,8 @@ create table if not exists public.hub_aviso_coordenacao (
   removed_by uuid references public.profiles(id),
   removed_at timestamptz
 );
+alter table public.hub_aviso_coordenacao add column if not exists cor text not null default 'padrao';
+alter table public.hub_aviso_coordenacao add column if not exists fonte text not null default 'normal';
 create index if not exists hub_aviso_coordenacao_ativo_idx on public.hub_aviso_coordenacao (ativo, created_at desc);
 
 alter table public.hub_aviso_coordenacao enable row level security;
@@ -33,7 +36,7 @@ begin
     raise exception 'Sessão inválida ou usuário inativo.' using errcode = '42501';
   end if;
   select jsonb_build_object(
-           'id', a.id, 'conteudo', a.conteudo, 'nivel', a.nivel,
+           'id', a.id, 'conteudo', a.conteudo, 'nivel', a.nivel, 'cor', a.cor, 'fonte', a.fonte,
            'validade', to_char(a.validade, 'YYYY-MM-DD'),
            'autor', coalesce(p.nome, p.email, ''), 'publicadoEm', a.created_at)
     into v
@@ -43,18 +46,25 @@ begin
      and (a.validade is null or a.validade >= (now() at time zone 'America/Sao_Paulo')::date)
    order by a.created_at desc
    limit 1;
-  return jsonb_build_object('aviso', v, 'podeEditar', public.is_manager());
+  return jsonb_build_object('aviso', v, 'podeEditar', public.is_manager(), 'estilo', true);
 end;
 $$;
 
+-- Publica um aviso novo ou, com p.id do aviso em vigor, corrige esse aviso (texto, cor, tamanho, validade).
+-- Aviso novo: notifica a equipe. Correção: só notifica se p.notificar = true.
 create or replace function public.hub_aviso_coord_publicar(p jsonb)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   v_id uuid;
   v_conteudo text := trim(coalesce(p->>'conteudo', ''));
   v_nivel text := case when p->>'nivel' = 'importante' then 'importante' else 'normal' end;
+  v_cor text := case when p->>'cor' in ('amarelo', 'azul', 'verde', 'roxo', 'rosa', 'laranja', 'vermelho', 'cinza') then p->>'cor' else 'padrao' end;
+  v_fonte text := case when p->>'fonte' in ('grande', 'muito-grande', 'extra-grande') then p->>'fonte' else 'normal' end;
   v_validade date;
   v_texto text;
+  v_editar uuid;
+  v_notificar boolean := true;
+  v_chave text;
 begin
   if auth.uid() is null or not public.is_active_user() or not public.is_manager() then
     raise exception 'Só administradores e gestores do HUB publicam o Aviso da Coordenação.' using errcode = '42501';
@@ -71,17 +81,36 @@ begin
     raise exception 'A validade não pode ser uma data passada.';
   end if;
 
-  update public.hub_aviso_coordenacao set ativo = false, removed_by = auth.uid(), removed_at = now() where ativo;
-  insert into public.hub_aviso_coordenacao (conteudo, nivel, validade, created_by)
-  values (v_conteudo, v_nivel, v_validade, auth.uid()) returning id into v_id;
+  begin
+    v_editar := nullif(trim(coalesce(p->>'id', '')), '')::uuid;
+  exception when others then
+    v_editar := null;
+  end;
+  if v_editar is not null then
+    update public.hub_aviso_coordenacao
+       set conteudo = v_conteudo, nivel = v_nivel, cor = v_cor, fonte = v_fonte, validade = v_validade
+     where id = v_editar and ativo
+    returning id into v_id;
+    if v_id is null then
+      raise exception 'Este aviso já foi trocado ou retirado. Atualize a tela e tente de novo.';
+    end if;
+    v_notificar := coalesce((p->>'notificar')::boolean, false);
+    v_chave := 'aviso_coord:' || v_id::text || ':' || to_char(clock_timestamp(), 'YYYYMMDDHH24MISSMS') || ':';
+  else
+    update public.hub_aviso_coordenacao set ativo = false, removed_by = auth.uid(), removed_at = now() where ativo;
+    insert into public.hub_aviso_coordenacao (conteudo, nivel, cor, fonte, validade, created_by)
+    values (v_conteudo, v_nivel, v_cor, v_fonte, v_validade, auth.uid()) returning id into v_id;
+    v_chave := 'aviso_coord:' || v_id::text || ':';
+  end if;
 
   -- Sino do HUB: avisa os demais usuários ativos.
-  if to_regclass('public.notificacoes') is not null then
+  if v_notificar and to_regclass('public.notificacoes') is not null then
     insert into public.notificacoes (user_id, tipo, titulo, body, meta, target_type, target_id, target_ref, dedupe_key, route, tone, active, created_at, updated_at)
     select pr.id, 'aviso_coordenacao',
-           case when v_nivel = 'importante' then 'Aviso da Coordenação (importante)' else 'Novo Aviso da Coordenação' end,
+           case when v_editar is not null then 'Aviso da Coordenação atualizado'
+                when v_nivel = 'importante' then 'Aviso da Coordenação (importante)' else 'Novo Aviso da Coordenação' end,
            left(v_texto, 240), '', 'aviso_coordenacao', v_id, v_id::text,
-           'aviso_coord:' || v_id::text || ':' || pr.id::text, 'home',
+           v_chave || pr.id::text, 'home',
            case when v_nivel = 'importante' then 'warning' else 'info' end, true, now(), now()
       from public.profiles pr
      where public.profile_is_active(pr) and pr.id <> auth.uid()
