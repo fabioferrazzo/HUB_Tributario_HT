@@ -22,4 +22,5 @@ npm.cmd run test:e2e
 | pomodoro | Notificação de fim de ciclo |
 | varredura | Abre todas as seções e acusa erros de página |
 | apps-internos | Agenda, Coordenação, Pomodoro e Calendário abrem sem erro e sem mojibake |
+| historico | Histórico e auditoria: só admin vê; filtros, detalhes e exportação em Excel |
 | contraste | Relatório de contraste de textos |

@@ -1,6 +1,7 @@
 import { AdminModule } from "./modules/AdminModule";
 import { ArquivosModule } from "./modules/ArquivosModule";
 import { AvaliacoesModule } from "./modules/AvaliacoesModule";
+import { HistoricoModule } from "./modules/HistoricoModule";
 import { QuadroGeral } from "./modules/QuadroGeral";
 import { Dashboard } from "./modules/Dashboard";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
@@ -185,7 +186,7 @@ export function App() {
   }
 
   const visibleRoutes = routes.filter((item) => {
-    if (item.id === "admin") return user.role === "admin";
+    if (item.id === "admin" || item.id === "historico") return user.role === "admin";
     const app = findAppByRoute(item.id);
     if (app) return canUserSeeApp(app, user.role);
     return true;
@@ -424,6 +425,7 @@ function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onN
   if (route === "arquivos") return <ArquivosModule user={user} />;
   if (route === "links") return <LinksModule user={user} />;
   if (route === "avaliacoes") return <AvaliacoesModule user={user} />;
+  if (route === "historico") return user.role === "admin" ? <HistoricoModule /> : <QuadroGeral hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "admin") return <AdminModule currentUser={user} />;
   const app = findAppByRoute(route);
   if (app && canUserSeeApp(app, user.role)) return <ModuleFrame app={app} key={app.id} />;

@@ -1,4 +1,4 @@
-import { Award, Bell, CalendarDays, ClipboardList, FileArchive, Home, LayoutDashboard, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
+import { Award, Bell, CalendarDays, ClipboardList, FileArchive, History, Home, LayoutDashboard, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
 import type { FileResourceCategory, HubRoute, UserRole } from "../types";
 import { getAppRoute, hubApps, type HubAppGroup } from "./appsRegistry";
 import type { HomologationBlock, HomologationStatus } from "./appTypes";
@@ -159,6 +159,7 @@ const nativeRoutes: Array<{ id: HubRoute; label: string; icon: typeof Home }> = 
   { id: "arquivos", label: "Arquivos", icon: FileArchive },
   { id: "links", label: "Links úteis", icon: Link2 },
   { id: "avaliacoes", label: "Avaliações", icon: Award },
+  { id: "historico", label: "Histórico", icon: History },
   { id: "admin", label: "Configurações", icon: Settings }
 ];
 
@@ -173,7 +174,7 @@ export const routeGroups: Array<{ label: string; items: HubRoute[] }> = [
   { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
   { label: "Ferramentas", items: ["pautas", "tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
   { label: "Escritório", items: ["avaliacoes", ...appRoutesOf("Escritório")] },
-  { label: "Sistema", items: [...appRoutesOf("Sistema"), "admin"] }
+  { label: "Sistema", items: [...appRoutesOf("Sistema"), "historico", "admin"] }
 ];
 
 // OCR (conversao em PDF pesquisavel) adiado para outra versao: arquivos digitalizados ficam

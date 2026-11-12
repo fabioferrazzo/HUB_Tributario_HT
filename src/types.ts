@@ -239,4 +239,5 @@ export type HubRoute =
   | "coord"
   | "admin"
   | "avaliacoes"
+  | "historico"
   | `app:${string}`;
