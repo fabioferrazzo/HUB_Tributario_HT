@@ -5903,8 +5903,7 @@ a.aviso-card__file:hover {
   gap: 6px;
 }
 
-.qg-bloco-titulo,
-.qg-dia-titulo {
+.qg-bloco-titulo {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -5916,11 +5915,49 @@ a.aviso-card__file:hover {
   text-transform: uppercase;
 }
 
+.qg-dia-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.qg-dia-semana {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.qg-dia-data {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.qg-dia-titulo .qg-hoje {
+  align-self: center;
+}
+
+.qg-item-data {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.qg-item--atrasada .qg-item-data {
+  color: var(--danger);
+}
+
 .qg-bloco-titulo--alerta {
   color: var(--danger);
 }
 
-.qg-dia--hoje .qg-dia-titulo {
+.qg-dia--hoje .qg-dia-titulo,
+.qg-dia--hoje .qg-dia-data {
   color: var(--accent);
 }
 
@@ -6094,6 +6131,10 @@ a.aviso-card__file:hover {
   }
 }
 
-.qg-dia--passado {
+/* Dias que já passaram: os itens ficam esmaecidos, a data continua legível. */
+.qg-dia--passado .qg-lista {
   opacity: 0.55;
+}
+.qg-dia--passado .qg-dia-data {
+  color: var(--muted);
 }

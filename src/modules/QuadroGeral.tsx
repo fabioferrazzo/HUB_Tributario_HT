@@ -226,12 +226,17 @@ export function QuadroGeral({
     mapa.forEach((lista) => lista.sort((a, b) => a.data.getTime() - b.data.getTime()));
     return mapa;
   }, [fimSemana, semana, tarefasAbertas]);
-  const tarefasAtrasadas = ehSemanaAtual
-    ? tarefasAbertas.filter((tarefa) => {
-        const data = lerData(tarefa.prazo);
-        return Boolean(data) && data! < hoje;
-      }).length
-    : 0;
+  // Atrasadas: prazo antes desta semana (as atrasadas da própria semana aparecem no dia, em vermelho).
+  const tarefasComData = useMemo(
+    () =>
+      tarefasAbertas
+        .map((tarefa) => ({ tarefa, data: lerData(tarefa.prazo) }))
+        .filter((item): item is { tarefa: TaskItem; data: Date } => Boolean(item.data))
+        .sort((a, b) => a.data.getTime() - b.data.getTime()),
+    [tarefasAbertas]
+  );
+  const tarefasAtrasadas = ehSemanaAtual ? tarefasComData.filter((item) => item.data < semana) : [];
+  const proximasTarefas = ehSemanaAtual ? tarefasComData.filter((item) => item.data >= somarDias(fimSemana, 1)).slice(0, 5) : [];
   const totalTarefasSemana = Array.from(tarefasPorDia.values()).reduce((soma, lista) => soma + lista.length, 0);
 
   // ---- Agenda tributária
@@ -325,36 +330,50 @@ export function QuadroGeral({
           </header>
           <div className="qg-coluna-corpo">
             {erros.tarefas ? <p className="qg-erro">{erros.tarefas}</p> : null}
-            {tarefasAtrasadas ? (
-              <p className="qg-aviso-linha">
-                {tarefasAtrasadas} tarefa(s) com prazo vencido em aberto. <button type="button" className="qg-link" onClick={() => onNavigate("tarefas")}>Ver no calendário</button>
-              </p>
+            {tarefasAtrasadas.length ? (
+              <div className="qg-bloco">
+                <h3 className="qg-bloco-titulo qg-bloco-titulo--alerta">Atrasadas ({tarefasAtrasadas.length})</h3>
+                <ul className="qg-lista">
+                  {tarefasAtrasadas.slice(0, 5).map(({ tarefa, data }) => (
+                    <TarefaLinha key={tarefa.id} data={data} hubUsers={hubUsers} tarefa={tarefa} atrasada />
+                  ))}
+                </ul>
+                {tarefasAtrasadas.length > 5 ? (
+                  <button type="button" className="qg-link" onClick={() => onNavigate("tarefas")}>
+                    +{tarefasAtrasadas.length - 5} atrasada(s) no calendário
+                  </button>
+                ) : null}
+              </div>
             ) : null}
-            {!carregando.tarefas && !totalTarefasSemana ? <p className="qg-vazio">Nenhuma tarefa com prazo nesta semana.</p> : null}
-            {dias.map((dia) => {
-              const lista = tarefasPorDia.get(isoLocal(dia));
-              if (!lista?.length) return null;
-              const ehHoje = isoLocal(dia) === isoLocal(hoje);
-              return (
-                <div key={isoLocal(dia)} className={`qg-dia${ehHoje ? " qg-dia--hoje" : ""}${dia < hoje ? " qg-dia--passado" : ""}`}>
-                  <h3 className="qg-dia-titulo">
-                    {rotuloDia(dia)}
-                    {ehHoje ? <span className="qg-hoje">hoje</span> : null}
-                  </h3>
-                  <ul className="qg-lista">
-                    {lista.map(({ tarefa, data }) => (
-                      <li key={tarefa.id} className={`qg-item${tarefa.prioridade === "alta" ? " qg-item--alta" : ""}`}>
-                        <span className="qg-item-titulo">
-                          {temHora(tarefa.prazo) ? <span className="qg-hora">{horaCurta(data)}</span> : null}
-                          {tarefa.titulo}
-                        </span>
-                        <span className="qg-item-meta">{formatResponsaveis(tarefa.responsaveis, hubUsers)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
+            <div className="qg-bloco">
+              <h3 className="qg-bloco-titulo">Tarefas da semana</h3>
+              {!carregando.tarefas && !totalTarefasSemana ? <p className="qg-vazio">Nenhuma tarefa com prazo nesta semana.</p> : null}
+              {dias.map((dia) => {
+                const lista = tarefasPorDia.get(isoLocal(dia));
+                if (!lista?.length) return null;
+                const ehHoje = isoLocal(dia) === isoLocal(hoje);
+                return (
+                  <div key={isoLocal(dia)} className={`qg-dia${ehHoje ? " qg-dia--hoje" : ""}`}>
+                    <DiaTitulo data={dia} hoje={ehHoje} />
+                    <ul className="qg-lista">
+                      {lista.map(({ tarefa, data }) => (
+                        <TarefaLinha key={tarefa.id} data={data} hubUsers={hubUsers} tarefa={tarefa} atrasada={data < hoje} />
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+            {proximasTarefas.length ? (
+              <div className="qg-bloco">
+                <h3 className="qg-bloco-titulo">Próximas tarefas</h3>
+                <ul className="qg-lista">
+                  {proximasTarefas.map(({ tarefa, data }) => (
+                    <TarefaLinha key={tarefa.id} data={data} hubUsers={hubUsers} tarefa={tarefa} />
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -385,11 +404,7 @@ export function QuadroGeral({
               const visiveis = aberto ? dia.itens : dia.itens.slice(0, AGENDA_ITENS_POR_DIA);
               return (
                 <div key={dia.data} className={`qg-dia${ehHoje ? " qg-dia--hoje" : ""}${data < hoje ? " qg-dia--passado" : ""}`}>
-                  <h3 className="qg-dia-titulo">
-                    {rotuloDia(data)}
-                    {ehHoje ? <span className="qg-hoje">hoje</span> : null}
-                    <span className="qg-dia-contagem">{dia.itens.length}</span>
-                  </h3>
+                  <DiaTitulo data={data} hoje={ehHoje} contagem={dia.itens.length} />
                   <ul className="qg-lista">
                     {visiveis.map((item, indice) => (
                       <li key={`${dia.data}-${indice}`} className="qg-item qg-item--agenda">
@@ -434,8 +449,38 @@ function PautaLinha({ pauta, data, hubUsers, atrasada }: { pauta: Pauta; data: D
         {titulo}
       </span>
       <span className="qg-item-meta">
-        {rotuloDia(data)}
+        <strong className="qg-item-data">{rotuloDia(data)}</strong>
         {responsaveis ? ` · ${responsaveis}` : ""}
+      </span>
+    </li>
+  );
+}
+
+function DiaTitulo({ data, hoje, contagem }: { data: Date; hoje?: boolean; contagem?: number }) {
+  return (
+    <h3 className="qg-dia-titulo">
+      <span className="qg-dia-semana">{DIAS_CURTOS[data.getDay()]}</span>
+      <strong className="qg-dia-data">{ddmm(data)}</strong>
+      {hoje ? <span className="qg-hoje">hoje</span> : null}
+      {contagem !== undefined ? <span className="qg-dia-contagem">{contagem}</span> : null}
+    </h3>
+  );
+}
+
+function TarefaLinha({ tarefa, data, hubUsers, atrasada }: { tarefa: TaskItem; data: Date; hubUsers: HubProfile[]; atrasada?: boolean }) {
+  const responsaveis = tarefa.responsaveis?.length ? formatResponsaveis(tarefa.responsaveis, hubUsers) : "Sem responsável";
+  return (
+    <li className={`qg-item${atrasada ? " qg-item--atrasada" : ""}${tarefa.prioridade === "alta" ? " qg-item--alta" : ""}`}>
+      <span className="qg-item-titulo">
+        {tarefa.destaque ? <span className="qg-selo">destaque</span> : null}
+        {tarefa.titulo || "Tarefa sem título"}
+      </span>
+      <span className="qg-item-meta">
+        <strong className="qg-item-data">
+          {rotuloDia(data)}
+          {temHora(tarefa.prazo) ? ` às ${horaCurta(data)}` : ""}
+        </strong>
+        {` · ${responsaveis}`}
       </span>
     </li>
   );

@@ -21,7 +21,26 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
     const dados = {};
     dados[chave] = { source: "Teste", updated: "hoje", dates: { [String(hoje.getDate())]: [{ cat: "pj-fed", title: "<strong>[TESTE]</strong> DARF de exemplo", periodo: "mês anterior" }] } };
     localStorage.setItem("agenda-tributaria-rfb-v1", JSON.stringify(dados));
-    localStorage.removeItem("hub_aviso_coordenacao_local");
+    // Tarefas de exemplo (banco local do calendário): uma atrasada (antes desta semana) e uma hoje às 14h.
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const segunda = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - ((hoje.getDay() + 6) % 7));
+    const antiga = new Date(segunda);
+    antiga.setDate(antiga.getDate() - 10);
+    const eventos = [
+      { id: "teste-qg-1", title: "[TESTE] Tarefa atrasada", date: iso(antiga), hub: { status: "aberta", responsaveis: ["Fulano Teste"] } },
+      { id: "teste-qg-2", title: "[TESTE] Tarefa de hoje", date: `${iso(hoje)}T14:00`, hub: { status: "aberta", responsaveis: ["Beltrano Teste"] } }
+    ];
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open("CalAppDB", 1);
+      req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains("events")) req.result.createObjectStore("events", { keyPath: "id" }); };
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => {
+        const tx = req.result.transaction("events", "readwrite");
+        eventos.forEach((e) => tx.objectStore("events").put(e));
+        tx.oncomplete = () => { req.result.close(); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
   });
   await page.fill('input[type="password"]', "hub-demo-2026");
   await page.click('button[type="submit"]');
@@ -34,6 +53,11 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("três colunas da semana", (await page.locator(".qg-colunas > .qg-coluna").count()) === 3);
   const titulos = await page.locator(".qg-coluna-head h2").allInnerTexts();
   check("colunas: Pautas e avisos, Calendário, Agenda tributária", titulos.join("|") === "Pautas e avisos|Calendário|Agenda tributária", titulos.join("|"));
+  const calTexto = (await page.locator(".qg-coluna").nth(1).innerText()).replace(/\s+/g, " ");
+  check("calendário lista a tarefa atrasada com responsável e data", /Atrasadas \(\d+\)/i.test(calTexto) && calTexto.includes("[TESTE] Tarefa atrasada") && calTexto.includes("Fulano Teste"), calTexto.slice(0, 200));
+  check("calendário lista a tarefa da semana com responsável, data e hora", calTexto.includes("[TESTE] Tarefa de hoje") && calTexto.includes("Beltrano Teste") && / às 14:00/.test(calTexto), calTexto.slice(0, 300));
+  const pesoData = await page.locator(".qg-coluna").nth(2).locator(".qg-dia-data").first().evaluate((el) => getComputedStyle(el).fontWeight);
+  check("agenda: data do dia em negrito", Number(pesoData) >= 700, pesoData);
   const agendaTexto = await page.locator(".qg-coluna").nth(2).innerText();
   check("agenda mostra o vencimento do dia (sem HTML)", agendaTexto.includes("[TESTE] DARF de exemplo") && !agendaTexto.includes("<strong>"), agendaTexto.replace(/\s+/g, " ").slice(0, 120));
 
@@ -95,7 +119,19 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   const largura = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check("celular: sem rolagem horizontal", largura <= 2, String(largura));
 
-  await page.evaluate(() => localStorage.removeItem("agenda-tributaria-rfb-v1"));
+  await page.evaluate(() => {
+    localStorage.removeItem("agenda-tributaria-rfb-v1");
+    return new Promise((resolve) => {
+      const req = indexedDB.open("CalAppDB", 1);
+      req.onerror = () => resolve();
+      req.onsuccess = () => {
+        const tx = req.result.transaction("events", "readwrite");
+        ["teste-qg-1", "teste-qg-2"].forEach((id) => tx.objectStore("events").delete(id));
+        tx.oncomplete = () => { req.result.close(); resolve(); };
+        tx.onerror = () => resolve();
+      };
+    });
+  });
   check("sem erros no console", errors.length === 0, errors.join(" | ").slice(0, 300));
   console.log(results.join("\n"));
   await browser.close();
