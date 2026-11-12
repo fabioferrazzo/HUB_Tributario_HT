@@ -3,7 +3,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 // Histórico e auditoria: quem fez o quê em Pautas, Avisos, Tarefas, Férias e Apuração.
 // O registro é feito pelo banco (supabase/patch_historico.sql); só administradores consultam.
 
-export const HISTORICO_MODULOS = ["Pautas", "Quadro de Avisos", "Aviso da Coordenação", "Calendário de Tarefas", "Férias", "Apuração"] as const;
+export const HISTORICO_MODULOS = ["Pautas", "Quadro de Avisos", "Aviso da Coordenação", "Calendário de Tarefas", "Férias", "Apuração", "Informativos"] as const;
 
 export type HistoricoAlteracao = { de: string; para: string };
 
@@ -93,7 +93,7 @@ export async function listarHistorico(filtro: HistoricoFiltro, deslocamento = 0)
     total: Number(d.total) || 0,
     itens: Array.isArray(d.itens) ? (d.itens as HistoricoItem[]) : [],
     usuarios: Array.isArray(d.usuarios) ? d.usuarios : [],
-    modulos: Array.isArray(d.modulos) && d.modulos.length ? d.modulos : [...HISTORICO_MODULOS],
+    modulos: [...new Set([...(Array.isArray(d.modulos) ? d.modulos : []), ...HISTORICO_MODULOS])],
     local: false
   };
 }

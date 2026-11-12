@@ -141,6 +141,7 @@ export const hubApps: HubApp[] = [
     mode: "janela",
     description: "Abre em janela própria (o site não permite ser exibido dentro de outro). Funciona de qualquer lugar, com o login do próprio app."
   },
+  // Informativos: recriação do Infos HT no HUB (dados no Supabase). O Infos HT do computador do Fábio segue à parte.
   {
     id: "informativos",
     label: "Informativos",
@@ -148,9 +149,9 @@ export const hubApps: HubApp[] = [
     icon: FileText,
     group: "Escritório",
     access: "todos",
-    src: "http://127.0.0.1:8766/",
-    mode: "janela",
-    description: "Programa instalado neste computador. Abra antes o atalho \"Infos HT\" da área de trabalho; depois use o botão abaixo."
+    src: "/apps/informativos/index.html",
+    mode: "embutido",
+    description: "Biblioteca de informativos do Departamento Tributário (recriação do Infos HT dentro do HUB)."
   }
 ];
 
