@@ -144,7 +144,15 @@ export function ModuleFrame({ app }: { app: HubApp }) {
   function openWindow() {
     const width = Math.min(1440, window.screen.availWidth || 1440);
     const height = Math.min(960, window.screen.availHeight || 960);
-    popupRef.current = window.open(app.src, `hub-app-${app.id}`, `popup=yes,width=${width},height=${height}`);
+    // Abre a página que está na moldura agora (ex.: um informativo aberto pela biblioteca), não só a inicial do app.
+    let destino = app.src;
+    try {
+      const atual = frameRef.current?.contentWindow?.location;
+      if (embedded && atual && atual.origin === window.location.origin && atual.pathname.startsWith("/apps/")) destino = atual.pathname + atual.search + atual.hash;
+    } catch {
+      destino = app.src;
+    }
+    popupRef.current = window.open(destino, `hub-app-${app.id}`, `popup=yes,width=${width},height=${height}`);
   }
 
   useEffect(() => {
