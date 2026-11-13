@@ -90,7 +90,7 @@ function taxRows(snapshot) {
     ['PIS estimado (R$)', simulation.pisCents == null ? warning('NÃO CALCULADO') : currency(simulation.pisCents)],
     ['Cofins estimada (R$)', simulation.cofinsCents == null ? warning('NÃO CALCULADA') : currency(simulation.cofinsCents)],
     ['Totais de informes', 'CONTROLE — NÃO ADITIVOS À BASE'],
-    ['CBS/IBS sobre aplicações financeiras', simulation.futureConsumptionTax?.status || 'REVISÃO NORMATIVA — SEM CÁLCULO AUTOMÁTICO'],
+    ['CBS/IBS sobre aplicações financeiras', simulation.futureConsumptionTax?.status || 'Até 2026: fora do escopo (PIS/Cofins); a partir de 2027 não incide (LC 214/2025, art. 6º, V)'],
     ...simulation.warnings.map((item,index) => [`Alerta ${index + 1}`, warning(item)]),
   ];
 }

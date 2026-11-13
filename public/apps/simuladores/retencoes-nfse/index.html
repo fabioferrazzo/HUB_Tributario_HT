@@ -61,6 +61,7 @@
               <option value="V">Anexo V</option>
             </select>
           </div>
+          <div class="campo inteiro" id="blocoTomadorSimples"><label class="marcar"><input type="checkbox" id="tomadorSimples"> Tomador optante pelo Simples Nacional</label></div>
           <div class="campo inteiro" id="blocoNatureza">
             <label for="natureza">Natureza do serviço</label>
             <select id="natureza"></select>
@@ -134,10 +135,10 @@
             <div class="campo"><label for="issDeducoes">Deduções da base (ex.: materiais na obra)</label><input id="issDeducoes" class="num moeda" value="0,00"></div>
           </div>
           <div id="blocoIssSimples" class="oculto" style="display:grid;gap:8px">
-            <div class="dica">No Simples, o tomador usa a alíquota informada na nota: o percentual efetivo de ISS da faixa do mês anterior (Res. CGSN 140/2018, art. 27). Deixe a alíquota em branco para ver a regra dos 5% quando a nota não informa.</div>
+            <div class="dica">No Simples, o tomador usa a alíquota informada na nota: o percentual efetivo de ISS da faixa do mês anterior até 2026 e, a partir de 2027, da faixa do próprio mês da prestação (Res. CGSN 140/2018, art. 27, na redação da Res. CGSN 190/2026). Deixe a alíquota em branco para ver a regra dos 5% quando a nota não informa.</div>
             <div class="campos">
               <div class="campo"><label for="issRbt12">RBT12 do prestador</label><input id="issRbt12" class="num moeda" value="600.000,00"></div>
-              <div class="campo" style="align-content:end"><label class="marcar"><input type="checkbox" id="issMesInicio"> Mês de início de atividade</label></div>
+              <div class="campo" style="align-content:end"><label class="marcar"><input type="checkbox" id="issMesInicio"> <span id="rotIssInicio">Mês de início de atividade</span></label></div>
             </div>
             <div class="linha-acoes"><button type="button" class="btn" id="btnIssSimples">Calcular alíquota pela RBT12</button><span class="dica" id="issSimplesRegra"></span></div>
           </div>
@@ -175,9 +176,9 @@
     </div>
   </div>
 </div>
-<script src="../simples-comum/simples.js?v=1"></script>
+<script src="../simples-comum/simples.js?v=2"></script>
 <script src="../simples-comum/ui.js?v=1"></script>
-<script src="retencoes.js?v=1"></script>
+<script src="retencoes.js?v=2"></script>
 <script>
 (function () {
   "use strict";
@@ -205,6 +206,7 @@
     var simples = $("regime").value === "simples";
     $("blocoAnexo").classList.toggle("oculto", !simples);
     $("blocoNatureza").classList.toggle("oculto", tomador !== "privado");
+    $("blocoTomadorSimples").classList.toggle("oculto", tomador !== "privado");
     $("blocoCodigo").classList.toggle("oculto", tomador === "privado");
     $("blocoVeiculos").classList.toggle("oculto", !(tomador === "privado" && $("natureza").value === "propaganda"));
     $("blocoIssSimples").classList.toggle("oculto", !simples);
@@ -218,7 +220,7 @@
     var issTxt = $("issAliquota").value.trim();
     var r = R.calcular({
       ano: ano, tomador: tomador, valor: valor, regime: $("regime").value, anexoSimples: $("anexo").value,
-      natureza: $("natureza").value, valorVeiculos: moedaCampo("veiculos"), codigo: $("codigo").value,
+      natureza: $("natureza").value, tomadorSimples: tomador === "privado" && $("tomadorSimples").checked, valorVeiculos: moedaCampo("veiculos"), codigo: $("codigo").value,
       inss: { aplica: inssOn, servico: $("inssServico").value, materiais: $("inssMateriais").value, valorMateriais: moedaCampo("inssValorMateriais"),
         tipoConstrucao: $("tipoConstrucao").value, deducoes: moedaCampo("inssDeducoes"), especial: Number($("inssEspecial").value),
         valorEspecial: moedaCampo("inssValorEspecial"), dispensa: $("inssDispensa").value },
@@ -272,13 +274,13 @@
     });
   }
   segmento("segTomador", function (v) { tomador = v; $("dicaTomador").textContent = DICAS[v]; });
-  segmento("segAno", function (v) { ano = Number(v); });
+  segmento("segAno", function (v) { ano = Number(v); $("rotIssInicio").textContent = ano >= 2027 ? "Mês de início de atividade ou o seguinte" : "Mês de início de atividade"; });
   $("dicaTomador").textContent = DICAS.privado;
 
   $("btnIssSimples").addEventListener("click", function () {
     var rbt12 = U.valorCampo($("issRbt12"));
     var anexo = $("anexo").value;
-    var res = S.aliquotaRetencaoIss({ anexo: anexo, rbt12: Number.isFinite(rbt12) ? rbt12 : 0, mesInicio: $("issMesInicio").checked });
+    var res = S.aliquotaRetencaoIss({ anexo: anexo, rbt12: Number.isFinite(rbt12) ? rbt12 : 0, mesInicio: $("issMesInicio").checked, ano: ano });
     if (res.aliquota == null) { $("issSimplesRegra").textContent = res.regra; return; }
     $("issAplica").checked = true;
     $("issAliquota").value = U.numero(res.aliquota, 4);

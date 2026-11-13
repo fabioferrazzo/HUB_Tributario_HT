@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Alíquota efetiva do Simples Nacional — H. Teixeira</title>
-<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+<link rel="stylesheet" href="../simples-comum/simples.css?v=2">
+<style>.campo { align-content: start; }</style>
 </head>
 <body>
 <div class="app">
   <header class="topo">
     <div>
       <h1>Alíquota efetiva do Simples Nacional</h1>
-      <p>Alíquota efetiva, partilha por tributo e percentuais de ICMS e ISS para a nota fiscal (Anexos I a V da LC 123/2006).</p>
+      <p>Alíquota efetiva, partilha por tributo e percentuais para a nota fiscal (ICMS, ISS e, a partir de 2027, CBS e IBS).</p>
     </div>
-    <span class="selo">Tabelas da LC 155/2016 · conferidas em 13/11/2026</span>
+    <span class="selo" id="selo">LC 155/2016 e Res. CGSN 190/2026 · conferidas em 13/11/2026</span>
   </header>
 
   <div class="grade">
@@ -21,7 +22,11 @@
       <div class="cab"><h2>Dados</h2></div>
       <div class="corpo">
         <div class="campos">
-          <div class="campo inteiro">
+          <div class="campo">
+            <label for="periodo">Período de apuração</label>
+            <select id="periodo"></select>
+          </div>
+          <div class="campo">
             <label for="anexo">Anexo</label>
             <select id="anexo">
               <option value="I">Anexo I — Comércio</option>
@@ -32,20 +37,22 @@
             </select>
           </div>
           <div class="campo inteiro">
-            <label for="rbt12">Receita bruta dos 12 meses anteriores (RBT12)</label>
+            <label for="rbt12">Receita bruta dos 12 meses (RBT12)</label>
             <input id="rbt12" class="num moeda" value="500.000,00">
-            <div class="dica" id="dicaRbt">Receita dos 12 meses anteriores ao período de apuração (mercado interno e externo).</div>
+            <div class="dica" id="dicaRbt"></div>
           </div>
           <label class="marcar campo inteiro"><input type="checkbox" id="inicio"> Empresa com menos de 13 meses de atividade</label>
-          <div class="campo oculto inicio"><label for="mesesAnteriores">Meses de atividade antes do período</label><input id="mesesAnteriores" class="num" inputmode="numeric" value="0"></div>
-          <div class="campo oculto inicio"><label for="receitaAnteriores">Receita desses meses</label><input id="receitaAnteriores" class="num moeda" value="0,00"></div>
-          <div class="campo inteiro oculto inicio"><div class="dica">Com 0 meses (mês de início), a RBT12 é a receita do próprio mês × 12; depois, a média dos meses anteriores × 12 (Res. CGSN 140/2018, art. 22, §§ 2º e 3º).</div></div>
+          <div class="campo oculto inicio26"><label for="mesesAnteriores">Meses de atividade antes do período</label><input id="mesesAnteriores" class="num" inputmode="numeric" value="0"></div>
+          <div class="campo oculto inicio26"><label for="receitaAnteriores">Receita desses meses</label><input id="receitaAnteriores" class="num moeda" value="0,00"></div>
+          <div class="campo oculto inicio27"><label for="mesAtividade">Mês de atividade do período (1º, 2º…)</label><input id="mesAtividade" class="num" inputmode="numeric" value="1"></div>
+          <div class="campo oculto inicio27"><label for="receitaAntecedentes">Receita dos meses antes do mês anterior</label><input id="receitaAntecedentes" class="num moeda" value="0,00"></div>
+          <div class="campo inteiro oculto" id="dicaInicioBox"><div class="dica" id="dicaInicio"></div></div>
           <div class="campo inteiro">
             <label for="receita">Receita bruta do mês (período de apuração)</label>
             <input id="receita" class="num moeda" value="50.000,00">
           </div>
           <div class="campo inteiro oculto" id="blocoSexta">
-            <label for="impedido">ICMS/ISS na 6ª faixa</label>
+            <label for="impedido" id="rotImpedido">Na 6ª faixa</label>
             <select id="impedido">
               <option value="nao">Continua no Simples (sublimite de R$ 3,6 milhões não excedido no ano)</option>
               <option value="sim">Fora do Simples (impedida pelo sublimite — recolhe pelo regime normal)</option>
@@ -57,8 +64,8 @@
         <summary><h2 id="tituloNota">Nota fiscal</h2></summary>
         <div class="corpo">
           <div class="campo"><label for="valorOperacao">Valor da operação / do serviço</label><input id="valorOperacao" class="num moeda" value="1.000,00"></div>
-          <label class="marcar oculto" id="blocoPrimeirosMeses"><input type="checkbox" id="primeirosMeses"> Operação nos 2 primeiros meses de atividade</label>
-          <label class="marcar oculto" id="blocoMesInicio"><input type="checkbox" id="mesInicio"> Serviço prestado no mês de início de atividade</label>
+          <label class="marcar oculto" id="blocoPrimeirosMeses"><input type="checkbox" id="primeirosMeses"> <span id="rotPrimeirosMeses">Operação nos 2 primeiros meses de atividade</span></label>
+          <label class="marcar oculto" id="blocoMesInicio"><input type="checkbox" id="mesInicio"> <span id="rotMesInicio">Serviço prestado no mês de início de atividade</span></label>
           <div class="dica" id="dicaNota"></div>
         </div>
       </details>
@@ -90,6 +97,8 @@
           <div class="kpis">
             <div class="kpi"><div class="rot" id="nRot">Alíquota</div><div class="val" id="nAliquota">—</div><div class="sub" id="nAliquotaSub">—</div></div>
             <div class="kpi"><div class="rot" id="nValorRot">Valor</div><div class="val" id="nValor">—</div><div class="sub" id="nValorSub">—</div></div>
+            <div class="kpi oculto" id="kCbsBox"><div class="rot">Crédito de CBS do adquirente</div><div class="val" id="nCbs">—</div><div class="sub" id="nCbsSub">—</div></div>
+            <div class="kpi oculto" id="kIbsBox"><div class="rot">Crédito de IBS do adquirente</div><div class="val" id="nIbs">—</div><div class="sub" id="nIbsSub">—</div></div>
           </div>
           <div class="texto-nota" id="nTexto"></div>
           <div class="dica" id="nRegra"></div>
@@ -101,100 +110,160 @@
         <div class="tabela-rolagem"><table><thead id="cabTabelaAnexo"></thead><tbody id="tabelaAnexo"></tbody></table></div>
       </details>
 
-      <div class="aviso neutro">A partir de 01/2027, a CBS e o IBS substituem o PIS/Pasep e a Cofins na partilha, com o mesmo total; as alíquotas efetivas e os percentuais de ICMS e ISS não mudam (LC 123/2006, art. 18, § 1º-C). Para destacar CBS/IBS, use o simulador <strong>Alíquota IBS/CBS no Simples</strong>.</div>
-      <div class="fontes">Fontes: LC 123/2006, art. 18 e Anexos I a V (redação da LC 155/2016); Res. CGSN 140/2018, arts. 21, 22, 27 e 60. Cálculo de apoio para uma única atividade, sem segregação de receitas (exportação, ST, monofásicos, ISS fixo ou retido) e sem reduções e isenções concedidas por Estado ou Município.</div>
+      <div class="aviso neutro" id="avisoPeriodo"></div>
+      <div class="fontes">Fontes: LC 123/2006, art. 18 e Anexos I a V (redação da LC 155/2016) e Res. CGSN 140/2018, arts. 21, 22, 27 e 60 (até 2026); Res. CGSN 190/2026, Anexos I a V e arts. 21, 22, 26, 27 e 58 (a partir de 01/2027); EC 132/2023, ADCT, arts. 128 e 129. Cálculo de apoio para uma única atividade, sem segregação de receitas (exportação, ST, monofásicos, ISS fixo ou retido), sem opção pelo regime regular de CBS/IBS e sem reduções e isenções concedidas por Estado ou Município.</div>
     </div>
   </div>
 </div>
-<script src="../simples-comum/simples.js?v=1"></script>
+<script src="../simples-comum/simples.js?v=2"></script>
 <script src="../simples-comum/ui.js?v=1"></script>
 <script>
 (function () {
   "use strict";
   var S = window.SimplesHT, U = window.SimUI, $ = function (id) { return document.getElementById(id); };
   var textoNota = "";
+  var ANO_PERIODO = { "2026": 2026, "2027": 2027, "2029": 2029, "2030": 2030, "2031": 2031, "2032": 2032, "2033": 2033 };
+  $("periodo").innerHTML = S.PERIODOS.map(function (p) { return '<option value="' + p.id + '">' + U.esc(p.rotulo) + "</option>"; }).join("");
 
-  function rbt12Atual() {
-    if ($("inicio").checked) {
-      var n = Math.max(0, Math.floor(U.parseBR($("mesesAnteriores").value) || 0));
-      var v = S.rbt12InicioAtividade(n, U.valorCampo($("receitaAnteriores")) || 0, U.valorCampo($("receita")) || 0);
-      $("rbt12").value = U.numero(v, 2);
-      return v;
+  function ano() { return ANO_PERIODO[$("periodo").value]; }
+  function novo() { return S.reforma(ano()); }
+
+  function entrada() {
+    var inicio = $("inicio").checked;
+    Array.prototype.forEach.call(document.querySelectorAll(".inicio26"), function (el) { el.classList.toggle("oculto", !(inicio && !novo())); });
+    Array.prototype.forEach.call(document.querySelectorAll(".inicio27"), function (el) { el.classList.toggle("oculto", !(inicio && novo())); });
+    $("dicaInicioBox").classList.toggle("oculto", !inicio);
+    $("rbt12").readOnly = inicio;
+    $("dicaRbt").textContent = novo()
+      ? "Receita dos 12 meses antes do mês anterior ao período de apuração — ex.: para 01/2027, de 12/2025 a 11/2026 (Res. CGSN 190/2026, art. 21, II, a)."
+      : "Receita dos 12 meses anteriores ao período de apuração, mercado interno e externo (Res. CGSN 140/2018, art. 21).";
+    if (!inicio) return { rbt12: U.valorCampo($("rbt12")), primeiraFaixa: false };
+    if (novo()) {
+      var r = S.inicioAtividade2027(U.parseBR($("mesAtividade").value), U.valorCampo($("receitaAntecedentes")) || 0);
+      $("dicaInicio").textContent = r.primeiraFaixa
+        ? "1º e 2º mês de atividade: alíquotas da 1ª faixa (Res. CGSN 190/2026, art. 22, § 2º, I)."
+        : "Do 3º ao 13º mês: média da receita dos " + r.meses + " meses antes do mês anterior × 12 (art. 22, § 2º, II).";
+      $("rbt12").value = r.primeiraFaixa ? "—" : U.numero(r.rbt12, 2);
+      return { rbt12: r.primeiraFaixa ? 0 : r.rbt12, primeiraFaixa: r.primeiraFaixa };
     }
-    return U.valorCampo($("rbt12"));
+    var n = Math.max(0, Math.floor(U.parseBR($("mesesAnteriores").value) || 0));
+    var v = S.rbt12InicioAtividade(n, U.valorCampo($("receitaAnteriores")) || 0, U.valorCampo($("receita")) || 0);
+    $("dicaInicio").textContent = "Com 0 meses (mês de início), a RBT12 é a receita do próprio mês × 12; depois, a média dos meses anteriores × 12 (Res. CGSN 140/2018, art. 22, §§ 2º e 3º).";
+    $("rbt12").value = U.numero(v, 2);
+    return { rbt12: v, primeiraFaixa: false };
   }
 
   function calcular() {
-    var anexo = $("anexo").value, cfg = S.ANEXOS[anexo];
-    var rbt12 = rbt12Atual(), receita = U.valorCampo($("receita"));
-    var avisos = [];
+    var anexo = $("anexo").value, cfg = S.tabela(anexo, ano());
+    var e = entrada(), rbt12 = e.rbt12, receita = U.valorCampo($("receita"));
     if (!Number.isFinite(rbt12) || rbt12 < 0) { mostrarErro("Informe a RBT12 em reais (ex.: 500.000,00)."); return; }
     if (!Number.isFinite(receita) || receita < 0) { mostrarErro("Informe a receita bruta do mês em reais."); return; }
-    $("blocoSexta").classList.toggle("oculto", !(rbt12 > 3600000));
-    var impedido = rbt12 > 3600000 && $("impedido").value === "sim";
-    var c = S.calcular({ anexo: anexo, rbt12: rbt12, receita: receita, impedido: impedido });
+    var sexta = rbt12 > 3600000 && !e.primeiraFaixa;
+    $("blocoSexta").classList.toggle("oculto", !sexta);
+    var foraNomes = [cfg.local, novo() ? "IBS" : null].filter(Boolean).join(" e ");
+    $("rotImpedido").textContent = foraNomes + " na 6ª faixa";
+    var impedido = sexta && $("impedido").value === "sim";
+    var c = S.calcular({ anexo: anexo, rbt12: rbt12, receita: receita, impedido: impedido, ano: ano(), primeiraFaixa: e.primeiraFaixa });
 
     $("kAliquota").textContent = U.pct(c.aliquotaTotal, 4);
-    $("kAliquotaSub").textContent = c.faixa === 6 && !c.localFora ? "federais da 6ª faixa + " + c.local + " pela 5ª faixa" : "(RBT12 × " + U.pct(c.nominal, 2) + " − " + U.moeda(c.deduzir) + ") ÷ RBT12";
+    $("kAliquotaSub").textContent = c.faixa === 6 && !c.localFora && (c.local || novo()) ? "federais da 6ª faixa + " + foraNomes + " pela 5ª faixa" : e.primeiraFaixa ? "alíquota nominal da 1ª faixa" : "(RBT12 × " + U.pct(c.nominal, 2) + " − " + U.moeda(c.deduzir) + ") ÷ RBT12";
     $("kFaixa").textContent = c.faixa + "ª faixa";
     $("kFaixaSub").textContent = "nominal " + U.pct(c.nominal, 2) + " · dedução " + U.moeda(c.deduzir);
     $("kDas").textContent = U.moeda(c.das);
-    $("kLocalRot").textContent = c.local + (c.local === "ICMS" ? " (crédito na NF-e)" : " (retenção na NFS-e)");
-    $("kLocal").textContent = c.localFora ? "fora do Simples" : U.pct(c.percentualLocal, 4);
-    $("kLocalSub").textContent = c.localFora ? "regime normal" : "percentual efetivo do " + c.local;
+    if (c.local) {
+      $("kLocalRot").textContent = c.local + (c.local === "ICMS" ? " (crédito na NF-e)" : " (retenção na NFS-e)");
+      $("kLocal").textContent = c.localFora ? "fora do Simples" : U.pct(c.percentualLocal, 4);
+      $("kLocalSub").textContent = c.localFora ? "regime normal" : "percentual efetivo do " + c.local;
+    } else {
+      $("kLocalRot").textContent = "CBS + IBS";
+      $("kLocal").textContent = U.pct((c.percentualCbs || 0) + (c.percentualIbs || 0), 4);
+      $("kLocalSub").textContent = "ICMS e ISS extintos em 2033";
+    }
 
+    var sub = [c.local, "IBS"];
     var linhas = c.linhas.map(function (l) {
-      return '<tr class="' + (l.tributo === c.local ? "local" : "") + '"><td>' + U.esc(l.nome) + "</td><td>" + (l.reparticao == null ? "—" : U.pct(l.reparticao, 2)) +
-        "</td><td>" + (l.tributo === c.local && c.localFora ? "fora do Simples" : U.pct(l.percentual, 5)) + "</td><td>" + U.moeda(l.valor) + "</td></tr>";
+      var fora = c.localFora && sub.indexOf(l.tributo) >= 0;
+      return '<tr class="' + (l.tributo === c.local || l.tributo === "IBS" || l.tributo === "CBS" ? "local" : "") + '"><td>' + U.esc(l.nome) + "</td><td>" + (l.reparticao == null ? "—" : U.pct(l.reparticao, 2)) +
+        "</td><td>" + (fora ? "fora do Simples" : U.pct(l.percentual, 5)) + "</td><td>" + U.moeda(l.valor) + "</td></tr>";
     });
     linhas.push('<tr class="total"><td>Total</td><td></td><td>' + U.pct(c.aliquotaTotal, 5) + "</td><td>" + U.moeda(c.das) + "</td></tr>");
     $("tabelaPartilha").innerHTML = linhas.join("");
-    $("formula").innerHTML = "<strong>Alíquota efetiva</strong> = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (" + U.moeda(c.rbt12Calculo) + " × " + U.pct(c.nominal, 2) +
-      " − " + U.moeda(c.deduzir) + ") ÷ " + U.moeda(c.rbt12Calculo) + " = <strong>" + U.pct(c.efetiva, 5) + "</strong>. " + U.esc(c.regra);
+    $("formula").innerHTML = e.primeiraFaixa
+      ? "<strong>Alíquota efetiva</strong> = alíquota nominal da 1ª faixa = <strong>" + U.pct(c.efetiva, 2) + "</strong>. " + U.esc(c.regra)
+      : "<strong>Alíquota efetiva</strong> = (RBT12 × alíquota nominal − parcela a deduzir) ÷ RBT12 = (" + U.moeda(c.rbt12Calculo) + " × " + U.pct(c.nominal, 2) +
+        " − " + U.moeda(c.deduzir) + ") ÷ " + U.moeda(c.rbt12Calculo) + " = <strong>" + U.pct(c.efetiva, 5) + "</strong>. " + U.esc(c.regra);
 
-    avisos = avisos.concat(c.avisos);
-    $("avisos").innerHTML = avisos.map(function (a) { return '<div class="aviso">' + U.esc(a) + "</div>"; }).join("");
-    nota(c, anexo, rbt12, impedido);
+    $("avisos").innerHTML = c.avisos.map(function (a) { return '<div class="aviso">' + U.esc(a) + "</div>"; }).join("");
+    nota(c, anexo, rbt12, impedido, e.primeiraFaixa);
     tabelaAnexo(cfg, c.faixa);
+    $("avisoPeriodo").innerHTML = novo()
+      ? "Período " + U.esc(S.PERIODOS.filter(function (p) { return p.id === $("periodo").value; })[0].rotulo) + ": tabelas da Res. CGSN 190/2026, com CBS no lugar de PIS/Cofins e o IBS entrando na partilha" + ($("periodo").value === "2033" ? "; ICMS e ISS extintos." : ", enquanto ICMS e ISS diminuem até 2032.") + " Quem optou por recolher CBS e IBS pelo regime regular paga o DAS sem essas parcelas (art. 22-A)."
+      : "Até 12/2026 valem as tabelas da LC 155/2016 (com PIS/Pasep e Cofins). Escolha o período de 2027 em diante para ver as tabelas da Res. CGSN 190/2026, com CBS e IBS.";
   }
 
-  function nota(c, anexo, rbt12, impedido) {
-    var icms = c.local === "ICMS", valor = U.valorCampo($("valorOperacao"));
-    $("blocoPrimeirosMeses").classList.toggle("oculto", !icms);
-    $("blocoMesInicio").classList.toggle("oculto", icms);
-    $("tituloNota").textContent = icms ? "Nota fiscal (crédito de ICMS)" : "Nota fiscal (retenção de ISS)";
-    $("tituloCartao").textContent = icms ? "Crédito de ICMS na NF-e" : "Alíquota de ISS na NFS-e";
-    $("dicaNota").textContent = icms
-      ? "Para o crédito, use a RBT12 do mês anterior ao da operação (Res. CGSN 140/2018, art. 60, § 1º)."
-      : "Para a retenção, use a RBT12 do mês anterior ao da prestação (Res. CGSN 140/2018, art. 27, I).";
-    var r = icms ? S.creditoIcms({ anexo: anexo, rbt12: rbt12, impedido: impedido, primeirosMeses: $("primeirosMeses").checked })
-      : S.aliquotaRetencaoIss({ anexo: anexo, rbt12: rbt12, impedido: impedido, mesInicio: $("mesInicio").checked });
-    $("nRot").textContent = icms ? "Alíquota do crédito" : "Alíquota do ISS";
-    $("nValorRot").textContent = icms ? "Valor do crédito" : "Valor do ISS retido";
-    $("nRegra").textContent = r.regra;
-    if (r.aliquota == null) {
-      $("nAliquota").textContent = "—"; $("nAliquotaSub").textContent = "regime normal"; $("nValor").textContent = "—"; $("nValorSub").textContent = "—";
-      textoNota = ""; $("nTexto").textContent = "Sem texto do Simples para esta situação."; $("btnCopiar").disabled = true; return;
+  function nota(c, anexo, rbt12, impedido, primeiraFaixa) {
+    var icms = c.local === "ICMS", iss = c.local === "ISS", valor = U.valorCampo($("valorOperacao"));
+    $("blocoPrimeirosMeses").classList.toggle("oculto", !(icms || (!c.local && novo())));
+    $("blocoMesInicio").classList.toggle("oculto", !iss);
+    $("rotPrimeirosMeses").textContent = novo() ? "Operação no mês de início de atividade" : "Operação nos 2 primeiros meses de atividade";
+    $("rotMesInicio").textContent = novo() ? "Serviço prestado no mês de início de atividade ou no seguinte" : "Serviço prestado no mês de início de atividade";
+    $("tituloNota").textContent = icms ? "Nota fiscal (crédito de ICMS)" : iss ? "Nota fiscal (retenção de ISS)" : "Nota fiscal (crédito de CBS e IBS)";
+    $("tituloCartao").textContent = icms ? "Crédito de ICMS na NF-e" : iss ? "Alíquota de ISS na NFS-e" : "Crédito de CBS e IBS na nota";
+    $("dicaNota").textContent = novo()
+      ? "A partir de 2027 os percentuais da nota são os da faixa do próprio mês da operação (Res. CGSN 190/2026, arts. 27, I, e 58, §§ 1º-A e 5º)."
+      : icms ? "Para o crédito, use a RBT12 do mês anterior ao da operação (Res. CGSN 140/2018, art. 60, § 1º)." : "Para a retenção, use a RBT12 do mês anterior ao da prestação (Res. CGSN 140/2018, art. 27, I).";
+    var inicioMarcado = icms || !c.local ? $("primeirosMeses").checked : $("mesInicio").checked;
+    var r = null;
+    if (icms) r = S.creditoIcms({ anexo: anexo, rbt12: rbt12, impedido: impedido, primeirosMeses: $("primeirosMeses").checked || (novo() && primeiraFaixa), ano: ano() });
+    else if (iss) r = S.aliquotaRetencaoIss({ anexo: anexo, rbt12: rbt12, impedido: impedido, mesInicio: $("mesInicio").checked, ano: ano() });
+    var partes = [];
+    $("btnCopiar").disabled = true;
+    textoNota = "";
+    ["nAliquota", "nValor"].forEach(function (id) { $(id).textContent = "—"; });
+    if (r) {
+      $("nRot").textContent = icms ? "Alíquota do crédito" : "Alíquota do ISS";
+      $("nValorRot").textContent = icms ? "Valor do crédito" : "Valor do ISS retido";
+      $("nRegra").textContent = r.regra;
+      if (r.aliquota == null) {
+        $("nAliquotaSub").textContent = "regime normal"; $("nValorSub").textContent = "—";
+      } else {
+        var aliq2 = Math.round(r.aliquota * 100) / 100;
+        var v = Number.isFinite(valor) ? Math.round(valor * aliq2) / 100 : NaN;
+        $("nAliquota").textContent = U.pct(aliq2, 2);
+        $("nAliquotaSub").textContent = "calculada: " + U.pct(r.aliquota, 4);
+        $("nValor").textContent = U.moeda(v);
+        $("nValorSub").textContent = "sobre " + U.moeda(valor);
+        partes.push(icms
+          ? "PERMITE O APROVEITAMENTO DO CRÉDITO DE ICMS NO VALOR DE " + U.moeda(v).replace(/ /g, " ") + "; CORRESPONDENTE À ALÍQUOTA DE " + U.numero(aliq2, 2) + "%, NOS TERMOS DO ART. 23 DA LEI COMPLEMENTAR Nº 123, DE 2006"
+          : "Prestador optante pelo Simples Nacional. Alíquota de ISS para retenção na fonte: " + U.numero(aliq2, 2) + "% (LC 123/2006, art. 21, § 4º; Res. CGSN 140/2018, art. 27" + (novo() ? ", na redação da Res. CGSN 190/2026" : "") + "). Valor do ISS: " + U.moeda(v).replace(/ /g, " ") + ".");
+      }
+    } else {
+      $("nRot").textContent = "Alíquota"; $("nValorRot").textContent = "Valor"; $("nAliquotaSub").textContent = "—"; $("nValorSub").textContent = "—";
+      $("nRegra").textContent = "";
     }
-    var aliq2 = Math.round(r.aliquota * 100) / 100;
-    var v = Number.isFinite(valor) ? Math.round(valor * aliq2) / 100 : NaN;
-    $("nAliquota").textContent = U.pct(aliq2, 2);
-    $("nAliquotaSub").textContent = "calculada: " + U.pct(r.aliquota, 4);
-    $("nValor").textContent = U.moeda(v);
-    $("nValorSub").textContent = "sobre " + U.moeda(valor);
-    $("btnCopiar").disabled = false;
-    textoNota = icms
-      ? "PERMITE O APROVEITAMENTO DO CRÉDITO DE ICMS NO VALOR DE " + U.moeda(v).replace(/ /g, " ") + "; CORRESPONDENTE À ALÍQUOTA DE " + U.numero(aliq2, 2) + "%, NOS TERMOS DO ART. 23 DA LEI COMPLEMENTAR Nº 123, DE 2006"
-      : "Prestador optante pelo Simples Nacional. Alíquota de ISS para retenção na fonte: " + U.numero(aliq2, 2) + "% (LC 123/2006, art. 21, § 4º; Res. CGSN 140/2018, art. 27). Valor do ISS: " + U.moeda(v).replace(/ /g, " ") + ".";
-    $("nTexto").textContent = textoNota;
+    $("kCbsBox").classList.toggle("oculto", !novo());
+    $("kIbsBox").classList.toggle("oculto", !novo());
+    if (novo()) {
+      var k = S.creditoCbsIbs({ anexo: anexo, rbt12: rbt12, impedido: impedido, mesInicio: inicioMarcado || primeiraFaixa, ano: ano() });
+      var vc = Number.isFinite(valor) && k.cbs != null ? Math.round(valor * k.cbs) / 100 : NaN;
+      var vi = Number.isFinite(valor) && k.ibs != null ? Math.round(valor * k.ibs) / 100 : NaN;
+      $("nCbs").textContent = k.cbs == null ? "—" : U.pct(k.cbs, 4); $("nCbsSub").textContent = Number.isFinite(vc) ? U.moeda(vc) + " sobre " + U.moeda(valor) : "—";
+      $("nIbs").textContent = k.ibs == null ? "fora do Simples" : U.pct(k.ibs, 4); $("nIbsSub").textContent = Number.isFinite(vi) ? U.moeda(vi) + " sobre " + U.moeda(valor) : "—";
+      if (k.cbs != null) partes.push("Optante pelo Simples Nacional. Crédito ao adquirente: CBS " + U.numero(k.cbs, 4) + "% (" + U.moeda(vc).replace(/ /g, " ") + ")" + (k.ibs != null ? "; IBS " + U.numero(k.ibs, 4) + "% (" + U.moeda(vi).replace(/ /g, " ") + ")" : "") + " — LC 123/2006, art. 23, § 1º-A.");
+      $("nRegra").textContent = ($("nRegra").textContent ? $("nRegra").textContent + " " : "") + k.regra;
+    }
+    textoNota = partes.join("\n");
+    $("nTexto").textContent = textoNota || "Sem texto do Simples para esta situação.";
+    $("btnCopiar").disabled = !textoNota;
   }
 
   function tabelaAnexo(cfg, faixaAtual) {
-    $("tituloTabela").textContent = "Tabela do " + cfg.nome;
+    var sub = [cfg.local, "IBS"];
+    $("tituloTabela").textContent = "Tabela do " + cfg.nome + " — " + S.PERIODOS.filter(function (p) { return p.id === $("periodo").value; })[0].rotulo;
     $("cabTabelaAnexo").innerHTML = "<tr><th>Faixa</th><th>RBT12 até</th><th>Nominal</th><th>Dedução</th>" + cfg.tributos.map(function (t) { return "<th>" + S.NOMES_TRIBUTOS[t] + "</th>"; }).join("") + "</tr>";
     $("tabelaAnexo").innerHTML = cfg.faixas.map(function (f, i) {
       return '<tr class="' + (i + 1 === faixaAtual ? "atual" : "") + '"><td>' + (i + 1) + "ª</td><td>" + U.moeda(S.LIMITES[i]) + "</td><td>" + U.pct(f[0], 2) + "</td><td>" + U.moeda(f[1]) + "</td>" +
-        cfg.partilha[i].map(function (p, j) { return "<td>" + (i === 5 && cfg.tributos[j] === cfg.local ? "—" : U.pct(p, 2)) + "</td>"; }).join("") + "</tr>";
+        cfg.partilha[i].map(function (p, j) { return "<td>" + (i === 5 && sub.indexOf(cfg.tributos[j]) >= 0 ? "—" : U.pct(p, 2)) + "</td>"; }).join("") + "</tr>";
     }).join("");
   }
 
@@ -205,11 +274,6 @@
   }
 
   U.prepararCamposMoeda();
-  $("inicio").addEventListener("change", function () {
-    Array.prototype.forEach.call(document.querySelectorAll(".inicio"), function (el) { el.classList.toggle("oculto", !$("inicio").checked); });
-    $("rbt12").readOnly = $("inicio").checked;
-    calcular();
-  });
   Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); el.addEventListener("change", calcular); });
   $("btnCopiar").addEventListener("click", function () { if (textoNota) U.copiar(textoNota, $("btnCopiar")); });
   calcular();

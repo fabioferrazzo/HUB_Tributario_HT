@@ -7,6 +7,8 @@
  *  - alíquota zero: cesta básica nacional (art. 125, Anexo I) e hortícolas, frutas e ovos (art. 148, Anexo XV);
  *  - redução de 60%: alimentos do Anexo VII (art. 135), produtos in natura (art. 137) e insumos do Anexo IX (art. 138);
  *  - transição: CBS 0,9% e IBS 0,1% em 2026 (arts. 343 e 346); CBS menos 0,1 ponto e IBS 0,1% em 2027–2028 (arts. 344 e 347).
+ *  - Regulamento da CBS (Decreto 12.955/2026, arts. 238 a 249; mesmas regras na Resolução CGIBS 6/2026): conceito de
+ *    produtor rural, receita que conta para o limite, Simples Nacional (art. 239, § 7º), fórmula do crédito presumido (art. 247).
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
@@ -52,16 +54,20 @@
   }
 
   // ---------- Enquadramento ----------
-  // o = { receitaAnoAnterior, receitaAnoAtual, mesExcesso (1-12), mesesAtividade (início no ano, 1-12), outrasEmpresasAgro, integrado, limite }
+  // o = { receitaAnoAnterior, receitaAnoAtual, mesExcesso (1-12), mesesAtividade (início no ano, 1-12), outrasEmpresasAgro, integrado, limite,
+  //       simplesSemOpcao (PJ do Simples Nacional sem opção pelo regime regular de CBS/IBS) }
   function enquadramento(o) {
     var limite = num(o.limite) || LIMITE, motivos = [], situacao, inicio = null;
     var meses = Math.floor(num(o.mesesAtividade));
     var limiteAno = meses > 0 && meses < 12 ? arred(limite / 12 * meses) : limite;
     var outras = num(o.outrasEmpresasAgro);
     var anterior = num(o.receitaAnoAnterior) + outras, atual = num(o.receitaAnoAtual) + outras;
-    if (o.integrado) {
+    if (o.simplesSemOpcao) {
+      situacao = "simples";
+      motivos.push("Produtor pessoa jurídica do Simples Nacional sem a opção de apurar CBS e IBS pelo regime regular: não é “não contribuinte”; recolhe CBS e IBS dentro do DAS e o comprador credita os percentuais do Simples (Decreto 12.955/2026, art. 239, § 7º; LC 123/2006, art. 23, § 1º-A).");
+    } else if (o.integrado) {
       situacao = "naoContribuinte";
-      motivos.push("Produtor rural integrado (contrato de integração vertical) não é contribuinte, qualquer que seja a receita (art. 164, caput e § 1º).");
+      motivos.push("Produtor rural integrado (contrato de integração vertical) não é contribuinte nos fornecimentos do contrato de integração, qualquer que seja a receita, ainda que seja contribuinte em outras operações (art. 164, caput e § 1º; Decreto 12.955/2026, art. 239, II e § 5º).");
     } else if (anterior >= limite) {
       situacao = "contribuinte";
       motivos.push("Receita do ano anterior de " + fmt(anterior) + ", igual ou acima de " + fmt(limite) + ": é contribuinte do regime regular (art. 164).");

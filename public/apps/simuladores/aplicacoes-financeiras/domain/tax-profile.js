@@ -391,7 +391,9 @@ export function simulateFinancialTaxes({events, positions = [], banks = [], prof
   }
 
   const futureConsumptionTax = effectiveProfile.taxYear != null && effectiveProfile.taxYear >= 2027;
-  if (futureConsumptionTax) warnings.push('A partir de 2027, PIS/Cofins são substituídos no cronograma da Reforma Tributária do Consumo. O app mantém CBS/IBS em revisão normativa e não calcula automaticamente esses tributos sobre aplicações financeiras.');
+  if (futureConsumptionTax) warnings.push(effectiveProfile.entityType === ENTITY_TYPES.GENERAL_NON_FINANCIAL
+    ? 'A partir de 2027, PIS e Cofins deixam de existir (LC 214/2025, art. 542) e CBS/IBS não incidem sobre rendimentos financeiros (LC 214/2025, art. 6º, V). IRPJ e CSLL continuam.'
+    : 'A partir de 2027, PIS e Cofins deixam de existir (LC 214/2025, art. 542). Instituição financeira ou entidade especial: os rendimentos podem entrar no regime específico de serviços financeiros da CBS/IBS (LC 214/2025, art. 6º, V) — revisão manual.');
 
   const reviewRows = memory.filter(row => row.requiresReview);
   const pendingRows = memory.filter(row => row.evidencePendingCount > 0 || row.irrfPendingCount > 0);
@@ -436,16 +438,32 @@ export function simulateFinancialTaxes({events, positions = [], banks = [], prof
   if (memory.some(row => row.lrStatus === 'ZERO_RATE_BY_RULE' || row.lrStatus === 'CUSTOM_RATE_BY_RULE')) warnings.push('Há aplicação com tratamento especial de PIS/Cofins definido pelo usuário. Revise a justificativa e a base normativa externa.');
 
   if (futureConsumptionTax) {
+    if (effectiveProfile.entityType !== ENTITY_TYPES.GENERAL_NON_FINANCIAL) {
+      return {
+        ...common,
+        mode: 'LUCRO_REAL',
+        status: 'REQUIRES_REVIEW',
+        taxBaseCents: pisCofinsBaseCents,
+        accountingInputCents,
+        basisMethod: 'PERIOD_INCOME_BY_POSITION_WITH_REALIZED_FALLBACK',
+        pisCents: null,
+        cofinsCents: null,
+        futureConsumptionTax: {system:'CBS_IBS',status:'REVISÃO — SERVIÇOS FINANCEIROS',reviewRequired:true},
+        warnings,
+      };
+    }
     return {
       ...common,
       mode: 'LUCRO_REAL',
-      status: 'REQUIRES_REVIEW',
+      status: reviewRows.length || pendingRows.length || base.lucroRealPendingCount || base.pendingPeriodIncomeCount ? 'PARTIAL' : 'READY',
       taxBaseCents: pisCofinsBaseCents,
       accountingInputCents,
       basisMethod: 'PERIOD_INCOME_BY_POSITION_WITH_REALIZED_FALLBACK',
-      pisCents: null,
-      cofinsCents: null,
-      futureConsumptionTax: {system:'CBS_IBS',status:'NOT_CALCULATED',reviewRequired:true},
+      pisRate: 0,
+      pisCents: 0,
+      cofinsRate: 0,
+      cofinsCents: 0,
+      futureConsumptionTax: {system:'CBS_IBS',status:'NÃO INCIDE (LC 214/2025, art. 6º, V)',reviewRequired:false,legalBasis:'LC 214/2025, arts. 6º, V, e 542'},
       warnings,
     };
   }

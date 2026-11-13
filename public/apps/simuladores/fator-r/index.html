@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fator R — Simples Nacional — H. Teixeira</title>
-<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+<link rel="stylesheet" href="../simples-comum/simples.css?v=2">
+<style>.campo { align-content: start; }</style>
 </head>
 <body>
 <div class="app">
@@ -13,17 +14,18 @@
       <h1>Fator R</h1>
       <p>Folha de salários dos 12 meses ÷ receita bruta dos 12 meses: 28% ou mais tributa pelo Anexo III; abaixo disso, pelo Anexo V (LC 123/2006, art. 18, §§ 5º-J, 5º-K e 5º-M).</p>
     </div>
-    <span class="selo">Res. CGSN 140/2018, art. 26 · conferido em 13/11/2026</span>
+    <span class="selo">Res. CGSN 140/2018 e 190/2026, art. 26 · conferido em 13/11/2026</span>
   </header>
 
   <div class="grade">
     <section class="painel">
       <div class="cab"><h2>Dados</h2></div>
       <div class="corpo">
+        <div class="campo"><label for="periodo">Período de apuração</label><select id="periodo"></select></div>
         <div class="segmento" role="tablist">
           <button type="button" class="ativo" data-modo="normal">12 meses ou mais</button>
           <button type="button" data-modo="menos13">Menos de 13</button>
-          <button type="button" data-modo="inicio">Mês de início</button>
+          <button type="button" data-modo="inicio" id="btnInicio">Mês de início</button>
         </div>
         <div class="dica" id="dicaModo"></div>
         <div class="campos">
@@ -32,7 +34,7 @@
             <input id="rbt12" class="num moeda" value="600.000,00">
             <div class="dica">Mercado interno e exportação juntos (RBT12r).</div>
           </div>
-          <div class="campo modo-menos13 oculto"><label for="meses">Meses de atividade antes do período</label><input id="meses" class="num" inputmode="numeric" value="6"></div>
+          <div class="campo modo-menos13 oculto"><label for="meses" id="rotMeses">Meses de atividade antes do período</label><input id="meses" class="num" inputmode="numeric" value="6"></div>
           <div class="campo modo-menos13 oculto"><label for="receitaMeses">Receita desses meses</label><input id="receitaMeses" class="num moeda" value="300.000,00"></div>
           <div class="campo inteiro">
             <label for="receita">Receita bruta do mês (período de apuração)</label>
@@ -81,22 +83,32 @@
         <div class="corpo"><div class="dica">Diferença anual: estimativa com a receita do mês repetida por 12 meses e a mesma faixa. Aumentar o pró-labore também gera INSS do sócio (11%, até o teto) e pode gerar IRPF; a contribuição patronal (CPP) dos Anexos III e V já está no DAS.</div></div>
       </section>
 
-      <div class="fontes">Fontes: LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24 a 26; Res. CGSN 140/2018, arts. 21, 22 e 26. Vale para as atividades dos §§ 5º-I e 5º-D do art. 18 (sujeitas ao fator “r”). Cálculo de apoio, sem segregação de receitas e sem reduções municipais de ISS.</div>
+      <div class="fontes">Fontes: LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24 a 26; Res. CGSN 140/2018, arts. 21, 22 e 26 (até 2026); Res. CGSN 190/2026, arts. 21, 22 e 26 e Anexos III e V (a partir de 01/2027). Vale para as atividades dos §§ 5º-I e 5º-D do art. 18 (sujeitas ao fator “r”). Cálculo de apoio, sem segregação de receitas e sem reduções municipais de ISS.</div>
     </div>
   </div>
 </div>
-<script src="../simples-comum/simples.js?v=1"></script>
+<script src="../simples-comum/simples.js?v=2"></script>
 <script src="../simples-comum/ui.js?v=1"></script>
 <script>
 (function () {
   "use strict";
   var S = window.SimplesHT, U = window.SimUI, $ = function (id) { return document.getElementById(id); };
   var modo = "normal";
-  var DICAS = {
+  var ANO = { "2026": 2026, "2027": 2027, "2029": 2029, "2030": 2030, "2031": 2031, "2032": 2032, "2033": 2033 };
+  $("periodo").innerHTML = S.PERIODOS.map(function (p) { return '<option value="' + p.id + '">' + U.esc(p.rotulo) + "</option>"; }).join("");
+  function ano() { return ANO[$("periodo").value]; }
+  function novo() { return S.reforma(ano()); }
+  var DICAS26 = {
     normal: "Folha e receita dos 12 meses anteriores ao período de apuração.",
     menos13: "Com menos de 13 meses de atividade, folha e receita são anualizadas: média dos meses anteriores × 12 (Res. CGSN 140/2018, art. 26, § 4º, e art. 22, § 3º).",
     inicio: "No mês de início de atividade, o fator “r” usa a folha e a receita do próprio mês (Res. CGSN 140/2018, art. 26, § 6º)."
   };
+  var DICAS27 = {
+    normal: "Folha e receita dos 12 meses antes do mês anterior ao período de apuração — ex.: para 01/2027, de 12/2025 a 11/2026 (Res. CGSN 190/2026, art. 26, I e II).",
+    menos13: "Do 3º ao 13º mês de atividade, folha e receita dos meses antes do mês anterior ao período, anualizadas pela média × 12 (art. 26, § 4º, e art. 22, § 2º, II).",
+    inicio: "No 1º e no 2º mês de atividade, o fator “r” é 0,28 e vale o Anexo III (Res. CGSN 190/2026, art. 26, § 6º); o DAS usa a 1ª faixa (art. 22, § 2º, I)."
+  };
+  function dicas() { return novo() ? DICAS27 : DICAS26; }
 
   function folha() {
     return ["salarios", "prolabore", "cpp", "fgts"].reduce(function (s, id) { var v = U.valorCampo($(id)); return s + (Number.isFinite(v) && v > 0 ? v : 0); }, 0);
@@ -106,10 +118,11 @@
     var receita = U.valorCampo($("receita")), fs = folha(), avisos = [];
     if (!Number.isFinite(receita) || receita < 0) return erro("Informe a receita bruta do mês em reais.");
     var fr, rbt12, fs12;
+    var primeiraFaixa = false;
     if (modo === "inicio") {
-      fr = S.fatorR({ inicioAtividade: true, fspa: fs, rpar: receita });
-      rbt12 = S.rbt12InicioAtividade(0, 0, receita);
-      fs12 = fs * 12;
+      fr = S.fatorR({ inicioAtividade: true, fspa: fs, rpar: receita, ano: ano() });
+      if (novo()) { primeiraFaixa = true; rbt12 = 0; fs12 = 0; }
+      else { rbt12 = S.rbt12InicioAtividade(0, 0, receita); fs12 = fs * 12; }
     } else if (modo === "menos13") {
       var n = Math.max(1, Math.floor(U.parseBR($("meses").value) || 0)), rm = U.valorCampo($("receitaMeses"));
       if (!Number.isFinite(rm) || rm < 0) return erro("Informe a receita dos meses anteriores.");
@@ -132,12 +145,16 @@
     $("barraTexto").textContent = U.pct(r * 100, 2) + " de 28,00%";
     $("barraValor").style.width = Math.min(100, r * 100 / 50 * 100) + "%";
 
-    var c3 = S.calcular({ anexo: "III", rbt12: rbt12, receita: receita }), c5 = S.calcular({ anexo: "V", rbt12: rbt12, receita: receita });
+    var c3 = S.calcular({ anexo: "III", rbt12: rbt12, receita: receita, ano: ano(), primeiraFaixa: primeiraFaixa }), c5 = S.calcular({ anexo: "V", rbt12: rbt12, receita: receita, ano: ano(), primeiraFaixa: primeiraFaixa });
     var atual = fr.anexo === "III" ? c3 : c5;
     $("kDas").textContent = U.moeda(atual.das);
     $("kDasSub").textContent = "Anexo " + fr.anexo + " · alíquota " + U.pct(atual.aliquotaTotal, 4);
 
-    if (modo === "inicio") {
+    if (modo === "inicio" && novo()) {
+      $("kMetaRot").textContent = "1º e 2º mês";
+      $("kMeta").textContent = "—";
+      $("kMetaSub").textContent = "fator “r” fixo em 0,28";
+    } else if (modo === "inicio") {
       var metaMes = Math.max(0, 0.28 * receita - fs);
       $("kMetaRot").textContent = r >= 0.28 ? "Folga sobre 28%" : "Para chegar a 28%";
       $("kMeta").textContent = U.moeda(r >= 0.28 ? fs - 0.28 * receita : metaMes);
@@ -182,13 +199,18 @@
     Array.prototype.forEach.call(document.querySelectorAll(".modo-normal"), function (el) { el.classList.toggle("oculto", novo !== "normal"); });
     Array.prototype.forEach.call(document.querySelectorAll(".modo-menos13"), function (el) { el.classList.toggle("oculto", novo !== "menos13"); });
     $("tituloFolha").textContent = novo === "inicio" ? "Folha de salários do mês de início" : novo === "menos13" ? "Folha de salários dos meses anteriores" : "Folha de salários dos 12 meses anteriores";
-    $("dicaModo").textContent = DICAS[novo];
+    $("dicaModo").textContent = dicas()[novo];
+    $("rotMeses").textContent = S.reforma(ano()) ? "Meses de atividade antes do mês anterior ao período" : "Meses de atividade antes do período";
     calcular();
   }
 
   U.prepararCamposMoeda();
   Array.prototype.forEach.call(document.querySelectorAll(".segmento button"), function (b) { b.addEventListener("click", function () { trocarModo(b.dataset.modo); }); });
   Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); });
+  $("periodo").addEventListener("change", function () {
+    $("btnInicio").textContent = S.reforma(ano()) ? "1º ou 2º mês" : "Mês de início";
+    trocarModo(modo);
+  });
   trocarModo("normal");
 })();
 </script>

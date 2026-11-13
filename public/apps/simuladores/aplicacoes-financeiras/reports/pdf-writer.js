@@ -300,7 +300,7 @@ export function createExecutivePdf(snapshot) {
   } else if (sim.mode === 'LUCRO_REAL') {
     report.paragraph(`Insumo contabil/fiscal para IRPJ/CSLL: ${sim.accountingInputCents == null ? 'Nao calculado' : brl(sim.accountingInputCents)} | PIS estimado: ${sim.pisCents == null ? 'Revisao necessaria' : brl(sim.pisCents)} | Cofins estimada: ${sim.cofinsCents == null ? 'Revisao necessaria' : brl(sim.cofinsCents)}.`);
   }
-  report.paragraph('O app nao calcula o IRPJ/CSLL global da empresa, o adicional do IRPJ ou o DARF. No Lucro Real, a receita financeira e exportada como insumo da apuracao contabil/fiscal global. CBS/IBS permanecem em revisao normativa, sem calculo automatico nesta versao.',{size:8,color:'#9C5700',maxChars:112});
+  report.paragraph('O app nao calcula o IRPJ/CSLL global da empresa, o adicional do IRPJ ou o DARF. No Lucro Real, a receita financeira e exportada como insumo da apuracao contabil/fiscal global. A partir de 2027, PIS/Cofins sao extintos (LC 214/2025, art. 542) e CBS/IBS nao incidem sobre rendimentos financeiros de empresas nao financeiras (LC 214/2025, art. 6, V).',{size:8,color:'#9C5700',maxChars:112});
   for (const warning of sim.warnings || []) report.paragraph(`ATENCAO: ${warning}`,{size:7.8,color:'#9C5700',maxChars:118});
 
   if (report.y < 150) report.newPage();

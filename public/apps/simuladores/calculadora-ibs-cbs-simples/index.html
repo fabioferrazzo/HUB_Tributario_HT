@@ -92,13 +92,13 @@ details[open] summary::after{content:'–'}
       </div>
       <div class="heading">
         <h1>Calculadora de alíquota de IBS/CBS para Simples Nacional (Unificado) - H Teixeira</h1>
-        <p class="subtitle">Serviços / NFS-e · cálculo de apoio para as tabelas do Simples Nacional vigentes em 2027–2028.</p>
+        <p class="subtitle">Percentuais de CBS e IBS do Simples para destacar na nota (NF-e e NFS-e) · tabelas da Res. CGSN 190/2026, de 2027 a 2033.</p>
       </div>
     </div>
-    <div class="header-meta"><span class="pill">Uso interno</span><span class="pill gold">v1.4 · 06/10/2026</span></div>
+    <div class="header-meta"><span class="pill">Uso interno</span><span class="pill gold">v1.5 · 13/11/2026</span></div>
   </header>
 
-  <div class="quicknote"><strong>Escopo:</strong> Simples Nacional unificado, com IBS/CBS dentro do regime e sem impedimento vigente por sublimite. Não usar para Simples híbrido, início de atividade/RBT12 zero ou operações com tratamento específico.</div>
+  <div class="quicknote"><strong>Escopo:</strong> Simples Nacional unificado, com IBS/CBS dentro do regime e sem impedimento vigente por sublimite. Não usar para Simples híbrido (CBS/IBS pelo regime regular) nem para operações com tratamento específico. No mês de início de atividade, use o modo “Já tenho a alíquota efetiva” com a alíquota da 1ª faixa (Res. CGSN 190/2026, art. 58, § 6º).</div>
 
   <main class="workspace">
     <section class="panel">
@@ -107,8 +107,8 @@ details[open] summary::after{content:'–'}
         <div class="mode"><button id="modeRbt" class="active" type="button">Calcular pela RBT12</button><button id="modeRate" type="button">Já tenho a alíquota efetiva</button></div>
 
         <div class="formgrid">
-          <div class="field"><label for="period">Competência da NFS-e</label><input id="period" type="month" value="2027-01" min="2027-01" max="2028-12" /></div>
-          <div class="field"><label for="annex">Anexo do Simples</label><select id="annex"><option value="III">Anexo III — Serviços</option><option value="IV" selected>Anexo IV — Serviços § 5º-C</option><option value="V">Anexo V — Serviços</option></select></div>
+          <div class="field"><label for="period">Competência da NFS-e</label><input id="period" type="month" value="2027-01" min="2027-01" max="2033-12" /></div>
+          <div class="field"><label for="annex">Anexo do Simples</label><select id="annex"><option value="I">Anexo I — Comércio</option><option value="II">Anexo II — Indústria</option><option value="III">Anexo III — Serviços</option><option value="IV" selected>Anexo IV — Serviços § 5º-C</option><option value="V">Anexo V — Serviços</option></select></div>
           <div class="field full"><label for="ibsStatus">Situação do IBS/CBS na competência</label><select id="ibsStatus"><option value="inside" selected>Dentro do Simples — sem opção pelo regime regular e sem impedimento vigente por sublimite</option><option value="hybrid">Regime regular / “Simples híbrido” para IBS e CBS</option><option value="blocked">IBS fora do Simples por impedimento decorrente do sublimite</option><option value="unknown">Não sei / preciso conferir</option></select><div class="hint">Se houver dúvida sobre sublimite ou opção pelo regime regular, não utilize o resultado como alíquota aplicável.</div></div>
         </div>
 
@@ -153,35 +153,27 @@ details[open] summary::after{content:'–'}
     </section>
   </main>
 
-  <details class="legal"><summary>Base legal, observações técnicas e limitações</summary><div class="legal-body"><strong>Base considerada:</strong> tabelas 2027–2028 dos Anexos III, IV e V da LC 123/2006 e regulamentação do Simples Nacional pela Resolução CGSN nº 190/2026. Fontes: <a href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp227.htm" target="_blank" rel="noopener">Anexo III</a> · <a href="https://legis.senado.gov.br/norma/40180341/publicacao/40181123" target="_blank" rel="noopener">Anexo IV</a> · <a href="https://legis.senado.gov.br/norma/40180341/publicacao/40181129" target="_blank" rel="noopener">Anexo V</a> · <a href="https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/agosto/cgsn-atualiza-regras-do-simples-nacional-para-adequacao-a-reforma-tributaria-do-consumo" target="_blank" rel="noopener">Receita Federal</a>. Ferramenta de apoio interno; confronte o resultado com PGDAS-D, emissor nacional e particularidades da operação.</div></details>
+  <details class="legal"><summary>Base legal, observações técnicas e limitações</summary><div class="legal-body"><strong>Base considerada:</strong> tabelas dos Anexos I a V da Resolução CGSN nº 190/2026 (2027–2028, 2029, 2030, 2031, 2032 e 2033 em diante), com o teto do ISS de 5% a 3% de 2027 a 2032. Os percentuais de CBS e IBS informados na nota são os da faixa do próprio mês da operação (Res. CGSN 190/2026, art. 58, §§ 4º a 6º). Fontes: <a href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp227.htm" target="_blank" rel="noopener">Anexo III</a> · <a href="https://legis.senado.gov.br/norma/40180341/publicacao/40181123" target="_blank" rel="noopener">Anexo IV</a> · <a href="https://legis.senado.gov.br/norma/40180341/publicacao/40181129" target="_blank" rel="noopener">Anexo V</a> · <a href="https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/agosto/cgsn-atualiza-regras-do-simples-nacional-para-adequacao-a-reforma-tributaria-do-consumo" target="_blank" rel="noopener">Receita Federal</a>. Ferramenta de apoio interno; confronte o resultado com PGDAS-D, emissor nacional e particularidades da operação.</div></details>
 </div>
+<script src="../simples-comum/simples.js?v=2"></script>
 <script>
-const TABLES = {
-  III: [
-    {max:180000, nominal:6.00, deduct:0, cbs:15.43, ibs:0.17},
-    {max:360000, nominal:11.20, deduct:9360, cbs:16.91, ibs:0.19},
-    {max:720000, nominal:13.50, deduct:17640, cbs:16.41, ibs:0.19},
-    {max:1800000, nominal:16.00, deduct:35640, cbs:16.41, ibs:0.19},
-    {max:3600000, nominal:21.00, deduct:125640, cbs:15.43, ibs:0.17, cap:{threshold:14.92537,cbs:23.20,ibs:0.26}},
-    {max:4800000, nominal:32.90, deduct:648000, cbs:19.29, ibs:null, above5:{nominal:21.00,deduct:125640,ibs:0.17}}
-  ],
-  IV: [
-    {max:180000, nominal:4.50, deduct:0, cbs:21.26, ibs:0.24},
-    {max:360000, nominal:9.00, deduct:8100, cbs:24.73, ibs:0.27},
-    {max:720000, nominal:10.20, deduct:12420, cbs:23.74, ibs:0.26},
-    {max:1800000, nominal:14.00, deduct:39780, cbs:22.75, ibs:0.25},
-    {max:3600000, nominal:22.00, deduct:183780, cbs:21.76, ibs:0.24, cap:{threshold:12.5,cbs:36.27,ibs:0.40}},
-    {max:4800000, nominal:32.90, deduct:828000, cbs:24.70, ibs:null, above5:{nominal:22.00,deduct:183780,ibs:0.24}}
-  ],
-  V: [
-    {max:180000, nominal:15.50, deduct:0, cbs:16.96, ibs:0.19},
-    {max:360000, nominal:18.00, deduct:4500, cbs:16.96, ibs:0.19},
-    {max:720000, nominal:19.50, deduct:9900, cbs:17.95, ibs:0.20},
-    {max:1800000, nominal:20.50, deduct:17100, cbs:18.94, ibs:0.21},
-    {max:3600000, nominal:23.00, deduct:62100, cbs:16.96, ibs:0.19},
-    {max:4800000, nominal:30.40, deduct:540000, cbs:19.78, ibs:null, above5:{nominal:23.00,deduct:62100,ibs:0.19}}
-  ]
-};
+const S = window.SimplesHT;
+// Tabelas da Res. CGSN 190/2026 (Anexos I a V), lidas do módulo compartilhado dos simuladores do HUB.
+function periodKey(period){ return S.periodoDe(Number(String(period).slice(0,4))); }
+function buildTable(per, annex){
+  const cfg = S.TABELAS_REFORMA[per][annex];
+  const iC = cfg.tributos.indexOf('CBS'), iI = cfg.tributos.indexOf('IBS');
+  return cfg.faixas.map((f, k) => {
+    const row = {max:S.LIMITES[k], nominal:f[0], deduct:f[1], cbs:cfg.partilha[k][iC], ibs:k===5?null:cfg.partilha[k][iI]};
+    if (k === 4 && cfg.tetoIss) {
+      const outros = cfg.tributos.filter(t => t !== 'ISS');
+      row.cap = {threshold:cfg.tetoIss.limite, max:cfg.tetoIss.max, cbs:cfg.tetoIss.percentuais[outros.indexOf('CBS')], ibs:cfg.tetoIss.percentuais[outros.indexOf('IBS')]};
+    }
+    if (k === 5) row.above5 = {nominal:cfg.faixas[4][0], deduct:cfg.faixas[4][1], ibs:cfg.partilha[4][iI]};
+    return row;
+  });
+}
+function tableFor(period, annex){ const k=periodKey(period); return k==='2026' ? null : buildTable(k, annex); }
 
 let mode = 'rbt';
 let resultValid = false;
@@ -283,11 +275,11 @@ function calculate(){
   resetOutputs('Calculando…');
   showInputError('');
 
-  const annex=$('annex').value, table=TABLES[annex], period=$('period').value;
+  const annex=$('annex').value, period=$('period').value, table=tableFor(period, annex);
   const status=$('ibsStatus').value;
 
-  if(period<'2027-01'||period>'2028-12'){
-    showInputError('As tabelas desta versão são válidas apenas para competências de 01/2027 a 12/2028.'); return;
+  if(!/^\d{4}-\d{2}$/.test(period)||period<'2027-01'){
+    showInputError('Informe uma competência a partir de 01/2027 (CBS e IBS entram no Simples em 2027).'); return;
   }
   if(status==='hybrid'){
     showInputError('Esta calculadora não se aplica ao Simples híbrido/regime regular de IBS e CBS. Nesse caso, as alíquotas e a apuração seguem as regras do regime regular.'); return;
@@ -335,8 +327,8 @@ function calculate(){
     sixthIbsRef=true;
   }else if(row.cap && effective>row.cap.threshold){
     specialCap=true;
-    cbsRate=(effective-5)*(row.cap.cbs/100);
-    ibsRate=(effective-5)*(row.cap.ibs/100);
+    cbsRate=(effective-row.cap.max)*(row.cap.cbs/100);
+    ibsRate=(effective-row.cap.max)*(row.cap.ibs/100);
     cbsShare=row.cap.cbs; ibsShare=row.cap.ibs;
   }else{
     cbsRate=effective*(row.cbs/100);
@@ -376,9 +368,9 @@ function calculate(){
     f += `IBS* = ${ptPct(ibsBaseEffective,4)} × ${ptPct(row.above5.ibs,2)} = ${ptPct(ibsRate,4)}\n\n`;
     f += `* Percentual condicional. Não foi convertido em valor por NFS-e nem somado à CBS como taxa única.`;
   }else if(specialCap){
-    f += `Regra especial da 5ª faixa — teto efetivo do ISS em 5%:\n`;
-    f += `CBS = (${ptPct(effective,4)} − 5,0000%) × ${ptPct(row.cap.cbs,2)} = ${ptPct(cbsRate,4)}\n`;
-    f += `IBS = (${ptPct(effective,4)} − 5,0000%) × ${ptPct(row.cap.ibs,2)} = ${ptPct(ibsRate,4)}`;
+    f += `Regra especial da 5ª faixa — teto efetivo do ISS em ${ptPct(row.cap.max,2)}:\n`;
+    f += `CBS = (${ptPct(effective,4)} − ${ptPct(row.cap.max,4)}) × ${ptPct(row.cap.cbs,2)} = ${ptPct(cbsRate,4)}\n`;
+    f += `IBS = (${ptPct(effective,4)} − ${ptPct(row.cap.max,4)}) × ${ptPct(row.cap.ibs,2)} = ${ptPct(ibsRate,4)}`;
   }else{
     f += `CBS = ${ptPct(effective,4)} × ${ptPct(row.cbs,2)} = ${ptPct(cbsRate,4)}\n`;
     f += `IBS = ${ptPct(effective,4)} × ${ptPct(row.ibs,2)} = ${ptPct(ibsRate,4)}`;
@@ -389,9 +381,9 @@ function calculate(){
   if(sixthIbsRef){
     showResultAlert('6ª faixa: a CBS foi calculada pela repartição da 6ª faixa. O IBS marcado com * é somente o percentual de referência para a parcela que não exceder o sublimite, calculado pela fórmula da 5ª faixa. O app não calcula valor de IBS por nota nem soma CBS+IBS nessa situação, porque isso exigiria conhecer a parcela da receita ainda sujeita ao sublimite e os efeitos do eventual excesso.','warn');
   }else if(specialCap){
-    showResultAlert('Aplicada automaticamente a regra especial da 5ª faixa por superação do teto efetivo de ISS de 5%; CBS e IBS foram redistribuídos conforme a tabela legal.','ok');
+    showResultAlert(`Aplicada automaticamente a regra especial da 5ª faixa por superação do teto efetivo de ISS de ${ptPct(row.cap.max,2)}; CBS e IBS foram redistribuídos conforme a tabela legal.`,'ok');
   }else{
-    showResultAlert('Resultado calculado com a alíquota efetiva total e a repartição de CBS/IBS do Anexo selecionado para 2027–2028.','ok');
+    showResultAlert(`Resultado calculado com a alíquota efetiva total e a repartição de CBS/IBS do Anexo ${annex} para ${({'2027':'2027–2028','2033':'2033 em diante'})[periodKey(period)]||periodKey(period)} (Res. CGSN 190/2026).`,'ok');
   }
 }
 function copyResult(){

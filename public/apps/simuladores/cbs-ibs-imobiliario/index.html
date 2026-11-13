@@ -27,7 +27,7 @@
       <h1>CBS e IBS nas operações com imóveis</h1>
       <p>Venda, locação, incorporação e loteamento no regime específico da LC 214/2025 (arts. 251 a 270), com redutores, reduções de alíquota e a transição até 2033.</p>
     </div>
-    <span class="selo">LC 214/2025 com a LC 227/2026 · conferido em 13/11/2026</span>
+    <span class="selo">LC 214/2025, LC 227/2026 e Decreto 12.955/2026 · conferido em 13/11/2026</span>
   </header>
 
   <nav class="abas" id="abas">
@@ -68,7 +68,7 @@
           <div class="campo"><label for="vSocial">Redutor social (corrigido)</label><input id="vSocial" class="num moeda" value="100.000,00"></div>
           <div class="campo inteiro"><label for="vCreditos">Créditos de CBS/IBS das compras no período</label><input id="vCreditos" class="num moeda" value="0,00"></div>
         </div>
-        <div class="dica">Redutor de ajuste (arts. 257 e 258): para imóvel que a empresa já tinha em 31/12/2026, o custo de aquisição corrigido pelo IPCA ou, por opção, o valor de referência; para imóvel em construção, terreno mais custos até 2026; para imóvel comprado de não contribuinte a partir de 2027, o valor de aquisição. Somam-se ITBI, laudêmio e contrapartidas urbanísticas (art. 258, § 6º). Redutor social de R$ 100.000 por residencial novo e R$ 30.000 por lote, valores de jan/2025 corrigidos pelo IPCA (art. 259).</div>
+        <div class="dica">Redutor de ajuste (arts. 257 e 258): para imóvel que a empresa já tinha em 31/12/2026, o custo de aquisição corrigido pelo IPCA ou, por opção, o valor de referência; para imóvel em construção, terreno mais custos até 2026; para imóvel comprado de não contribuinte a partir de 2027, o valor de aquisição. Somam-se ITBI, laudêmio e contrapartidas urbanísticas (art. 258, § 6º). Valores de aquisição corrigidos pelo IPC-Fipe até 1979 e pelo IPCA de 1980 a 2026 (Decreto 12.955/2026, art. 375, § 4º). Redutor social de R$ 100.000 por residencial novo e R$ 30.000 por lote, valores de jan/2025 corrigidos pelo IPCA (art. 259); imóvel reconstruído após demolição total conta como novo (Decreto 12.955/2026, art. 376, § 2º).</div>
       </div>
 
       <!-- Locação -->
@@ -76,13 +76,14 @@
         <h2 style="margin:0;font-size:13px;color:var(--brand)">Locação, cessão onerosa ou arrendamento</h2>
         <div class="campos">
           <div class="campo"><label for="lAluguel">Aluguel do mês</label><input id="lAluguel" class="num moeda" value="10.000,00"></div>
-          <div class="campo"><label for="lExclusoes">IPTU e condomínio cobrados junto</label><input id="lExclusoes" class="num moeda" value="0,00"><div class="dica">Ficam fora da base (art. 255, § 2º).</div></div>
+          <div class="campo"><label for="lExclusoes">IPTU, condomínio e foro pagos pelo locatário</label><input id="lExclusoes" class="num moeda" value="0,00"><div class="dica">Ficam fora da base se houver prova do pagamento; benfeitorias pagas pelo locatário não saem (Decreto 12.955/2026, art. 364, §§ 2º a 4º).</div></div>
           <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="lResidencial"> Locação residencial (redutor social)</label></div>
           <div class="campo"><label for="lImoveis">Imóveis residenciais no valor</label><input id="lImoveis" class="num" inputmode="numeric" value="1"></div>
           <div class="campo"><label for="lSocial">Redutor por imóvel e mês (corrigido)</label><input id="lSocial" class="num moeda" value="600,00"></div>
+          <div class="campo"><label for="lPctRes">Área de uso residencial (%)</label><input id="lPctRes" class="num" inputmode="decimal" value="100"><div class="dica">Uso misto: redutor proporcional à área residencial (art. 378).</div></div>
           <div class="campo inteiro"><label for="lCreditos">Créditos de CBS/IBS no mês</label><input id="lCreditos" class="num moeda" value="0,00"></div>
           <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="lTransicao"> Contrato antigo no regime opcional de 3,65% (art. 487)</label>
-            <div class="dica">Contratos por prazo determinado firmados até 16/01/2025. Não residencial: pelo prazo original, com registro em cartório até 31/12/2025 ou envio à Receita e ao Comitê Gestor. Residencial: pelo prazo original ou até 31/12/2028, o que vier primeiro. Sem créditos e sem redutor social.</div></div>
+            <div class="dica">Contratos por prazo determinado firmados até 16/01/2025. Não residencial: pelo prazo original, com registro em cartório até 31/12/2025 ou envio à Receita e ao Comitê Gestor. Residencial: pelo prazo original ou até 31/12/2028, o que vier primeiro. Sem créditos e sem redutor social. A opção se faz na emissão do primeiro documento fiscal com 3,65% e vale para todo o contrato (Decreto 12.955/2026, art. 463).</div></div>
         </div>
       </div>
 
@@ -101,13 +102,14 @@
             <div class="dica" id="iDicaTipo"></div>
           </div>
           <div class="campo"><label for="iRecebido">Recebido no mês (parcelas)</label><input id="iRecebido" class="num moeda" value="100.000,00"></div>
+          <div class="campo"><label for="iJuros">Juros e correção dentro do recebido</label><input id="iJuros" class="num moeda" value="0,00"><div class="dica">Entram inteiros na base; os redutores só abatem a parte de principal (art. 380, § 6º).</div></div>
           <div class="campo"><label for="iTotal">Valor total da unidade vendida</label><input id="iTotal" class="num moeda" value="500.000,00"></div>
           <div class="campo"><label for="iRedutor">Redutor de ajuste da unidade</label><input id="iRedutor" class="num moeda" value="200.000,00"></div>
           <div class="campo"><label for="iSocial">Redutor social (corrigido)</label><input id="iSocial" class="num moeda" value="100.000,00"></div>
           <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="iResidencial" checked> Unidade residencial nova ou lote residencial</label></div>
           <div class="campo inteiro"><label for="iCreditos">Créditos de CBS/IBS das compras do mês</label><input id="iCreditos" class="num moeda" value="0,00"></div>
         </div>
-        <div class="dica">Na incorporação e no loteamento, CBS e IBS são devidos a cada recebimento, e os redutores entram em cada parcela na proporção do valor total da unidade (art. 262, §§ 1º e 4º).</div>
+        <div class="dica">Na incorporação e no loteamento, CBS e IBS são devidos a cada recebimento, e os redutores entram em cada parcela na proporção do principal pago sobre o valor total da venda (LC 214/2025, art. 262, § 4º; Decreto 12.955/2026, art. 380, § 6º).</div>
       </div>
 
       <!-- Comparativo -->
@@ -150,17 +152,20 @@
             <div class="campo"><label for="pfLimite">Limite corrigido pelo IPCA</label><input id="pfLimite" class="num moeda" value="240.000,00"></div>
             <div class="campo"><label for="pfVendas">Imóveis vendidos no ano anterior (com menos de 5 anos)</label><input id="pfVendas" class="num" inputmode="numeric" value="0"></div>
             <div class="campo"><label for="pfConstruidos">Imóveis construídos por ela e vendidos no ano anterior</label><input id="pfConstruidos" class="num" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="pfImoveisAtual">Imóveis locados no ano atual</label><input id="pfImoveisAtual" class="num" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="pfVendasAtual">Imóveis vendidos no ano atual (com menos de 5 anos)</label><input id="pfVendasAtual" class="num" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="pfConstruidosAtual">Imóveis construídos por ela e vendidos no ano atual</label><input id="pfConstruidosAtual" class="num" inputmode="numeric" value="0"></div>
           </div>
           <div id="pfResultado"></div>
         </div>
       </details>
 
-      <div class="fontes">Fontes: LC 214/2025, com a redação da LC 227/2026 — arts. 251 a 263 (regime específico, redutores e redução de 50% e 70%), 343 a 349 (alíquotas de 2026 a 2028 e fixação pelo Senado), 485 a 487 (regimes opcionais das operações iniciadas antes de 2029); Lei 10.931/2004 (RET). Estimativas: alíquotas de referência editáveis; IBS de 2029 a 2032 proporcional à redução de ICMS e ISS (10%, 20%, 30% e 40%). Cálculo de apoio: não cobre permuta, imóvel de pessoa física fora da atividade, dedução do art. 488 nem a tributação como hotelaria das locações residenciais de até 90 dias (art. 253).</div>
+      <div class="fontes">Fontes: LC 214/2025, com a redação da LC 227/2026, e Regulamento da CBS (Decreto 12.955/2026, arts. 359 a 390 e 461 a 463; mesmas regras na Resolução CGIBS 6/2026) — arts. 251 a 263 (regime específico, redutores e redução de 50% e 70%), 343 a 349 (alíquotas de 2026 a 2028 e fixação pelo Senado), 485 a 487 (regimes opcionais das operações iniciadas antes de 2029); Lei 10.931/2004 (RET). Estimativas: alíquotas de referência editáveis; IBS de 2029 a 2032 proporcional à redução de ICMS e ISS (10%, 20%, 30% e 40%). Cálculo de apoio: não cobre permuta, imóvel de pessoa física fora da atividade, dedução do art. 488 nem a tributação como hotelaria das locações residenciais de até 90 dias (art. 253).</div>
     </div>
   </div>
 </div>
 <script src="../simples-comum/ui.js?v=1"></script>
-<script src="imobiliario.js?v=1"></script>
+<script src="imobiliario.js?v=2"></script>
 <script>
 (function () {
   "use strict";
@@ -190,7 +195,7 @@
   function pct(v) { return U.pct(v, 4); }
 
   function entradaVenda() { return { valor: m("vValor"), redutorAjuste: m("vRedutor"), tipo: $("vTipo").value, redutorSocial: m("vSocial"), creditos: m("vCreditos"), ref: ref() }; }
-  function entradaLocacao() { return { aluguel: m("lAluguel"), exclusoes: m("lExclusoes"), residencial: $("lResidencial").checked, imoveis: n("lImoveis"), redutorMes: m("lSocial"), creditos: m("lCreditos"), regimeTransicao: $("lTransicao").checked, ref: ref() }; }
+  function entradaLocacao() { return { aluguel: m("lAluguel"), exclusoes: m("lExclusoes"), residencial: $("lResidencial").checked, imoveis: n("lImoveis"), pctResidencial: $("lPctRes").value.trim() === "" ? 100 : n("lPctRes"), redutorMes: m("lSocial"), creditos: m("lCreditos"), regimeTransicao: $("lTransicao").checked, ref: ref() }; }
 
   function calcVenda() {
     var o = entradaVenda(); o.ano = Number($("ano").value);
@@ -229,7 +234,7 @@
       tabela("Locação — " + o.ano, ["", "Valor", "Observação"], [
         tr("", ["Aluguel do mês", U.moeda(r.aluguel), ""]),
         tr("menos", ["(−) IPTU e condomínio", U.moeda(r.exclusoes), '<span class="txt">art. 255, § 2º</span>']),
-        tr("menos", ["(−) redutor social", U.moeda(r.redutorSocial), '<span class="txt">art. 260 — por imóvel residencial, por mês</span>']),
+        tr("menos", ["(−) redutor social", U.moeda(r.redutorSocial), '<span class="txt">art. 260 — por imóvel residencial, por mês; proporcional à área residencial e ao período, se não for mensal (Decreto 12.955/2026, arts. 377 e 378)</span>']),
         tr("total", ["Base de cálculo", U.moeda(r.base), ""]),
         tr("", ["CBS (" + pct(e.cbs) + ")", U.moeda(r.cbs), '<span class="txt">nominal ' + pct(e.nominalCbs) + " × 30%</span>"]),
         tr("", ["IBS (" + pct(e.ibs) + ")", U.moeda(r.ibs), '<span class="txt">nominal ' + pct(e.nominalIbs) + " × 30%</span>"]),
@@ -245,16 +250,16 @@
   }
 
   function calcPf() {
-    var r = I.pessoaFisica({ receitaLocacaoAnoAnterior: m("pfReceitaAnt"), imoveisLocados: n("pfImoveis"), receitaLocacaoAnoAtual: m("pfReceitaAtual"), limite: m("pfLimite"), vendasAnoAnterior: n("pfVendas"), construidosVendidosAnoAnterior: n("pfConstruidos") });
+    var r = I.pessoaFisica({ receitaLocacaoAnoAnterior: m("pfReceitaAnt"), imoveisLocados: n("pfImoveis"), receitaLocacaoAnoAtual: m("pfReceitaAtual"), imoveisLocadosAnoAtual: n("pfImoveisAtual"), limite: m("pfLimite"), vendasAnoAnterior: n("pfVendas"), vendasAnoAtual: n("pfVendasAtual"), construidosVendidosAnoAnterior: n("pfConstruidos"), construidosVendidosAnoAtual: n("pfConstruidosAtual") });
     $("pfResultado").innerHTML = r.contribuinte
       ? '<div class="aviso">Passa a ser contribuinte do regime regular: ' + U.esc(r.motivos.join("; ")) + ".</div>"
-      : '<div class="aviso neutro">Pelos dados informados, a pessoa física não é contribuinte do regime regular nas operações com imóveis (art. 251, §§ 1º a 3º).</div>';
+      : '<div class="aviso neutro">Pelos dados informados, a pessoa física não é contribuinte do regime regular nas operações com imóveis (LC 214/2025, art. 251; Decreto 12.955/2026, art. 382). Cada unidade autônoma, e cada fração ideal, conta como imóvel distinto (art. 382, § 9º, e art. 383).</div>';
   }
 
   function calcIncorporacao() {
     var tipo = $("iTipo").value;
     $("iDicaTipo").textContent = DICA_TIPO[tipo];
-    var o = { tipo: tipo, recebido: m("iRecebido"), valorTotal: m("iTotal"), redutorAjuste: m("iRedutor"), redutorSocial: m("iSocial"), residencial: $("iResidencial").checked, creditos: m("iCreditos"), ano: Number($("ano").value), ref: ref() };
+    var o = { tipo: tipo, recebido: m("iRecebido"), juros: m("iJuros"), valorTotal: m("iTotal"), redutorAjuste: m("iRedutor"), redutorSocial: m("iSocial"), residencial: $("iResidencial").checked, creditos: m("iCreditos"), ano: Number($("ano").value), ref: ref() };
     if (o.recebido <= 0) return erro("Informe o valor recebido no mês.");
     if (o.valorTotal <= 0) return erro("Informe o valor total da unidade.");
     var r = I.incorporacao(o), e = r.aliquotas, g = r.regular;
@@ -264,7 +269,7 @@
       ["Redutores na parcela", U.pct(g.proporcaoRedutores * 100, 2), "da parcela recebida (art. 262, § 4º)"]]);
     tabela("Parcela recebida — " + o.ano, ["", "Valor", "Observação"], [
       tr("", ["Recebido no mês", U.moeda(r.recebido), ""]),
-      tr("menos", ["(−) redutores proporcionais", U.moeda(r.recebido - g.base), '<span class="txt">(redutor de ajuste + social) ÷ valor total da unidade</span>']),
+      tr("menos", ["(−) redutores proporcionais", U.moeda(g.redutorParcela), '<span class="txt">(redutor de ajuste + social) × principal da parcela ÷ valor total da venda' + (g.juros > 0 ? "; juros e correção de " + U.moeda(g.juros) + " ficam na base" : "") + '</span>']),
       tr("total", ["Base de cálculo", U.moeda(g.base), ""]),
       tr("", ["CBS (" + pct(e.cbs) + ")", U.moeda(g.cbs), '<span class="txt">nominal ' + pct(e.nominalCbs) + " × 50%</span>"]),
       tr("", ["IBS (" + pct(e.ibs) + ")", U.moeda(g.ibs), '<span class="txt">nominal ' + pct(e.nominalIbs) + " × 50%</span>"]),

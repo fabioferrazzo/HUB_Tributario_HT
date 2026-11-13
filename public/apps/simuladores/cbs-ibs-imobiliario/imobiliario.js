@@ -5,6 +5,7 @@
  *    redução de 50% e de 70% na locação, art. 261; incorporação e loteamento, art. 262);
  *  - transição: CBS de 0,9% em 2026 (art. 346); CBS reduzida em 0,1 p.p. em 2027 e 2028 (art. 347);
  *    regimes opcionais das operações iniciadas antes de 2029 (arts. 485 a 487).
+ * Regulamentos: Decreto 12.955/2026 (CBS), arts. 359 a 390 e 461 a 463, e Resolução CGIBS 6/2026 (IBS), com as mesmas regras.
  * As alíquotas de referência de CBS e IBS ainda serão fixadas pelo Senado: o simulador usa estimativas editáveis.
  */
 (function (root, factory) {
@@ -54,7 +55,7 @@
   }
 
   // ---------- Locação ----------
-  // o = { aluguel, exclusoes (IPTU, condomínio), residencial, imoveis, redutorMes (opcional), creditos, ano, ref, regimeTransicao: bool }
+  // o = { aluguel, exclusoes (IPTU, condomínio, foro), residencial, imoveis, pctResidencial (área residencial, %), redutorMes (opcional), creditos, ano, ref, regimeTransicao: bool }
   function locacao(o) {
     var aluguel = num(o.aluguel), excl = Math.min(aluguel, num(o.exclusoes));
     var base1 = aluguel - excl, imoveis = Math.max(1, Math.floor(num(o.imoveis) || 1));
@@ -66,7 +67,8 @@
     }
     var rsInf = Number(o.redutorMes);
     var rsUnit = Number.isFinite(rsInf) && rsInf > 0 ? rsInf : REDUTOR_SOCIAL.locacaoMes;
-    var rs = o.residencial ? Math.min(base1, rsUnit * imoveis) : 0;
+    var fracaoRes = o.pctResidencial == null || o.pctResidencial === "" ? 1 : Math.min(100, Math.max(0, Number(o.pctResidencial) || 0)) / 100;
+    var rs = o.residencial ? Math.min(base1, rsUnit * imoveis * fracaoRes) : 0; // Decreto 12.955/2026, art. 378
     var base = arred(base1 - rs);
     var cbs = arred(base * e.cbs / 100), ibs = arred(base * e.ibs / 100), creditos = num(o.creditos);
     var debito = arred(cbs + ibs), apagar = arred(debito - creditos);
@@ -74,19 +76,23 @@
       creditos: creditos, apagar: apagar, carga: aluguel > 0 ? Math.max(0, apagar) / aluguel * 100 : 0 };
   }
 
-  // Pessoa física: vira contribuinte do regime regular? (art. 251, §§ 1º a 3º)
-  // o = { receitaLocacaoAnoAnterior, imoveisLocados, receitaLocacaoAnoAtual, vendasAnoAnterior (imóveis com menos de 5 anos), construidosVendidosAnoAnterior, limite (opcional) }
+  // Pessoa física: vira contribuinte do regime regular? (LC 214/2025, art. 251; Decreto 12.955/2026, art. 382)
+  // o = { receitaLocacaoAnoAnterior, imoveisLocados, receitaLocacaoAnoAtual, imoveisLocadosAnoAtual,
+  //       vendasAnoAnterior, vendasAnoAtual (imóveis com menos de 5 anos), construidosVendidosAnoAnterior, construidosVendidosAnoAtual, limite }
   function pessoaFisica(o) {
     var lim = num(o.limite) || LIMITE_PF_LOCACAO, motivos = [];
-    if (num(o.receitaLocacaoAnoAnterior) > lim && num(o.imoveisLocados) > 3) motivos.push("locação: receita do ano anterior acima de " + fmt(lim) + " com mais de 3 imóveis (art. 251, § 1º, I)");
-    if (num(o.receitaLocacaoAnoAtual) > lim * 1.2) motivos.push("locação: receita do ano já passa 20% do limite (art. 251, § 2º, II)");
+    var imoveisAtual = o.imoveisLocadosAnoAtual == null ? num(o.imoveisLocados) : num(o.imoveisLocadosAnoAtual);
+    if (num(o.receitaLocacaoAnoAnterior) > lim && num(o.imoveisLocados) > 3) motivos.push("locação: receita do ano anterior acima de " + fmt(lim) + " com mais de 3 imóveis (art. 251, § 1º, I; Decreto 12.955/2026, art. 382, I)");
+    if (num(o.receitaLocacaoAnoAtual) > lim * 1.2 && imoveisAtual > 3) motivos.push("locação: no próprio ano, receita acima de " + fmt(lim * 1.2) + " (limite + 20%) com mais de 3 imóveis (art. 251, § 2º, II; Decreto 12.955/2026, art. 382, § 1º, III)");
     if (num(o.vendasAnoAnterior) > 3) motivos.push("venda de mais de 3 imóveis distintos, com menos de 5 anos no patrimônio, no ano anterior (art. 251, § 1º, II, e § 3º)");
-    if (num(o.construidosVendidosAnoAnterior) > 1) motivos.push("venda de mais de 1 imóvel construído pela própria pessoa nos 5 anos anteriores (art. 251, § 1º, III)");
+    if (num(o.vendasAnoAtual) > 3) motivos.push("no próprio ano, a partir da 4ª venda de imóvel com menos de 5 anos no patrimônio (Decreto 12.955/2026, art. 382, § 1º, I)");
+    if (num(o.construidosVendidosAnoAnterior) > 1) motivos.push("venda de mais de 1 imóvel construído pela própria pessoa nos 5 anos anteriores, no ano anterior (art. 251, § 1º, III)");
+    if (num(o.construidosVendidosAnoAtual) > 1) motivos.push("no próprio ano, a partir da 2ª venda de imóvel construído pela própria pessoa (Decreto 12.955/2026, art. 382, § 1º, II)");
     return { contribuinte: motivos.length > 0, motivos: motivos };
   }
 
   // ---------- Incorporação e loteamento ----------
-  // o = { tipo: "ret" | "retSocial" | "loteamento" | "semRet", recebido (no mês), valorTotal (da unidade), redutorAjuste, redutorSocial,
+  // o = { tipo: "ret" | "retSocial" | "loteamento" | "semRet", recebido (no mês), juros (juros e correção dentro do recebido), valorTotal (da unidade), redutorAjuste, redutorSocial,
   //       residencial: bool, creditos (do mês), ano, ref }
   var OPCAO_TRANSICAO = {
     ret: { pct: 2.08, artigo: "art. 485, I", nome: "RET da incorporação (Lei 10.931/2004, arts. 4º e 8º)", irCsll: 1.92 },
@@ -100,11 +106,14 @@
     var rsPadrao = o.residencial ? (o.tipo === "loteamento" ? REDUTOR_SOCIAL.lote : REDUTOR_SOCIAL.residencialNovo) : 0;
     var rsInf = Number(o.redutorSocial);
     var rs = o.residencial ? (Number.isFinite(rsInf) && rsInf > 0 ? rsInf : rsPadrao) : 0;
-    // art. 262, § 4º: redutores proporcionais ao valor total da unidade em cada parcela
-    var proporcao = total > 0 ? Math.min(1, Math.max(0, (ra + rs) / total)) : 0;
-    var base = arred(recebido * (1 - proporcao));
+    // art. 262, § 4º (Decreto 12.955/2026, art. 380, § 6º): redutores proporcionais ao valor principal da parcela
+    // em relação ao valor total da alienação; juros e correção da parcela entram inteiros na base (art. 255, § 1º).
+    var juros = Math.min(recebido, num(o.juros)), principal = recebido - juros;
+    var redutorParcela = total > 0 ? Math.min(principal, (ra + rs) * principal / total) : 0;
+    var proporcao = recebido > 0 ? redutorParcela / recebido : 0;
+    var base = arred(recebido - redutorParcela);
     var cbs = arred(base * e.cbs / 100), ibs = arred(base * e.ibs / 100), creditos = num(o.creditos);
-    var regular = { base: base, proporcaoRedutores: proporcao, cbs: cbs, ibs: ibs, debito: arred(cbs + ibs), creditos: creditos, apagar: arred(cbs + ibs - creditos) };
+    var regular = { base: base, proporcaoRedutores: proporcao, redutorParcela: arred(redutorParcela), juros: juros, cbs: cbs, ibs: ibs, debito: arred(cbs + ibs), creditos: creditos, apagar: arred(cbs + ibs - creditos) };
     regular.carga = recebido > 0 ? Math.max(0, regular.apagar) / recebido * 100 : 0;
     var op = OPCAO_TRANSICAO[o.tipo] || null, opcao = null;
     if (op) {

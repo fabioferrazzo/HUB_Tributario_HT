@@ -23,7 +23,7 @@
       <h1>CBS e IBS no agro</h1>
       <p>Enquadramento do produtor rural (contribuinte ou não), vantagem de optar pelo regime regular e carga na venda dos produtos com redução ou alíquota zero.</p>
     </div>
-    <span class="selo">LC 214/2025 com a LC 227/2026 · conferido em 13/11/2026</span>
+    <span class="selo">LC 214/2025, LC 227/2026 e Decreto 12.955/2026 · conferido em 13/11/2026</span>
   </header>
 
   <nav class="abas" id="abas">
@@ -58,6 +58,8 @@
           <div class="campo"><label for="eOutras">Receita de outras empresas agro em que tem participação</label><input id="eOutras" class="num moeda" value="0,00"></div>
           <div class="campo"><label for="eLimite">Limite corrigido pelo IPCA</label><input id="eLimite" class="num moeda" value="3.600.000,00"></div>
           <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="eIntegrado"> Produtor integrado (contrato de integração vertical)</label></div>
+          <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="eSimples"> Produtor PJ do Simples Nacional sem opção pelo regime regular de CBS/IBS</label></div>
+          <div class="campo inteiro"><div class="dica">Contam as vendas da atividade rural. Ficam fora: receitas de contratos de integração, venda de bens usados na produção e da terra nua; adiantamentos de venda para entrega futura contam no mês da entrega (Decreto 12.955/2026, art. 239, § 1º). O limite é corrigido pelo IPCA todo janeiro, a partir de 2027 (art. 239, § 3º).</div></div>
         </div>
         <h2 style="margin:4px 0 0;font-size:13px;color:var(--brand)">Para comparar: ficar fora × optar pelo regime regular</h2>
         <div class="campos">
@@ -86,12 +88,12 @@
         <div class="tabela-rolagem"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
       </section>
       <div id="avisos" style="display:grid;gap:8px"></div>
-      <div class="fontes">Fontes: LC 214/2025, com a redação da LC 227/2026 — arts. 125 e Anexo I (cesta básica), 135 e Anexo VII, 137 (in natura), 138 e Anexo IX (insumos), 148 e Anexo XV (hortícolas, frutas e ovos), 164 a 168 (produtor rural não contribuinte e crédito presumido), 343 a 348 (alíquotas de 2026 a 2028). Estimativas: alíquotas de referência editáveis; IBS de 2029 a 2032 proporcional à redução de ICMS e ISS. Cálculo de apoio: confira a NCM do produto nos Anexos; não cobre o diferimento dos insumos (art. 138, §§ 2º a 9º), cooperativas (art. 271) nem o Simples Nacional.</div>
+      <div class="fontes">Fontes: LC 214/2025, com a redação da LC 227/2026, e Regulamento da CBS (Decreto 12.955/2026, arts. 238 a 249; Resolução CGIBS 6/2026 para o IBS) — arts. 125 e Anexo I (cesta básica), 135 e Anexo VII, 137 (in natura), 138 e Anexo IX (insumos), 148 e Anexo XV (hortícolas, frutas e ovos), 164 a 168 (produtor rural não contribuinte e crédito presumido), 343 a 348 (alíquotas de 2026 a 2028). Estimativas: alíquotas de referência editáveis; IBS de 2029 a 2032 proporcional à redução de ICMS e ISS. Cálculo de apoio: confira a NCM do produto nos Anexos; não cobre o diferimento dos insumos (art. 138, §§ 2º a 9º), cooperativas (art. 271) nem o Simples Nacional.</div>
     </div>
   </div>
 </div>
 <script src="../simples-comum/ui.js?v=1"></script>
-<script src="rural.js?v=1"></script>
+<script src="rural.js?v=2"></script>
 <script>
 (function () {
   "use strict";
@@ -116,10 +118,10 @@
   function avisos(lista) { $("avisos").innerHTML = lista.map(function (a) { return '<div class="aviso ' + (a[0] === "aviso" ? "" : a[0] === "erro" ? "erro" : "neutro") + '">' + U.esc(a[1]) + "</div>"; }).join(""); }
   function pct(v) { return U.pct(v, 4); }
 
-  var ROTULO = { contribuinte: "Contribuinte", contribuinteAnoSeguinte: "Contribuinte no ano seguinte", naoContribuinte: "Não contribuinte" };
+  var ROTULO = { contribuinte: "Contribuinte", contribuinteAnoSeguinte: "Contribuinte no ano seguinte", naoContribuinte: "Não contribuinte", simples: "Simples Nacional" };
 
   function calcEnquadramento() {
-    var e = R.enquadramento({ receitaAnoAnterior: m("eAnterior"), receitaAnoAtual: m("eAtual"), mesExcesso: Number($("eMesExcesso").value), mesesAtividade: n("eMeses"), outrasEmpresasAgro: m("eOutras"), integrado: $("eIntegrado").checked, limite: m("eLimite") });
+    var e = R.enquadramento({ simplesSemOpcao: $("eSimples").checked, receitaAnoAnterior: m("eAnterior"), receitaAnoAtual: m("eAtual"), mesExcesso: Number($("eMesExcesso").value), mesesAtividade: n("eMeses"), outrasEmpresasAgro: m("eOutras"), integrado: $("eIntegrado").checked, limite: m("eLimite") });
     var k = R.comparar({ vendas: m("cVendas"), pctContribuintes: n("cPctContrib"), produto: $("produto").value, comprasAnexoIX: m("cAnexoIX"), comprasOutras: m("cOutras"), pctPresumido: pctPresumido(), ano: Number($("ano").value), ref: ref() });
     var a = k.aliquotas;
     kpis([["Situação", ROTULO[e.situacao], e.inicio ? "a partir de " + e.inicio : "limite " + U.moeda(e.limiteAno)],
@@ -129,6 +131,7 @@
 
     var ver;
     if (e.situacao === "contribuinte") ver = '<div class="veredito">Contribuinte obrigatório: a comparação abaixo é só referência.</div>';
+    else if (e.situacao === "simples") ver = '<div class="veredito">No Simples sem a opção pelo regime regular, CBS e IBS vão no DAS e não há crédito presumido. A comparação abaixo mostra o que mudaria optando pelo regime regular (Res. CGSN 190/2026, art. 40-C) para depois ficar como não contribuinte.</div>';
     else if (k.vantagemFora != null) ver = '<div class="veredito' + (k.vantagemFora >= 0 ? " sim" : "") + '">' + (k.vantagemFora >= 0 ? "Com crédito presumido de " + U.pct(pctPresumido(), 2) + ", ficar como não contribuinte rende " + U.moeda(k.vantagemFora) + " a mais para a cadeia no ano." : "Com crédito presumido de " + U.pct(pctPresumido(), 2) + ", optar pelo regime regular rende " + U.moeda(-k.vantagemFora) + " a mais para a cadeia no ano.") + "</div>";
     else ver = '<div class="veredito">' + (k.pEquilibrio === 0 ? "Ficar como não contribuinte compensa mesmo sem crédito presumido: o tributo que entraria no preço das vendas a quem não credita supera o das compras." : k.pEquilibrio == null ? "O tributo das compras é maior do que o crédito presumido conseguiria cobrir: optar pelo regime regular tende a compensar." : "Ficar fora compensa se o crédito presumido divulgado para o produto passar de " + U.pct(k.pEquilibrio, 2) + ". Informe o percentual quando sair.") + "</div>";
     $("veredito").innerHTML = ver;
@@ -146,6 +149,7 @@
     var av = [];
     e.motivos.forEach(function (x) { av.push(["neutro", x]); });
     if (e.situacao !== "contribuinte") av.push(["neutro", "Quem não é contribuinte pode optar a qualquer tempo pelo regime regular, com efeito no mês seguinte e sem volta no mesmo ano (art. 165). A renúncia vale a partir do ano seguinte (art. 166)."]);
+    av.push(["neutro", "O comprador só apropria o crédito presumido com a nota de entrada emitida por ele e à medida que paga o produtor (Decreto 12.955/2026, arts. 245, parágrafo único, e 246)."]);
     av.push(["neutro", "Comparação feita com o mesmo preço sem tributo: soma o que o produtor ganha ou perde com o que o comprador credita. Na prática, quem fica com a diferença depende da negociação do preço."]);
     av.push(["neutro", a.nota]);
     if (a.teste) av.push(["aviso", "Em 2026 nada muda no caixa: CBS e IBS do ano de teste são compensados ou dispensados."]);

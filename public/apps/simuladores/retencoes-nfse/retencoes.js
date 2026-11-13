@@ -93,7 +93,7 @@
   /*
    * opcoes = {
    *   ano: 2026 | 2027, tomador: "privado" | "federal" | "estadual", valor,
-   *   regime: "normal" | "simples", anexoSimples: "I".."V",
+   *   regime: "normal" | "simples", anexoSimples: "I".."V", tomadorSimples: bool (tomador privado optante pelo Simples),
    *   natureza (privado), valorVeiculos (propaganda), codigo (IN 1234),
    *   inss: { aplica, servico, materiais, valorMateriais, tipoConstrucao, deducoes, especial: 0|15|20|25, valorEspecial, dispensa: "" | "semEmpregados" | "profissionalSocios" },
    *   iss: { aplica, aliquota, deducoes }
@@ -128,7 +128,7 @@
           grupo.forEach(function (l) { l.dispensado = true; });
           avisos.push({ tipo: "neutro", texto: "Retenção da IN 1.234 de " + fmt(totalGrupo) + ": abaixo de R$ 10,00, fica dispensada (art. 3º, § 6º), exceto quando o Darf for emitido pelo Siafi." });
         }
-        if (ano2027 && (it.cofins > 0 || it.pis > 0)) avisos.push({ tipo: "aviso", texto: "Projeção 2027: PIS e Cofins são extintos com a entrada da CBS (EC 132/2023, ADCT, art. 126, II), por isso saem da retenção. A IN 1.234 ainda não foi ajustada; confira a norma da Receita antes de usar." });
+        if (ano2027 && (it.cofins > 0 || it.pis > 0)) avisos.push({ tipo: "aviso", texto: "2027: PIS e Cofins deixam de existir (EC 132/2023, ADCT, art. 126, II; LC 214/2025, art. 542), por isso saem da retenção; IR e CSLL continuam (Lei 9.430/1996, art. 64). A tabela da IN 1.234 ainda não foi ajustada pela Receita; confira antes de usar." });
         avisos.push({ tipo: "neutro", texto: "A retenção da IN 1.234 substitui as demais retenções federais sobre o mesmo pagamento (RIR/2018, art. 720, § 5º). Código de receita do Darf: " + it.codigo + "." });
       }
     } else if (o.tomador === "estadual") {
@@ -156,14 +156,16 @@
           var lir = linha("IRRF", baseIr, nat.ir, baseIr * nat.ir / 100, nat.irBase);
           if (lir.valor > 0 && lir.valor < 10) avisos.push({ tipo: "neutro", texto: "IRRF abaixo de R$ 10,00: retém normalmente, mas o Darf só é pago quando o total do código somar R$ 10,00 ou mais (RIR/2018, art. 938, §§ 4º e 5º)." });
         }
-        if (nat.csrf) {
+        if (nat.csrf && o.tomadorSimples) {
+          avisos.push({ tipo: "neutro", texto: "Tomador optante pelo Simples Nacional não é obrigado a reter PIS, Cofins e CSLL (Lei 10.833/2003, art. 30, § 2º). O IRRF e o INSS continuam sendo retidos." });
+        } else if (nat.csrf) {
           var g = [];
           g.push(linha("CSLL", valor, 1, valor * 0.01, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
           if (!ano2027) {
             g.push(linha("Cofins", valor, 3, valor * 0.03, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
             g.push(linha("PIS/Pasep", valor, 0.65, valor * 0.0065, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
           } else {
-            avisos.push({ tipo: "aviso", texto: "Projeção 2027: com a extinção de PIS e Cofins (EC 132/2023, ADCT, art. 126, II), sobra a retenção da CSLL de 1%. A Lei 10.833 e as normas da Receita ainda não foram ajustadas; confira antes de usar." });
+            avisos.push({ tipo: "aviso", texto: "2027: PIS e Cofins deixam de existir (EC 132/2023, ADCT, art. 126, II; LC 214/2025, art. 542). Os arts. 30 a 36 da Lei 10.833/2003 não foram revogados, então sobra a retenção da CSLL de 1%. Confira se a Receita publicou ajuste antes de usar." });
           }
           var tg = g.reduce(function (s, l) { return s + l.valor; }, 0);
           if (tg > 0 && tg <= 10) {
