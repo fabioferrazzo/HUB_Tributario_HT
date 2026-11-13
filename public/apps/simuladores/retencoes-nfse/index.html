@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retenções em NFS-e — H. Teixeira</title>
+<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+<style>
+  select { text-overflow: ellipsis; }
+  td.fund { white-space: normal; text-align: left; color: var(--muted); font-size: 11.5px; min-width: 220px; }
+  tr.dispensado td { color: var(--muted); text-decoration: line-through; }
+  tr.dispensado td.fund { text-decoration: none; }
+  .sub-bloco { border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topo">
+    <div>
+      <h1>Retenções em NFS-e</h1>
+      <p>IR, PIS/Cofins/CSLL, INSS 11% e ISS retidos pelo tomador do serviço — entre empresas e por órgãos públicos.</p>
+    </div>
+    <span class="selo">Normas conferidas em 13/11/2026</span>
+  </header>
+
+  <div class="grade">
+    <section class="painel">
+      <div class="cab"><h2>Nota de serviço</h2></div>
+      <div class="corpo">
+        <div class="campo">
+          <label>Quem paga (tomador)</label>
+          <div class="segmento" id="segTomador">
+            <button type="button" class="ativo" data-v="privado">Empresa privada</button>
+            <button type="button" data-v="federal">Órgão federal</button>
+            <button type="button" data-v="estadual">Estado/município</button>
+          </div>
+          <div class="dica" id="dicaTomador"></div>
+        </div>
+        <div class="campo">
+          <label>Ano do pagamento</label>
+          <div class="segmento" id="segAno">
+            <button type="button" class="ativo" data-v="2026">2026</button>
+            <button type="button" data-v="2027">2027 em diante (projeção)</button>
+          </div>
+        </div>
+        <div class="campos">
+          <div class="campo"><label for="valor">Valor bruto da nota</label><input id="valor" class="num moeda" value="10.000,00"></div>
+          <div class="campo">
+            <label for="regime">Regime do prestador</label>
+            <select id="regime">
+              <option value="normal">Lucro Real, Presumido ou Arbitrado</option>
+              <option value="simples">Simples Nacional</option>
+            </select>
+          </div>
+          <div class="campo inteiro oculto" id="blocoAnexo">
+            <label for="anexo">Anexo do Simples em que o serviço é tributado</label>
+            <select id="anexo">
+              <option value="III">Anexo III</option>
+              <option value="IV">Anexo IV (construção, vigilância, limpeza, advocacia…)</option>
+              <option value="V">Anexo V</option>
+            </select>
+          </div>
+          <div class="campo inteiro" id="blocoNatureza">
+            <label for="natureza">Natureza do serviço</label>
+            <select id="natureza"></select>
+          </div>
+          <div class="campo inteiro oculto" id="blocoVeiculos">
+            <label for="veiculos">Repasses a rádio, TV, jornais e revistas</label>
+            <input id="veiculos" class="num moeda" value="0,00">
+            <div class="dica">Saem da base do IR na propaganda (RIR/2018, art. 718, § 1º).</div>
+          </div>
+          <div class="campo inteiro oculto" id="blocoCodigo">
+            <label for="codigo">Natureza pela tabela da IN 1.234 (Anexo I)</label>
+            <select id="codigo"></select>
+          </div>
+        </div>
+      </div>
+
+      <details class="painel sub-bloco" style="border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none">
+        <summary><h2>INSS 11% (cessão de mão de obra ou empreitada)</h2></summary>
+        <div class="corpo">
+          <label class="marcar"><input type="checkbox" id="inssAplica"> Serviço sujeito à retenção do INSS</label>
+          <div class="dica">Só os serviços listados nos arts. 111 e 112 da IN RFB 2.110/2022, contratados por cessão de mão de obra ou empreitada: limpeza, vigilância, construção civil, serviços rurais, digitação, acabamento, embalagem, cobrança, copa, hotelaria, manutenção com equipe à disposição, portaria, recepção, telemarketing, treinamento, entre outros. Transporte de cargas e empreitada total não entram (art. 114).</div>
+          <div class="campos" id="camposInss">
+            <div class="campo inteiro">
+              <label for="inssServico">Tipo de serviço</label>
+              <select id="inssServico"></select>
+            </div>
+            <div class="campo inteiro">
+              <label for="inssMateriais">Materiais e equipamentos</label>
+              <select id="inssMateriais">
+                <option value="bruto">Não há ou não estão discriminados na nota</option>
+                <option value="discriminado">Discriminados no contrato e na nota (art. 116)</option>
+                <option value="semValorContrato">Previstos no contrato sem valor, discriminados na nota (art. 117)</option>
+                <option value="equipInerente">Equipamento inerente ao serviço, sem valor no contrato (art. 118, II)</option>
+              </select>
+            </div>
+            <div class="campo inteiro oculto" id="blocoTipoConstrucao">
+              <label for="tipoConstrucao">Serviço de construção com equipamento</label>
+              <select id="tipoConstrucao"></select>
+            </div>
+            <div class="campo"><label for="inssValorMateriais">Valor de materiais/equipamentos na nota</label><input id="inssValorMateriais" class="num moeda" value="0,00"></div>
+            <div class="campo"><label for="inssDeducoes">Alimentação e vale-transporte na nota</label><input id="inssDeducoes" class="num moeda" value="0,00"></div>
+            <div class="campo">
+              <label for="inssEspecial">Atividade especial no tomador</label>
+              <select id="inssEspecial">
+                <option value="0">Não há</option>
+                <option value="15">Aposentadoria aos 15 anos (+4%)</option>
+                <option value="20">Aposentadoria aos 20 anos (+3%)</option>
+                <option value="25">Aposentadoria aos 25 anos (+2%)</option>
+              </select>
+            </div>
+            <div class="campo"><label for="inssValorEspecial">Valor dos serviços em condição especial</label><input id="inssValorEspecial" class="num moeda" placeholder="toda a base"></div>
+            <div class="campo inteiro">
+              <label for="inssDispensa">Dispensa (com declaração da contratada)</label>
+              <select id="inssDispensa">
+                <option value="">Nenhuma</option>
+                <option value="semEmpregados">Sem empregados, serviço pelo titular/sócio, faturamento até 2× o teto (art. 115, II)</option>
+                <option value="profissionalSocios">Profissão regulamentada ou ensino, prestado pelos sócios (art. 115, III)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="painel sub-bloco" style="border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none">
+        <summary><h2>ISS retido</h2></summary>
+        <div class="corpo">
+          <label class="marcar"><input type="checkbox" id="issAplica"> O tomador retém o ISS</label>
+          <div class="dica">A retenção depende da lei do município e dos casos da LC 116/2003 (art. 6º, § 2º, e art. 3º). Confira a lei local.</div>
+          <div class="campos">
+            <div class="campo"><label for="issAliquota">Alíquota do ISS (%)</label><input id="issAliquota" class="num" inputmode="decimal" value="5,00"></div>
+            <div class="campo"><label for="issDeducoes">Deduções da base (ex.: materiais na obra)</label><input id="issDeducoes" class="num moeda" value="0,00"></div>
+          </div>
+          <div id="blocoIssSimples" class="oculto" style="display:grid;gap:8px">
+            <div class="dica">No Simples, o tomador usa a alíquota informada na nota: o percentual efetivo de ISS da faixa do mês anterior (Res. CGSN 140/2018, art. 27). Deixe a alíquota em branco para ver a regra dos 5% quando a nota não informa.</div>
+            <div class="campos">
+              <div class="campo"><label for="issRbt12">RBT12 do prestador</label><input id="issRbt12" class="num moeda" value="600.000,00"></div>
+              <div class="campo" style="align-content:end"><label class="marcar"><input type="checkbox" id="issMesInicio"> Mês de início de atividade</label></div>
+            </div>
+            <div class="linha-acoes"><button type="button" class="btn" id="btnIssSimples">Calcular alíquota pela RBT12</button><span class="dica" id="issSimplesRegra"></span></div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <div style="display:grid;gap:12px">
+      <div class="kpis">
+        <div class="kpi destaque"><div class="rot">Total retido</div><div class="val" id="kTotal">—</div><div class="sub" id="kTotalSub">—</div></div>
+        <div class="kpi"><div class="rot">Valor líquido a pagar</div><div class="val" id="kLiquido">—</div><div class="sub">valor bruto menos as retenções</div></div>
+        <div class="kpi"><div class="rot">Federais</div><div class="val" id="kFed">—</div><div class="sub">IR, CSLL, PIS e Cofins</div></div>
+        <div class="kpi"><div class="rot">INSS e ISS</div><div class="val" id="kOutros">—</div><div class="sub" id="kOutrosSub">—</div></div>
+      </div>
+
+      <section class="painel">
+        <div class="cab"><h2>Retenções</h2></div>
+        <div class="tabela-rolagem">
+          <table>
+            <thead><tr><th>Tributo</th><th>Base</th><th>Alíquota</th><th>Valor retido</th><th style="text-align:left">Fundamento</th></tr></thead>
+            <tbody id="tabela"></tbody>
+          </table>
+        </div>
+        <div class="corpo oculto" id="regraInss"><div class="dica" id="regraInssTexto"></div></div>
+      </section>
+
+      <div id="avisos" style="display:grid;gap:8px"></div>
+
+      <section class="painel">
+        <div class="cab"><h2>Texto para a nota</h2><button type="button" class="btn" id="btnCopiar">Copiar</button></div>
+        <div class="corpo"><div class="texto-nota" id="textoNota"></div></div>
+      </section>
+
+      <div class="fontes">Fontes: RIR/2018 (Decreto 9.580), arts. 714, 716, 718, 720 e 938; Lei 10.833/2003, arts. 30 a 32 e 35; IN RFB 765/2007; Lei 8.212/1991, art. 31; IN RFB 2.110/2022, arts. 110 a 131, 166 e 167; Lei 9.430/1996, art. 64; IN RFB 1.234/2012, arts. 2º-A, 3º, 3º-A, 4º e Anexo I (com alterações até a IN RFB 2.335/2026); LC 116/2003, arts. 3º, 6º, 8º e 8º-A; LC 123/2006, art. 21, § 4º; Res. CGSN 140/2018, art. 27; EC 132/2023, ADCT, art. 126. Cálculo de apoio: não cobre cooperativas, entidades imunes ou isentas, CPRB (retenção de 3,5% da Lei 12.546/2011) nem decisões judiciais.</div>
+    </div>
+  </div>
+</div>
+<script src="../simples-comum/simples.js?v=1"></script>
+<script src="../simples-comum/ui.js?v=1"></script>
+<script src="retencoes.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  var R = window.RetencoesHT, S = window.SimplesHT, U = window.SimUI, $ = function (id) { return document.getElementById(id); };
+  var tomador = "privado", ano = 2026, ultimoTexto = "";
+  var DICAS = {
+    privado: "Empresa que contrata outra empresa: IR (arts. 714 a 718 do RIR) e PIS/Cofins/CSLL de 4,65% (Lei 10.833/2003) conforme a natureza do serviço.",
+    federal: "Órgãos, autarquias e fundações federais, empresas públicas e sociedades de economia mista no Siafi: retenção única pela tabela da IN RFB 1.234/2012.",
+    estadual: "Estados, DF e municípios, com autarquias e fundações: retêm só o IR, pela coluna 02 da tabela da IN RFB 1.234/2012 (art. 2º-A)."
+  };
+
+  function opcoes(sel, lista) { sel.innerHTML = lista.map(function (o) { return '<option value="' + U.esc(o[0]) + '">' + U.esc(o[1]) + "</option>"; }).join(""); }
+  opcoes($("natureza"), Object.keys(R.NATUREZAS).map(function (k) { return [k, R.NATUREZAS[k].nome]; }));
+  opcoes($("codigo"), R.TABELA_IN1234.map(function (t) {
+    var soma = t.ir + t.csll + t.cofins + t.pis;
+    return [t.codigo, t.codigo + " · " + U.numero(soma, 2) + "% — " + t.nome];
+  }));
+  opcoes($("inssServico"), Object.keys(R.SERVICOS_INSS).map(function (k) { return [k, R.SERVICOS_INSS[k].nome]; }));
+  opcoes($("tipoConstrucao"), Object.keys(R.EQUIP_CONSTRUCAO).map(function (k) { return [k, R.EQUIP_CONSTRUCAO[k].nome + " (" + R.EQUIP_CONSTRUCAO[k].pct + "%)"]; }));
+
+  function casas(a) { return Math.abs(Math.round(a * 100) - a * 100) < 1e-6 ? 2 : 4; }
+  function moedaCampo(id) { var v = U.valorCampo($(id)); return Number.isFinite(v) ? v : 0; }
+
+  function calcular() {
+    var simples = $("regime").value === "simples";
+    $("blocoAnexo").classList.toggle("oculto", !simples);
+    $("blocoNatureza").classList.toggle("oculto", tomador !== "privado");
+    $("blocoCodigo").classList.toggle("oculto", tomador === "privado");
+    $("blocoVeiculos").classList.toggle("oculto", !(tomador === "privado" && $("natureza").value === "propaganda"));
+    $("blocoIssSimples").classList.toggle("oculto", !simples);
+    $("blocoTipoConstrucao").classList.toggle("oculto", !($("inssMateriais").value === "equipInerente" && $("inssServico").value === "construcao"));
+    var inssOn = $("inssAplica").checked;
+    Array.prototype.forEach.call($("camposInss").querySelectorAll("input, select"), function (el) { el.disabled = !inssOn; });
+    $("issAliquota").disabled = !$("issAplica").checked; $("issDeducoes").disabled = !$("issAplica").checked;
+
+    var valor = U.valorCampo($("valor"));
+    if (!Number.isFinite(valor) || valor <= 0) return erro("Informe o valor bruto da nota em reais.");
+    var issTxt = $("issAliquota").value.trim();
+    var r = R.calcular({
+      ano: ano, tomador: tomador, valor: valor, regime: $("regime").value, anexoSimples: $("anexo").value,
+      natureza: $("natureza").value, valorVeiculos: moedaCampo("veiculos"), codigo: $("codigo").value,
+      inss: { aplica: inssOn, servico: $("inssServico").value, materiais: $("inssMateriais").value, valorMateriais: moedaCampo("inssValorMateriais"),
+        tipoConstrucao: $("tipoConstrucao").value, deducoes: moedaCampo("inssDeducoes"), especial: Number($("inssEspecial").value),
+        valorEspecial: moedaCampo("inssValorEspecial"), dispensa: $("inssDispensa").value },
+      iss: { aplica: $("issAplica").checked, aliquota: issTxt ? U.parseBR(issTxt) : NaN, deducoes: moedaCampo("issDeducoes") }
+    });
+
+    var fed = 0, outros = 0, regraInss = null;
+    r.linhas.forEach(function (l) {
+      if (l.dispensado) return;
+      if (l.grupo === "inss" || l.grupo === "iss") outros += l.valor; else fed += l.valor;
+      if (l.regra) regraInss = l.regra;
+    });
+    r.linhas.forEach(function (l) { if (l.regra) regraInss = l.regra; });
+    $("kTotal").textContent = U.moeda(r.total);
+    $("kTotalSub").textContent = U.pct(r.percentual, 2) + " do valor bruto";
+    $("kLiquido").textContent = U.moeda(r.liquido);
+    $("kFed").textContent = U.moeda(R.arred(fed));
+    $("kOutros").textContent = U.moeda(R.arred(outros));
+    $("kOutrosSub").textContent = (inssOn ? "INSS" : "sem INSS") + " · " + ($("issAplica").checked ? "ISS retido" : "sem ISS retido");
+
+    if (!r.linhas.length) {
+      $("tabela").innerHTML = '<tr><td colspan="5" style="text-align:left;color:var(--muted)">Nenhuma retenção para os dados informados.</td></tr>';
+    } else {
+      $("tabela").innerHTML = r.linhas.map(function (l) {
+        return '<tr class="' + (l.dispensado ? "dispensado" : "") + '"><td>' + U.esc(l.tributo) + (l.dispensado ? " <small>(dispensado)</small>" : "") + "</td><td>" + U.moeda(l.base) + "</td><td>" +
+          U.pct(l.aliquota, casas(l.aliquota)) + "</td><td>" + U.moeda(l.valor) + '</td><td class="fund">' + U.esc(l.fundamento) + "</td></tr>";
+      }).join("") + '<tr class="total"><td>Total retido</td><td></td><td>' + U.pct(r.percentual, 2) + "</td><td>" + U.moeda(r.total) + "</td><td></td></tr>";
+    }
+    $("regraInss").classList.toggle("oculto", !regraInss);
+    $("regraInssTexto").textContent = regraInss ? "Base do INSS: " + regraInss : "";
+    $("avisos").innerHTML = r.avisos.map(function (a) {
+      var classe = a.tipo === "erro" ? "aviso erro" : a.tipo === "aviso" ? "aviso" : "aviso neutro";
+      return '<div class="' + classe + '">' + U.esc(a.texto) + "</div>";
+    }).join("");
+    ultimoTexto = R.textoNota(r);
+    $("textoNota").textContent = ultimoTexto;
+  }
+
+  function erro(msg) {
+    $("avisos").innerHTML = '<div class="aviso erro">' + U.esc(msg) + "</div>";
+    ["kTotal", "kLiquido", "kFed", "kOutros"].forEach(function (id) { $(id).textContent = "—"; });
+    $("tabela").innerHTML = ""; $("textoNota").textContent = ""; ultimoTexto = "";
+  }
+
+  function segmento(id, aoTrocar) {
+    Array.prototype.forEach.call($(id).querySelectorAll("button"), function (b) {
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call($(id).querySelectorAll("button"), function (x) { x.classList.toggle("ativo", x === b); });
+        aoTrocar(b.dataset.v); calcular();
+      });
+    });
+  }
+  segmento("segTomador", function (v) { tomador = v; $("dicaTomador").textContent = DICAS[v]; });
+  segmento("segAno", function (v) { ano = Number(v); });
+  $("dicaTomador").textContent = DICAS.privado;
+
+  $("btnIssSimples").addEventListener("click", function () {
+    var rbt12 = U.valorCampo($("issRbt12"));
+    var anexo = $("anexo").value;
+    var res = S.aliquotaRetencaoIss({ anexo: anexo, rbt12: Number.isFinite(rbt12) ? rbt12 : 0, mesInicio: $("issMesInicio").checked });
+    if (res.aliquota == null) { $("issSimplesRegra").textContent = res.regra; return; }
+    $("issAplica").checked = true;
+    $("issAliquota").value = U.numero(res.aliquota, 4);
+    $("issSimplesRegra").textContent = "Anexo " + anexo + ": " + U.pct(res.aliquota, 4) + " — " + res.regra;
+    calcular();
+  });
+  $("btnCopiar").addEventListener("click", function () { if (ultimoTexto) U.copiar(ultimoTexto, $("btnCopiar")); });
+
+  U.prepararCamposMoeda();
+  Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); el.addEventListener("change", calcular); });
+  calcular();
+})();
+</script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

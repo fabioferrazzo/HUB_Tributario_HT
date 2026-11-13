@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, BookUser, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
+import { Award, BookUser, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, ReceiptText, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Simuladores" | "Sistema";
@@ -221,6 +221,17 @@ export const hubApps: HubApp[] = [
     src: "/apps/simuladores/fator-r/index.html",
     mode: "embutido",
     description: "Folha de salários ÷ receita bruta dos 12 meses, anexo aplicável, comparação de DAS e folha necessária para 28%."
+  },
+  {
+    id: "sim-retencoes-nfse",
+    label: "Retenções em NFS-e",
+    title: "Retenções em NFS-e",
+    icon: ReceiptText,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/retencoes-nfse/index.html",
+    mode: "embutido",
+    description: "IR, PIS/Cofins/CSLL, INSS 11% e ISS retidos pelo tomador: entre empresas, órgãos federais (IN 1.234) e estados/municípios."
   }
 ];
 
