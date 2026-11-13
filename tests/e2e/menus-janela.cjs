@@ -59,14 +59,14 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await simToggle.click();
   await page.waitForTimeout(300);
   const simItens = await page.locator("#submenu-simuladores button").allTextContents();
-  check("Simuladores aberto mostra os simuladores", simItens.length === 6 && ["Aplicações financeiras", "Mapa de alíquotas ICMS", "Alíquota IBS/CBS no Simples", "Alíquota efetiva do Simples", "Fator R", "Retenções em NFS-e"].every((t) => simItens.some((x) => x.includes(t))), simItens.join(", "));
+  check("Simuladores aberto mostra os simuladores", simItens.length === 8 && ["Aplicações financeiras", "Mapa de alíquotas ICMS", "Alíquota IBS/CBS no Simples", "Alíquota efetiva do Simples", "Fator R", "Retenções em NFS-e", "CBS/IBS Imobiliário", "CBS/IBS Rural"].every((t) => simItens.some((x) => x.includes(t))), simItens.join(", "));
   await menu("Mapa de alíquotas ICMS").click();
   await page.waitForTimeout(1500);
   check("simulador abre na moldura do HUB", page.url().includes("#/app:sim-mapa-icms") && (await page.locator('iframe[src*="/apps/simuladores/mapa-icms-rs/"]').count()) === 1, page.url().replace(BASE, ""));
   check("submenu fica aberto no simulador em uso", (await simToggle.getAttribute("aria-expanded")) === "true" && (await simToggle.isDisabled()));
   await page.reload();
   await page.waitForTimeout(1500);
-  check("submenu continua aberto ao recarregar", (await page.locator("#submenu-simuladores button").count()) === 6);
+  check("submenu continua aberto ao recarregar", (await page.locator("#submenu-simuladores button").count()) === 8);
 
   // guarda de acesso pelo endereço
   await page.getByRole("button", { name: /Sair/ }).first().click();

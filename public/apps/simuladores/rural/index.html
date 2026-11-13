@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CBS/IBS Rural — H. Teixeira</title>
+<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+<style>
+  .campo { align-content: start; }
+  .abas { display: flex; gap: 6px; flex-wrap: wrap; }
+  .abas button { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+  .abas button.ativo { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .obs td:nth-child(3), .obs th:nth-child(3) { text-align: left; white-space: normal; min-width: 200px; color: var(--muted); font-size: 11.5px; }
+  tr.menos td:first-child { padding-left: 18px; color: var(--muted); }
+  .veredito { border-radius: 12px; padding: 12px 14px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); }
+  .veredito.sim { border-color: var(--accent); background: var(--accent-soft); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topo">
+    <div>
+      <h1>CBS e IBS no agro</h1>
+      <p>Enquadramento do produtor rural (contribuinte ou não), vantagem de optar pelo regime regular e carga na venda dos produtos com redução ou alíquota zero.</p>
+    </div>
+    <span class="selo">LC 214/2025 com a LC 227/2026 · conferido em 13/11/2026</span>
+  </header>
+
+  <nav class="abas" id="abas">
+    <button type="button" class="ativo" data-aba="enquadramento">Enquadramento do produtor</button>
+    <button type="button" data-aba="venda">Carga na venda</button>
+  </nav>
+
+  <div class="grade">
+    <section class="painel">
+      <div class="cab"><h2>Parâmetros</h2></div>
+      <div class="corpo">
+        <div class="campos">
+          <div class="campo"><label for="refCbs">Alíquota de referência da CBS (%)</label><input id="refCbs" class="num" inputmode="decimal" value="11,3"><div class="dica">11,3% calculada pelo TCU para 2027; o Senado fixa até 15/12/2026.</div></div>
+          <div class="campo"><label for="refIbs">Alíquota de referência do IBS (%)</label><input id="refIbs" class="num" inputmode="decimal" value="18,7"><div class="dica">Estimativa preliminar; IBS cheio só em 2033.</div></div>
+          <div class="campo"><label for="ano">Ano</label><select id="ano"></select></div>
+          <div class="campo"><label for="pctPresumido">Crédito presumido do comprador (%)</label><input id="pctPresumido" class="num" inputmode="decimal" placeholder="ainda não divulgado"><div class="dica">Fixado todo ano por ato do Ministro da Fazenda e do Comitê Gestor (art. 168, § 4º). O de 2027 ainda não saiu.</div></div>
+          <div class="campo inteiro">
+            <label for="produto">Produto vendido</label>
+            <select id="produto"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enquadramento -->
+      <div class="corpo aba-enquadramento" style="border-top:1px solid var(--line)">
+        <h2 style="margin:0;font-size:13px;color:var(--brand)">Receita do produtor</h2>
+        <div class="campos">
+          <div class="campo"><label for="eAnterior">Receita do ano anterior</label><input id="eAnterior" class="num moeda" value="2.000.000,00"></div>
+          <div class="campo"><label for="eAtual">Receita do ano até agora</label><input id="eAtual" class="num moeda" value="1.500.000,00"></div>
+          <div class="campo"><label for="eMesExcesso">Mês em que passou do limite</label><select id="eMesExcesso"></select></div>
+          <div class="campo"><label for="eMeses">Meses de atividade no ano (se começou neste ano)</label><input id="eMeses" class="num" inputmode="numeric" value="12"></div>
+          <div class="campo"><label for="eOutras">Receita de outras empresas agro em que tem participação</label><input id="eOutras" class="num moeda" value="0,00"></div>
+          <div class="campo"><label for="eLimite">Limite corrigido pelo IPCA</label><input id="eLimite" class="num moeda" value="3.600.000,00"></div>
+          <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="eIntegrado"> Produtor integrado (contrato de integração vertical)</label></div>
+        </div>
+        <h2 style="margin:4px 0 0;font-size:13px;color:var(--brand)">Para comparar: ficar fora × optar pelo regime regular</h2>
+        <div class="campos">
+          <div class="campo"><label for="cVendas">Vendas no ano</label><input id="cVendas" class="num moeda" value="2.000.000,00"></div>
+          <div class="campo"><label for="cPctContrib">% vendido a empresas do regime regular</label><input id="cPctContrib" class="num" inputmode="decimal" value="80"></div>
+          <div class="campo"><label for="cAnexoIX">Compras de insumos do Anexo IX</label><input id="cAnexoIX" class="num moeda" value="500.000,00"><div class="dica">Adubos, sementes, defensivos, rações… com 60% de redução.</div></div>
+          <div class="campo"><label for="cOutras">Outras compras com CBS/IBS cheios</label><input id="cOutras" class="num moeda" value="200.000,00"><div class="dica">Máquinas, combustível, serviços, energia…</div></div>
+        </div>
+      </div>
+
+      <!-- Venda -->
+      <div class="corpo aba-venda oculto" style="border-top:1px solid var(--line)">
+        <h2 style="margin:0;font-size:13px;color:var(--brand)">Venda</h2>
+        <div class="campos">
+          <div class="campo"><label for="vValor">Valor da venda (sem CBS/IBS)</label><input id="vValor" class="num moeda" value="10.000,00"></div>
+          <div class="campo" style="align-content:end"><label class="marcar"><input type="checkbox" id="vContrib" checked> Vendedor é contribuinte do regime regular</label></div>
+        </div>
+      </div>
+    </section>
+
+    <div style="display:grid;gap:12px">
+      <div class="kpis" id="kpis"></div>
+      <div id="veredito"></div>
+      <section class="painel" id="painelTabela">
+        <div class="cab"><h2 id="tituloTabela">Cálculo</h2></div>
+        <div class="tabela-rolagem"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+      </section>
+      <div id="avisos" style="display:grid;gap:8px"></div>
+      <div class="fontes">Fontes: LC 214/2025, com a redação da LC 227/2026 — arts. 125 e Anexo I (cesta básica), 135 e Anexo VII, 137 (in natura), 138 e Anexo IX (insumos), 148 e Anexo XV (hortícolas, frutas e ovos), 164 a 168 (produtor rural não contribuinte e crédito presumido), 343 a 348 (alíquotas de 2026 a 2028). Estimativas: alíquotas de referência editáveis; IBS de 2029 a 2032 proporcional à redução de ICMS e ISS. Cálculo de apoio: confira a NCM do produto nos Anexos; não cobre o diferimento dos insumos (art. 138, §§ 2º a 9º), cooperativas (art. 271) nem o Simples Nacional.</div>
+    </div>
+  </div>
+</div>
+<script src="../simples-comum/ui.js?v=1"></script>
+<script src="rural.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  var R = window.RuralHT, U = window.SimUI, $ = function (id) { return document.getElementById(id); };
+  var aba = "enquadramento";
+  $("ano").innerHTML = R.ANOS.map(function (a) { return '<option value="' + a + '"' + (a === 2027 ? " selected" : "") + ">" + a + "</option>"; }).join("");
+  $("produto").innerHTML = Object.keys(R.PRODUTOS).map(function (k) { return '<option value="' + k + '"' + (k === "inNatura" ? " selected" : "") + ">" + U.esc(R.PRODUTOS[k].nome) + "</option>"; }).join("");
+  $("eMesExcesso").innerHTML = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"].map(function (m, i) { return '<option value="' + (i + 1) + '">' + m + "</option>"; }).join("");
+
+  function m(id) { var v = U.valorCampo($(id)); return Number.isFinite(v) ? v : 0; }
+  function n(id) { var v = U.parseBR($(id).value); return Number.isFinite(v) ? v : 0; }
+  function ref() { return { cbs: n("refCbs"), ibs: n("refIbs") }; }
+  function pctPresumido() { var s = $("pctPresumido").value.trim(); return s ? U.parseBR(s) : ""; }
+  function kpis(lista) { $("kpis").innerHTML = lista.map(function (k, i) { return '<div class="kpi' + (i === 0 ? " destaque" : "") + '"><div class="rot">' + U.esc(k[0]) + '</div><div class="val">' + U.esc(k[1]) + '</div><div class="sub">' + U.esc(k[2] || "") + "</div></div>"; }).join(""); }
+  function tabela(titulo, cab, linhas) {
+    $("tituloTabela").textContent = titulo;
+    $("painelTabela").classList.toggle("obs", cab.length === 3);
+    $("thead").innerHTML = "<tr>" + cab.map(function (c) { return "<th>" + U.esc(c) + "</th>"; }).join("") + "</tr>";
+    $("tbody").innerHTML = linhas.join("");
+  }
+  function tr(cls, cols) { return '<tr class="' + (cls || "") + '">' + cols.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>"; }
+  function avisos(lista) { $("avisos").innerHTML = lista.map(function (a) { return '<div class="aviso ' + (a[0] === "aviso" ? "" : a[0] === "erro" ? "erro" : "neutro") + '">' + U.esc(a[1]) + "</div>"; }).join(""); }
+  function pct(v) { return U.pct(v, 4); }
+
+  var ROTULO = { contribuinte: "Contribuinte", contribuinteAnoSeguinte: "Contribuinte no ano seguinte", naoContribuinte: "Não contribuinte" };
+
+  function calcEnquadramento() {
+    var e = R.enquadramento({ receitaAnoAnterior: m("eAnterior"), receitaAnoAtual: m("eAtual"), mesExcesso: Number($("eMesExcesso").value), mesesAtividade: n("eMeses"), outrasEmpresasAgro: m("eOutras"), integrado: $("eIntegrado").checked, limite: m("eLimite") });
+    var k = R.comparar({ vendas: m("cVendas"), pctContribuintes: n("cPctContrib"), produto: $("produto").value, comprasAnexoIX: m("cAnexoIX"), comprasOutras: m("cOutras"), pctPresumido: pctPresumido(), ano: Number($("ano").value), ref: ref() });
+    var a = k.aliquotas;
+    kpis([["Situação", ROTULO[e.situacao], e.inicio ? "a partir de " + e.inicio : "limite " + U.moeda(e.limiteAno)],
+      ["Imposto nas compras", U.moeda(k.tributoCompras), "não recuperado por quem fica fora"],
+      ["No regime regular", U.moeda(Math.max(0, k.regular.saldo)), k.regular.saldo < 0 ? "saldo credor de " + U.moeda(-k.regular.saldo) : "a pagar no ano"],
+      ["Crédito presumido de equilíbrio", k.pEquilibrio == null ? "—" : U.pct(k.pEquilibrio, 2), k.pEquilibrio === 0 ? "ficar fora compensa mesmo sem crédito" : "acima disso, ficar fora compensa"]]);
+
+    var ver;
+    if (e.situacao === "contribuinte") ver = '<div class="veredito">Contribuinte obrigatório: a comparação abaixo é só referência.</div>';
+    else if (k.vantagemFora != null) ver = '<div class="veredito' + (k.vantagemFora >= 0 ? " sim" : "") + '">' + (k.vantagemFora >= 0 ? "Com crédito presumido de " + U.pct(pctPresumido(), 2) + ", ficar como não contribuinte rende " + U.moeda(k.vantagemFora) + " a mais para a cadeia no ano." : "Com crédito presumido de " + U.pct(pctPresumido(), 2) + ", optar pelo regime regular rende " + U.moeda(-k.vantagemFora) + " a mais para a cadeia no ano.") + "</div>";
+    else ver = '<div class="veredito">' + (k.pEquilibrio === 0 ? "Ficar como não contribuinte compensa mesmo sem crédito presumido: o tributo que entraria no preço das vendas a quem não credita supera o das compras." : k.pEquilibrio == null ? "O tributo das compras é maior do que o crédito presumido conseguiria cobrir: optar pelo regime regular tende a compensar." : "Ficar fora compensa se o crédito presumido divulgado para o produto passar de " + U.pct(k.pEquilibrio, 2) + ". Informe o percentual quando sair.") + "</div>";
+    $("veredito").innerHTML = ver;
+
+    tabela("Ficar fora × optar — " + $("ano").value, ["", "Valor", "Como entra"], [
+      tr("", ["Vendas no ano", U.moeda(k.vendas), ""]),
+      tr("menos", ["a empresas do regime regular", U.moeda(k.vendasContribuintes), "o comprador credita CBS/IBS (regular) ou o crédito presumido (fora)"]),
+      tr("menos", ["a consumidores e não contribuintes", U.moeda(k.vendasOutros), "no regime regular, CBS/IBS entram no preço sem crédito para quem compra"]),
+      tr("total", ["Regime regular — CBS/IBS nas vendas (" + pct(a.total) + ")", U.moeda(k.regular.debito), U.esc(R.PRODUTOS[$("produto").value].base)]),
+      tr("menos", ["(−) créditos das compras", U.moeda(k.regular.creditos), "Anexo IX com 60% de redução; demais compras com alíquota cheia de " + pct(a.cheia)]),
+      tr("total", [k.regular.saldo < 0 ? "Saldo credor (ressarcível)" : "A recolher", U.moeda(Math.abs(k.regular.saldo)), ""]),
+      tr("total", ["Fora — crédito presumido do comprador", k.presumido ? U.moeda(k.presumido.credito) : "—", k.presumido ? "valor × p ÷ (1 + p), sobre o valor líquido (art. 168, § 3º)" : "informe o percentual quando divulgado"]),
+      tr("menos", ["Fora — tributo das compras que vira custo", U.moeda(k.tributoCompras), ""])
+    ]);
+    var av = [];
+    e.motivos.forEach(function (x) { av.push(["neutro", x]); });
+    if (e.situacao !== "contribuinte") av.push(["neutro", "Quem não é contribuinte pode optar a qualquer tempo pelo regime regular, com efeito no mês seguinte e sem volta no mesmo ano (art. 165). A renúncia vale a partir do ano seguinte (art. 166)."]);
+    av.push(["neutro", "Comparação feita com o mesmo preço sem tributo: soma o que o produtor ganha ou perde com o que o comprador credita. Na prática, quem fica com a diferença depende da negociação do preço."]);
+    av.push(["neutro", a.nota]);
+    if (a.teste) av.push(["aviso", "Em 2026 nada muda no caixa: CBS e IBS do ano de teste são compensados ou dispensados."]);
+    avisos(av);
+  }
+
+  function calcVenda() {
+    var v = R.venda({ valor: m("vValor"), produto: $("produto").value, ano: Number($("ano").value), ref: ref(), vendedorContribuinte: $("vContrib").checked, pctPresumido: pctPresumido() });
+    if (v.valor <= 0) { kpis([]); tabela("Cálculo", [], []); avisos([["erro", "Informe o valor da venda."]]); $("veredito").innerHTML = ""; return; }
+    var a = v.aliquotas;
+    $("veredito").innerHTML = "";
+    if (v.contribuinte) {
+      kpis([["CBS + IBS na nota", U.moeda(v.total), "alíquota efetiva " + pct(a.total)], ["Total da nota", U.moeda(v.totalNota), "CBS e IBS são cobrados por fora"], ["Redução", a.reducao === 100 ? "alíquota zero" : a.reducao ? a.reducao + "%" : "nenhuma", U.esc(a.base)], ["Crédito do comprador", U.moeda(v.creditoComprador), "se for do regime regular"]]);
+      tabela("Venda — " + $("ano").value, ["", "Valor", "Como entra"], [
+        tr("", ["Valor da venda", U.moeda(v.valor), ""]),
+        tr("", ["CBS (" + pct(a.cbs) + ")", U.moeda(v.cbs), "nominal " + pct(a.cbs / (1 - a.reducao / 100 || 1)) + (a.reducao ? " com redução de " + a.reducao + "%" : "")]),
+        tr("", ["IBS (" + pct(a.ibs) + ")", U.moeda(v.ibs), ""]),
+        tr("total", ["Total da nota", U.moeda(v.totalNota), ""])
+      ]);
+    } else {
+      kpis([["CBS + IBS na nota", U.moeda(0), "produtor não contribuinte"], ["Total da nota", U.moeda(v.valor), ""], ["Crédito presumido do comprador", v.creditoComprador == null ? "—" : U.moeda(v.creditoComprador), v.creditoComprador == null ? "percentual ainda não divulgado" : "valor × p ÷ (1 + p)"]]);
+      tabela("Venda de produtor não contribuinte — " + $("ano").value, ["", "Valor", "Como entra"], [
+        tr("", ["Valor pago ao produtor", U.moeda(v.valor), "art. 168, § 1º, I"]),
+        tr("menos", ["(−) crédito presumido", v.creditoComprador == null ? "—" : U.moeda(v.creditoComprador), "art. 168, § 1º, II"]),
+        tr("total", ["Valor líquido para efeitos fiscais", v.creditoComprador == null ? "—" : U.moeda(v.valor - v.creditoComprador), "art. 168, § 1º, III"])
+      ]);
+    }
+    var av = [["neutro", a.nota]];
+    if (a.reducao === 100) av.unshift(["neutro", "Produto com alíquota zero: não há CBS/IBS na venda, e o vendedor contribuinte mantém o crédito das compras."]);
+    if ($("produto").value === "inNatura") av.push(["neutro", "In natura: sem industrialização nem embalagem de apresentação. Secagem, limpeza, debulha, descaroçamento, congelamento e resfriamento para transporte ou armazenagem não tiram essa condição (art. 137, § 1º)."]);
+    if ($("produto").value === "insumo") av.push(["aviso", "Insumos do Anexo IX vendidos a contribuintes do regime regular, ou a produtor não contribuinte que vende a quem toma crédito presumido, têm o recolhimento diferido (art. 138, § 2º). Este cálculo mostra o valor sem o diferimento."]);
+    if (a.teste) av.push(["aviso", "Em 2026 os valores são só destaque do ano de teste."]);
+    avisos(av);
+  }
+
+  function calcular() { if (aba === "venda") calcVenda(); else calcEnquadramento(); }
+  function trocarAba(nova) {
+    aba = nova;
+    Array.prototype.forEach.call(document.querySelectorAll("#abas button"), function (b) { b.classList.toggle("ativo", b.dataset.aba === nova); });
+    ["enquadramento", "venda"].forEach(function (x) { Array.prototype.forEach.call(document.querySelectorAll(".aba-" + x), function (el) { el.classList.toggle("oculto", x !== nova); }); });
+    calcular();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#abas button"), function (b) { b.addEventListener("click", function () { trocarAba(b.dataset.aba); }); });
+  U.prepararCamposMoeda();
+  Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); el.addEventListener("change", calcular); });
+  trocarAba("enquadramento");
+})();
+</script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

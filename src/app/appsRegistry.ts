@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, BookUser, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, ReceiptText, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
+import { Award, BookUser, Building2, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, ReceiptText, Timer, Truck, UserPlus, UserRoundCog, Wheat } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Simuladores" | "Sistema";
@@ -232,6 +232,28 @@ export const hubApps: HubApp[] = [
     src: "/apps/simuladores/retencoes-nfse/index.html",
     mode: "embutido",
     description: "IR, PIS/Cofins/CSLL, INSS 11% e ISS retidos pelo tomador: entre empresas, órgãos federais (IN 1.234) e estados/municípios."
+  },
+  {
+    id: "sim-cbs-ibs-imobiliario",
+    label: "CBS/IBS Imobiliário",
+    title: "CBS e IBS nas operações com imóveis",
+    icon: Building2,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/cbs-ibs-imobiliario/index.html",
+    mode: "embutido",
+    description: "Venda, locação, incorporação e loteamento com redutores, reduções de 50% e 70%, opções transitórias e comparativo 2026–2033."
+  },
+  {
+    id: "sim-rural",
+    label: "CBS/IBS Rural",
+    title: "CBS e IBS no agro",
+    icon: Wheat,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/rural/index.html",
+    mode: "embutido",
+    description: "Produtor rural contribuinte ou não (R$ 3,6 milhões), crédito presumido de equilíbrio e carga na venda com redução de 60% ou alíquota zero."
   }
 ];
 

@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CBS/IBS Imobiliário — H. Teixeira</title>
+<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+<style>
+  .campo { align-content: start; }
+  .abas { display: flex; gap: 6px; flex-wrap: wrap; }
+  .abas button { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+  .abas button.ativo { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .obs td:nth-child(3), .obs th:nth-child(3) { text-align: left; white-space: normal; min-width: 200px; }
+  td.txt { white-space: normal; text-align: left; color: var(--muted); font-size: 11.5px; }
+  tr.menos td:first-child { padding-left: 18px; color: var(--muted); }
+  .duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .duas { grid-template-columns: 1fr; } }
+  .cartao-op { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 4px; background: var(--surface); }
+  .cartao-op.melhor { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .cartao-op .val { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topo">
+    <div>
+      <h1>CBS e IBS nas operações com imóveis</h1>
+      <p>Venda, locação, incorporação e loteamento no regime específico da LC 214/2025 (arts. 251 a 270), com redutores, reduções de alíquota e a transição até 2033.</p>
+    </div>
+    <span class="selo">LC 214/2025 com a LC 227/2026 · conferido em 13/11/2026</span>
+  </header>
+
+  <nav class="abas" id="abas">
+    <button type="button" class="ativo" data-aba="venda">Venda de imóvel</button>
+    <button type="button" data-aba="locacao">Locação</button>
+    <button type="button" data-aba="incorporacao">Incorporação e loteamento</button>
+    <button type="button" data-aba="comparativo">Atual × novo (2026–2033)</button>
+  </nav>
+
+  <div class="grade">
+    <section class="painel">
+      <div class="cab"><h2>Parâmetros</h2></div>
+      <div class="corpo">
+        <div class="campos">
+          <div class="campo"><label for="refCbs">Alíquota de referência da CBS (%)</label><input id="refCbs" class="num" inputmode="decimal" value="11,3"><div class="dica">11,3% calculada pelo TCU para 2027; o Senado fixa até 15/12/2026.</div></div>
+          <div class="campo"><label for="refIbs">Alíquota de referência do IBS (%)</label><input id="refIbs" class="num" inputmode="decimal" value="18,7"><div class="dica">Estimativa preliminar; o IBS cheio só vale a partir de 2033.</div></div>
+          <div class="campo inteiro aba-venda aba-locacao aba-incorporacao">
+            <label for="ano">Ano da operação</label>
+            <select id="ano"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Venda -->
+      <div class="corpo aba-venda" style="border-top:1px solid var(--line)">
+        <h2 style="margin:0;font-size:13px;color:var(--brand)">Venda</h2>
+        <div class="campos">
+          <div class="campo"><label for="vValor">Valor da venda</label><input id="vValor" class="num moeda" value="1.000.000,00"></div>
+          <div class="campo">
+            <label for="vTipo">Tipo de imóvel</label>
+            <select id="vTipo">
+              <option value="residencialNovo">Residencial novo</option>
+              <option value="lote">Lote residencial</option>
+              <option value="outro">Outro (usado, comercial…)</option>
+            </select>
+          </div>
+          <div class="campo"><label for="vRedutor">Redutor de ajuste</label><input id="vRedutor" class="num moeda" value="600.000,00"></div>
+          <div class="campo"><label for="vSocial">Redutor social (corrigido)</label><input id="vSocial" class="num moeda" value="100.000,00"></div>
+          <div class="campo inteiro"><label for="vCreditos">Créditos de CBS/IBS das compras no período</label><input id="vCreditos" class="num moeda" value="0,00"></div>
+        </div>
+        <div class="dica">Redutor de ajuste (arts. 257 e 258): para imóvel que a empresa já tinha em 31/12/2026, o custo de aquisição corrigido pelo IPCA ou, por opção, o valor de referência; para imóvel em construção, terreno mais custos até 2026; para imóvel comprado de não contribuinte a partir de 2027, o valor de aquisição. Somam-se ITBI, laudêmio e contrapartidas urbanísticas (art. 258, § 6º). Redutor social de R$ 100.000 por residencial novo e R$ 30.000 por lote, valores de jan/2025 corrigidos pelo IPCA (art. 259).</div>
+      </div>
+
+      <!-- Locação -->
+      <div class="corpo aba-locacao oculto" style="border-top:1px solid var(--line)">
+        <h2 style="margin:0;font-size:13px;color:var(--brand)">Locação, cessão onerosa ou arrendamento</h2>
+        <div class="campos">
+          <div class="campo"><label for="lAluguel">Aluguel do mês</label><input id="lAluguel" class="num moeda" value="10.000,00"></div>
+          <div class="campo"><label for="lExclusoes">IPTU e condomínio cobrados junto</label><input id="lExclusoes" class="num moeda" value="0,00"><div class="dica">Ficam fora da base (art. 255, § 2º).</div></div>
+          <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="lResidencial"> Locação residencial (redutor social)</label></div>
+          <div class="campo"><label for="lImoveis">Imóveis residenciais no valor</label><input id="lImoveis" class="num" inputmode="numeric" value="1"></div>
+          <div class="campo"><label for="lSocial">Redutor por imóvel e mês (corrigido)</label><input id="lSocial" class="num moeda" value="600,00"></div>
+          <div class="campo inteiro"><label for="lCreditos">Créditos de CBS/IBS no mês</label><input id="lCreditos" class="num moeda" value="0,00"></div>
+          <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="lTransicao"> Contrato antigo no regime opcional de 3,65% (art. 487)</label>
+            <div class="dica">Contratos por prazo determinado firmados até 16/01/2025. Não residencial: pelo prazo original, com registro em cartório até 31/12/2025 ou envio à Receita e ao Comitê Gestor. Residencial: pelo prazo original ou até 31/12/2028, o que vier primeiro. Sem créditos e sem redutor social.</div></div>
+        </div>
+      </div>
+
+      <!-- Incorporação -->
+      <div class="corpo aba-incorporacao oculto" style="border-top:1px solid var(--line)">
+        <h2 style="margin:0;font-size:13px;color:var(--brand)">Incorporação imobiliária e parcelamento do solo</h2>
+        <div class="campos">
+          <div class="campo inteiro">
+            <label for="iTipo">Empreendimento</label>
+            <select id="iTipo">
+              <option value="ret">Incorporação no RET (patrimônio de afetação)</option>
+              <option value="retSocial">Incorporação no RET social (habitação de interesse social)</option>
+              <option value="loteamento">Loteamento (parcelamento do solo)</option>
+              <option value="semRet">Incorporação sem RET</option>
+            </select>
+            <div class="dica" id="iDicaTipo"></div>
+          </div>
+          <div class="campo"><label for="iRecebido">Recebido no mês (parcelas)</label><input id="iRecebido" class="num moeda" value="100.000,00"></div>
+          <div class="campo"><label for="iTotal">Valor total da unidade vendida</label><input id="iTotal" class="num moeda" value="500.000,00"></div>
+          <div class="campo"><label for="iRedutor">Redutor de ajuste da unidade</label><input id="iRedutor" class="num moeda" value="200.000,00"></div>
+          <div class="campo"><label for="iSocial">Redutor social (corrigido)</label><input id="iSocial" class="num moeda" value="100.000,00"></div>
+          <div class="campo inteiro"><label class="marcar"><input type="checkbox" id="iResidencial" checked> Unidade residencial nova ou lote residencial</label></div>
+          <div class="campo inteiro"><label for="iCreditos">Créditos de CBS/IBS das compras do mês</label><input id="iCreditos" class="num moeda" value="0,00"></div>
+        </div>
+        <div class="dica">Na incorporação e no loteamento, CBS e IBS são devidos a cada recebimento, e os redutores entram em cada parcela na proporção do valor total da unidade (art. 262, §§ 1º e 4º).</div>
+      </div>
+
+      <!-- Comparativo -->
+      <div class="corpo aba-comparativo oculto" style="border-top:1px solid var(--line)">
+        <h2 style="margin:0;font-size:13px;color:var(--brand)">Comparativo</h2>
+        <div class="campos">
+          <div class="campo inteiro">
+            <label for="cOperacao">Operação</label>
+            <select id="cOperacao">
+              <option value="venda">Venda (usa os dados da aba Venda)</option>
+              <option value="locacao">Locação (usa os dados da aba Locação)</option>
+            </select>
+          </div>
+          <div class="campo inteiro">
+            <label for="cRegime">Regime atual de PIS/Cofins</label>
+            <select id="cRegime"></select>
+          </div>
+          <div class="campo inteiro" id="blocoCredPis"><label for="cCredPis">Créditos de PIS/Cofins (Lucro Real)</label><input id="cCredPis" class="num moeda" value="0,00"></div>
+        </div>
+        <div class="dica">Mostra só os tributos que mudam: PIS/Cofins até 2026, CBS e IBS depois. IRPJ, CSLL e ITBI continuam e não entram na conta.</div>
+      </div>
+    </section>
+
+    <div style="display:grid;gap:12px">
+      <div class="kpis" id="kpis"></div>
+      <section class="painel" id="painelTabela">
+        <div class="cab"><h2 id="tituloTabela">Cálculo</h2></div>
+        <div class="tabela-rolagem"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+      </section>
+      <div id="extra"></div>
+      <div id="avisos" style="display:grid;gap:8px"></div>
+
+      <details class="painel aba-locacao oculto" id="painelPf">
+        <summary><h2>Pessoa física: paga CBS e IBS?</h2></summary>
+        <div class="corpo">
+          <div class="campos">
+            <div class="campo"><label for="pfReceitaAnt">Aluguéis recebidos no ano anterior</label><input id="pfReceitaAnt" class="num moeda" value="0,00"></div>
+            <div class="campo"><label for="pfImoveis">Imóveis locados no ano anterior</label><input id="pfImoveis" class="num" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="pfReceitaAtual">Aluguéis recebidos no ano atual</label><input id="pfReceitaAtual" class="num moeda" value="0,00"></div>
+            <div class="campo"><label for="pfLimite">Limite corrigido pelo IPCA</label><input id="pfLimite" class="num moeda" value="240.000,00"></div>
+            <div class="campo"><label for="pfVendas">Imóveis vendidos no ano anterior (com menos de 5 anos)</label><input id="pfVendas" class="num" inputmode="numeric" value="0"></div>
+            <div class="campo"><label for="pfConstruidos">Imóveis construídos por ela e vendidos no ano anterior</label><input id="pfConstruidos" class="num" inputmode="numeric" value="0"></div>
+          </div>
+          <div id="pfResultado"></div>
+        </div>
+      </details>
+
+      <div class="fontes">Fontes: LC 214/2025, com a redação da LC 227/2026 — arts. 251 a 263 (regime específico, redutores e redução de 50% e 70%), 343 a 349 (alíquotas de 2026 a 2028 e fixação pelo Senado), 485 a 487 (regimes opcionais das operações iniciadas antes de 2029); Lei 10.931/2004 (RET). Estimativas: alíquotas de referência editáveis; IBS de 2029 a 2032 proporcional à redução de ICMS e ISS (10%, 20%, 30% e 40%). Cálculo de apoio: não cobre permuta, imóvel de pessoa física fora da atividade, dedução do art. 488 nem a tributação como hotelaria das locações residenciais de até 90 dias (art. 253).</div>
+    </div>
+  </div>
+</div>
+<script src="../simples-comum/ui.js?v=1"></script>
+<script src="imobiliario.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  var I = window.ImobHT, U = window.SimUI, $ = function (id) { return document.getElementById(id); };
+  var aba = "venda";
+  $("ano").innerHTML = I.ANOS.map(function (a) { return '<option value="' + a + '"' + (a === 2027 ? " selected" : "") + ">" + a + "</option>"; }).join("");
+  $("cRegime").innerHTML = Object.keys(I.REGIMES_ATUAIS).map(function (k) { return '<option value="' + k + '">' + U.esc(I.REGIMES_ATUAIS[k].nome) + "</option>"; }).join("");
+  var DICA_TIPO = {
+    ret: "Pedido do RET efetivado antes de 2029: pode optar por recolher CBS e IBS de 2,08% sobre a receita recebida, sem créditos e sem redutores (art. 485, I). IRPJ e CSLL do RET seguem em 1,92%.",
+    retSocial: "Pedido do RET social efetivado antes de 2029: pode optar por CBS e IBS de 0,53% sobre a receita recebida (art. 485, II).",
+    loteamento: "Registro do parcelamento pedido antes de 2029: pode optar por CBS e IBS de 3,65% sobre a receita bruta recebida, sem créditos e sem redutores (art. 486).",
+    semRet: "Sem opção transitória: regime específico com redutores e redução de 50%."
+  };
+
+  function m(id) { var v = U.valorCampo($(id)); return Number.isFinite(v) ? v : 0; }
+  function n(id) { var v = U.parseBR($(id).value); return Number.isFinite(v) ? v : 0; }
+  function ref() { return { cbs: n("refCbs"), ibs: n("refIbs") }; }
+  function kpis(lista) { $("kpis").innerHTML = lista.map(function (k, i) { return '<div class="kpi' + (i === 0 ? " destaque" : "") + '"><div class="rot">' + U.esc(k[0]) + '</div><div class="val">' + U.esc(k[1]) + '</div><div class="sub">' + U.esc(k[2] || "") + "</div></div>"; }).join(""); }
+  function tabela(titulo, cab, linhas) {
+    $("tituloTabela").textContent = titulo;
+    $("painelTabela").classList.toggle("obs", cab.length === 3);
+    $("thead").innerHTML = "<tr>" + cab.map(function (c, i) { return "<th" + (i === cab.length - 1 && c === "Observação" ? ' style="text-align:left"' : "") + ">" + U.esc(c) + "</th>"; }).join("") + "</tr>";
+    $("tbody").innerHTML = linhas.join("");
+  }
+  function avisos(lista) { $("avisos").innerHTML = lista.map(function (a) { return '<div class="aviso ' + (a[0] === "aviso" ? "" : a[0] === "erro" ? "erro" : "neutro") + '">' + U.esc(a[1]) + "</div>"; }).join(""); }
+  function tr(cls, cols) { return '<tr class="' + (cls || "") + '">' + cols.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>"; }
+  function pct(v) { return U.pct(v, 4); }
+
+  function entradaVenda() { return { valor: m("vValor"), redutorAjuste: m("vRedutor"), tipo: $("vTipo").value, redutorSocial: m("vSocial"), creditos: m("vCreditos"), ref: ref() }; }
+  function entradaLocacao() { return { aluguel: m("lAluguel"), exclusoes: m("lExclusoes"), residencial: $("lResidencial").checked, imoveis: n("lImoveis"), redutorMes: m("lSocial"), creditos: m("lCreditos"), regimeTransicao: $("lTransicao").checked, ref: ref() }; }
+
+  function calcVenda() {
+    var o = entradaVenda(); o.ano = Number($("ano").value);
+    if (o.valor <= 0) return erro("Informe o valor da venda.");
+    var r = I.venda(o), e = r.aliquotas;
+    kpis([["CBS + IBS a pagar", U.moeda(Math.max(0, r.apagar)), "carga de " + U.pct(r.carga, 2) + " sobre o preço"], ["Base de cálculo", U.moeda(r.base), "depois dos redutores"], ["Alíquota efetiva", pct(e.cbs + e.ibs), "com a redução de 50% (art. 261)"], ["Ano", String(o.ano), e.teste ? "ano de teste" : ""]]);
+    tabela("Venda — " + o.ano, ["", "Valor", "Observação"], [
+      tr("", ["Valor da venda", U.moeda(r.valor), '<span class="txt">base inicial (art. 255, I)</span>']),
+      tr("menos", ["(−) redutor de ajuste", U.moeda(r.redutorAjuste), '<span class="txt">arts. 257 e 258</span>']),
+      tr("menos", ["(−) redutor social", U.moeda(r.redutorSocial), '<span class="txt">art. 259 — uma vez por imóvel</span>']),
+      tr("total", ["Base de cálculo", U.moeda(r.base), ""]),
+      tr("", ["CBS (" + pct(e.cbs) + ")", U.moeda(r.cbs), '<span class="txt">nominal ' + pct(e.nominalCbs) + " × 50%</span>"]),
+      tr("", ["IBS (" + pct(e.ibs) + ")", U.moeda(r.ibs), '<span class="txt">nominal ' + pct(e.nominalIbs) + " × 50%</span>"]),
+      tr("menos", ["(−) créditos das compras", U.moeda(r.creditos), ""]),
+      tr("total", [r.apagar < 0 ? "Saldo credor" : "A pagar", U.moeda(Math.abs(r.apagar)), ""])
+    ]);
+    var av = [["neutro", e.nota]];
+    if (e.teste) av.unshift(["aviso", "Em 2026 a venda segue com PIS/Cofins. Os valores de CBS e IBS acima são só o destaque do ano de teste."]);
+    if (o.tipo !== "outro" && r.redutorSocial > 0) av.push(["neutro", "O redutor social vale só para imóvel residencial novo (não ocupado) ou lote residencial, uma única vez por imóvel (art. 259, §§ 1º e 2º)."]);
+    av.push(["neutro", "Pessoa física que não é contribuinte (art. 251) não paga CBS e IBS na venda. O redutor de ajuste não se transfere quando o comprador não é contribuinte do regime regular (art. 257, § 4º)."]);
+    avisos(av); $("extra").innerHTML = "";
+  }
+
+  function calcLocacao() {
+    var o = entradaLocacao(); o.ano = Number($("ano").value);
+    if (o.aluguel <= 0) return erro("Informe o aluguel do mês.");
+    var r = I.locacao(o), e = r.aliquotas;
+    if (r.transicao) {
+      kpis([["CBS + IBS a pagar", U.moeda(r.apagar), "3,65% da receita (art. 487)"], ["Base", U.moeda(r.base), "aluguel menos IPTU e condomínio"], ["Regime", "Opcional", "contrato antigo"]]);
+      tabela("Locação — regime opcional de 3,65%", ["", "Valor", "Observação"], [
+        tr("", ["Aluguel", U.moeda(r.aluguel), ""]), tr("menos", ["(−) IPTU e condomínio", U.moeda(r.exclusoes), '<span class="txt">art. 255, § 2º</span>']),
+        tr("total", ["Receita bruta", U.moeda(r.base), ""]), tr("total", ["CBS + IBS (3,65%)", U.moeda(r.apagar), '<span class="txt">repartidos pelas alíquotas de referência (art. 487, § 12)</span>'])
+      ]);
+    } else {
+      kpis([["CBS + IBS a pagar", U.moeda(Math.max(0, r.apagar)), "carga de " + U.pct(r.carga, 2) + " sobre o aluguel"], ["Base de cálculo", U.moeda(r.base), "depois do redutor social"], ["Alíquota efetiva", pct(e.cbs + e.ibs), "com a redução de 70% (art. 261, parágrafo único)"], ["Ano", String(o.ano), e.teste ? "ano de teste" : ""]]);
+      tabela("Locação — " + o.ano, ["", "Valor", "Observação"], [
+        tr("", ["Aluguel do mês", U.moeda(r.aluguel), ""]),
+        tr("menos", ["(−) IPTU e condomínio", U.moeda(r.exclusoes), '<span class="txt">art. 255, § 2º</span>']),
+        tr("menos", ["(−) redutor social", U.moeda(r.redutorSocial), '<span class="txt">art. 260 — por imóvel residencial, por mês</span>']),
+        tr("total", ["Base de cálculo", U.moeda(r.base), ""]),
+        tr("", ["CBS (" + pct(e.cbs) + ")", U.moeda(r.cbs), '<span class="txt">nominal ' + pct(e.nominalCbs) + " × 30%</span>"]),
+        tr("", ["IBS (" + pct(e.ibs) + ")", U.moeda(r.ibs), '<span class="txt">nominal ' + pct(e.nominalIbs) + " × 30%</span>"]),
+        tr("menos", ["(−) créditos", U.moeda(r.creditos), ""]),
+        tr("total", [r.apagar < 0 ? "Saldo credor" : "A pagar", U.moeda(Math.abs(r.apagar)), ""])
+      ]);
+    }
+    var av = [["neutro", e.nota]];
+    if (e.teste) av.unshift(["aviso", "Em 2026 o aluguel segue com PIS/Cofins. CBS e IBS acima são só o destaque do ano de teste."]);
+    av.push(["neutro", "Locação residencial de até 90 dias seguidos é tributada como hotelaria (art. 253), fora deste cálculo."]);
+    avisos(av); $("extra").innerHTML = "";
+    calcPf();
+  }
+
+  function calcPf() {
+    var r = I.pessoaFisica({ receitaLocacaoAnoAnterior: m("pfReceitaAnt"), imoveisLocados: n("pfImoveis"), receitaLocacaoAnoAtual: m("pfReceitaAtual"), limite: m("pfLimite"), vendasAnoAnterior: n("pfVendas"), construidosVendidosAnoAnterior: n("pfConstruidos") });
+    $("pfResultado").innerHTML = r.contribuinte
+      ? '<div class="aviso">Passa a ser contribuinte do regime regular: ' + U.esc(r.motivos.join("; ")) + ".</div>"
+      : '<div class="aviso neutro">Pelos dados informados, a pessoa física não é contribuinte do regime regular nas operações com imóveis (art. 251, §§ 1º a 3º).</div>';
+  }
+
+  function calcIncorporacao() {
+    var tipo = $("iTipo").value;
+    $("iDicaTipo").textContent = DICA_TIPO[tipo];
+    var o = { tipo: tipo, recebido: m("iRecebido"), valorTotal: m("iTotal"), redutorAjuste: m("iRedutor"), redutorSocial: m("iSocial"), residencial: $("iResidencial").checked, creditos: m("iCreditos"), ano: Number($("ano").value), ref: ref() };
+    if (o.recebido <= 0) return erro("Informe o valor recebido no mês.");
+    if (o.valorTotal <= 0) return erro("Informe o valor total da unidade.");
+    var r = I.incorporacao(o), e = r.aliquotas, g = r.regular;
+    var melhorOpcao = r.opcao && r.opcao.valor < Math.max(0, g.apagar);
+    kpis([["Regime específico", U.moeda(Math.max(0, g.apagar)), "carga de " + U.pct(g.carga, 2) + " no mês"],
+      r.opcao ? ["Opção transitória", U.moeda(r.opcao.valor), U.pct(r.opcao.pct, 2) + " da receita (" + r.opcao.artigo + ")"] : ["Opção transitória", "—", "não se aplica"],
+      ["Redutores na parcela", U.pct(g.proporcaoRedutores * 100, 2), "da parcela recebida (art. 262, § 4º)"]]);
+    tabela("Parcela recebida — " + o.ano, ["", "Valor", "Observação"], [
+      tr("", ["Recebido no mês", U.moeda(r.recebido), ""]),
+      tr("menos", ["(−) redutores proporcionais", U.moeda(r.recebido - g.base), '<span class="txt">(redutor de ajuste + social) ÷ valor total da unidade</span>']),
+      tr("total", ["Base de cálculo", U.moeda(g.base), ""]),
+      tr("", ["CBS (" + pct(e.cbs) + ")", U.moeda(g.cbs), '<span class="txt">nominal ' + pct(e.nominalCbs) + " × 50%</span>"]),
+      tr("", ["IBS (" + pct(e.ibs) + ")", U.moeda(g.ibs), '<span class="txt">nominal ' + pct(e.nominalIbs) + " × 50%</span>"]),
+      tr("menos", ["(−) créditos das compras", U.moeda(g.creditos), '<span class="txt">saldo credor pode ser ressarcido na conta do patrimônio de afetação (art. 262, § 3º)</span>']),
+      tr("total", [g.apagar < 0 ? "Saldo credor" : "A pagar no regime específico", U.moeda(Math.abs(g.apagar)), ""])
+    ]);
+    if (r.opcao) {
+      $("extra").innerHTML = '<div class="duas"><div class="cartao-op' + (!melhorOpcao ? " melhor" : "") + '"><span class="dica">Regime específico (com créditos e redutores)</span><span class="val">' + U.moeda(Math.max(0, g.apagar)) + '</span><span class="dica">' + U.pct(g.carga, 2) + ' do recebido</span></div>' +
+        '<div class="cartao-op' + (melhorOpcao ? " melhor" : "") + '"><span class="dica">' + U.esc(r.opcao.nome) + '</span><span class="val">' + U.moeda(r.opcao.valor) + '</span><span class="dica">' + U.pct(r.opcao.pct, 2) + " do recebido, sem créditos" + (r.opcao.irCsll ? " · mais IRPJ/CSLL do RET: " + U.moeda(r.opcao.valorIrCsll) + " (" + U.pct(r.opcao.irCsll, 2) + ")" : "") + "</span></div></div>";
+    } else $("extra").innerHTML = "";
+    var av = [["neutro", e.nota]];
+    if (e.teste) av.unshift(["aviso", "Em 2026 a incorporação segue com PIS/Cofins (ou o RET de 4%). CBS e IBS acima são só o destaque do ano de teste."]);
+    if (r.opcao) av.push(["neutro", "A opção transitória afasta créditos e redutores e é definitiva; quem compra a unidade para revenda não toma crédito (" + r.opcao.artigo + "). Compare no horizonte da obra inteira, não só em um mês."]);
+    avisos(av);
+  }
+
+  function calcComparativo() {
+    var op = $("cOperacao").value, regime = $("cRegime").value;
+    $("blocoCredPis").classList.toggle("oculto", regime !== "real");
+    var entrada = op === "venda" ? entradaVenda() : entradaLocacao();
+    if ((op === "venda" ? entrada.valor : entrada.aluguel) <= 0) return erro("Preencha os dados na aba " + (op === "venda" ? "Venda" : "Locação") + ".");
+    var c = I.comparativo({ operacao: op, entrada: entrada, regimeAtual: regime, creditosPisCofins: m("cCredPis") });
+    var l26 = c.linhas[0], l33 = c.linhas[c.linhas.length - 1];
+    kpis([["Hoje (PIS/Cofins)", U.moeda(c.atual.apagar), U.pct(l26.carga, 2) + " — " + c.atual.nome.split(" — ")[0]], ["2027", U.moeda(c.linhas[1].total), U.pct(c.linhas[1].carga, 2)], ["2033 em diante", U.moeda(l33.total), U.pct(l33.carga, 2)], ["Diferença 2033 × hoje", U.moeda(l33.total - c.atual.apagar), l33.total > c.atual.apagar ? "aumenta" : "diminui"]]);
+    tabela((op === "venda" ? "Venda" : "Locação (por mês)") + " — atual × novo", ["Ano", "PIS/Cofins", "CBS", "IBS", "Total", "Carga"], c.linhas.map(function (l) {
+      return tr(l.ano === 2026 ? "atual" : "", [String(l.ano), U.moeda(l.pisCofins), l.ano === 2026 ? '<span class="txt">teste ' + U.moeda(l.teste.cbs) + "</span>" : l.transicao ? "3,65% opcional" : U.moeda(l.cbs),
+        l.ano === 2026 ? '<span class="txt">teste ' + U.moeda(l.teste.ibs) + "</span>" : l.transicao ? "—" : U.moeda(l.ibs), U.moeda(Math.max(0, l.total)), U.pct(l.carga, 2)]);
+    }));
+    $("extra").innerHTML = "";
+    avisos([["neutro", "2026: PIS/Cofins do regime atual; CBS 0,9% e IBS 0,1% só destacados (dispensados para quem cumpre as obrigações acessórias, art. 348, § 1º). De 2027 em diante, PIS e Cofins acabam e entram CBS e IBS do regime específico."],
+      ["aviso", "As alíquotas de 2029 em diante são estimativas: o Senado fixa as alíquotas de referência ano a ano (art. 349). Créditos de CBS/IBS das compras não entram no comparativo."]]);
+  }
+
+  function erro(msg) { kpis([]); $("tbody").innerHTML = ""; $("thead").innerHTML = ""; $("extra").innerHTML = ""; avisos([["erro", msg]]); }
+
+  function calcular() {
+    $("vSocial").disabled = $("vTipo").value === "outro";
+    if (aba === "venda") calcVenda(); else if (aba === "locacao") calcLocacao(); else if (aba === "incorporacao") calcIncorporacao(); else calcComparativo();
+  }
+
+  function trocarAba(nova) {
+    aba = nova;
+    Array.prototype.forEach.call(document.querySelectorAll("#abas button"), function (b) { b.classList.toggle("ativo", b.dataset.aba === nova); });
+    ["venda", "locacao", "incorporacao", "comparativo"].forEach(function (a) {
+      Array.prototype.forEach.call(document.querySelectorAll(".aba-" + a), function (el) {
+        var mostra = el.className.split(/\s+/).some(function (c) { return c === "aba-" + nova; });
+        el.classList.toggle("oculto", !mostra);
+      });
+    });
+    calcular();
+  }
+
+  var socialPadrao = { residencialNovo: "100.000,00", lote: "30.000,00", outro: "0,00" };
+  $("vTipo").addEventListener("change", function () { $("vSocial").value = socialPadrao[$("vTipo").value]; });
+  $("iTipo").addEventListener("change", function () { $("iSocial").value = $("iTipo").value === "loteamento" ? "30.000,00" : "100.000,00"; });
+  Array.prototype.forEach.call(document.querySelectorAll("#abas button"), function (b) { b.addEventListener("click", function () { trocarAba(b.dataset.aba); }); });
+  U.prepararCamposMoeda();
+  Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); el.addEventListener("change", calcular); });
+  trocarAba("venda");
+})();
+</script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>
