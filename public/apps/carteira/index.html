@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>H Teixeira - Carteira de Clientes</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icone-192.png" />
+  <meta name="theme-color" content="#123a63" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="hub.css" />
 </head>
@@ -22,6 +25,7 @@
         <button id="btnMyPassword" class="btn ghost">Minha senha</button>
         <button id="btnUsers" class="btn ghost admin-only">Usuários</button>
         <button id="btnMigrationStatus" class="btn ghost admin-only" type="button">Base da V2</button>
+        <a id="btnAbrirApp" class="btn ghost" href="./" target="_blank" rel="noopener" title="Inclusões e alterações são feitas no app Carteira de Clientes">Abrir app Carteira ↗</a>
         <button id="btnLogout" class="btn danger-outline">Sair</button>
       </div>
     </header>
@@ -358,11 +362,11 @@
     <form id="loginForm" class="login-card" autocomplete="off">
       <div class="login-brand">HT</div>
       <h1>Carteira de Clientes</h1>
-      <p>Carteira de Clientes no HUB · V2 · 2.1.0</p>
+      <p>Entre com o e-mail e a senha do HUB.</p>
       <div id="loginError" class="form-error hidden"></div>
       <div class="field">
-        <label for="loginUser">Usuário</label>
-        <input id="loginUser" autocomplete="username" required />
+        <label for="loginUser">E-mail</label>
+        <input id="loginUser" type="email" autocomplete="username" required />
       </div>
       <div class="field">
         <label for="loginPassword">Senha</label>

@@ -1,2 +1,13 @@
-/* No HUB: login, senha e saída são os do HUB. */
-#btnLogout, #btnMyPassword { display: none !important; }
+/* Senha: é a do HUB (troca no HUB). */
+#btnMyPassword { display: none !important; }
+/* App individual: grava. Consulta no HUB (espelho): sem login próprio, sem botões de gravação. */
+html:not(.cart-consulta) #btnAbrirApp { display: none !important; }
+html.cart-consulta #btnLogout,
+html.cart-consulta .admin-only,
+html.cart-consulta #btnSave,
+html.cart-consulta #btnCreatePeriod,
+html.cart-consulta #btnAddRow,
+html.cart-consulta #btnExport,
+html.cart-consulta label[for="fileImport"],
+html.cart-consulta #fileImport { display: none !important; }
+#btnAbrirApp { text-decoration: none; display: inline-flex; align-items: center; }

@@ -140,9 +140,10 @@ export const hubApps: HubApp[] = [
     icon: BookUser,
     group: "Escritório",
     access: "todos",
-    src: "/apps/carteira/index.html",
+    // no HUB é o espelho só para consulta; inclusões e alterações são feitas no app individual (/apps/carteira/)
+    src: "/apps/carteira/index.html?modo=consulta",
     mode: "embutido",
-    description: "Relação de empresas por competência mensal, com edição pelo ADM, totalizador e auditoria (recriação da Carteira de Clientes V2)."
+    description: "Consulta da relação de empresas por competência mensal, sempre atualizada com o app Carteira de Clientes, onde o ADM faz inclusões e alterações."
   },
   {
     id: "pautas-app",

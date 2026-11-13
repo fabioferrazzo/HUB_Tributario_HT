@@ -1,9 +1,11 @@
 /*
- * Carteira de Clientes no HUB — ponte entre a tela da V2 (app.js 2.1.0, mantida) e o banco do HUB (Supabase).
+ * Carteira de Clientes — ponte entre a tela da V2 (app.js 2.1.0, mantida) e o banco do HUB (Supabase).
  *
  * A tela continua chamando os endereços "/api/..." do servidor da V2; aqui essas chamadas são atendidas pelas
- * funções cart_* do Supabase, com o login do HUB. Nada vai para o HTSERVER.
- * - Login: sessão do HUB (administrador do HUB = ADM; demais usuários ativos consultam; o ADM pode mudar).
+ * funções cart_* do Supabase. Nada vai para o HTSERVER. Dois modos, mesma base:
+ * - app individual (/apps/carteira/): login com e-mail e senha do HUB; o ADM inclui, edita, importa e exporta;
+ * - consulta no HUB (?modo=consulta, menu do HUB): espelho somente leitura, sempre com os dados atuais.
+ * - Perfis: administrador do HUB = ADM; demais usuários ativos consultam; o ADM pode mudar (Usuários).
  * - XLSX: exportação e leitura da importação feitas aqui no navegador (cart-xlsx.js, mesmas regras do servidor).
  * - Base da V2: o ADM importa um backup .sqlite3 da V2 (lido aqui com sql.js) para o banco do HUB.
  */
@@ -14,8 +16,18 @@
   var CFG_KEY = "hub_supabase_public";
   var realFetch = window.fetch.bind(window);
 
-  // A tela da V2 pede login a cada aba nova; no HUB a sessão já é a do HUB.
-  try { sessionStorage.setItem("HTCarteiraClientesV2:tab-authenticated", "1"); } catch (e) { /* sem sessionStorage */ }
+  var MODO = new URLSearchParams(location.search).get("modo") === "consulta" ? "consulta" : "app";
+  var CONSULTA = MODO === "consulta";
+  var SESSAO_KEY = "ht_carteira_sessao";
+  document.documentElement.dataset.cartModo = MODO;
+  document.documentElement.classList.add(CONSULTA ? "cart-consulta" : "cart-app");
+  var MSG_CONSULTA = "No HUB a Carteira é só para consulta. Inclusões e alterações são feitas no app Carteira de Clientes.";
+
+  function lerSessao() { try { return JSON.parse(localStorage.getItem(SESSAO_KEY) || "null"); } catch (e) { return null; } }
+  function gravarSessao(s) { try { if (s) localStorage.setItem(SESSAO_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSAO_KEY); } catch (e) { /* sem armazenamento */ } }
+  function marcarAba(sim) { try { if (sim) sessionStorage.setItem("HTCarteiraClientesV2:tab-authenticated", "1"); else sessionStorage.removeItem("HTCarteiraClientesV2:tab-authenticated"); } catch (e) { /* sem sessionStorage */ } }
+  // Consulta no HUB: a sessão é a do HUB. App individual: entra direto se já houver sessão própria guardada.
+  marcarAba(CONSULTA || !!(lerSessao() && lerSessao().refresh_token));
 
   // ------------------------------------------------------------------ sessão do HUB
   var hubWindow = null;
@@ -61,9 +73,51 @@
       setTimeout(function () { if (!done) { done = true; resolve(false); } }, ms || 2500);
     });
   }
+  async function carregarConfig() {
+    readStoredConfig();
+    if (auth.url && auth.anonKey) return;
+    try {
+      var r = await realFetch("/apps/hub-config.json", { cache: "no-store" });
+      var cfg = r.ok ? await r.json() : null;
+      if (cfg && cfg.url && cfg.anonKey) { auth.url = cfg.url; auth.anonKey = cfg.anonKey; }
+    } catch (e) { /* sem configuração publicada */ }
+  }
+  async function authFetch(path, body, token) {
+    await carregarConfig();
+    if (!auth.url || !auth.anonKey) throw fail(503, "Configuração do HUB não encontrada.");
+    var headers = { apikey: auth.anonKey, "Content-Type": "application/json" };
+    if (token) headers.Authorization = "Bearer " + token;
+    var r;
+    try { r = await realFetch(auth.url.replace(/\/+$/, "") + "/auth/v1/" + path, { method: "POST", headers: headers, body: JSON.stringify(body || {}) }); }
+    catch (e) { throw fail(503, "Sem conexão com o HUB. Verifique a internet e tente de novo."); }
+    var data = null; try { data = await r.json(); } catch (e) { data = null; }
+    return { ok: r.ok, status: r.status, data: data };
+  }
+  function guardarLogin(data) {
+    var s = { access_token: data.access_token, refresh_token: data.refresh_token,
+      expires_at: data.expires_at ? data.expires_at * 1000 : jwtExp(data.access_token), email: (data.user && data.user.email) || "" };
+    gravarSessao(s);
+    auth.token = s.access_token; auth.exp = jwtExp(s.access_token) || s.expires_at;
+  }
+  var renovando = null;
+  async function tokenProprio(force) {
+    var s = lerSessao();
+    if (!s || !s.refresh_token) return "";
+    var exp = jwtExp(s.access_token);
+    if (!force && s.access_token && exp - Date.now() > 90000) { auth.token = s.access_token; auth.exp = exp; return s.access_token; }
+    if (!renovando) {
+      renovando = authFetch("token?grant_type=refresh_token", { refresh_token: s.refresh_token }).then(function (r) {
+        if (r.ok && r.data && r.data.access_token) { guardarLogin(r.data); return r.data.access_token; }
+        if (r.status >= 400 && r.status < 500) gravarSessao(null);
+        return "";
+      }).finally(function () { renovando = null; });
+    }
+    return renovando;
+  }
   var pedindo = null;
   async function getToken(force) {
-    readStoredConfig();
+    await carregarConfig();
+    if (!CONSULTA) return tokenProprio(force);
     if (!force && auth.token && auth.exp - Date.now() > 90000) return auth.token;
     if (!pedindo) pedindo = askHub(2500).finally(function () { pedindo = null; });
     await pedindo;
@@ -78,7 +132,9 @@
 
   async function rpc(fn, args, retried) {
     var token = await getToken(false);
-    if (!auth.url || !auth.anonKey || !token) throw fail(401, "Sessão do HUB não encontrada. Entre no HUB e abra a Carteira pelo menu.");
+    if (!auth.url || !auth.anonKey || !token) {
+      throw fail(401, CONSULTA ? "Sessão do HUB não encontrada. Entre no HUB e abra a Carteira pelo menu." : "Sessão encerrada. Entre novamente com o e-mail e a senha do HUB.");
+    }
     var response;
     try {
       response = await realFetch(auth.url.replace(/\/+$/, "") + "/rest/v1/rpc/" + fn, {
@@ -132,14 +188,40 @@
         document.documentElement.classList.add(papel === "admin" ? "cart-papel-admin" : "cart-papel-consulta");
         return json(200, me);
       } catch (e) {
-        showBlocked(e.message);
+        if (CONSULTA || e.status === 403) showBlocked(e.message);
+        if (!CONSULTA && e.status === 401) gravarSessao(null);
         return json(401, { ok: false, error: e.message });
       }
     }
-    if (method === "POST" && path === "/api/login") return json(401, { ok: false, error: "No HUB a Carteira usa o login do HUB. Entre no HUB e abra a Carteira pelo menu." });
-    if (method === "POST" && path === "/api/logout") return json(200, { ok: true });
+    if (method === "POST" && path === "/api/login") {
+      if (CONSULTA) return json(401, { ok: false, error: "No HUB a Carteira usa o login do HUB. Entre no HUB e abra a Carteira pelo menu." });
+      var lb = body ? JSON.parse(body) : {};
+      var email = String(lb.username || "").trim().toLowerCase(), senha = String(lb.password || "");
+      if (!email || !senha) return json(400, { ok: false, error: "Informe o e-mail e a senha do HUB." });
+      var r = await authFetch("token?grant_type=password", { email: email, password: senha });
+      if (!r.ok || !r.data || !r.data.access_token) {
+        return json(401, { ok: false, error: r.status === 400 || r.status === 401 ? "E-mail ou senha inválidos." : "Não foi possível entrar agora. Tente de novo." });
+      }
+      guardarLogin(r.data);
+      try {
+        var sessao = await rpc("cart_sessao", {});
+        papel = sessao.user.role;
+        return json(200, sessao);
+      } catch (e) {
+        gravarSessao(null);
+        return json(e.status === 403 ? 403 : 401, { ok: false, error: e.message });
+      }
+    }
+    if (method === "POST" && path === "/api/logout") {
+      var atual = lerSessao();
+      gravarSessao(null); auth.token = ""; auth.exp = 0; papel = "";
+      if (!CONSULTA && atual && atual.access_token) { try { await authFetch("logout?scope=local", {}, atual.access_token); } catch (e) { /* já saiu daqui */ } }
+      return json(200, { ok: true });
+    }
     if (method === "POST" && path === "/api/me/password") return json(400, { ok: false, error: "A senha é a do HUB. Altere-a no próprio HUB." });
     if (method === "POST" && path === "/api/admin/users") return json(400, { ok: false, error: "Os usuários vêm do HUB. Cadastre a pessoa no HUB (Configurações)." });
+    // Consulta no HUB: nada é gravado por aqui (a tela já esconde os botões; isto é a trava da ponte).
+    if (CONSULTA && (method !== "GET" || /\/export-xlsx$/.test(path))) return json(403, { ok: false, error: MSG_CONSULTA });
 
     if (method === "GET" && path === "/api/periods") return json(200, await rpc("cart_competencias", {}));
     if (method === "POST" && path === "/api/periods") {
@@ -226,6 +308,7 @@
 
   async function importarBaseV2(file, opcoes) {
     opcoes = opcoes || {};
+    if (CONSULTA) throw fail(403, MSG_CONSULTA);
     var progresso = opcoes.progresso || function () {};
     if (papel !== "admin") throw fail(403, "Operação exclusiva de ADM.");
     if (!file) throw fail(400, "Selecione o backup da Carteira V2 (.sqlite3).");
@@ -276,5 +359,5 @@
     return fim.counts;
   }
 
-  window.HubCarteira = { importarBaseV2: importarBaseV2 };
+  window.HubCarteira = { importarBaseV2: importarBaseV2, modo: MODO };
 })();

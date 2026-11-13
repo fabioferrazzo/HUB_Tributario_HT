@@ -7,6 +7,8 @@
   const PREF_PREFIX = 'HTCarteiraClientesV2';
   const ACCESS_SESSION_KEY = `${PREF_PREFIX}:tab-authenticated`;
   const FRESH_LOGIN_PARAM = 'fresh';
+  // HUB: no menu do HUB a Carteira é um espelho só para consulta (?modo=consulta); o app individual grava.
+  const HUB_CONSULTA = document.documentElement.dataset.cartModo === 'consulta';
 
   const REGIME_OPTIONS = ['Simples', 'LP', 'LR', 'Assoc.', 'Coop.', 'Produtor'];
   const HONORARIOS_FILTER_OPTIONS = ['Em dia', 'Em atraso', 'Bloqueado', 'Não cliente'];
@@ -497,6 +499,59 @@
     });
   }
 
+  // HUB (consulta): atualiza sozinho com o que foi gravado no app Carteira, sem mexer em filtros, ordem e aba.
+  let hubMirrorTimer = null;
+  let hubMirrorAt = null;
+  let hubMirrorBusy = false;
+
+  function hubHora() {
+    const d = hubMirrorAt || new Date();
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function startHubMirror() {
+    hubMirrorAt = new Date();
+    updatePendingIndicator();
+    if (hubMirrorTimer) return;
+    hubMirrorTimer = setInterval(() => { hubMirrorRefresh().catch(err => console.warn('Atualização do espelho:', err)); }, 60000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && hubMirrorAt && Date.now() - hubMirrorAt.getTime() > 30000) hubMirrorRefresh().catch(() => {});
+    });
+  }
+
+  async function hubMirrorRefresh() {
+    if (hubMirrorBusy || document.hidden || !state.user || !$('#modalRoot').classList.contains('hidden')) return;
+    hubMirrorBusy = true;
+    try {
+      const response = await api('/api/periods');
+      state.periods = (response.periods || []).map(p => ({
+        id: p.period_key, year: p.year, month: p.month, status: p.status, sourcePeriodKey: p.source_period_key || '',
+        createdAt: p.created_at, createdBy: p.created_by, updatedAt: p.updated_at
+      }));
+      populateAllPeriodSelectors();
+      if (state.periodKey) setSelectorToKey('#monthSelect', '#yearSelect', state.periodKey);
+      if (state.dashboardPeriodKey) setSelectorToKey('#dashboardMonthSelect', '#dashboardYearSelect', state.dashboardPeriodKey);
+      if (state.auditPeriodKey) setSelectorToKey('#auditMonthSelect', '#auditYearSelect', state.auditPeriodKey);
+      state.recordCache.clear();
+      state.auditCache.clear();
+      const meta = state.periods.find(p => p.id === state.periodKey) || null;
+      state.periodExists = !!meta;
+      state.periodMeta = meta;
+      if (meta) {
+        const records = await fetchRecords(state.periodKey, true);
+        state.records = records;
+        initializeEditingState(records);
+        renderFiltered();
+      }
+      if (state.currentView === 'dashboard') await renderDashboard();
+      if (state.currentView === 'auditoria') await renderAudit();
+      hubMirrorAt = new Date();
+      updatePendingIndicator();
+    } finally {
+      hubMirrorBusy = false;
+    }
+  }
+
   function handleUiError(err) {
     console.error(err);
     renderNetworkNotice('Falha de comunicação com o servidor. Nenhum dado local substitui a base central.');
@@ -554,6 +609,7 @@
     await refreshPeriods();
     renderNetworkNotice();
     switchView('carteira');
+    if (HUB_CONSULTA) startHubMirror();
   }
 
   function applyRoleVisibility() {
@@ -572,7 +628,7 @@
 
     $('#btnUsers').disabled = !isAdmin;
     updateWriteButtons();
-    const roleLabel = isAdmin ? 'ADM · HUB' : 'Consulta · HUB';
+    const roleLabel = HUB_CONSULTA ? 'consulta no HUB' : (isAdmin ? 'ADM' : 'Consulta');
     $('#sessionBadge').textContent = `${state.user.username} · ${roleLabel}`;
   }
 
@@ -724,7 +780,7 @@
   }
 
   function isAdminUser() {
-    return !!(state.user && state.user.role === ROLE_ADMIN);
+    return !!(state.user && state.user.role === ROLE_ADMIN) && !HUB_CONSULTA;
   }
 
   function initializeEditingState(records) {
@@ -773,7 +829,7 @@
       updateWriteButtons();
       return;
     }
-    if (state.periodExists) el.textContent = 'Banco do HUB · sem alterações pendentes';
+    if (state.periodExists) el.textContent = HUB_CONSULTA ? `Espelho do app Carteira · atualizado às ${hubHora()}` : 'Banco do HUB · sem alterações pendentes';
     updateWriteButtons();
   }
 

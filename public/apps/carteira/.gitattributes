@@ -1,2 +1,3 @@
-# leitor de SQLite (sql.js): sem conversão de fim de linha
+# leitor de SQLite (sql.js) e ícones: sem conversão de fim de linha
 *.wasm binary
+*.png binary
