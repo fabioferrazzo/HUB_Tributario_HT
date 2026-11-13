@@ -1,0 +1,2 @@
+/* No HUB: login, senha e saída são os do HUB. */
+#btnLogout, #btnMyPassword { display: none !important; }

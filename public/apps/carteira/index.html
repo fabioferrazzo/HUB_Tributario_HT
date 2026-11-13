@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>H Teixeira - Carteira de Clientes</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="hub.css" />
+</head>
+<body>
+  <div id="appShell" class="app-shell hidden" aria-hidden="true">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-mark" aria-hidden="true">HT</div>
+        <div>
+          <div class="brand-title">Carteira de Clientes</div>
+          <div class="brand-subtitle">H Teixeira Contabilidade · V2 · 2.1.0</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span id="sessionBadge" class="session-badge"></span>
+        <button id="btnMyPassword" class="btn ghost">Minha senha</button>
+        <button id="btnUsers" class="btn ghost admin-only">Usuários</button>
+        <button id="btnMigrationStatus" class="btn ghost admin-only" type="button">Base da V2</button>
+        <button id="btnLogout" class="btn danger-outline">Sair</button>
+      </div>
+    </header>
+    <nav class="app-tabs" aria-label="Navegação principal">
+      <button id="btnTabCarteira" class="app-tab active" type="button">Carteira</button>
+      <button id="btnTabDashboard" class="app-tab" type="button">Totalizador</button>
+      <button id="btnTabAudit" class="app-tab" type="button">Auditoria</button>
+    </nav>
+
+    <main id="carteiraView" class="main-content">
+      <section class="control-panel">
+        <div class="period-group">
+          <div class="field compact">
+            <label for="monthSelect">Mês</label>
+            <select id="monthSelect"></select>
+          </div>
+          <div class="field compact">
+            <label for="yearSelect">Ano</label>
+            <select id="yearSelect"></select>
+          </div>
+          <div class="period-chip" id="periodChip"></div>
+        </div>
+
+        <div class="search-wrap">
+          <label class="sr-only" for="globalSearch">Pesquisa geral</label>
+          <input id="globalSearch" type="search" placeholder="Pesquisar qualquer palavra ou número..." autocomplete="off" />
+          <button id="btnClearSearch" class="icon-btn" title="Limpar pesquisa" aria-label="Limpar pesquisa">×</button>
+        </div>
+
+        <div class="action-group admin-only">
+          <button id="btnCreatePeriod" class="btn secondary hidden">Criar competência</button>
+          <button id="btnAddRow" class="btn secondary">+ Empresa</button>
+          <label class="btn secondary file-button" for="fileImport">Importar XLSX</label>
+          <input id="fileImport" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+          <button id="btnSave" class="btn save" disabled>Salvar</button>
+          <button id="btnExport" class="btn primary">Exportar XLSX</button>
+        </div>
+      </section>
+
+      <section id="noticePanel" class="notice-panel hidden"></section>
+
+      <section class="table-card">
+        <div class="table-summary">
+          <div>
+            <strong id="recordCount">0</strong> registros exibidos
+            <span class="summary-sep">•</span>
+            <span id="saveState">Pronto</span>
+          </div>
+          <div class="table-summary-actions">
+            <button id="btnResetColumnOrder" class="link-btn" type="button" title="Restaurar a ordem original das colunas">Restaurar ordem</button>
+            <button id="btnResetColumnWidths" class="link-btn" type="button" title="Restaurar a largura original das colunas">Restaurar larguras</button>
+            <button id="btnClearFilters" class="link-btn" type="button">Limpar filtros</button>
+          </div>
+        </div>
+
+        <div class="table-x-scroll-top" id="tableScrollTop" aria-label="Rolagem horizontal da tabela" title="Use esta barra para navegar pelas colunas sem precisar descer até o fim da lista">
+          <div class="table-x-scroll-spacer" id="tableScrollTopSpacer"></div>
+        </div>
+
+        <div class="table-scroll" id="tableScroll">
+          <table id="clientTable">
+            <colgroup id="clientColgroup">
+              <col data-col="empresa" />
+              <col data-col="cnpj" />
+              <col data-col="dominio" />
+              <col data-col="responsavelFiscal" />
+              <col data-col="responsavelContabil" />
+              <col data-col="responsavelDeptoPessoal" />
+              <col data-col="regime" />
+              <col data-col="socios" />
+              <col data-col="fone" />
+              <col data-col="email" />
+              <col data-col="honorarios" />
+              <col data-col="situacao" />
+              <col data-col="obs" />
+              <col data-col="acoes" />
+            </colgroup>
+            <thead>
+              <tr class="header-row">
+                <th data-sort="empresa" data-col="empresa">Empresa <span class="sort-indicator"></span></th>
+                <th data-sort="cnpj" data-col="cnpj">CNPJ <span class="sort-indicator"></span></th>
+                <th data-sort="dominio" data-col="dominio">Domínio <span class="sort-indicator"></span></th>
+                <th data-sort="responsavelFiscal" data-col="responsavelFiscal">Responsável Fiscal <span class="sort-indicator"></span></th>
+                <th data-sort="responsavelContabil" data-col="responsavelContabil">Responsável Contábil <span class="sort-indicator"></span></th>
+                <th data-sort="responsavelDeptoPessoal" data-col="responsavelDeptoPessoal">Responsável Depto Pessoal <span class="sort-indicator"></span></th>
+                <th data-sort="regime" data-col="regime">Regime <span class="sort-indicator"></span></th>
+                <th data-sort="socios" data-col="socios">Sócios <span class="sort-indicator"></span></th>
+                <th data-sort="fone" data-col="fone">Fone <span class="sort-indicator"></span></th>
+                <th data-sort="email" data-col="email">E-mail <span class="sort-indicator"></span></th>
+                <th data-sort="honorarios" data-col="honorarios">Honorários <span class="sort-indicator"></span></th>
+                <th data-sort="situacao" data-col="situacao">Situação <span class="sort-indicator"></span></th>
+                <th data-sort="obs" data-col="obs">Obs. <span class="sort-indicator"></span></th>
+                <th class="admin-only row-actions-col" data-col="acoes">Ações</th>
+              </tr>
+              <tr class="filter-row">
+                <th data-col="empresa"><input class="column-filter" data-field="empresa" placeholder="Filtrar" /></th>
+                <th data-col="cnpj"><input class="column-filter" data-field="cnpj" placeholder="Filtrar" /></th>
+                <th data-col="dominio"><input class="column-filter" data-field="dominio" placeholder="Filtrar" /></th>
+                <th data-col="responsavelFiscal"><input class="column-filter" data-field="responsavelFiscal" placeholder="Filtrar" /></th>
+                <th data-col="responsavelContabil"><input class="column-filter" data-field="responsavelContabil" placeholder="Filtrar" /></th>
+                <th data-col="responsavelDeptoPessoal"><input class="column-filter" data-field="responsavelDeptoPessoal" placeholder="Filtrar" /></th>
+                <th data-col="regime"><select class="column-filter" data-field="regime"><option value="">Todos</option></select></th>
+                <th data-col="socios"><input class="column-filter" data-field="socios" placeholder="Filtrar" /></th>
+                <th data-col="fone"><input class="column-filter" data-field="fone" placeholder="Filtrar" /></th>
+                <th data-col="email"><input class="column-filter" data-field="email" placeholder="Filtrar" /></th>
+                <th data-col="honorarios"><select class="column-filter" data-field="honorarios">
+                  <option value="">Todos</option>
+                  <option value="Em dia">Em dia</option>
+                  <option value="Em atraso">Em atraso</option>
+                  <option value="Bloqueado">Bloqueado</option>
+                  <option value="Não cliente">Não cliente</option>
+                </select></th>
+                <th data-col="situacao"><select class="column-filter" data-field="situacao">
+                  <option value="">Todos</option>
+                  <option value="Ativa">Ativa</option>
+                  <option value="Inativa">Inativa</option>
+                  <option value="S. mov.">S. mov.</option>
+                  <option value="Não cliente">Não cliente</option>
+                </select></th>
+                <th data-col="obs"><input class="column-filter" data-field="obs" placeholder="Filtrar" /></th>
+                <th class="admin-only" data-col="acoes"></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <main id="dashboardView" class="main-content hidden">
+      <section class="dashboard-control-panel">
+        <div class="period-group">
+          <div class="field compact">
+            <label for="dashboardMonthSelect">Mês</label>
+            <select id="dashboardMonthSelect"></select>
+          </div>
+          <div class="field compact">
+            <label for="dashboardYearSelect">Ano</label>
+            <select id="dashboardYearSelect"></select>
+          </div>
+          <div class="period-chip" id="dashboardPeriodChip"></div>
+        </div>
+        <div class="dashboard-filter-grid">
+          <div class="field compact">
+            <label for="dashboardDocumentFilter">Documento</label>
+            <select id="dashboardDocumentFilter">
+              <option value="">Todos</option>
+              <option value="cnpj">CNPJ</option>
+              <option value="cpf">CPF</option>
+              <option value="outros">Sem/Outro documento</option>
+            </select>
+          </div>
+          <div class="field compact">
+            <label for="dashboardSituationFilter">Situação</label>
+            <select id="dashboardSituationFilter">
+              <option value="">Todas</option>
+              <option value="ativa">Ativa</option>
+              <option value="inativa">Inativa</option>
+              <option value="outros">Outros</option>
+              <option value="nao-cliente">Não Cliente</option>
+            </select>
+          </div>
+          <div class="field compact">
+            <label for="dashboardRegimeFilter">Regime</label>
+            <select id="dashboardRegimeFilter"><option value="">Todos</option></select>
+          </div>
+          <div class="field compact">
+            <label for="dashboardHonorariosFilter">Honorários</label>
+            <select id="dashboardHonorariosFilter">
+              <option value="">Todos</option>
+              <option value="em-dia">Em dia</option>
+              <option value="em-atraso">Em atraso</option>
+              <option value="bloqueado">Bloqueado</option>
+              <option value="inadimplente">Inadimplentes</option>
+              <option value="nao-cliente">Não cliente</option>
+              <option value="outros">Outros/Sem informação</option>
+            </select>
+          </div>
+          <button id="btnDashboardClearFilters" class="btn secondary dashboard-clear" type="button">Limpar filtros</button>
+        </div>
+      </section>
+
+      <section id="dashboardPendingNotice" class="notice-panel hidden"></section>
+
+      <section class="dashboard-summary-bar">
+        <div>
+          <strong id="dashboardBaseCount">0</strong> registros na base salva
+          <span class="summary-sep">•</span>
+          <strong id="dashboardFilteredCount">0</strong> no recorte atual
+        </div>
+        <div id="dashboardUpdatedAt" class="dashboard-updated"></div>
+      </section>
+
+      <section id="dashboardKpis" class="dashboard-kpi-grid" aria-label="Indicadores da competência">
+        <button class="kpi-card kpi-total" type="button" data-dashboard-filter="clear" title="Limpar filtros e mostrar toda a competência">
+          <span class="kpi-label">Total geral</span>
+          <strong id="kpiTotalGeral" class="kpi-value">0</strong>
+          <span class="kpi-detail">base salva da competência</span>
+        </button>
+        <div class="kpi-card kpi-result">
+          <span class="kpi-label">Resultado filtrado</span>
+          <strong id="kpiResultado" class="kpi-value">0</strong>
+          <span class="kpi-detail">após os filtros acima</span>
+        </div>
+        <button class="kpi-card" type="button" data-dashboard-filter="document" data-dashboard-value="cnpj">
+          <span class="kpi-label">CNPJ</span>
+          <strong id="kpiCnpj" class="kpi-value">0</strong>
+          <span class="kpi-detail">14 dígitos</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="document" data-dashboard-value="cpf">
+          <span class="kpi-label">CPF</span>
+          <strong id="kpiCpf" class="kpi-value">0</strong>
+          <span class="kpi-detail">11 dígitos</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="situation" data-dashboard-value="ativa">
+          <span class="kpi-label">Ativas</span>
+          <strong id="kpiAtivas" class="kpi-value">0</strong>
+          <span class="kpi-detail">situação ativa</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="situation" data-dashboard-value="inativa">
+          <span class="kpi-label">Inativas</span>
+          <strong id="kpiInativas" class="kpi-value">0</strong>
+          <span class="kpi-detail">situação inativa</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="situation" data-dashboard-value="outros">
+          <span class="kpi-label">Outros</span>
+          <strong id="kpiOutrosSituacao" class="kpi-value">0</strong>
+          <span class="kpi-detail">demais situações, inclusive Não Cliente</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="honorarios" data-dashboard-value="em-dia">
+          <span class="kpi-label">Em dia</span>
+          <strong id="kpiEmDia" class="kpi-value">0</strong>
+          <span class="kpi-detail">honorários em dia</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="honorarios" data-dashboard-value="bloqueado">
+          <span class="kpi-label">Bloqueadas</span>
+          <strong id="kpiBloqueadas" class="kpi-value">0</strong>
+          <span class="kpi-detail">honorários bloqueados</span>
+        </button>
+        <button class="kpi-card" type="button" data-dashboard-filter="honorarios" data-dashboard-value="em-atraso">
+          <span class="kpi-label">Em atraso</span>
+          <strong id="kpiEmAtraso" class="kpi-value">0</strong>
+          <span class="kpi-detail">honorários em atraso</span>
+        </button>
+        <button class="kpi-card kpi-delinquency" type="button" data-dashboard-filter="honorarios" data-dashboard-value="inadimplente">
+          <span class="kpi-label">Taxa de inadimplência</span>
+          <strong id="kpiInadimplencia" class="kpi-value">0,0%</strong>
+          <span id="kpiInadimplenciaDetail" class="kpi-detail">0 de 0 clientes considerados</span>
+        </button>
+      </section>
+
+      <section class="dashboard-formula-note">
+        <strong>Taxa de inadimplência:</strong> (Honorários em atraso + Honorários bloqueados) ÷ total de clientes considerados. Registros marcados como <strong>Não cliente</strong> em Situação ou Honorários são excluídos do denominador e do numerador.
+      </section>
+
+      <section class="dashboard-regime-card">
+        <div class="dashboard-section-head">
+          <div>
+            <h2>Total por regime</h2>
+            <p>Contagem no recorte atual. Clique em um regime para aplicá-lo como filtro.</p>
+          </div>
+          <span id="dashboardNonClientNote" class="dashboard-note"></span>
+        </div>
+        <div id="dashboardRegimeGrid" class="regime-grid"></div>
+        <div id="dashboardRegimeEmpty" class="dashboard-empty hidden">Nenhum registro no recorte atual.</div>
+      </section>
+    </main>
+
+    <main id="auditView" class="main-content hidden">
+      <section class="control-panel audit-controls">
+        <div class="period-group">
+          <div class="field compact">
+            <label for="auditMonthSelect">Mês</label>
+            <select id="auditMonthSelect"></select>
+          </div>
+          <div class="field compact">
+            <label for="auditYearSelect">Ano</label>
+            <select id="auditYearSelect"></select>
+          </div>
+          <div class="period-chip" id="auditPeriodChip"></div>
+        </div>
+        <div class="audit-filter-grid">
+          <div class="field compact">
+            <label for="auditUserFilter">Usuário</label>
+            <select id="auditUserFilter"><option value="">Todos os usuários</option></select>
+          </div>
+          <div class="field compact">
+            <label for="auditActionFilter">Ação</label>
+            <select id="auditActionFilter">
+              <option value="">Todas as ações</option>
+              <option value="Edição">Edição</option>
+              <option value="Inclusão">Inclusão</option>
+              <option value="Exclusão">Exclusão</option>
+              <option value="Criação de competência">Criação de competência</option>
+            </select>
+          </div>
+          <div class="field audit-search-field">
+            <label for="auditSearch">Pesquisa</label>
+            <input id="auditSearch" type="search" placeholder="Pesquisar empresa, CNPJ, Domínio, responsável, coluna, valor ou usuário..." autocomplete="off" />
+          </div>
+          <button id="btnAuditClearFilters" class="btn secondary audit-clear" type="button">Limpar filtros</button>
+        </div>
+      </section>
+
+      <section class="table-card audit-card">
+        <div class="table-summary">
+          <div><strong id="auditCount">0</strong> exibidos de <strong id="auditTotalCount">0</strong> registros totais da competência</div>
+          <div class="audit-note">Histórico cumulativo e imutável: cada salvamento acrescenta novas linhas. Registros antigos não são substituídos nem excluídos.</div>
+        </div>
+        <div id="auditEmpty" class="audit-empty hidden">Nenhuma alteração registrada para esta competência e filtros.</div>
+        <div class="table-scroll audit-scroll">
+          <table id="auditTable" class="audit-table">
+            <thead>
+              <tr class="header-row">
+                <th>Data</th>
+                <th>Hora</th>
+                <th>Usuário</th>
+                <th>Ação</th>
+                <th>Linha</th>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Coluna</th>
+                <th>Valor anterior</th>
+                <th>Valor novo</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="loginScreen" class="login-screen">
+    <form id="loginForm" class="login-card" autocomplete="off">
+      <div class="login-brand">HT</div>
+      <h1>Carteira de Clientes</h1>
+      <p>Carteira de Clientes no HUB · V2 · 2.1.0</p>
+      <div id="loginError" class="form-error hidden"></div>
+      <div class="field">
+        <label for="loginUser">Usuário</label>
+        <input id="loginUser" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="loginPassword">Senha</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn primary full">Entrar</button>
+    </form>
+  </div>
+
+  <div id="modalRoot" class="modal-root hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="1"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" data-close-modal="1" aria-label="Fechar">×</button>
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+      <div id="modalActions" class="modal-actions"></div>
+    </section>
+  </div>
+
+  <div id="toastRoot" class="toast-root" aria-live="polite"></div>
+
+  <script src="jszip.min.js"></script>
+  <script src="cart-xlsx.js?v=hub1"></script>
+  <script src="hub-carteira.js?v=hub1"></script>
+  <script src="app.js?v=hub1"></script>
+  <script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

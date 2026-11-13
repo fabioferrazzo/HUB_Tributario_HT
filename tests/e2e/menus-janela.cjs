@@ -75,7 +75,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.goto(BASE + "/#/admin");
   await page.waitForTimeout(1200);
   check("colaborador não abre Configurações pelo endereço", (await page.locator(".topbar h1", { hasText: "Configurações" }).count()) === 0);
-  for (const label of ["Checklist", "Avaliações", "Informativos", "Controle de Apuração", "Simuladores"]) {
+  for (const label of ["Checklist", "Avaliações", "Informativos", "Controle de Apuração", "Carteira de clientes", "Simuladores"]) {
     check(`colaborador vê ${label}`, (await menu(label).count()) === 1);
   }
   check("colaborador não vê Coordenação", (await menu("Coordenação").count()) === 0);

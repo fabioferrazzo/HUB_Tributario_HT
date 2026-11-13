@@ -3,7 +3,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 // Histórico e auditoria: quem fez o quê em Pautas, Avisos, Tarefas, Férias e Apuração.
 // O registro é feito pelo banco (supabase/patch_historico.sql); só administradores consultam.
 
-export const HISTORICO_MODULOS = ["Pautas", "Quadro de Avisos", "Aviso da Coordenação", "Calendário de Tarefas", "Férias", "Apuração", "Informativos", "Onboarding"] as const;
+export const HISTORICO_MODULOS = ["Pautas", "Quadro de Avisos", "Aviso da Coordenação", "Calendário de Tarefas", "Férias", "Apuração", "Informativos", "Onboarding", "Carteira de Clientes"] as const;
 
 export type HistoricoAlteracao = { de: string; para: string };
 

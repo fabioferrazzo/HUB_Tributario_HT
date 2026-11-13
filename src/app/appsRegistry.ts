@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, CalendarRange, FileText, ClipboardCheck, FileSpreadsheet, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
+import { Award, BookUser, CalendarRange, FileText, ClipboardCheck, FileSpreadsheet, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Simuladores" | "Sistema";
@@ -131,6 +131,18 @@ export const hubApps: HubApp[] = [
     src: "/apps/onboarding/index.html",
     mode: "embutido",
     description: "Ambiente contratual do onboarding: Contrato, Adendo, matriz de responsabilidades e checklist (recriação do Onboarding 1.1.35)."
+  },
+  // Carteira de Clientes: recriação da Carteira V2 2.1.0 com a base no Supabase (competências, empresas e auditoria).
+  {
+    id: "carteira",
+    label: "Carteira de clientes",
+    title: "Carteira de Clientes",
+    icon: BookUser,
+    group: "Escritório",
+    access: "todos",
+    src: "/apps/carteira/index.html",
+    mode: "embutido",
+    description: "Relação de empresas por competência mensal, com edição pelo ADM, totalizador e auditoria (recriação da Carteira de Clientes V2)."
   },
   {
     id: "pautas-app",
