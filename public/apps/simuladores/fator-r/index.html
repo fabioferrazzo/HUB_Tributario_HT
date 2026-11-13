@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fator R — Simples Nacional — H. Teixeira</title>
+<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+</head>
+<body>
+<div class="app">
+  <header class="topo">
+    <div>
+      <h1>Fator R</h1>
+      <p>Folha de salários dos 12 meses ÷ receita bruta dos 12 meses: 28% ou mais tributa pelo Anexo III; abaixo disso, pelo Anexo V (LC 123/2006, art. 18, §§ 5º-J, 5º-K e 5º-M).</p>
+    </div>
+    <span class="selo">Res. CGSN 140/2018, art. 26 · conferido em 13/11/2026</span>
+  </header>
+
+  <div class="grade">
+    <section class="painel">
+      <div class="cab"><h2>Dados</h2></div>
+      <div class="corpo">
+        <div class="segmento" role="tablist">
+          <button type="button" class="ativo" data-modo="normal">12 meses ou mais</button>
+          <button type="button" data-modo="menos13">Menos de 13</button>
+          <button type="button" data-modo="inicio">Mês de início</button>
+        </div>
+        <div class="dica" id="dicaModo"></div>
+        <div class="campos">
+          <div class="campo inteiro modo-normal">
+            <label for="rbt12">Receita bruta dos 12 meses anteriores (RBT12)</label>
+            <input id="rbt12" class="num moeda" value="600.000,00">
+            <div class="dica">Mercado interno e exportação juntos (RBT12r).</div>
+          </div>
+          <div class="campo modo-menos13 oculto"><label for="meses">Meses de atividade antes do período</label><input id="meses" class="num" inputmode="numeric" value="6"></div>
+          <div class="campo modo-menos13 oculto"><label for="receitaMeses">Receita desses meses</label><input id="receitaMeses" class="num moeda" value="300.000,00"></div>
+          <div class="campo inteiro">
+            <label for="receita">Receita bruta do mês (período de apuração)</label>
+            <input id="receita" class="num moeda" value="50.000,00">
+          </div>
+        </div>
+      </div>
+      <details class="painel" open style="border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none">
+        <summary><h2 id="tituloFolha">Folha de salários dos 12 meses anteriores</h2></summary>
+        <div class="corpo">
+          <div class="campos">
+            <div class="campo"><label for="salarios">Salários (com 13º)</label><input id="salarios" class="num moeda" value="96.000,00"></div>
+            <div class="campo"><label for="prolabore">Pró-labore</label><input id="prolabore" class="num moeda" value="36.000,00"></div>
+            <div class="campo"><label for="cpp">INSS patronal recolhido</label><input id="cpp" class="num moeda" value="0,00"></div>
+            <div class="campo"><label for="fgts">FGTS recolhido</label><input id="fgts" class="num moeda" value="7.680,00"></div>
+          </div>
+          <div class="dica">Entram as remunerações informadas na GFIP/eSocial (com o 13º na competência), o pró-labore e o que foi efetivamente recolhido de contribuição patronal previdenciária e de FGTS. Não entram aluguéis nem distribuição de lucros (Res. CGSN 140/2018, art. 26, §§ 1º a 3º).</div>
+        </div>
+      </details>
+    </section>
+
+    <div style="display:grid;gap:12px">
+      <div class="kpis">
+        <div class="kpi destaque"><div class="rot">Fator R</div><div class="val" id="kFator">—</div><div class="sub" id="kFatorSub">—</div></div>
+        <div class="kpi"><div class="rot">Anexo aplicável</div><div class="val" id="kAnexo">—</div><div class="sub" id="kAnexoSub">—</div></div>
+        <div class="kpi"><div class="rot">DAS estimado no mês</div><div class="val" id="kDas">—</div><div class="sub" id="kDasSub">—</div></div>
+        <div class="kpi"><div class="rot" id="kMetaRot">Para chegar a 28%</div><div class="val" id="kMeta">—</div><div class="sub" id="kMetaSub">—</div></div>
+      </div>
+      <section class="painel">
+        <div class="corpo">
+          <div class="linha-acoes" style="justify-content:space-between"><span class="dica">Fator R em relação ao mínimo de 28%</span><strong id="barraTexto">—</strong></div>
+          <div class="barra" aria-hidden="true"><span id="barraValor" style="width:0"></span><i style="left:56%"></i></div>
+          <div class="dica" id="regra"></div>
+        </div>
+      </section>
+      <div id="avisos" style="display:grid;gap:8px"></div>
+
+      <section class="painel">
+        <div class="cab"><h2>Anexo III × Anexo V com a mesma receita</h2></div>
+        <div class="tabela-rolagem">
+          <table>
+            <thead><tr><th></th><th>Anexo III</th><th>Anexo V</th><th>Diferença</th></tr></thead>
+            <tbody id="comparacao"></tbody>
+          </table>
+        </div>
+        <div class="corpo"><div class="dica">Diferença anual: estimativa com a receita do mês repetida por 12 meses e a mesma faixa. Aumentar o pró-labore também gera INSS do sócio (11%, até o teto) e pode gerar IRPF; a contribuição patronal (CPP) dos Anexos III e V já está no DAS.</div></div>
+      </section>
+
+      <div class="fontes">Fontes: LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24 a 26; Res. CGSN 140/2018, arts. 21, 22 e 26. Vale para as atividades dos §§ 5º-I e 5º-D do art. 18 (sujeitas ao fator “r”). Cálculo de apoio, sem segregação de receitas e sem reduções municipais de ISS.</div>
+    </div>
+  </div>
+</div>
+<script src="../simples-comum/simples.js?v=1"></script>
+<script src="../simples-comum/ui.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  var S = window.SimplesHT, U = window.SimUI, $ = function (id) { return document.getElementById(id); };
+  var modo = "normal";
+  var DICAS = {
+    normal: "Folha e receita dos 12 meses anteriores ao período de apuração.",
+    menos13: "Com menos de 13 meses de atividade, folha e receita são anualizadas: média dos meses anteriores × 12 (Res. CGSN 140/2018, art. 26, § 4º, e art. 22, § 3º).",
+    inicio: "No mês de início de atividade, o fator “r” usa a folha e a receita do próprio mês (Res. CGSN 140/2018, art. 26, § 6º)."
+  };
+
+  function folha() {
+    return ["salarios", "prolabore", "cpp", "fgts"].reduce(function (s, id) { var v = U.valorCampo($(id)); return s + (Number.isFinite(v) && v > 0 ? v : 0); }, 0);
+  }
+
+  function calcular() {
+    var receita = U.valorCampo($("receita")), fs = folha(), avisos = [];
+    if (!Number.isFinite(receita) || receita < 0) return erro("Informe a receita bruta do mês em reais.");
+    var fr, rbt12, fs12;
+    if (modo === "inicio") {
+      fr = S.fatorR({ inicioAtividade: true, fspa: fs, rpar: receita });
+      rbt12 = S.rbt12InicioAtividade(0, 0, receita);
+      fs12 = fs * 12;
+    } else if (modo === "menos13") {
+      var n = Math.max(1, Math.floor(U.parseBR($("meses").value) || 0)), rm = U.valorCampo($("receitaMeses"));
+      if (!Number.isFinite(rm) || rm < 0) return erro("Informe a receita dos meses anteriores.");
+      rbt12 = S.rbt12InicioAtividade(n, rm, receita);
+      fs12 = S.arred(fs / n * 12);
+      fr = S.fatorR({ fs12: fs12, rbt12r: rbt12 });
+      avisos.push("Folha e receita anualizadas: folha " + U.moeda(fs) + " ÷ " + n + " × 12 = " + U.moeda(fs12) + "; receita " + U.moeda(rm) + " ÷ " + n + " × 12 = " + U.moeda(rbt12) + ".");
+    } else {
+      rbt12 = U.valorCampo($("rbt12"));
+      if (!Number.isFinite(rbt12) || rbt12 < 0) return erro("Informe a RBT12 em reais.");
+      fs12 = fs;
+      fr = S.fatorR({ fs12: fs12, rbt12r: rbt12 });
+    }
+    var r = fr.r;
+    $("kFator").textContent = U.pct(r * 100, 2);
+    $("kFatorSub").textContent = r >= 0.28 ? "igual ou acima de 28%" : "abaixo de 28%";
+    $("kAnexo").textContent = "Anexo " + fr.anexo;
+    $("kAnexoSub").textContent = fr.anexo === "III" ? "fator “r” ≥ 28%" : "fator “r” < 28%";
+    $("regra").textContent = fr.regra;
+    $("barraTexto").textContent = U.pct(r * 100, 2) + " de 28,00%";
+    $("barraValor").style.width = Math.min(100, r * 100 / 50 * 100) + "%";
+
+    var c3 = S.calcular({ anexo: "III", rbt12: rbt12, receita: receita }), c5 = S.calcular({ anexo: "V", rbt12: rbt12, receita: receita });
+    var atual = fr.anexo === "III" ? c3 : c5;
+    $("kDas").textContent = U.moeda(atual.das);
+    $("kDasSub").textContent = "Anexo " + fr.anexo + " · alíquota " + U.pct(atual.aliquotaTotal, 4);
+
+    if (modo === "inicio") {
+      var metaMes = Math.max(0, 0.28 * receita - fs);
+      $("kMetaRot").textContent = r >= 0.28 ? "Folga sobre 28%" : "Para chegar a 28%";
+      $("kMeta").textContent = U.moeda(r >= 0.28 ? fs - 0.28 * receita : metaMes);
+      $("kMetaSub").textContent = r >= 0.28 ? "folha do mês acima do mínimo" : "a mais de folha no mês";
+    } else {
+      var meta = 0.28 * rbt12 - fs12;
+      $("kMetaRot").textContent = meta <= 0 ? "Folga sobre 28%" : "Para chegar a 28%";
+      if (meta <= 0) {
+        $("kMeta").textContent = U.moeda(-meta);
+        $("kMetaSub").textContent = "folha dos 12 meses acima do mínimo";
+      } else {
+        $("kMeta").textContent = U.moeda(meta);
+        $("kMetaSub").textContent = "a mais de folha em 12 meses (≈ " + U.moeda(meta / 12) + " por mês)";
+      }
+    }
+    if (rbt12 > 3600000) avisos.push("RBT12 acima de R$ 3,6 milhões: o ISS da 6ª faixa considera o ISS dentro do Simples (sublimite não excedido no ano). Confira no simulador de alíquota efetiva se a empresa estiver impedida.");
+    $("avisos").innerHTML = avisos.map(function (a) { return '<div class="aviso neutro">' + U.esc(a) + "</div>"; }).join("");
+
+    var linhas = [
+      ["Faixa", c3.faixa + "ª", c5.faixa + "ª", ""],
+      ["Alíquota efetiva", U.pct(c3.aliquotaTotal, 4), U.pct(c5.aliquotaTotal, 4), U.pct(c5.aliquotaTotal - c3.aliquotaTotal, 4)],
+      ["ISS (percentual efetivo)", U.pct(c3.percentualLocal, 4), U.pct(c5.percentualLocal, 4), U.pct(c5.percentualLocal - c3.percentualLocal, 4)],
+      ["DAS no mês", U.moeda(c3.das), U.moeda(c5.das), U.moeda(c5.das - c3.das)],
+      ["DAS em 12 meses (estimativa)", U.moeda(c3.das * 12), U.moeda(c5.das * 12), U.moeda((c5.das - c3.das) * 12)]
+    ];
+    $("comparacao").innerHTML = linhas.map(function (l, i) {
+      var classe = i === 3 ? "total" : "";
+      return '<tr class="' + classe + '"><td>' + l[0] + "</td><td" + (fr.anexo === "III" ? ' style="color:var(--brand);font-weight:700"' : "") + ">" + l[1] + "</td><td" +
+        (fr.anexo === "V" ? ' style="color:var(--brand);font-weight:700"' : "") + ">" + l[2] + "</td><td>" + l[3] + "</td></tr>";
+    }).join("");
+  }
+
+  function erro(msg) {
+    $("avisos").innerHTML = '<div class="aviso erro">' + U.esc(msg) + "</div>";
+    ["kFator", "kAnexo", "kDas", "kMeta"].forEach(function (id) { $(id).textContent = "—"; });
+    $("comparacao").innerHTML = "";
+  }
+
+  function trocarModo(novo) {
+    modo = novo;
+    Array.prototype.forEach.call(document.querySelectorAll(".segmento button"), function (b) { b.classList.toggle("ativo", b.dataset.modo === novo); });
+    Array.prototype.forEach.call(document.querySelectorAll(".modo-normal"), function (el) { el.classList.toggle("oculto", novo !== "normal"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".modo-menos13"), function (el) { el.classList.toggle("oculto", novo !== "menos13"); });
+    $("tituloFolha").textContent = novo === "inicio" ? "Folha de salários do mês de início" : novo === "menos13" ? "Folha de salários dos meses anteriores" : "Folha de salários dos 12 meses anteriores";
+    $("dicaModo").textContent = DICAS[novo];
+    calcular();
+  }
+
+  U.prepararCamposMoeda();
+  Array.prototype.forEach.call(document.querySelectorAll(".segmento button"), function (b) { b.addEventListener("click", function () { trocarModo(b.dataset.modo); }); });
+  Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); });
+  trocarModo("normal");
+})();
+</script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

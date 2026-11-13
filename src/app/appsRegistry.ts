@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, BookUser, CalendarRange, FileText, ClipboardCheck, FileSpreadsheet, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
+import { Award, BookUser, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Simuladores" | "Sistema";
@@ -199,6 +199,28 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/calculadora-ibs-cbs-simples/index.html",
     mode: "embutido"
+  },
+  {
+    id: "sim-aliquota-efetiva-simples",
+    label: "Alíquota efetiva do Simples",
+    title: "Alíquota efetiva do Simples Nacional",
+    icon: ChartPie,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/aliquota-efetiva-simples/index.html",
+    mode: "embutido",
+    description: "Alíquota efetiva, partilha por tributo e percentuais de ICMS (crédito na NF-e) e ISS (retenção na NFS-e)."
+  },
+  {
+    id: "sim-fator-r",
+    label: "Fator R",
+    title: "Fator R (Anexo III × Anexo V)",
+    icon: Gauge,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/fator-r/index.html",
+    mode: "embutido",
+    description: "Folha de salários ÷ receita bruta dos 12 meses, anexo aplicável, comparação de DAS e folha necessária para 28%."
   }
 ];
 
