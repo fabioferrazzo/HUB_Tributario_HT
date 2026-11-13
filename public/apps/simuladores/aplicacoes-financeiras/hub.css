@@ -1,0 +1,2 @@
+/* No HUB: entrada pelo login do HUB (sem senha local, sem sair, sem usuários locais, sem instalar como app). */
+#changePasswordButton, #logoutButton, #usersNavButton, #installButton { display: none !important; }

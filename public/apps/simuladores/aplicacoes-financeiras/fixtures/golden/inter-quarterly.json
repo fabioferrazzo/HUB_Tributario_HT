@@ -1,0 +1,122 @@
+{
+  "institution": "BANCO_INTER",
+  "company": "EMPRESA DEMONSTRATIVA LTDA",
+  "scope": "2024-01-01/2026-06-30",
+  "quarters": [
+    {
+      "quarter": "1T/2024",
+      "appliedCents": 10000000,
+      "redemptionNetCents": 0,
+      "redemptionGrossCents": 0,
+      "realizedIncomeCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "automaticIncomeCents": 7526,
+      "automaticIrrfCents": 1670
+    },
+    {
+      "quarter": "2T/2024",
+      "appliedCents": 0,
+      "redemptionNetCents": 8086223,
+      "redemptionGrossCents": 8206942,
+      "realizedIncomeCents": 603595,
+      "irrfOnRedemptionCents": 120719,
+      "automaticIncomeCents": 3125,
+      "automaticIrrfCents": 690
+    },
+    {
+      "quarter": "3T/2024",
+      "appliedCents": 319267460,
+      "redemptionNetCents": 10305823,
+      "redemptionGrossCents": 10394610,
+      "realizedIncomeCents": 394610,
+      "irrfOnRedemptionCents": 88787,
+      "automaticIncomeCents": 20442,
+      "automaticIrrfCents": 4578
+    },
+    {
+      "quarter": "4T/2024",
+      "appliedCents": 0,
+      "redemptionNetCents": 0,
+      "redemptionGrossCents": 0,
+      "realizedIncomeCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "automaticIncomeCents": 14568,
+      "automaticIrrfCents": 3253
+    },
+    {
+      "quarter": "1T/2025",
+      "appliedCents": 0,
+      "redemptionNetCents": 333470520,
+      "redemptionGrossCents": 337021284,
+      "realizedIncomeCents": 17753824,
+      "irrfOnRedemptionCents": 3550764,
+      "automaticIncomeCents": 11165,
+      "automaticIrrfCents": 2495
+    },
+    {
+      "quarter": "2T/2025",
+      "appliedCents": 40006397,
+      "redemptionNetCents": 0,
+      "redemptionGrossCents": 0,
+      "realizedIncomeCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "automaticIncomeCents": 10319,
+      "automaticIrrfCents": 2308
+    },
+    {
+      "quarter": "3T/2025",
+      "appliedCents": 299433113,
+      "redemptionNetCents": 6000000,
+      "redemptionGrossCents": 6023693,
+      "realizedIncomeCents": 105305,
+      "irrfOnRedemptionCents": 23693,
+      "automaticIncomeCents": 5024,
+      "automaticIrrfCents": 1114
+    },
+    {
+      "quarter": "4T/2025",
+      "appliedCents": 0,
+      "redemptionNetCents": 0,
+      "redemptionGrossCents": 0,
+      "realizedIncomeCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "automaticIncomeCents": 33073,
+      "automaticIrrfCents": 7425
+    },
+    {
+      "quarter": "1T/2026",
+      "appliedCents": 48860111,
+      "redemptionNetCents": 350820485,
+      "redemptionGrossCents": 355654960,
+      "realizedIncomeCents": 22588798,
+      "irrfOnRedemptionCents": 4834475,
+      "automaticIncomeCents": 64604,
+      "automaticIrrfCents": 14513
+    },
+    {
+      "quarter": "2T/2026",
+      "appliedCents": 0,
+      "redemptionNetCents": 0,
+      "redemptionGrossCents": 0,
+      "realizedIncomeCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "automaticIncomeCents": 102418,
+      "automaticIrrfCents": 23022,
+      "endingGrossBalanceCents": 51601862
+    }
+  ],
+  "expectedTotals": {
+    "appliedCents": 717567081,
+    "redemptionNetCents": 708683051,
+    "redemptionGrossCents": 717301489,
+    "realizedIncomeCents": 41446132,
+    "irrfOnRedemptionCents": 8618438,
+    "automaticIncomeCents": 272264,
+    "automaticIrrfCents": 61068,
+    "totalDocumentedIncomeCents": 41718396,
+    "totalDocumentedIrrfCents": 8679506,
+    "endingGrossBalanceCents": 51601862,
+    "remainingPrincipalCents": 49315071,
+    "unrealizedIncomeCents": 2286791
+  }
+}

@@ -1,4 +1,4 @@
-import { Award, Bell, CalendarDays, ClipboardList, FileArchive, History, Home, LayoutDashboard, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
+import { Award, Bell, Calculator, CalendarDays, ClipboardList, FileArchive, History, Home, LayoutDashboard, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
 import type { FileResourceCategory, HubRoute, UserRole } from "../types";
 import { getAppRoute, hubApps, type HubAppGroup } from "./appsRegistry";
 import type { HomologationBlock, HomologationStatus } from "./appTypes";
@@ -170,10 +170,12 @@ export const routes: Array<{ id: HubRoute; label: string; icon: typeof Home }> =
 
 const appRoutesOf = (group: HubAppGroup) => hubApps.filter((app) => app.group === group).map(getAppRoute);
 
-export const routeGroups: Array<{ label: string; items: HubRoute[] }> = [
+// submenu: o grupo aparece como um item do menu que abre e fecha a lista dos seus apps (ex.: Simuladores).
+export const routeGroups: Array<{ label: string; items: HubRoute[]; submenu?: { id: string; label: string; icon: typeof Home } }> = [
   { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
   { label: "Ferramentas", items: ["pautas", "tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
   { label: "Escritório", items: ["avaliacoes", ...appRoutesOf("Escritório")] },
+  { label: "Simuladores", items: appRoutesOf("Simuladores"), submenu: { id: "simuladores", label: "Simuladores", icon: Calculator } },
   { label: "Sistema", items: [...appRoutesOf("Sistema"), "historico", "admin"] }
 ];
 

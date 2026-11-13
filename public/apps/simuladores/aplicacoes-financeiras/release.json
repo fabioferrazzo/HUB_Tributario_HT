@@ -1,0 +1,376 @@
+{
+  "name": "Analista Tributário de Aplicações Financeiras by fff - HT",
+  "version": "1.9.0-offline.stage18-stable2",
+  "stage": 18,
+  "releaseChannel": "INTERNAL_STABLE",
+  "builtAt": "2026-09-30T13:08:08.492Z",
+  "offline": true,
+  "localFirst": true,
+  "dataTransmission": false,
+  "persistence": "IndexedDB v9",
+  "remoteBackend": false,
+  "universalDocumentPipeline": true,
+  "supportedFamilies": [
+    "FIXED_INCOME_SECURITY",
+    "QUOTA_FUND",
+    "AUTOMATIC_CASH"
+  ],
+  "exampleTemplates": [
+    "Banco Inter",
+    "Banco do Brasil"
+  ],
+  "additionalBuiltInLayouts": [
+    "Sicredi deposito a prazo",
+    "Itau resumo mensal",
+    "Caixa fundos e cotas",
+    "Sicoob RDC",
+    "Banrisul CDB automatico"
+  ],
+  "realPilotBatch1": {
+    "institutions": 5,
+    "documents": 7,
+    "layoutFamilies": 6,
+    "status": "PARTIAL_MIN_SAMPLE_GATE_NOT_MET",
+    "stageClosureAccepted": true
+  },
+  "genericFallback": true,
+  "taxProfiles": [
+    "LUCRO_PRESUMIDO",
+    "LUCRO_REAL"
+  ],
+  "cnaeRequired": false,
+  "localPdfProcessing": [
+    "Poppler helper",
+    "Tesseract OCR helper",
+    "browser PDF fallback"
+  ],
+  "exports": [
+    "PDF",
+    "XLSX",
+    "HTAF",
+    "HTTEMPLATE",
+    "QUARTER_CLOSURE",
+    "HTDIAG_JSON",
+    "HTUAT_JSON"
+  ],
+  "dashboardExperience": [
+    "PERSISTENT_FILTERS",
+    "GLOBAL_SEARCH",
+    "DRILL_DOWN",
+    "POSITION_TIMELINE",
+    "CLOSURE_VIEW",
+    "FISCAL_QUARTER_VIEW",
+    "HOMOLOGATION_VIEW",
+    "REAL_PILOT_VIEW",
+    "OPERATIONAL_HEALTH_VIEW",
+    "INTERNAL_UAT_VIEW",
+    "ANALYSIS_QUARTER_FILTER"
+  ],
+  "fiscalEngine": [
+    "LUCRO_PRESUMIDO_INCREMENTAL",
+    "LUCRO_REAL_ACCOUNTING_INPUT",
+    "PIS_COFINS_FINANCIAL",
+    "POSITION_TAX_TREATMENTS",
+    "TAX_MEMORY",
+    "OFFICIAL_SOURCE_TRACEABILITY"
+  ],
+  "assistedReview": true,
+  "localTemplateBuilder": true,
+  "reviewAuditTrail": true,
+  "documentLinking": true,
+  "advancedReconciliation": true,
+  "quarterlyClosure": true,
+  "benchmarkFramework": [
+    "SYNTHETIC_MULTIBANK_CORPUS",
+    "PDF_DIGITAL",
+    "OCR_LOCAL",
+    "OFX_XML_SGML",
+    "LARGE_PROJECT",
+    "PDF_XLSX_EXPORT",
+    "HTAF_ROUNDTRIP"
+  ],
+  "releaseReadiness": "INTERNAL_STABLE_APPROVED",
+  "releasePolicy": {
+    "scope": "INTERNAL_STABLE_OFFLINE_USE",
+    "partialLayouts": "MANDATORY_HUMAN_REVIEW",
+    "unknownLayouts": "MANDATORY_HUMAN_REVIEW",
+    "divergentEvidence": "BLOCK_AUTOMATIC_FISCAL_USE",
+    "remoteTelemetry": false,
+    "diagnosticExport": "SANITIZED_LOCAL_ONLY"
+  },
+  "observability": {
+    "mode": "LOCAL_ONLY",
+    "databaseVersion": 9,
+    "stores": [
+      "operationalEvents",
+      "performanceSamples",
+      "incidentReports",
+      "releaseChecks"
+    ],
+    "runtimeErrorCapture": true,
+    "performanceSampling": true,
+    "healthChecks": true,
+    "incidentRegistry": true,
+    "retentionDaysDefault": 30,
+    "diagnosticBundle": {
+      "format": "HTDIAG",
+      "version": 1,
+      "containsDocuments": false,
+      "containsFinancialAmounts": false,
+      "containsClientIdentifiers": false
+    }
+  },
+  "deployment": {
+    "mode": "WINDOWS_DESKTOP_SHORTCUT_LOCAL_LAUNCHER",
+    "bindAddress": "127.0.0.1",
+    "port": 8080,
+    "desktopShortcutInstaller": true,
+    "fullFunctionalityGate": true,
+    "requiredLocalStack": [
+      "PYTHON_3",
+      "PDFTOTEXT",
+      "PDFTOPPM",
+      "TESSERACT",
+      "OCR_POR"
+    ],
+    "duplicateInstancePolicy": "REUSE_EXISTING_HEALTHY_LOCAL_SERVER",
+    "portConflictPolicy": "FAIL_CLOSED",
+    "remoteAccess": false
+  },
+  "preHumanUatStatus": "COMPLETED",
+  "postStablePatches": [
+    {
+      "id": "POSINFO01",
+      "date": "2026-09-29",
+      "status": "PENDING_UAT",
+      "financialCoreChanged": false,
+      "taxEngineChanged": false,
+      "changedCoreFiles": [
+        "src/document-engine/template-registry.js",
+        "src/reports/snapshot.js",
+        "src/reports/pdf-writer.js",
+        "src/reports/xlsx-writer.js"
+      ],
+      "scope": [
+        "POSITION_CODE",
+        "POSITION_INITIAL_BALANCE",
+        "POSITION_FULL_REDEMPTION_DATE",
+        "INTER_MATURITY_CAPTURE",
+        "CSP_BANK_BAR_FIX",
+        "PT_BR_STATUS_LABELS"
+      ]
+    },
+    {
+      "id": "REALDOCS01",
+      "date": "2026-09-29",
+      "status": "PENDING_UAT",
+      "financialCoreChanged": true,
+      "taxEngineChanged": false,
+      "changedCoreFiles": [
+        "src/document-engine/template-registry.js",
+        "src/document-engine/generic-extractor.js",
+        "src/document-engine/reconciliation.js",
+        "src/document-engine/bank-catalog.js",
+        "src/adapters/banco-do-brasil.js",
+        "src/adapters/banrisul.js",
+        "src/adapters/sicoob.js",
+        "src/adapters/sicredi.js"
+      ],
+      "scope": [
+        "INTER_RAW_TEXT_READER",
+        "INTER_REDEMPTION_RECEIPT_EVIDENCE",
+        "OPENED_AT_NEVER_TODAY",
+        "BB_MONTH_SUMMARY_ORDERED",
+        "BB_FUND_INCOME_REPORT",
+        "QUOTA_FUND_REPORT_RECONCILIATION",
+        "C6_CATALOG_AND_MONTHLY_INFORME",
+        "BANRISUL_HEADER_COLUMNS",
+        "SICOOB_ANY_RDC_MATURITY",
+        "SICREDI_RAW_MONTHLY_ROWS",
+        "OCR_UTF8_DECODING"
+      ]
+    },
+    {
+      "id": "AUTH01",
+      "date": "2026-09-30",
+      "status": "PENDING_UAT",
+      "financialCoreChanged": false,
+      "taxEngineChanged": false,
+      "changedCoreFiles": [
+        "src/backup/snapshots.js"
+      ],
+      "scope": [
+        "LOCAL_LOGIN_PBKDF2",
+        "FIRST_ADMIN_SETUP_WITH_RECOVERY_KEY",
+        "ADMIN_USER_MANAGEMENT",
+        "PROJECT_OWNERSHIP_VISIBILITY",
+        "OWNER_ON_RESTORE",
+        "AUTH_PRESERVED_ON_CLEAR",
+        "SNAPSHOT_DUPLICATE_KEEPS_ORIGINAL"
+      ]
+    }
+  ],
+  "uatCorrection": {
+    "id": "UAT14_SINGLE_STATION_GOVERNANCE",
+    "status": "ACCEPTED",
+    "scope": [
+      "SINGLE_STATION_UAT_GOVERNANCE",
+      "CROSS_STATION_RESTORE_WAIVER",
+      "HTUAT_GOVERNANCE_EVIDENCE",
+      "RELEASE_CACHE_NAMESPACE",
+      "RELEASE_BOOTSTRAP_SERVICE_WORKER_RESET",
+      "RELEASE_JSON_NETWORK_FIRST",
+      "OPENING_SNAPSHOT_NOT_ACTIONABLE_QUARTER",
+      "OPERATIONAL_QUARTER_SELECTORS",
+      "HTAF_DUPLICATE_RESTORE_CLOSURE_SHA256",
+      "RESTORED_CLOSURE_REFERENCE_REBASE",
+      "RESTORED_CLOSURE_SOURCE_HASH_PROVENANCE",
+      "RESTORE_REJECTS_TAMPERED_CLOSURE",
+      "QUARTER_CLOSURE_IOF_SNAPSHOT",
+      "QUARTER_CLOSURE_IDEMPOTENCY",
+      "FISCAL_PENDING_COUNT",
+      "ANALYSIS_RUN_CONFIRMATION",
+      "FILTERED_QUARTER_EXPORT_TOTALIZERS",
+      "FILTERED_FISCAL_QUARTER_EXPORT",
+      "BB_REDEMPTION_IOF_COLUMNS",
+      "IOF_QUARTERLY_METRICS",
+      "BB_EFFECTIVE_APPLICATION_ROWS",
+      "BB_STABLE_MONTHLY_POSITION_IDENTITY",
+      "BB_MONTHLY_FUND_TEMPLATE_ROUTING",
+      "REVIEW_PDF_VIEWER",
+      "WINDOWS_TESSERACT_DISCOVERY"
+    ]
+  },
+  "stage18Uat": {
+    "status": "UAT_ACCEPTED_SINGLE_STATION",
+    "minimumWindowsStations": 1,
+    "recommendedMaximumWindowsStations": 1,
+    "databaseMigration": "V8_TO_V9_ISOLATED_SELF_TEST_PLUS_REAL_UPDATE_VALIDATION",
+    "requiredChecks": [
+      "WINDOWS_STATION",
+      "INDEXEDDB_V8_TO_V9",
+      "AUTHORIZED_REAL_CASES",
+      "POPPLER_AVAILABLE",
+      "TESSERACT_AVAILABLE",
+      "OCR_PORTUGUESE",
+      "OPERATION_PAGE",
+      "HTAF_BACKUP",
+      "PDF_EXPORT",
+      "XLSX_EXPORT",
+      "QUARTER_CLOSURE",
+      "PARTIAL_REVIEW_BLOCK"
+    ],
+    "optionalChecks": [
+      "HTAF_CROSS_STATION_RESTORE"
+    ],
+    "waivedChecks": [
+      {
+        "id": "HTAF_CROSS_STATION_RESTORE",
+        "status": "WAIVED_NOT_EXECUTED",
+        "reason": "SECOND_MACHINE_TEST_EXPLICITLY_OUT_OF_SCOPE"
+      }
+    ],
+    "deploymentModel": "SINGLE_WINDOWS_STATION_OFFLINE",
+    "promotionGate": "ALL_REQUIRED_CHECKS_PASSED_ON_1_STATION_AND_ZERO_OPEN_CRITICAL_INCIDENTS",
+    "automaticStablePromotion": false,
+    "evidenceFormat": "HTUAT v1",
+    "waiverPolicy": "EXPLICIT_SCOPE_DECISION_RECORDED_IN_EVIDENCE"
+  },
+  "stablePatch": {
+    "id": "STABLE2_HEALTH_WARN_STATE",
+    "sourceVersion": "1.9.0-offline.stage18-stable1",
+    "scope": "OBSERVABILITY_HEALTH_ONLY",
+    "change": "Historical WARN operational events remain auditable but no longer degrade current health when all current gates pass and no WARN incident is open.",
+    "financialCoreChanged": false
+  },
+  "stablePromotion": {
+    "status": "APPROVED",
+    "sourceVersion": "1.9.0-offline.stage18-uat14",
+    "sourceChannel": "INTERNAL_RC",
+    "acceptedAt": "2026-08-13T20:12:25.883Z",
+    "evidenceFormat": "HTUAT v1",
+    "evidenceSha256": "249066c631a69ef3f12dec0cd87efb1a1ee9389903bb4d4134d85610f753e72f",
+    "deploymentModel": "SINGLE_WINDOWS_STATION_OFFLINE",
+    "summary": {
+      "totalStations": 1,
+      "passedStations": 1,
+      "failedStations": 0,
+      "pendingStations": 0,
+      "openCriticalIncidents": 0,
+      "minimumStations": 1,
+      "waivedChecks": 1
+    },
+    "stationAlias": "Estacao Principal",
+    "checks": {
+      "WINDOWS_STATION": "PASSED",
+      "INDEXEDDB_V8_TO_V9": "PASSED",
+      "AUTHORIZED_REAL_CASES": "PASSED",
+      "POPPLER_AVAILABLE": "PASSED",
+      "TESSERACT_AVAILABLE": "PASSED",
+      "OCR_PORTUGUESE": "PASSED",
+      "OPERATION_PAGE": "PASSED",
+      "HTAF_BACKUP": "PASSED",
+      "HTAF_CROSS_STATION_RESTORE": "WAIVED_NOT_EXECUTED",
+      "PDF_EXPORT": "PASSED",
+      "XLSX_EXPORT": "PASSED",
+      "QUARTER_CLOSURE": "PASSED",
+      "PARTIAL_REVIEW_BLOCK": "PASSED"
+    },
+    "automaticPromotion": false,
+    "decision": "MANUAL_PROMOTION_AFTER_ACCEPTED_HTUAT_EVIDENCE"
+  },
+  "stage16Closure": {
+    "status": "STAGE16_CLOSED_WITH_PARTIAL_REAL_VALIDATION",
+    "additionalRealInstitutionsObserved": 5,
+    "additionalLayoutsFullyHomologated": 0,
+    "operationalPolicy": "MANDATORY_HUMAN_REVIEW_FOR_NON_HOMOLOGATED_LAYOUTS"
+  },
+  "stageClosure": {
+    "status": "INTERNAL_STABLE_STAGE18_ACCEPTED",
+    "decisionDate": "2026-08-13",
+    "operationalPolicy": "MANDATORY_HUMAN_REVIEW_FOR_NON_HOMOLOGATED_LAYOUTS"
+  },
+  "ofxEvidenceMatching": true,
+  "portableProjectFormat": {
+    "extension": ".htaf",
+    "formatVersion": 1,
+    "projectSchemaVersion": 6,
+    "integrity": [
+      "CRC32",
+      "SHA-256 manifest"
+    ],
+    "optionalEncryption": "AES-256-GCM + PBKDF2-SHA-256"
+  },
+  "pilotFramework": [
+    "HUMAN_GROUND_TRUTH_FREEZE",
+    "FIELD_LEVEL_METRICS",
+    "FALSE_POSITIVE_NEGATIVE_TRACKING",
+    "PARSER_VERSION_PINNING",
+    "PRE_PILOT_SNAPSHOT",
+    "PRIVACY_SAFE_DOSSIER"
+  ],
+  "pilotAcceptanceGates": {
+    "minExternalInstitutions": 4,
+    "minDocumentsPerLayout": 3,
+    "bankPct": 100,
+    "classificationPct": 100,
+    "structurePct": 95,
+    "eventRecallPct": 97,
+    "eventPrecisionPct": 97,
+    "amountExactPct": 97,
+    "dateExactPct": 97,
+    "maxHumanCorrectionPct": 20,
+    "maxCriticalFalsePositives": 0
+  },
+  "controlledLimitations": {
+    "arbitraryBankLayouts": "GENERIC_EXTRACTION_REQUIRES_REVIEW_WHEN_CONFIDENCE_IS_LOW",
+    "globalIrpj": "OUT_OF_SCOPE",
+    "lucroRealIrpjCsll": "OUTPUT_AS_ACCOUNTING_INPUT_ONLY",
+    "ibsCbs": "REGULATORY_REVIEW_ONLY_NO_AUTOMATIC_CALCULATION",
+    "templateLearning": "USER_APPROVED_RULES_ONLY_NO_CLIENT_DOCUMENTS",
+    "stage15Corpus": "SYNTHETIC_ANONYMIZED_CORPUS_NOT_OFFICIAL_BANK_LAYOUTS",
+    "stage16RealCorpus": "USER_SUPPLIED_REAL_PRIVATE_CORPUS_VALIDATED_LOCALLY; RAW_DOCUMENTS_EXCLUDED_FROM_DISTRIBUTION; STAGE16 CLOSED WITH LIMITED SAMPLE; NO ADDITIONAL LAYOUT CLAIMED HOMOLOGATED_REAL; HUMAN REVIEW REMAINS MANDATORY FOR PARTIAL OR UNKNOWN LAYOUTS",
+    "browserIndexedDbStress": "RUNTIME_QUOTA_VISIBLE_BUT_CONTAINER_BENCHMARK_USES_SERIALIZED_FOOTPRINT_AND_MEMORY_REPOSITORY",
+    "remoteObservability": "DISABLED; ALL OPERATIONAL LOGS REMAIN LOCAL UNTIL USER EXPORTS A SANITIZED DIAGNOSTIC BUNDLE"
+  }
+}

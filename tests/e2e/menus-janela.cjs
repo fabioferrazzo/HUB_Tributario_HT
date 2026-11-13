@@ -51,6 +51,23 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(800);
   check("apps usam as ações da barra do topo", (await page.locator(".top-page-actions button").count()) === 3 && (await page.locator(".frame-page header").count()) === 0);
 
+  // submenu Simuladores: abre e fecha; cada simulador é um item do submenu
+  const simToggle = page.locator(".sidebar .side-nav-submenu-toggle", { hasText: "Simuladores" });
+  check("menu Simuladores", (await simToggle.count()) === 1);
+  if ((await simToggle.getAttribute("aria-expanded")) === "true") { await simToggle.click(); await page.waitForTimeout(300); }
+  check("Simuladores fechado esconde os itens", (await simToggle.getAttribute("aria-expanded")) === "false" && (await menu("Mapa de alíquotas ICMS").count()) === 0);
+  await simToggle.click();
+  await page.waitForTimeout(300);
+  const simItens = await page.locator("#submenu-simuladores button").allTextContents();
+  check("Simuladores aberto mostra os simuladores", simItens.length === 3 && ["Aplicações financeiras", "Mapa de alíquotas ICMS", "Alíquota IBS/CBS no Simples"].every((t) => simItens.some((x) => x.includes(t))), simItens.join(", "));
+  await menu("Mapa de alíquotas ICMS").click();
+  await page.waitForTimeout(1500);
+  check("simulador abre na moldura do HUB", page.url().includes("#/app:sim-mapa-icms") && (await page.locator('iframe[src*="/apps/simuladores/mapa-icms-rs/"]').count()) === 1, page.url().replace(BASE, ""));
+  check("submenu fica aberto no simulador em uso", (await simToggle.getAttribute("aria-expanded")) === "true" && (await simToggle.isDisabled()));
+  await page.reload();
+  await page.waitForTimeout(1500);
+  check("submenu continua aberto ao recarregar", (await page.locator("#submenu-simuladores button").count()) === 3);
+
   // guarda de acesso pelo endereço
   await page.getByRole("button", { name: /Sair/ }).first().click();
   await page.waitForTimeout(600);
@@ -58,7 +75,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.goto(BASE + "/#/admin");
   await page.waitForTimeout(1200);
   check("colaborador não abre Configurações pelo endereço", (await page.locator(".topbar h1", { hasText: "Configurações" }).count()) === 0);
-  for (const label of ["Checklist", "Avaliações", "Informativos", "Controle de Apuração"]) {
+  for (const label of ["Checklist", "Avaliações", "Informativos", "Controle de Apuração", "Simuladores"]) {
     check(`colaborador vê ${label}`, (await menu(label).count()) === 1);
   }
   check("colaborador não vê Coordenação", (await menu("Coordenação").count()) === 0);

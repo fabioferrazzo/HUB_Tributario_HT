@@ -6,10 +6,10 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, CalendarRange, FileText, ClipboardCheck, FileSpreadsheet, ListChecks, NotebookPen, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
+import { Award, CalendarRange, FileText, ClipboardCheck, FileSpreadsheet, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, Timer, Truck, UserPlus, UserRoundCog } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
-export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Sistema";
+export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Simuladores" | "Sistema";
 
 // Quem vê o app no menu: todos, gestores e administradores, ou só administradores.
 export type HubAppAccess = "todos" | "gestores" | "admin";
@@ -154,6 +154,38 @@ export const hubApps: HubApp[] = [
     src: "/apps/informativos/index.html",
     mode: "embutido",
     description: "Biblioteca de informativos do Departamento Tributário (recriação do Infos HT dentro do HUB)."
+  },
+  // Simuladores: cada um é um item do submenu "Simuladores" (public/apps/simuladores/<nome>/).
+  {
+    id: "sim-aplicacoes-financeiras",
+    label: "Aplicações financeiras",
+    title: "Analista de Aplicações Financeiras",
+    icon: Landmark,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/aplicacoes-financeiras/index.html",
+    mode: "embutido",
+    description: "Rendimentos, resgates, IR retido e simulação de IRPJ/CSLL e PIS/Cofins sobre aplicações financeiras. Os projetos ficam guardados neste navegador; use backup .htaf para levar a outro computador."
+  },
+  {
+    id: "sim-mapa-icms",
+    label: "Mapa de alíquotas ICMS",
+    title: "Mapa do ICMS interestadual (saídas do RS)",
+    icon: MapIcon,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/mapa-icms-rs/index.html",
+    mode: "embutido"
+  },
+  {
+    id: "sim-ibs-cbs-simples",
+    label: "Alíquota IBS/CBS no Simples",
+    title: "Calculadora de alíquota de IBS/CBS no Simples Nacional",
+    icon: Percent,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/calculadora-ibs-cbs-simples/index.html",
+    mode: "embutido"
   }
 ];
 

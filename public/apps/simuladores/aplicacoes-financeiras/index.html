@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a5961">
+  <meta name="description" content="Análise local e offline de aplicações financeiras, rendimentos e IR.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://*.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'self' blob:; frame-src 'self' blob:; base-uri 'self'; form-action 'self'">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="hub.css">
+  <title>Analista Tributário de Aplicações Financeiras by fff - HT</title>
+</head>
+<body class="auth-locked">
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand"><img src="assets/hteixeira-logo-horizontal.png" alt="H. Teixeira Contabilidade"></div>
+    <h1>Analista Tributário de Aplicações Financeiras</h1>
+    <p class="auth-sub" id="authSubtitle">Carregando…</p>
+    <form id="setupForm" class="auth-form hidden" autocomplete="off">
+      <div class="notice small-notice"><strong>Primeiro acesso nesta estação.</strong> Crie o administrador. Os dados e os usuários ficam somente neste computador.</div>
+      <label>Nome<input id="setupName" maxlength="120" value="Administrador" required></label>
+      <label>Usuário (login)<input id="setupLogin" maxlength="160" value="" required></label>
+      <label>Senha<input id="setupPassword" type="password" minlength="6" autocomplete="new-password" required></label>
+      <label>Confirmar senha<input id="setupPasswordConfirm" type="password" minlength="6" autocomplete="new-password" required></label>
+      <button class="button" type="submit">Criar administrador</button>
+    </form>
+    <div id="recoveryPanel" class="auth-form hidden">
+      <div class="notice"><strong>Guarde esta chave de recuperação.</strong> Ela é a única forma de redefinir a senha do administrador nesta estação. Ela não será mostrada de novo.</div>
+      <code id="recoveryKeyValue" class="recovery-key"></code>
+      <div class="button-row"><button id="downloadRecoveryButton" class="button secondary" type="button">Baixar chave (.txt)</button><button id="recoveryDoneButton" class="button" type="button">Já guardei, continuar</button></div>
+    </div>
+    <form id="loginForm" class="auth-form hidden">
+      <label>Usuário<input id="loginUser" maxlength="160" autocomplete="username" required></label>
+      <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button class="button" type="submit">Entrar</button>
+      <button id="showRecoverButton" class="link-button" type="button">Esqueci a senha do administrador</button>
+    </form>
+    <form id="recoverForm" class="auth-form hidden" autocomplete="off">
+      <label>Chave de recuperação<input id="recoverKey" maxlength="24" placeholder="XXXX-XXXX-XXXX-XXXX" required></label>
+      <label>Login do administrador<input id="recoverLogin" maxlength="160" required></label>
+      <label>Nova senha<input id="recoverPassword" type="password" minlength="6" autocomplete="new-password" required></label>
+      <label>Confirmar nova senha<input id="recoverPasswordConfirm" type="password" minlength="6" autocomplete="new-password" required></label>
+      <button class="button" type="submit">Redefinir senha</button>
+      <button id="backToLoginButton" class="link-button" type="button">Voltar ao login</button>
+    </form>
+    <form id="forceChangeForm" class="auth-form hidden" autocomplete="off">
+      <div class="notice small-notice">O administrador definiu sua senha. Crie uma senha pessoal para continuar.</div>
+      <label>Nova senha<input id="forceNewPassword" type="password" minlength="6" autocomplete="new-password" required></label>
+      <label>Confirmar nova senha<input id="forceNewPasswordConfirm" type="password" minlength="6" autocomplete="new-password" required></label>
+      <button class="button" type="submit">Salvar e entrar</button>
+    </form>
+    <p id="authMessage" class="auth-message" role="alert"></p>
+  </div>
+</div>
+<div id="app" class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><img src="assets/hteixeira-logo-horizontal.png" alt="H. Teixeira Contabilidade"></div>
+    <div class="app-name">Analista Tributário de Aplicações Financeiras<br><strong>by fff - HT</strong></div>
+    <nav id="nav" class="nav">
+      <button data-page="dashboard" class="active"><span>▦</span>Painel</button>
+      <button data-page="positions"><span>◫</span>Aplicações</button>
+      <button data-page="events"><span>⇄</span>Eventos</button>
+      <button data-page="imports"><span>⇧</span>Importar</button>
+      <button data-page="analysis"><span>∑</span>Análise</button>
+      <button data-page="fiscal"><span>§</span>Fiscal</button>
+      <button data-page="reconciliation"><span>≋</span>Conciliação</button>
+      <button data-page="closures"><span>▣</span>Fechamentos</button>
+      <button data-page="reviews"><span>✓</span>Revisão</button>
+      <button data-page="templates"><span>⌘</span>Templates</button>
+      <button data-page="homologation"><span>◎</span>Homologação</button>
+      <button data-page="pilot"><span>◉</span>Piloto real</button>
+      <button data-page="observability"><span>◈</span>Operação</button>
+      <button data-page="projects"><span>▤</span>Projetos</button>
+      <button data-page="backup"><span>↻</span>Backup</button>
+      <button data-page="users" id="usersNavButton" class="hidden"><span>◍</span>Usuários</button>
+    </nav>
+    <div class="sidebar-foot">
+      <span id="connectionDot" class="connection-dot"></span>
+      <span id="connectionText">Verificando conexão</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button id="menuToggle" class="icon-button mobile-only" aria-label="Abrir menu">☰</button>
+      <select id="projectSelect" class="project-select" aria-label="Projeto"></select>
+      <div class="topbar-spacer"></div>
+      <span id="currentUserBadge" class="user-badge"></span>
+      <button id="changePasswordButton" class="button secondary mini">Trocar senha</button>
+      <button id="logoutButton" class="button secondary mini">Sair</button>
+      <button id="installButton" class="button secondary hidden">Instalar app</button>
+      <button id="restoreTopButton" class="button secondary">Restaurar .htaf</button>
+      <button id="exportButton" class="button">Criar backup</button>
+      <input id="restoreFileInput" class="hidden" type="file" accept=".htaf,.json,application/x-hteixeira-financial-archive,application/json">
+    </header>
+
+    <section id="dashboard" class="page active">
+      <div class="page-heading compact-heading">
+        <div><p class="eyebrow">Visão executiva local</p><h1>Painel de aplicações financeiras</h1><p>Aplicações, resgates, rendimentos, IR, saldos, pendências e fechamentos com rastreabilidade até o documento-fonte.</p></div>
+        <div class="dashboard-heading-actions"><span class="local-badge">Dados no dispositivo</span><button id="clearDashboardFilters" class="button secondary mini">Limpar filtros</button></div>
+      </div>
+      <div class="dashboard-filter-shell">
+        <div class="filter-bar dashboard-filters">
+          <label>Ano<select id="yearFilter"><option value="">Todos</option></select></label>
+          <label>Trimestre<select id="quarterFilter"></select></label>
+          <label>Banco<select id="bankFilter"><option value="">Todos</option></select></label>
+          <label>Família<select id="familyFilter"><option value="">Todas</option></select></label>
+          <label>Status<select id="dashboardStatusFilter"><option value="">Todos</option><option value="OK">Confirmados</option><option value="PENDING">Pendentes</option><option value="BLOCKED">Bloqueantes</option></select></label>
+          <label class="dashboard-search-field">Pesquisa global<input id="searchFilter" type="search" placeholder="Banco, produto, data, valor ou documento..."></label>
+        </div>
+        <div id="activeFilterSummary" class="active-filter-summary"></div>
+      </div>
+      <div id="kpiCards" class="kpi-grid compact-kpis"></div>
+      <div class="dashboard-grid two-columns">
+        <div class="panel">
+          <div class="panel-heading"><div><h2>Composição por banco</h2><p>Saldo e movimentação no filtro corrente.</p></div></div>
+          <div id="bankBreakdown" class="bank-breakdown"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-heading"><div><h2>Situação dos períodos</h2><p>Fechamentos, pendências e bloqueios por trimestre.</p></div></div>
+          <div id="closureSummary" class="closure-summary"></div>
+        </div>
+      </div>
+      <div id="globalSearchPanel" class="panel hidden">
+        <div class="panel-heading"><div><h2>Resultados da pesquisa</h2><p>Busca transversal em aplicações, eventos e documentos.</p></div><span id="globalSearchCount" class="pill"></span></div>
+        <div id="globalSearchResults" class="global-search-results"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-heading"><div><h2>Totalizadores trimestrais</h2><p>Clique em um período para abrir os eventos e evidências que formam o total.</p></div><span class="table-hint">Drill-down disponível</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Trimestre</th><th>Banco</th><th class="num">Aplicações</th><th class="num">Resgates líquidos</th><th class="num">Resgates brutos</th><th class="num">Rend. realizado</th><th class="num">Rend. do período</th><th class="num">IR resgate</th><th class="num">IR periódico</th><th class="num">IOF</th><th class="num">Saldo final</th><th>Status</th></tr></thead><tbody id="quarterRows"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-heading"><div><h2>Dados por aplicação</h2><p>Abra a linha do tempo para seguir a aplicação desde o aporte até o documento-fonte.</p></div><span id="positionCount" class="pill"></span></div>
+        <div class="table-wrap"><table><thead><tr><th>Banco / produto / código</th><th>Família</th><th>Data inicial</th><th class="num">Saldo inicial</th><th class="num">Aplicado</th><th class="num">Resgatado</th><th class="num">Rend. realizado</th><th class="num">Rend. período</th><th class="num">IR total</th><th class="num">IOF</th><th class="num">Saldo</th><th>Resgate total</th><th>Status</th><th></th></tr></thead><tbody id="positionRows"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="positions" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Posições</p><h1>Aplicações e fundos</h1><p>Renda fixa individualizada, fundos baseados em cotas e aplicações automáticas.</p></div></div>
+      <div class="panel"><div class="table-wrap"><table><thead><tr><th>Banco</th><th>Descrição</th><th>Código</th><th>Família</th><th>Início</th><th class="num">Saldo inicial</th><th>Vencimento</th><th class="num">Saldo mais recente</th><th>Resgate total</th><th>Qualidade do rendimento</th><th>Situação</th></tr></thead><tbody id="allPositionRows"></tbody></table></div></div>
+    </section>
+
+    <section id="events" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Linha do tempo</p><h1>Eventos financeiros</h1><p>As categorias distinguem resgate, rendimento realizado, rendimento do período, IR no resgate, IR periódico e IOF.</p></div></div>
+      <div class="filter-bar"><label>Tipo<select id="eventTypeFilter"><option value="">Todos</option></select></label><label>Evidência<select id="evidenceFilter"><option value="">Todas</option></select></label><label>Pesquisa<input id="eventSearch" type="search" placeholder="Produto, observação..."></label></div>
+      <div class="panel"><div class="table-wrap"><table><thead><tr><th>Data</th><th>Banco</th><th>Aplicação</th><th>Evento</th><th class="num">Valor</th><th>Evidência</th><th>Observação</th></tr></thead><tbody id="eventRows"></tbody></table></div></div>
+    </section>
+
+    <section id="imports" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Processamento local</p><h1>Importar documentos</h1><p>PDFs e OFXs permanecem no navegador, com hash SHA-256 e controle de duplicidade.</p></div></div>
+      <div id="dropZone" class="drop-zone">
+        <input id="fileInput" type="file" multiple accept=".pdf,.ofx,.txt,.json,.htaf">
+        <strong>Arraste os arquivos aqui</strong><span>PDF, OFX, TXT normalizado, projeto JSON legado ou backup .htaf.</span>
+      </div>
+      <div class="notice"><strong>Processamento universal:</strong> os modelos Inter e Banco do Brasil servem como templates. Para outros bancos, o app usa classificação genérica e encaminha campos incertos para revisão.</div>
+      <div class="panel settings-panel processing-panel">
+        <div class="panel-heading inline-heading"><div><h2>Perfil tributário do projeto</h2><p>O regime orienta somente a simulação dos tributos sobre os rendimentos financeiros.</p></div><span id="helperStatus" class="badge">Verificando OCR local</span></div>
+        <div class="settings-grid tax-grid">
+          <label>Regime tributário<select id="taxRegime"><option value="LUCRO_PRESUMIDO">Lucro Presumido</option><option value="LUCRO_REAL">Lucro Real</option></select></label>
+          <label>Tipo de entidade<select id="entityType"><option value="GENERAL_NON_FINANCIAL">PJ não financeira</option><option value="FINANCIAL_INSTITUTION">Instituição financeira</option><option value="SPECIAL">Tratamento especial</option></select></label>
+          <label id="pisCofinsModeLabel">PIS/Cofins no Lucro Real<select id="pisCofinsMode"><option value="NON_CUMULATIVE">Não cumulativo</option><option value="CUMULATIVE">Cumulativo</option><option value="SPECIAL">Especial / revisar</option></select></label>
+          <label>CNAE principal — opcional<input id="cnaePrincipal" placeholder="0000-0/00"></label>
+          <label class="wide-field">CNAEs secundários — opcionais<input id="cnaesSecundarios" placeholder="Separe por vírgulas"></label>
+          <button id="saveTaxProfileButton" class="button secondary">Salvar perfil</button>
+        </div>
+        <p class="muted">O CNAE não é obrigatório para extrair aplicações. Ele funciona como informação de apoio; o tratamento tributário depende do regime, do tipo de entidade e de eventuais regras especiais.</p>
+        <div class="process-actions"><button id="processDocumentsButton" class="button primary-large">Processar documentos e gerar análise</button><span id="processingSummary" class="muted">Nenhum processamento nesta sessão.</span></div>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Documentos locais</h2><p>O hash impede a importação duplicada do mesmo arquivo no projeto.</p></div></div><div id="documentList"></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Execuções de processamento</h2><p>Método de extração, classificação, confiança e alertas.</p></div></div><div id="processingRunList"></div></div>
+    </section>
+
+    <section id="analysis" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Resultado auditável</p><h1>Análise e relatórios</h1><p>Resumo financeiro, simulação tributária restrita e exportações geradas localmente.</p></div><div class="button-row compact"><button id="exportPdfButton" class="button">Exportar PDF</button><button id="exportXlsxButton" class="button secondary">Exportar XLSX</button></div></div>
+      <div class="panel settings-panel analysis-toolbar">
+        <div class="settings-grid">
+          <label>Trimestre da análise<select id="analysisQuarter"><option value="">Todo o período</option></select></label>
+          <div><span class="muted">Período aplicado</span><strong id="analysisPeriodStatus" class="status-line">Todo o período</strong></div>
+          <div class="analysis-run-action"><button id="runAnalysisButton" class="button">Executar análise</button><small class="muted">Recalcula localmente os totalizadores a partir dos eventos já processados. Não altera documentos nem revisões.</small><small id="analysisRunFeedback" class="muted">Aguardando execução manual.</small></div>
+        </div>
+      </div>
+      <div id="analysisStatus" class="notice">Processe os documentos para atualizar a análise.</div>
+      <div id="analysisKpis" class="kpi-grid"></div>
+      <div class="panel settings-panel"><h2>Simulação tributária sobre rendimentos financeiros</h2><div id="taxSimulation"></div><p class="muted">A simulação não substitui a apuração global da empresa. Rendimentos pendentes ou divergentes não entram automaticamente na base.</p></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Controle dos informes e conciliações</h2><p>Totais declarados em informes são controles, não novos eventos financeiros.</p></div></div><div id="reportedTotalsList"></div></div>
+    </section>
+
+    <section id="fiscal" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Memória tributária auditável</p><h1>Visão fiscal trimestral</h1><p>Separe a análise financeira da simulação fiscal, revise tratamentos por aplicação e exporte a memória de cálculo sem misturar valores pendentes à base automática.</p></div><div class="button-row compact"><button id="fiscalExportPdfButton" class="button">Exportar PDF</button><button id="fiscalExportXlsxButton" class="button secondary">Exportar XLSX</button></div></div>
+      <div class="panel settings-panel fiscal-toolbar"><div class="settings-grid"><label>Trimestre<select id="fiscalQuarter"></select></label><div><span class="muted">Regime do projeto</span><strong id="fiscalRegimeStatus" class="status-line">—</strong></div><div><span class="muted">Situação da simulação</span><strong id="fiscalSimulationStatus" class="status-line">—</strong></div></div></div>
+      <div id="fiscalStatusNotice" class="notice">Selecione um trimestre para gerar a memória fiscal.</div>
+      <div id="fiscalKpis" class="kpi-grid compact-kpis"></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Totalizadores fiscais por trimestre</h2><p>Os totais de informes são controles de conciliação e nunca são somados novamente à base.</p></div></div><div class="table-wrap"><table><thead><tr><th>Trimestre</th><th>Regime</th><th>Status</th><th class="num">Base automática</th><th class="num">Insumo LR</th><th class="num">IRPJ básico</th><th class="num">CSLL</th><th class="num">PIS</th><th class="num">Cofins</th><th class="num">IRRF potencial/retido</th><th>Pendências</th><th>CBS/IBS</th></tr></thead><tbody id="fiscalQuarterRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Memória por aplicação</h2><p>Rendimento realizado, competência, retenções e regra fiscal ficam separados por aplicação para rastreabilidade.</p></div></div><div class="table-wrap fiscal-memory-wrap"><table><thead><tr><th>Banco / aplicação</th><th>Trat. LP</th><th class="num">Base LP</th><th>Método LR</th><th class="num">Insumo LR</th><th>Trat. PIS/Cofins</th><th class="num">Base P/C</th><th class="num">PIS</th><th class="num">Cofins</th><th class="num">IR retido doc.</th><th class="num">Crédito LP</th><th>Status</th></tr></thead><tbody id="fiscalMemoryRows"></tbody></table></div></div>
+      <div class="panel fiscal-rule-panel"><div class="panel-heading"><div><h2>Tratamento específico por aplicação</h2><p>Use somente quando houver fundamento para afastar a regra padrão. A justificativa fica registrada na trilha de revisão.</p></div></div><div class="settings-grid fiscal-rule-grid">
+        <label>Aplicação<select id="fiscalTreatmentPosition"></select></label>
+        <label>Lucro Presumido<select id="fiscalLpTreatment"><option value="DEFAULT">Regra padrão</option><option value="EXCLUDE">Excluir da base automática</option><option value="REVIEW">Revisão obrigatória</option></select></label>
+        <label>Lucro Real — PIS/Cofins<select id="fiscalLrTreatment"><option value="DEFAULT">Regra padrão</option><option value="EXCLUDE">Excluir da base PIS/Cofins</option><option value="ZERO_RATE">Alíquota zero</option><option value="CUSTOM_RATE">Alíquota específica</option><option value="REVIEW">Revisão obrigatória</option></select></label>
+        <label>Alíquota PIS (%)<input id="fiscalPisRate" inputmode="decimal" placeholder="0,65"></label>
+        <label>Alíquota Cofins (%)<input id="fiscalCofinsRate" inputmode="decimal" placeholder="4,00"></label>
+        <label class="wide-field">Justificativa / referência<textarea id="fiscalTreatmentJustification" placeholder="Informe o fundamento e a razão do tratamento especial."></textarea></label>
+        <div class="button-row"><button id="saveFiscalTreatmentButton" class="button">Salvar tratamento</button><button id="removeFiscalTreatmentButton" class="button secondary">Restaurar padrão</button></div>
+      </div><div class="notice small-notice"><strong>Trava:</strong> tratamentos especiais não confirmam a qualidade documental. Rendimentos pendentes, divergentes ou reconstruídos sem aprovação continuam excluídos da base automática.</div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Referências normativas oficiais</h2><p>Links de rastreabilidade dos parâmetros gerais usados pelo motor. Regras específicas de produto ou entidade devem ser justificadas externamente.</p></div></div><div id="fiscalSourceList" class="fiscal-source-list"></div></div>
+      <div class="notice"><strong>Escopo:</strong> no Lucro Presumido, o app calcula apenas o efeito incremental de IRPJ básico e CSLL sobre rendimentos financeiros elegíveis. O adicional do IRPJ, compensações e a apuração global permanecem fora do escopo. No Lucro Real, IRPJ/CSLL não são calculados isoladamente; a receita financeira é exportada como insumo contábil/fiscal. CBS/IBS não são calculados automaticamente nesta versão.</div>
+    </section>
+
+    <section id="reconciliation" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Conciliação multidocumental</p><h1>Conciliação e fechamento trimestral</h1><p>Cruze extratos, informes, comprovantes e OFX, valide as equações do resgate e preserve um snapshot auditável do fechamento.</p></div><div class="button-row compact"><button id="runReconciliationButton" class="button">Executar conciliação</button><button id="closeQuarterButton" class="button secondary">Fechar trimestre</button></div></div>
+      <div class="panel settings-panel"><div class="settings-grid"><label>Trimestre<select id="reconciliationQuarter"></select></label><div><span class="muted">Status do trimestre</span><strong id="reconciliationQuarterStatus" class="status-line">—</strong></div><div><span class="muted">Último fechamento</span><strong id="reconciliationClosureStatus" class="status-line">—</strong></div></div></div>
+      <div id="reconciliationKpis" class="kpi-grid"></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Operações conciliadas</h2><p>Uma única operação econômica pode ser comprovada por vários documentos sem duplicação do fluxo.</p></div></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Banco</th><th>Aplicação</th><th>Resgate líquido</th><th>IRRF</th><th>IOF</th><th>Resgate bruto</th><th>Rendimento</th><th>Principal</th><th>OFX</th><th>Score</th><th>Eq. caixa</th><th>Eq. fiscal</th><th>Status</th></tr></thead><tbody id="reconciliationRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Conferência com informes</h2><p>Os totais informados no trimestre são confrontados com os eventos individualizados e não são somados novamente.</p></div></div><div class="table-wrap"><table><thead><tr><th>Trimestre</th><th>Banco</th><th>Categoria</th><th>Rend. informado</th><th>Rend. detalhado</th><th>Diferença</th><th>IR informado</th><th>IR detalhado</th><th>Diferença</th><th>Status</th></tr></thead><tbody id="reconciliationControlRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Fechamentos imutáveis</h2><p>Cada fechamento registra os totais, referências e hash SHA-256. Novas alterações geram nova revisão, sem editar o snapshot anterior.</p></div></div><div id="quarterClosureList"></div></div>
+    </section>
+
+    <section id="closures" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Snapshots auditáveis</p><h1>Fechamentos trimestrais</h1><p>Visão das revisões fechadas, integridade dos hashes e períodos ainda abertos ou bloqueados.</p></div></div>
+      <div class="filter-bar"><label>Ano<select id="closureYearFilter"><option value="">Todos</option></select></label><label>Status<select id="closureStatusFilter"><option value="">Todos</option><option value="CLOSED">Fechado</option><option value="READY">Pronto</option><option value="READY_WITH_PENDING">Pronto com ressalvas</option><option value="BLOCKED">Bloqueado</option></select></label></div>
+      <div id="closureKpis" class="kpi-grid compact-kpis"></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Histórico de fechamentos</h2><p>Cada revisão permanece imutável. Use “Ver detalhes” para consultar a memória do fechamento.</p></div></div><div class="table-wrap"><table><thead><tr><th>Trimestre</th><th>Revisão</th><th>Fechado em</th><th class="num">Aplicações</th><th class="num">Resgates líquidos</th><th class="num">Rend. realizado</th><th class="num">IR efetivo</th><th class="num">IOF</th><th class="num">Saldo final</th><th>Status</th><th>Integridade</th><th></th></tr></thead><tbody id="closureRows"></tbody></table></div></div>
+    </section>
+
+    <section id="reviews" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Revisão assistida</p><h1>Documento e dados lado a lado</h1><p>Confirme, corrija ou rejeite cada informação antes de utilizá-la na análise e na simulação tributária.</p></div><div class="button-row compact"><button id="completeDocumentReviewButton" class="button">Concluir revisão do documento</button><button id="createTemplateFromReviewButton" class="button secondary">Criar template da seleção</button></div></div>
+      <div class="review-toolbar">
+        <label>Documento<select id="reviewDocumentSelect"></select></label>
+        <label>Status<select id="reviewStatusFilter"><option value="">Todos</option><option value="PENDING">Pendentes</option><option value="CONFIRMED">Confirmados</option><option value="DIVERGENT">Divergentes</option></select></label>
+        <label>Pesquisa<input id="reviewSearch" type="search" placeholder="Campo, valor ou trecho..."></label>
+        <label>Página<input id="reviewPageNumber" type="number" min="1" value="1"></label>
+        <button id="approveSelectedReviewButton" class="button">Aprovar selecionados</button>
+      </div>
+      <div class="review-summary-line"><div><h2 id="reviewDocumentName">Documento</h2><p id="reviewDocumentMeta" class="muted">—</p></div><span id="reviewSummaryBadge" class="badge warn">—</span></div>
+      <div class="review-workspace">
+        <div id="reviewDocumentViewer" class="document-viewer"><div class="notice">Selecione um documento.</div></div>
+        <div class="review-data-panel">
+          <div class="panel-heading"><div><h2>Campos e eventos extraídos</h2><p>A página e o trecho de origem permanecem associados à informação.</p></div><label class="checkbox-label"><input id="reviewSelectAll" type="checkbox"> Selecionar todos</label></div>
+          <div class="table-wrap review-table-wrap"><table><thead><tr><th></th><th>Informação</th><th>Valor</th><th>Evidência</th><th>Conf.</th><th>Status</th><th>Ações</th></tr></thead><tbody id="reviewFieldRows"></tbody></table></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Impacto das revisões</h2><p>Comparação entre os dados originalmente extraídos e a posição atual após as decisões registradas.</p></div></div><div id="reviewDeltaPanel" class="delta-grid"></div></div>
+      <div class="review-bottom-grid">
+        <div class="panel"><div class="panel-heading"><div><h2>Pendências do documento</h2><p>Encerramento exige justificativa.</p></div></div><div id="reviewIssueList" class="issue-list compact"></div></div>
+        <div class="panel"><div class="panel-heading"><div><h2>Vínculos documentais</h2><p>Associe informe, extrato, OFX e comprovante sem duplicar o evento econômico.</p></div></div><div class="link-form"><select id="linkSourceDocument"></select><select id="linkRelation"><option value="SUPPORTS">Comprova / complementa</option><option value="SAME_TRANSACTION">Mesma transação</option><option value="INCOME_REPORT_FOR_PERIOD">Informe do período</option><option value="OFX_CONFIRMS_CREDIT">OFX confirma crédito</option><option value="SUPERSEDES">Substitui</option></select><select id="linkTargetDocument"></select><input id="linkNotes" placeholder="Observação opcional"><button id="saveDocumentLinkButton" class="button secondary">Vincular</button></div><div id="documentLinkList"></div></div>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Trilha de decisões</h2><p>Histórico local de aprovações, correções, rejeições e encerramento de pendências.</p></div></div><div id="reviewDecisionList"></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Pendências gerais</h2><p>Visão consolidada do projeto.</p></div></div><div id="issueList" class="issue-list"></div></div>
+    </section>
+
+    <section id="templates" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Aprendizado controlado</p><h1>Construtor de templates locais</h1><p>Crie regras reutilizáveis para novos layouts sem incorporar documentos, CNPJ, contas ou valores dos clientes ao código do app.</p></div><div class="button-row compact"><button id="newTemplateButton" class="button">Novo template</button><button id="importTemplatesButton" class="button secondary">Importar .httemplate</button><button id="exportTemplatesButton" class="button secondary">Exportar selecionado</button><input id="templateImportInput" type="file" class="hidden" accept=".httemplate,.json,application/json,application/vnd.ht.template+json"></div></div>
+      <div class="template-workspace">
+        <aside id="templateList" class="template-list"></aside>
+        <div class="panel template-editor-shell">
+          <div id="templateEditorEmpty" class="notice">Crie ou selecione um template.</div>
+          <div id="templateEditor" class="hidden">
+            <div class="panel-heading"><div><h2 id="templateEditorTitle">Template</h2><p id="templateEditorMeta">—</p></div><div class="button-row compact"><button id="newTemplateVersionButton" class="button secondary">Nova versão</button><button id="activateTemplateButton" class="button secondary">Ativar versão</button><button id="saveTemplateButton" class="button">Salvar rascunho</button></div></div>
+            <div class="template-form-grid">
+              <label>Nome<input id="templateName"></label><label>Instituição<input id="templateInstitutionName"></label><label>ID da instituição<input id="templateInstitutionId" placeholder="ex.: banco-x"></label><label>Status<select id="templateStatus"><option value="DRAFT">Rascunho</option><option value="ACTIVE">Ativo</option><option value="ARCHIVED">Arquivado</option></select></label>
+              <label>Família<select id="templateProductFamily"><option value="FIXED_INCOME_SECURITY">Renda fixa individual</option><option value="QUOTA_FUND">Fundo de cotas</option><option value="AUTOMATIC_CASH">Aplicação automática</option></select></label><label>Tipo de documento<select id="templateDocumentKind"></select></label><label>Prioridade<input id="templatePriority" type="number" min="0" max="1000" value="150"></label><label class="wide-field">Descrição<textarea id="templateDescription"></textarea></label>
+              <label class="wide-field">Marcadores obrigatórios — separados por ||<input id="templateRequiredPatterns"></label><label class="wide-field">Marcadores opcionais — separados por ||<input id="templateOptionalPatterns"></label><label class="wide-field">Padrões do nome do arquivo — separados por ||<input id="templateFilePatterns"></label>
+            </div>
+            <div class="panel-heading inline-heading"><div><h3>Regras de extração</h3><p>Expressões regulares são validadas e eventos criados por templates locais permanecem RECONSTRUCTED até revisão humana.</p></div><button id="addTemplateRuleButton" class="button secondary">Adicionar regra</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Campo / evento</th><th>Expressão regular</th><th>Transformação</th><th>Obrig.</th><th></th></tr></thead><tbody id="templateRuleRows"></tbody></table></div>
+            <div class="template-test-panel"><label>Documento de teste<select id="templateTestDocument"></select></label><div class="button-row compact"><button id="testTemplateButton" class="button secondary">Testar sem alterar</button><button id="applyTemplateButton" class="button">Reprocessar documento</button></div><div id="templateTestResult"></div><h4>Testes recentes</h4><ul id="templateTestHistory"></ul></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="homologation" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Etapa 15</p><h1>Homologação multibanco e stress tests</h1><p>Benchmarks locais do pipeline universal, PDF/OCR, OFX, exportações e backup em grande volume.</p></div><div class="button-row compact"><button id="runBenchmarkButton" class="button">Executar autoteste local</button><button id="reloadBenchmarkReferenceButton" class="button secondary">Recarregar referência</button></div></div>
+      <div class="notice"><strong>Escopo do corpus:</strong> os layouts adicionais desta etapa são sintéticos e anonimizados. Eles exercitam estruturas externas aos modelos Inter/BB, mas não certificam layouts oficiais de bancos reais. Documentos reais novos continuam sujeitos à revisão e posterior homologação.</div>
+      <div id="benchmarkKpis" class="kpi-grid compact-kpis"></div>
+      <div class="dashboard-grid two-columns">
+        <div class="panel"><div class="panel-heading"><div><h2>Gates de qualidade</h2><p>Critérios mínimos para considerar o pipeline apto ao release interno controlado.</p></div></div><div id="benchmarkGates" class="benchmark-gates"></div></div>
+        <div class="panel"><div class="panel-heading"><div><h2>Stress e capacidade</h2><p>Medições da máquina de homologação; tempos variam conforme o computador do usuário.</p></div></div><div id="benchmarkStress" class="benchmark-stress"></div></div>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Cobertura por layout sintético</h2><p>Score considera instituição, classificação, estrutura, eventos, valores e capacidade de conciliação.</p></div><span id="benchmarkReferenceTime" class="pill"></span></div><div class="table-wrap"><table><thead><tr><th>Instituição / layout</th><th>Template</th><th class="num">Classificação</th><th class="num">Banco</th><th class="num">Estrutura</th><th class="num">Eventos</th><th class="num">Valores</th><th class="num">Score</th><th>Status</th></tr></thead><tbody id="benchmarkCaseRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Histórico de autotestes neste navegador</h2><p>Execuções locais são armazenadas no IndexedDB apenas para rastrear a saúde da instalação.</p></div></div><div id="benchmarkRunHistory"></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Checklist de release candidato interno</h2><p>A etapa 15 mede robustez; a entrada em uso real continua controlada e assistida.</p></div></div><ul id="releaseChecklist" class="release-checklist"></ul></div>
+    </section>
+
+
+    <section id="pilot" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Etapa 16</p><h1>Piloto real controlado</h1><p>Homologação rastreável de layouts reais, com verdade revisada por humano, métricas por campo e rollback obrigatório.</p></div><div class="button-row compact"><button id="createPrePilotSnapshotButton" class="button secondary">Snapshot pré-piloto</button><button id="runPilotButton" class="button">Executar piloto</button><button id="exportPilotDossierButton" class="button secondary">Exportar dossiê</button></div></div>
+      <div class="notice"><strong>Etapa 16 encerrada com limitação controlada:</strong> o corpus real disponível foi aceito para encerrar a etapa, mas nenhum layout adicional recebe homologação plena sem cumprir os gates estatísticos. Layouts PARTIAL, desconhecidos ou de baixa confiança exigem revisão humana antes de fechamento ou uso tributário. Documentos reais permanecem estritamente locais e fora do pacote de distribuição.</div>
+      <div id="pilotKpis" class="kpi-grid compact-kpis"></div>
+      <div class="dashboard-grid two-columns">
+        <div class="panel settings-panel">
+          <h2>Congelar verdade revisada</h2>
+          <p class="muted">Após revisar o documento na Central de Revisão, congele o resultado final como referência humana. O parser será reexecutado depois contra essa fotografia.</p>
+          <div class="settings-grid pilot-form-grid">
+            <label>Documento<select id="pilotDocumentSelect"></select></label>
+            <label>Rótulo do layout<input id="pilotLayoutLabel" maxlength="160" placeholder="Ex.: Extrato fundo PJ - layout 2026-01"></label>
+            <label class="checkbox-label"><input id="pilotAnonymized" type="checkbox"> Documento anonimizado (opcional para corpus privado local)</label>
+            <label class="checkbox-label"><input id="pilotAuthorized" type="checkbox"> Uso autorizado para homologação</label>
+            <button id="freezePilotCaseButton" class="button">Congelar verdade revisada</button>
+          </div>
+          <p class="muted">A verdade congelada armazena somente estrutura normalizada, hash, instituição, eventos revisados e metadados de auditoria dentro do projeto local.</p>
+        </div>
+        <div class="panel"><div class="panel-heading"><div><h2>Gates do piloto</h2><p>Critérios mínimos de aceitação para layouts reais adicionais.</p></div></div><div id="pilotGates" class="benchmark-gates"></div></div>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Casos congelados deste projeto</h2><p>Cada caso deve corresponder a um documento real autorizado e revisado. Se não estiver anonimizado, ele permanece classificado como corpus privado local.</p></div></div><div class="table-wrap"><table><thead><tr><th>Instituição</th><th>Layout</th><th>Fonte</th><th>Hash</th><th class="num">Correções humanas</th><th class="num">Score</th><th>Status</th><th></th></tr></thead><tbody id="pilotCaseRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Métricas por layout</h2><p>Recall, precisão, datas, valores, falsos positivos/negativos e taxa de intervenção humana.</p></div></div><div class="table-wrap"><table><thead><tr><th>Instituição</th><th>Layout</th><th class="num">Docs</th><th class="num">Banco</th><th class="num">Classe</th><th class="num">Recall eventos</th><th class="num">Precisão eventos</th><th class="num">Valores</th><th class="num">Datas</th><th class="num">Correção humana</th><th class="num">FP</th><th class="num">FN</th><th>Status</th></tr></thead><tbody id="pilotLayoutRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Histórico de execuções</h2><p>Versão do parser e resultado do piloto ficam vinculados ao projeto e seguem no backup .htaf.</p></div></div><div id="pilotRunHistory"></div></div>
+      <div class="panel settings-panel"><h2>Critério de promoção</h2><p class="muted">O app exige no mínimo quatro instituições externas reais, três documentos por layout, banco e classificação com 100%, estrutura ≥95%, recall/precisão/valores/datas ≥97%, zero falso positivo crítico e correção humana em no máximo 20% dos documentos daquele layout. Esses gates podem ser elevados em versões futuras, mas nunca reduzidos silenciosamente.</p></div>
+    </section>
+
+    <section id="observability" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Etapa 18 - release interno estável</p><h1>Operação, observabilidade e UAT</h1><p>Saúde da instalação, desempenho, incidentes, atualização segura e aceite operacional em estações reais. Nenhuma telemetria é enviada automaticamente.</p></div><div class="button-row compact"><button id="runHealthCheckButton" class="button">Executar diagnóstico</button><button id="exportDiagnosticButton" class="button secondary">Exportar diagnóstico seguro</button><button id="newIncidentButton" class="button secondary">Registrar incidente</button></div></div>
+      <div class="notice stage17-privacy-note"><strong>Privacidade operacional:</strong> logs e métricas permanecem neste dispositivo. O pacote HTDIAG não contém PDFs/OFXs, texto documental, CNPJ/CPF, contas, hashes de documentos nem valores financeiros. Ele só é criado quando o usuário solicita.</div>
+      <div class="panel stage18-uat-panel">
+        <div class="panel-heading"><div><h2>Aceite interno — Etapa 18</h2><p>Promoção concluída com base no UAT14 aprovado em uma estação Windows offline. A segunda estação permaneceu WAIVED_NOT_EXECUTED por decisão explícita de escopo.</p></div><span id="uatPromotionBadge" class="pill good">INTERNAL_STABLE</span></div>
+        <div id="uatPromotionSummary" class="uat-summary-grid"></div>
+        <div class="uat-toolbar">
+          <label>Apelido da estação<input id="uatStationAlias" maxlength="40" placeholder="Ex.: Estação 1"></label>
+          <button id="uatAddStationButton" class="button secondary">Adicionar estação</button>
+          <label>Estação em avaliação<select id="uatSessionSelect"><option value="">Nenhuma estação</option></select></label>
+          <button id="uatAutomaticChecksButton" class="button">Executar checks automáticos</button>
+          <button id="uatExportButton" class="button secondary">Exportar evidência UAT</button>
+        </div>
+        <div id="uatStationsSummary" class="uat-stations-summary"></div>
+        <div id="uatChecklist"></div>
+        <div class="notice stage18-uat-note"><strong>Aceite concluído:</strong> INTERNAL_STABLE promovido a partir da UAT14. Os controles de aceite exibidos abaixo são somente para auditoria e não exigem nova execução.</div>
+      </div>
+      <div id="operationalKpis" class="kpi-grid compact-kpis"></div>
+      <div class="dashboard-grid two-columns">
+        <div class="panel"><div class="panel-heading"><div><h2>Gates do release interno</h2><p>Verificações locais para uso assistido desta instalação.</p></div><span id="releaseChannelBadge" class="pill">INTERNAL_STABLE</span></div><div id="operationalGates" class="benchmark-gates operational-gates"></div></div>
+        <div class="panel"><div class="panel-heading"><div><h2>Desempenho observado</h2><p>p50 e p95 das operações instrumentadas nos últimos 30 dias.</p></div></div><div id="performanceSummary" class="performance-summary"></div></div>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Incidentes locais</h2><p>Registro manual de falhas operacionais. Evite inserir dados de clientes na descrição.</p></div><span id="incidentOpenCount" class="pill"></span></div><div class="table-wrap"><table class="stage17-table"><thead><tr><th>Data</th><th>Severidade</th><th>Categoria</th><th>Título</th><th>Status</th><th></th></tr></thead><tbody id="incidentRows"></tbody></table></div></div>
+      <div class="panel"><div class="panel-heading"><div><h2>Eventos operacionais recentes</h2><p>Somente códigos, mensagens sanitizadas e metadados técnicos permitidos.</p></div><div class="button-row compact"><label class="inline-select">Retenção<select id="observabilityRetention"><option value="7">7 dias</option><option value="30">30 dias</option><option value="90">90 dias</option></select></label><button id="pruneObservabilityButton" class="button secondary mini">Limpar logs antigos</button></div></div><div class="table-wrap"><table class="stage17-table"><thead><tr><th>Quando</th><th>Nível</th><th>Categoria</th><th>Código</th><th>Mensagem</th></tr></thead><tbody id="operationalEventRows"></tbody></table></div></div>
+      <div class="panel settings-panel"><h2>Política do release interno</h2><div id="releasePolicySummary" class="release-policy-grid"></div><p class="muted">Layouts PARTIAL, desconhecidos ou de baixa confiança continuam sujeitos a revisão humana obrigatória antes de fechamento trimestral ou uso tributário. A observabilidade não altera cálculos financeiros e não substitui o backup .htaf.</p></div>
+    </section>
+
+    <section id="projects" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Armazenamento local</p><h1>Projetos</h1><p>Cada empresa e período é isolado no IndexedDB e pode ser transportado por arquivo .htaf.</p></div><button id="newProjectButton" class="button">Novo projeto</button></div>
+      <div id="projectCards" class="project-grid"></div>
+      <div class="panel settings-panel"><h2>Controles locais</h2><div class="button-row"><button id="resetDemoButton" class="button secondary admin-only">Restaurar base ouro Inter + BB</button><button id="clearButton" class="button danger admin-only">Apagar todos os dados locais</button></div><p class="muted">Antes de qualquer exclusão definitiva, gere um backup .htaf e confirme a ação digitando o texto solicitado.</p></div>
+    </section>
+
+    <section id="backup" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Portabilidade e recuperação</p><h1>Backup e restauração</h1><p>O arquivo .htaf reúne dados estruturados e documentos originais, com validação integral por SHA-256.</p></div><div class="button-row compact"><button id="backupPageExportButton" class="button">Criar backup</button><button id="backupPageRestoreButton" class="button secondary">Restaurar arquivo</button></div></div>
+      <div class="storage-grid">
+        <article class="storage-card"><span>Uso estimado</span><strong id="storageUsage">—</strong><small id="storageQuota">Quota não consultada</small><div class="progress"><i id="storageProgress"></i></div></article>
+        <article class="storage-card"><span>Persistência do navegador</span><strong id="storagePersistence">—</strong><small>Reduz o risco de limpeza automática pelo navegador.</small><button id="persistStorageButton" class="button secondary small">Solicitar persistência</button></article>
+        <article class="storage-card"><span>Snapshots locais</span><strong id="snapshotCount">0</strong><small>Cópias automáticas armazenadas apenas neste dispositivo.</small></article>
+      </div>
+      <div id="quotaWarning" class="notice hidden"></div>
+      <div class="panel settings-panel">
+        <h2>Backup automático local</h2>
+        <div class="settings-grid">
+          <label>Frequência<select id="backupCadence"><option value="OFF">Desativado</option><option value="AFTER_CHANGE">Após alterações</option><option value="DAILY">Diário</option><option value="WEEKLY">Semanal</option></select></label>
+          <label>Máximo de snapshots<input id="backupMaxSnapshots" type="number" min="1" max="20" value="3"></label>
+          <label class="checkbox-label"><input id="backupIncludeDocuments" type="checkbox" checked> Incluir documentos originais</label>
+          <button id="saveBackupConfigButton" class="button">Salvar configuração</button>
+        </div>
+        <p class="muted">Snapshots automáticos não usam senha, pois nenhuma senha ou chave é armazenada. Para proteção por senha, use o backup manual criptografado e guarde-o fora do navegador.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-heading"><div><h2>Snapshots neste dispositivo</h2><p>Podem ser baixados, restaurados ou excluídos. A restauração substitutiva gera confirmação explícita.</p></div><button id="createSnapshotButton" class="button secondary">Criar snapshot agora</button></div>
+        <div id="snapshotList"></div>
+      </div>
+      <div class="panel settings-panel"><h2>Formato .htaf</h2><p class="muted">O pacote utiliza ZIP sem compressão para máxima compatibilidade. Quando uma senha é informada, o ZIP completo é protegido por AES-256-GCM e a chave é derivada por PBKDF2-SHA-256. Senha e chave não são salvas no arquivo.</p></div>
+    </section>
+    <section id="users" class="page">
+      <div class="page-heading"><div><p class="eyebrow">Acesso local</p><h1>Usuários desta estação</h1><p>Somente o administrador vê esta página. Cada usuário enxerga apenas os próprios projetos; o administrador vê todos e pode transferir um projeto.</p></div></div>
+      <div class="notice small-notice"><strong>Importante:</strong> usuários e dados ficam neste computador (neste navegador). Em outro PC, o administrador faz o primeiro acesso e cadastra os usuários de lá. Para levar um projeto de um PC a outro, use Criar backup / Restaurar .htaf.</div>
+      <div class="panel"><div class="panel-heading"><div><h2>Usuários</h2></div></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Projetos</th><th>Ações</th></tr></thead><tbody id="userRows"></tbody></table></div></div>
+      <div class="panel settings-panel"><h2>Novo usuário</h2>
+        <form id="newUserForm" class="user-form" autocomplete="off">
+          <label>Nome<input id="newUserName" maxlength="120" required placeholder="Ex.: Jhennifer"></label>
+          <label>Usuário (login)<input id="newUserLogin" maxlength="160" required placeholder="nome ou e-mail"></label>
+          <label>E-mail — opcional<input id="newUserEmail" maxlength="160" type="email"></label>
+          <label>Senha inicial<input id="newUserPassword" type="password" minlength="6" autocomplete="new-password" required></label>
+          <label>Perfil<select id="newUserRole"><option value="USER">Usuário</option><option value="ADMIN">Administrador</option></select></label>
+          <div class="user-form-actions"><button class="button" type="submit">Criar usuário</button><span id="newUserMessage" class="muted"></span></div>
+        </form>
+        <p class="muted">O usuário cria a própria senha no primeiro acesso.</p>
+      </div>
+      <div class="panel"><div class="panel-heading"><div><h2>Projetos e responsáveis</h2><p>Transfira um projeto para outro usuário desta estação.</p></div></div><div class="table-wrap"><table><thead><tr><th>Projeto</th><th>CNPJ</th><th>Responsável</th></tr></thead><tbody id="projectOwnerRows"></tbody></table></div></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="changePasswordDialog">
+  <form method="dialog" id="changePasswordForm">
+    <header><h2>Trocar senha</h2><button value="cancel" class="icon-button">×</button></header>
+    <label>Senha atual<input id="currentPasswordInput" type="password" autocomplete="current-password"></label>
+    <label>Nova senha<input id="newPasswordInput" type="password" minlength="6" autocomplete="new-password"></label>
+    <label>Confirmar nova senha<input id="newPasswordConfirmInput" type="password" minlength="6" autocomplete="new-password"></label>
+    <p id="changePasswordMessage" class="dialog-status"></p>
+    <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="saveOwnPasswordButton" value="default" class="button">Salvar</button></div>
+  </form>
+</dialog>
+
+<dialog id="projectDialog">
+  <form method="dialog" id="projectForm">
+    <header><h2>Novo projeto</h2><button value="cancel" class="icon-button">×</button></header>
+    <label>Nome do projeto<input id="newProjectName" required placeholder="Empresa — Aplicações — 2026"></label>
+    <label>CNPJ<input id="newProjectCnpj" placeholder="00.000.000/0000-00"></label>
+    <label>Regime tributário<select id="newProjectRegime"><option value="LUCRO_PRESUMIDO">Lucro Presumido</option><option value="LUCRO_REAL">Lucro Real</option></select></label>
+    <label>CNAE principal — opcional<input id="newProjectCnae" placeholder="0000-0/00"></label>
+    <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="saveProjectButton" value="default" class="button">Criar</button></div>
+  </form>
+</dialog>
+
+<dialog id="documentClassificationDialog">
+  <form method="dialog">
+    <header><h2>Classificar documento</h2><button value="cancel" class="icon-button">×</button></header>
+    <div class="dialog-copy"><strong id="documentClassificationName">Documento</strong><br>Use a classificação manual somente quando a identificação automática estiver incorreta ou inconclusiva.</div>
+    <label>Instituição<select id="documentBankOverride"></select></label>
+    <label id="documentBankCustomNameLabel" class="hidden">Nome da instituição<input id="documentBankCustomName" maxlength="120" placeholder="Banco, cooperativa ou corretora"></label>
+    <label>Tipo de documento<select id="documentKindOverride"></select></label>
+    <label>Template local<select id="documentTemplateOverride"><option value="AUTO">Selecionar automaticamente</option></select></label>
+    <div class="notice small-notice"><strong>Segurança:</strong> a classificação manual não confirma valores. Campos extraídos pelo adaptador genérico continuam marcados para revisão.</div>
+    <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="saveDocumentClassificationButton" value="default" class="button">Salvar classificação</button></div>
+  </form>
+</dialog>
+
+<dialog id="reviewEditDialog" class="wide-dialog">
+  <form method="dialog"><header><h2 id="reviewEditLabel">Revisar informação</h2><button value="cancel" class="icon-button">×</button></header><div class="dialog-copy" id="reviewEditSnippet"></div><div id="reviewEditFields" class="review-edit-fields"></div><label id="reviewTaxApprovalLabel" class="checkbox-label hidden"><input id="reviewTaxApproval" type="checkbox"> Autorizar rendimento reconstruído na simulação tributária</label><label>Justificativa<textarea id="reviewEditJustification" placeholder="Obrigatória para correções e rejeições"></textarea></label><div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="reviewRejectButton" value="default" class="button danger">Rejeitar</button><button id="reviewPendingButton" value="default" class="button secondary">Manter pendente</button><button id="reviewApproveButton" value="default" class="button secondary">Aprovar</button><button id="reviewSaveButton" value="default" class="button">Salvar correção</button></div></form>
+</dialog>
+<dialog id="templateSeedDialog"><form method="dialog"><header><h2>Criar template da revisão</h2><button value="cancel" class="icon-button">×</button></header><div class="dialog-copy">O rascunho conterá somente regras de extração. Os documentos e os dados dos clientes não serão exportados.</div><label>Nome<input id="templateSeedName"></label><label>Instituição<input id="templateSeedInstitution"></label><div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="templateSeedConfirmButton" value="default" class="button">Criar rascunho</button></div></form></dialog>
+
+<dialog id="incidentDialog">
+  <form method="dialog" id="incidentForm">
+    <header><h2>Registrar incidente operacional</h2><button value="cancel" class="icon-button">×</button></header>
+    <div class="dialog-copy">Registre somente o necessário para diagnóstico técnico. Não inclua razão social, CNPJ/CPF, conta bancária, nome de arquivo ou valores.</div>
+    <label>Severidade<select id="incidentSeverity"><option value="WARN">Aviso</option><option value="ERROR">Erro</option><option value="CRITICAL">Crítico</option><option value="INFO">Informativo</option></select></label>
+    <label>Categoria<select id="incidentCategory"><option value="EXTRACTION">Extração</option><option value="RECONCILIATION">Conciliação</option><option value="REPORT">Relatório</option><option value="BACKUP">Backup</option><option value="PERFORMANCE">Desempenho</option><option value="DATA_INTEGRITY">Integridade de dados</option><option value="RUNTIME">Execução do app</option><option value="OTHER">Outro</option></select></label>
+    <label>Título<input id="incidentTitle" maxlength="160" placeholder="Ex.: Falha ao processar lote"></label>
+    <label>Descrição<textarea id="incidentDescription" maxlength="1500" placeholder="Descreva o comportamento sem dados de clientes"></textarea></label>
+    <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="saveIncidentButton" value="default" class="button">Registrar</button></div>
+  </form>
+</dialog>
+
+<dialog id="backupDialog">
+  <form method="dialog" id="backupForm">
+    <header><h2>Criar backup .htaf</h2><button value="cancel" class="icon-button">×</button></header>
+    <div class="dialog-copy">O arquivo será gerado integralmente neste navegador. Nenhum dado será enviado para a internet.</div>
+    <label class="checkbox-label"><input id="exportIncludeDocuments" type="checkbox" checked> Incluir os documentos originais</label>
+    <label>Senha opcional<input id="exportPassword" type="password" autocomplete="new-password" minlength="8" placeholder="Deixe em branco para não criptografar"></label>
+    <label>Confirmar senha<input id="exportPasswordConfirm" type="password" autocomplete="new-password" minlength="8"></label>
+    <div id="backupDialogStatus" class="dialog-status"></div>
+    <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="createBackupButton" value="default" class="button">Gerar .htaf</button></div>
+  </form>
+</dialog>
+
+<dialog id="restoreDialog">
+  <form method="dialog" id="restoreForm">
+    <header><h2>Restaurar projeto</h2><button value="cancel" class="icon-button">×</button></header>
+    <div class="dialog-copy"><strong id="restoreFileName">Arquivo selecionado</strong><br><span id="restoreFileInfo"></span></div>
+    <label>Senha, quando o arquivo estiver criptografado<input id="restorePassword" type="password" autocomplete="current-password"></label>
+    <label>Estratégia<select id="restoreStrategy"><option value="duplicate">Criar uma cópia independente</option><option value="merge">Mesclar no projeto selecionado</option><option value="replace">Substituir o projeto selecionado</option></select></label>
+    <label>Projeto de destino<select id="restoreTargetProject"></select></label>
+    <div class="notice small-notice"><strong>Atenção:</strong> “Substituir” remove os registros atuais do projeto de destino somente após o arquivo ser integralmente validado. Um snapshot local pré-restauração será criado quando possível.</div>
+    <div id="restoreDialogStatus" class="dialog-status"></div>
+    <div class="dialog-actions"><button value="cancel" class="button secondary">Cancelar</button><button id="performRestoreButton" value="default" class="button">Validar e restaurar</button></div>
+  </form>
+</dialog>
+
+<dialog id="drilldownDialog" class="wide-dialog stage13-dialog">
+  <form method="dialog"><header><div><p class="eyebrow">Rastreabilidade</p><h2 id="drilldownTitle">Detalhes do período</h2></div><button value="cancel" class="icon-button">×</button></header><div id="drilldownSummary" class="drilldown-summary"></div><div id="drilldownEvents" class="timeline-list"></div><div class="dialog-actions"><button value="cancel" class="button secondary">Fechar</button></div></form>
+</dialog>
+<dialog id="timelineDialog" class="wide-dialog stage13-dialog">
+  <form method="dialog"><header><div><p class="eyebrow">Linha do tempo da aplicação</p><h2 id="timelineTitle">Aplicação</h2></div><button value="cancel" class="icon-button">×</button></header><div id="timelineHeader" class="timeline-header"></div><div id="timelineEvents" class="timeline-list"></div><div class="dialog-actions"><button value="cancel" class="button secondary">Fechar</button></div></form>
+</dialog>
+<dialog id="closureDetailDialog" class="wide-dialog stage13-dialog">
+  <form method="dialog"><header><div><p class="eyebrow">Fechamento trimestral</p><h2 id="closureDetailTitle">Fechamento</h2></div><button value="cancel" class="icon-button">×</button></header><div id="closureDetailBody"></div><div class="dialog-actions"><button value="cancel" class="button secondary">Fechar</button></div></form>
+</dialog>
+
+<div id="busyOverlay" class="busy-overlay hidden" role="status" aria-live="polite"><div class="busy-card"><div class="spinner"></div><strong id="busyTitle">Processando</strong><span id="busyMessage">Aguarde.</span></div></div>
+
+<script type="module" src="app.js?v=hub1"></script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

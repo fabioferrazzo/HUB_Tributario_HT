@@ -2951,6 +2951,57 @@ body {
   padding-inline: 5px;
 }
 
+/* Submenu do menu lateral (ex.: Simuladores): item que abre e fecha a lista dos seus apps */
+.side-nav-submenu-toggle {
+  width: 100%;
+}
+
+.side-nav-submenu-toggle:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.side-nav-submenu-toggle.active-parent {
+  color: #ffffff;
+}
+
+.side-nav-chevron {
+  margin-left: auto;
+  flex: 0 0 auto;
+  opacity: 0.6;
+  transition: transform 0.16s ease;
+}
+
+.side-nav-submenu-toggle[aria-expanded="false"] .side-nav-chevron {
+  transform: rotate(-90deg);
+}
+
+.side-nav-submenu {
+  margin: 4px 0 0 17px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.side-nav-submenu button {
+  min-height: 40px;
+  font-size: 12.5px;
+}
+
+.side-nav-submenu .side-nav-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.sidebar--collapsed .side-nav-chevron {
+  display: none;
+}
+
+.sidebar--collapsed .side-nav-submenu {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+
 .workspace {
   min-height: 100vh;
 }

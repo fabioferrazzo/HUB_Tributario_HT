@@ -7,7 +7,7 @@ import { Dashboard } from "./modules/Dashboard";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
 import { LembretesModule } from "./modules/LembretesModule";
 import { LinksModule } from "./modules/LinksModule";
-import { LogOut, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, LogOut, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
 import { ModuleFrame, dispatchFrameAction } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
@@ -72,6 +72,26 @@ export function App() {
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
+  // submenus do menu lateral (ex.: Simuladores): começam abertos; os que o usuário fecha ficam guardados neste navegador
+  const [closedSubmenus, setClosedSubmenus] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("hub_menu_submenus_fechados") || "null");
+      return Array.isArray(saved) ? saved.filter((item) => typeof item === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  const toggleSubmenu = (id: string, open: boolean) => {
+    setClosedSubmenus((current) => {
+      const next = open ? current.filter((item) => item !== id) : [...current.filter((item) => item !== id), id];
+      try {
+        localStorage.setItem("hub_menu_submenus_fechados", JSON.stringify(next));
+      } catch {
+        // sem armazenamento: vale só nesta visita
+      }
+      return next;
+    });
+  };
   const [lembretesVersion, setLembretesVersion] = useState(0);
   const [pautasVersion, setPautasVersion] = useState(0);
   const [tasksVersion, setTasksVersion] = useState(0);
@@ -348,10 +368,34 @@ export function App() {
 
             if (!groupRoutes.length) return null;
 
+            const submenu = group.submenu;
+            const submenuActive = Boolean(submenu) && groupRoutes.some((item) => item.id === currentRoute);
+            const submenuOpen = !submenu || submenuActive || !closedSubmenus.includes(submenu.id);
+            const SubmenuIcon = submenu?.icon;
+
             return (
-              <div className="side-nav-section" key={group.label}>
-                <div className="side-nav-label">{group.label}</div>
-                <div className="side-nav-group">
+              <div className={`side-nav-section${submenu ? " side-nav-section--submenu" : ""}`} key={group.label}>
+                {submenu && SubmenuIcon ? (
+                  <button
+                    className={`side-nav-submenu-toggle${submenuActive ? " active-parent" : ""}`}
+                    type="button"
+                    aria-expanded={submenuOpen}
+                    aria-controls={`submenu-${submenu.id}`}
+                    title={submenuOpen ? `Recolher ${submenu.label}` : `Abrir ${submenu.label}`}
+                    disabled={submenuActive}
+                    onClick={() => toggleSubmenu(submenu.id, !submenuOpen)}
+                  >
+                    <span className="side-nav-icon">
+                      <SubmenuIcon size={18} />
+                    </span>
+                    <span>{submenu.label}</span>
+                    <ChevronDown className="side-nav-chevron" size={15} aria-hidden="true" />
+                  </button>
+                ) : (
+                  <div className="side-nav-label">{group.label}</div>
+                )}
+                {submenuOpen ? (
+                <div className={`side-nav-group${submenu ? " side-nav-submenu" : ""}`} id={submenu ? `submenu-${submenu.id}` : undefined}>
                   {groupRoutes.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -370,6 +414,7 @@ export function App() {
                     );
                   })}
                 </div>
+                ) : null}
               </div>
             );
           })}

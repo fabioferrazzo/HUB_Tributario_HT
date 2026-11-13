@@ -1,0 +1,26 @@
+{
+  "name": "Analista Tributário de Aplicações Financeiras by fff - HT",
+  "short_name": "Aplicações HT",
+  "description": "Análise offline e multibanco de aplicações financeiras com revisão assistida, templates locais, PDF/OFX, relatórios, observabilidade local e backup .htaf.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7f7",
+  "theme_color": "#0a5961",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

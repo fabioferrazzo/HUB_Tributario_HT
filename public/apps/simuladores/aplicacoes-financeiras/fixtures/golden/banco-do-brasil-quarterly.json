@@ -1,0 +1,98 @@
+{
+  "institution": "BANCO_DO_BRASIL",
+  "company": "EMPRESA DEMONSTRATIVA LTDA",
+  "product": "BB RF CP Automático",
+  "lotReference": "Aplicação 10/04/2024",
+  "scope": "2025-01-01/2026-07-31",
+  "originalAppliedAmountStatus": "PENDING",
+  "quarters": [
+    {
+      "quarter": "1T/2025",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 2585265,
+      "irrfOnRedemptionCents": 7637,
+      "redemptionGrossCents": 2592902,
+      "periodIncomeCents": 448536,
+      "periodicIrCents": 0,
+      "endingGrossBalanceCents": 19738894,
+      "realizedIncomeStatus": "PENDING"
+    },
+    {
+      "quarter": "2T/2025",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 1723530,
+      "irrfOnRedemptionCents": 11433,
+      "redemptionGrossCents": 1734963,
+      "periodIncomeCents": 466969,
+      "periodicIrCents": 162737,
+      "endingGrossBalanceCents": 18308163,
+      "realizedIncomeStatus": "PENDING"
+    },
+    {
+      "quarter": "3T/2025",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "redemptionGrossCents": 0,
+      "periodIncomeCents": 526408,
+      "periodicIrCents": 0,
+      "endingGrossBalanceCents": 18834571,
+      "realizedIncomeStatus": "NOT_APPLICABLE"
+    },
+    {
+      "quarter": "4T/2025",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "redemptionGrossCents": 0,
+      "periodIncomeCents": 522148,
+      "periodicIrCents": 204548,
+      "endingGrossBalanceCents": 19152171,
+      "realizedIncomeStatus": "NOT_APPLICABLE"
+    },
+    {
+      "quarter": "1T/2026",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 5793416,
+      "irrfOnRedemptionCents": 32691,
+      "redemptionGrossCents": 5826107,
+      "periodIncomeCents": 463257,
+      "periodicIrCents": 0,
+      "endingGrossBalanceCents": 13789321,
+      "realizedIncomeStatus": "PENDING"
+    },
+    {
+      "quarter": "2T/2026",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "redemptionGrossCents": 0,
+      "periodIncomeCents": 352015,
+      "periodicIrCents": 142767,
+      "endingGrossBalanceCents": 13998569,
+      "realizedIncomeStatus": "NOT_APPLICABLE"
+    },
+    {
+      "quarter": "3T/2026",
+      "documentedApplicationsCents": 0,
+      "redemptionNetCents": 0,
+      "irrfOnRedemptionCents": 0,
+      "redemptionGrossCents": 0,
+      "periodIncomeCents": 130933,
+      "periodicIrCents": 0,
+      "endingGrossBalanceCents": 14129502,
+      "realizedIncomeStatus": "NOT_APPLICABLE"
+    }
+  ],
+  "expectedTotals": {
+    "documentedApplicationsCents": 0,
+    "redemptionNetCents": 10102211,
+    "irrfOnRedemptionCents": 51761,
+    "redemptionGrossCents": 10153972,
+    "periodIncomeCents": 2910266,
+    "periodicIrCents": 510052,
+    "totalEffectiveTaxCents": 561813,
+    "endingGrossBalanceCents": 14129502,
+    "realizedIncomeStatus": "PENDING"
+  }
+}

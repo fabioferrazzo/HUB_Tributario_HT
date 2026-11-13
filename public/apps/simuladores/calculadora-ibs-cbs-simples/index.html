@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora de alíquota de IBS/CBS para Simples Nacional (Unificado) - H Teixeira</title>
+<style>
+:root{
+  --bg:#eef1ee; --surface:#ffffff; --surface-soft:#f7f8f6; --ink:#1c2926; --muted:#6d7774;
+  --line:#d8dfdb; --brand:#244f45; --brand-2:#557265; --brand-soft:#e8efeb; --sand:#d4b07a;
+  --sand-soft:#f7efe3; --danger:#b42318; --warn:#8a5a17; --ok:#05603a;
+  --shadow:0 8px 22px rgba(27,56,49,.08); --radius:15px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color:var(--ink); background:linear-gradient(180deg,#f3f1eb 0%,#edf2ef 100%); overflow:auto;
+}
+.app{max-width:1440px;margin:0 auto;min-height:100vh;padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px}
+.header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:8px 12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:210px;flex:0 0 210px}
+.logo svg{display:block;width:100%;height:auto}
+.heading{min-width:0}
+h1{margin:0;font-size:clamp(19px,1.8vw,27px);line-height:1.08;letter-spacing:-.025em;color:#1b433a}
+.subtitle{margin:4px 0 0;color:var(--muted);font-size:11.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-meta{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;justify-content:center;padding:5px 9px;border-radius:999px;border:1px solid #bfd0c8;background:var(--brand-soft);color:var(--brand);font-size:10.5px;font-weight:800;white-space:nowrap}
+.pill.gold{background:var(--sand-soft);border-color:#e6cfac;color:#76531e}
+.quicknote{background:#fffaf1;border:1px solid #ecd8b9;border-radius:12px;padding:7px 10px;color:#704a16;font-size:10.7px;line-height:1.3}
+.workspace{display:grid;grid-template-columns:.94fr 1.06fr;gap:10px;flex:1;min-height:0}
+.panel{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.panel-head{padding:9px 12px 8px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#f8faf8)}
+.panel-head h2{font-size:14px;margin:0;color:#1b433a}
+.panel-head p{font-size:10.5px;color:var(--muted);margin:2px 0 0;line-height:1.25}
+.panel-body{padding:10px 12px 11px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#edf1ef;border-radius:10px;padding:3px}
+.mode button{border:0;background:transparent;padding:7px 9px;border-radius:8px;font-size:11.5px;font-weight:800;color:#53645e;cursor:pointer}
+.mode button.active{background:#fff;color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}.field.full{grid-column:1/-1}
+label{font-size:10.8px;font-weight:800;color:#3a4744}
+.hint{font-size:9.6px;color:var(--muted);line-height:1.25}
+input,select{width:100%;min-height:34px;border:1px solid #ced7d1;background:#fff;border-radius:9px;padding:7px 9px;font-size:12px;color:#13201d;outline:none}
+input:focus,select:focus{border-color:#78958a;box-shadow:0 0 0 2px rgba(36,79,69,.10)}
+.window{background:#f7faf8;border:1px dashed #c8d5cf;border-radius:9px;padding:7px 9px;font-size:10.3px;color:#465652;line-height:1.3}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:0;border-radius:9px;padding:8px 11px;font-weight:800;font-size:11px;cursor:pointer}
+.btn.primary{background:var(--brand);color:#fff}.btn.secondary{background:#e8efeb;color:#28483f}.btn.ghost{background:#fff;border:1px solid var(--line);color:#58635f}
+.alert{border-radius:9px;padding:7px 9px;font-size:10.4px;line-height:1.35;display:none}.alert.show{display:block}.alert.warn{background:#fff8e7;border:1px solid #f2d49b;color:#704a08}.alert.err{background:#fef3f2;border:1px solid #fecdca;color:#912018}.alert.ok{background:#ecfdf3;border:1px solid #abefc6;color:#05603a}
+.results{display:grid;grid-template-columns:1.3fr .85fr .85fr;gap:7px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:9px 10px;background:#fff;min-width:0}
+.kpi.hero{background:linear-gradient(135deg,#214d43,#3d6a5d);border:0;color:#fff}
+.kpi .label{font-size:9.3px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:800}
+.kpi.hero .label,.kpi.hero .subline{color:#e0ebe7}
+.kpi .value{font-size:20px;font-weight:900;line-height:1.05;margin-top:3px;color:#173f37;letter-spacing:-.02em}
+.kpi.hero .value{font-size:27px;color:#fff}
+.kpi .subline{font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.2}
+.taxgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tax{border:1px solid var(--line);border-radius:12px;background:#fafcfb;padding:9px 10px}
+.tax strong{display:block;font-size:10.5px;color:#475551}.tax .rate{font-size:22px;font-weight:900;color:#19483f;margin:2px 0}.tax small{font-size:9.5px;color:var(--muted);line-height:1.2;display:block}
+.details-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;border-top:1px solid var(--line);padding-top:6px}
+.line{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:10.4px;border-bottom:1px dashed #e6ebe8}.line span:first-child{color:var(--muted)}.line span:last-child{font-weight:800;text-align:right}
+details.calc-details,details.legal{border:1px solid var(--line);border-radius:11px;background:#fbfcfb;overflow:hidden}
+details.calc-details summary,details.legal summary{cursor:pointer;list-style:none;padding:7px 9px;font-size:10.8px;font-weight:800;color:#244f45;display:flex;align-items:center;justify-content:space-between;gap:8px}
+details.calc-details summary::-webkit-details-marker,details.legal summary::-webkit-details-marker{display:none}
+details.calc-details summary::after,details.legal summary::after{content:'+';font-size:16px;line-height:1;color:#557265}
+details[open] summary::after{content:'–'}
+.formula{margin:0 8px 8px;padding:8px;border-radius:8px;background:#f5f7f6;border:1px solid #dde4e0;font:10.2px/1.33 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#344054;white-space:pre-wrap}
+.legal{margin-top:auto;background:rgba(255,255,255,.92)}
+.legal-body{padding:0 10px 9px;color:#55635f;font-size:9.8px;line-height:1.35}
+.legal-body a{color:#244f45;text-decoration:none}.legal-body a:hover{text-decoration:underline}
+.hidden{display:none!important}
+@media(max-width:1100px){.workspace{grid-template-columns:1fr}.subtitle{white-space:normal}.results{grid-template-columns:1fr 1fr}.kpi.hero{grid-column:1/-1}}
+@media(max-width:760px){.app{padding:8px}.header{grid-template-columns:1fr}.brand{align-items:flex-start;flex-direction:column}.logo{width:230px;flex-basis:auto}.header-meta{justify-content:flex-start}.formgrid,.taxgrid,.details-grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.kpi.hero{grid-column:auto}}
+@media(max-height:760px) and (min-width:1101px){.app{padding:6px 10px 8px;gap:6px}.header{padding:6px 10px}.logo{width:190px;flex-basis:190px}h1{font-size:20px}.subtitle{font-size:10.5px}.quicknote{padding:6px 9px;font-size:10px}.panel-head{padding:7px 10px 6px}.panel-body{padding:8px 10px 9px;gap:6px}.mode button{padding:6px 8px}.field{gap:3px}input,select{min-height:31px;padding:6px 8px}.kpi{padding:7px 9px}.kpi .value{font-size:18px}.kpi.hero .value{font-size:24px}.tax{padding:7px 9px}.tax .rate{font-size:20px}.line{padding:4px 0}.quicknote{line-height:1.2}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="logo" aria-label="H Teixeira Contabilidade">
+        <svg viewBox="0 0 520 88" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="518" height="86" rx="16" fill="#fff" stroke="#d7dfdb"/>
+          <text x="20" y="52" font-size="27" font-weight="800" fill="#244f45" font-family="Inter,Segoe UI,Arial,sans-serif">H.</text>
+          <text x="66" y="53" font-size="31" fill="#50575a" font-family="Segoe Script,Brush Script MT,Lucida Handwriting,cursive">Teixeira</text>
+          <text x="270" y="51" font-size="15" fill="#6c7476" font-weight="700" font-family="Inter,Segoe UI,Arial,sans-serif">CONTABILIDADE</text>
+          <rect x="66" y="62" width="184" height="3" rx="2" fill="#d4b07a"/>
+        </svg>
+      </div>
+      <div class="heading">
+        <h1>Calculadora de alíquota de IBS/CBS para Simples Nacional (Unificado) - H Teixeira</h1>
+        <p class="subtitle">Serviços / NFS-e · cálculo de apoio para as tabelas do Simples Nacional vigentes em 2027–2028.</p>
+      </div>
+    </div>
+    <div class="header-meta"><span class="pill">Uso interno</span><span class="pill gold">v1.4 · 06/10/2026</span></div>
+  </header>
+
+  <div class="quicknote"><strong>Escopo:</strong> Simples Nacional unificado, com IBS/CBS dentro do regime e sem impedimento vigente por sublimite. Não usar para Simples híbrido, início de atividade/RBT12 zero ou operações com tratamento específico.</div>
+
+  <main class="workspace">
+    <section class="panel">
+      <div class="panel-head"><h2>1. Dados do cálculo</h2><p>Informe a competência, o Anexo e a RBT12; ou use uma alíquota efetiva já conhecida.</p></div>
+      <div class="panel-body">
+        <div class="mode"><button id="modeRbt" class="active" type="button">Calcular pela RBT12</button><button id="modeRate" type="button">Já tenho a alíquota efetiva</button></div>
+
+        <div class="formgrid">
+          <div class="field"><label for="period">Competência da NFS-e</label><input id="period" type="month" value="2027-01" min="2027-01" max="2028-12" /></div>
+          <div class="field"><label for="annex">Anexo do Simples</label><select id="annex"><option value="III">Anexo III — Serviços</option><option value="IV" selected>Anexo IV — Serviços § 5º-C</option><option value="V">Anexo V — Serviços</option></select></div>
+          <div class="field full"><label for="ibsStatus">Situação do IBS/CBS na competência</label><select id="ibsStatus"><option value="inside" selected>Dentro do Simples — sem opção pelo regime regular e sem impedimento vigente por sublimite</option><option value="hybrid">Regime regular / “Simples híbrido” para IBS e CBS</option><option value="blocked">IBS fora do Simples por impedimento decorrente do sublimite</option><option value="unknown">Não sei / preciso conferir</option></select><div class="hint">Se houver dúvida sobre sublimite ou opção pelo regime regular, não utilize o resultado como alíquota aplicável.</div></div>
+        </div>
+
+        <div id="rbtMode"><div class="formgrid"><div class="field full"><label for="rbt12">RBT12 aplicável (R$)</label><input id="rbt12" inputmode="decimal" placeholder="Ex.: 500.000,00" value="500.000,00" /><div class="hint">Para 01/2027, use a receita bruta acumulada de 12/2025 a 11/2026.</div></div></div></div>
+
+        <div id="rateMode" class="hidden">
+          <div class="formgrid"><div class="field"><label for="effectiveInput">Alíquota efetiva total (%)</label><input id="effectiveInput" inputmode="decimal" placeholder="Ex.: 7,7160" /></div><div class="field"><label for="bandManual">Faixa</label><select id="bandManual"><option value="1">1ª faixa</option><option value="2">2ª faixa</option><option value="3">3ª faixa</option><option value="4">4ª faixa</option><option value="5">5ª faixa</option><option value="6">6ª faixa</option></select></div></div>
+          <div id="manualHint" class="window">Para <strong>01/2027</strong>, o modo manual pode usar a alíquota efetiva do PA 12/2026 nas 1ª a 5ª faixas. Na <strong>6ª faixa</strong>, use obrigatoriamente o modo RBT12.</div>
+        </div>
+
+        <div class="formgrid"><div class="field full"><label for="invoice">Valor da operação/NFS-e (opcional)</label><input id="invoice" inputmode="decimal" placeholder="Ex.: 1.000,00" /><div class="hint">Apenas para demonstrar os valores correspondentes às alíquotas calculadas.</div></div></div>
+        <div id="rbtWindow" class="window"></div>
+        <div id="inputAlert" class="alert err"></div>
+        <div class="actions"><button id="calc" class="btn primary" type="button">Calcular alíquotas</button><button id="copy" class="btn secondary" type="button">Copiar resultado</button><button id="clear" class="btn ghost" type="button">Limpar</button></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>2. Resultado</h2><p>Percentuais efetivos correspondentes às parcelas de CBS e IBS dentro do Simples.</p></div>
+      <div class="panel-body">
+        <div class="results">
+          <div class="kpi hero"><div class="label">Alíquota efetiva total do Simples</div><div id="effectiveOut" class="value">—</div><div id="bandOut" class="subline">Informe os dados e calcule.</div></div>
+          <div class="kpi"><div class="label">Repartição CBS</div><div id="cbsShareOut" class="value">—</div><div class="subline">Parcela da alíquota total destinada à CBS.</div></div>
+          <div class="kpi"><div class="label">Repartição IBS</div><div id="ibsShareOut" class="value">—</div><div class="subline">Parcela da alíquota total destinada ao IBS.</div></div>
+        </div>
+
+        <div class="taxgrid">
+          <div class="tax"><strong>Percentual efetivo CBS</strong><div id="cbsRateOut" class="rate">—</div><small id="cbsValueOut">Valor da operação: —</small></div>
+          <div class="tax"><strong>Percentual efetivo IBS</strong><div id="ibsRateOut" class="rate">—</div><small id="ibsValueOut">Valor da operação: —</small></div>
+        </div>
+
+        <div class="details-grid">
+          <div class="line"><span>Alíquota nominal da faixa</span><span id="nominalOut">—</span></div>
+          <div class="line"><span>Parcela a deduzir</span><span id="deductOut">—</span></div>
+          <div class="line"><span>CBS + IBS efetivos</span><span id="combinedOut">—</span></div>
+          <div class="line"><span>Janela RBT12</span><span id="windowOut">—</span></div>
+        </div>
+
+        <div id="resultAlert" class="alert warn"></div>
+        <details class="calc-details"><summary>Memória detalhada do cálculo</summary><div id="formulaOut" class="formula">A fórmula detalhada aparecerá aqui.</div></details>
+      </div>
+    </section>
+  </main>
+
+  <details class="legal"><summary>Base legal, observações técnicas e limitações</summary><div class="legal-body"><strong>Base considerada:</strong> tabelas 2027–2028 dos Anexos III, IV e V da LC 123/2006 e regulamentação do Simples Nacional pela Resolução CGSN nº 190/2026. Fontes: <a href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp227.htm" target="_blank" rel="noopener">Anexo III</a> · <a href="https://legis.senado.gov.br/norma/40180341/publicacao/40181123" target="_blank" rel="noopener">Anexo IV</a> · <a href="https://legis.senado.gov.br/norma/40180341/publicacao/40181129" target="_blank" rel="noopener">Anexo V</a> · <a href="https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/agosto/cgsn-atualiza-regras-do-simples-nacional-para-adequacao-a-reforma-tributaria-do-consumo" target="_blank" rel="noopener">Receita Federal</a>. Ferramenta de apoio interno; confronte o resultado com PGDAS-D, emissor nacional e particularidades da operação.</div></details>
+</div>
+<script>
+const TABLES = {
+  III: [
+    {max:180000, nominal:6.00, deduct:0, cbs:15.43, ibs:0.17},
+    {max:360000, nominal:11.20, deduct:9360, cbs:16.91, ibs:0.19},
+    {max:720000, nominal:13.50, deduct:17640, cbs:16.41, ibs:0.19},
+    {max:1800000, nominal:16.00, deduct:35640, cbs:16.41, ibs:0.19},
+    {max:3600000, nominal:21.00, deduct:125640, cbs:15.43, ibs:0.17, cap:{threshold:14.92537,cbs:23.20,ibs:0.26}},
+    {max:4800000, nominal:32.90, deduct:648000, cbs:19.29, ibs:null, above5:{nominal:21.00,deduct:125640,ibs:0.17}}
+  ],
+  IV: [
+    {max:180000, nominal:4.50, deduct:0, cbs:21.26, ibs:0.24},
+    {max:360000, nominal:9.00, deduct:8100, cbs:24.73, ibs:0.27},
+    {max:720000, nominal:10.20, deduct:12420, cbs:23.74, ibs:0.26},
+    {max:1800000, nominal:14.00, deduct:39780, cbs:22.75, ibs:0.25},
+    {max:3600000, nominal:22.00, deduct:183780, cbs:21.76, ibs:0.24, cap:{threshold:12.5,cbs:36.27,ibs:0.40}},
+    {max:4800000, nominal:32.90, deduct:828000, cbs:24.70, ibs:null, above5:{nominal:22.00,deduct:183780,ibs:0.24}}
+  ],
+  V: [
+    {max:180000, nominal:15.50, deduct:0, cbs:16.96, ibs:0.19},
+    {max:360000, nominal:18.00, deduct:4500, cbs:16.96, ibs:0.19},
+    {max:720000, nominal:19.50, deduct:9900, cbs:17.95, ibs:0.20},
+    {max:1800000, nominal:20.50, deduct:17100, cbs:18.94, ibs:0.21},
+    {max:3600000, nominal:23.00, deduct:62100, cbs:16.96, ibs:0.19},
+    {max:4800000, nominal:30.40, deduct:540000, cbs:19.78, ibs:null, above5:{nominal:23.00,deduct:62100,ibs:0.19}}
+  ]
+};
+
+let mode = 'rbt';
+let resultValid = false;
+const $ = id => document.getElementById(id);
+const ptMoney = v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
+const ptPct = (v, digits=4) => (v==null ? '—' : new Intl.NumberFormat('pt-BR',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(v)+'%');
+const ptNum = (v, digits=2) => new Intl.NumberFormat('pt-BR',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(v);
+
+function parseBR(value){
+  if(typeof value !== 'string') return Number(value);
+  let s = value.trim().replace(/\s/g,'').replace(/R\$/gi,'').replace(/%/g,'');
+  if(!s) return NaN;
+  if(s.includes(',')) return Number(s.replace(/\./g,'').replace(',','.'));
+  if(/^[-+]?\d{1,3}(\.\d{3})+$/.test(s)) return Number(s.replace(/\./g,''));
+  return Number(s);
+}
+function roundMoney(v){
+  if(!Number.isFinite(v)) return NaN;
+  return Math.round((v + Number.EPSILON) * 100) / 100;
+}
+function formatMoneyField(el){
+  const v=parseBR(el.value);
+  if(Number.isFinite(v) && v>=0) el.value=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(roundMoney(v));
+}
+function roundTaxValue(v){
+  if(!Number.isFinite(v)) return NaN;
+  return roundMoney(v);
+}
+function shiftMonth(y,m,delta){
+  const idx=y*12+(m-1)+delta;
+  return {y:Math.floor(idx/12),m:(idx%12+12)%12+1};
+}
+function monthLabel(y,m){return String(m).padStart(2,'0')+'/'+y}
+function rbtWindow(period){
+  if(!period || !/^\d{4}-\d{2}$/.test(period)) return null;
+  const [y,m]=period.split('-').map(Number);
+  if(m<1||m>12) return null;
+  const end=shiftMonth(y,m,-2); // 12 meses antecedentes ao mês anterior ao PA
+  const start=shiftMonth(end.y,end.m,-11);
+  return {start:monthLabel(start.y,start.m),end:monthLabel(end.y,end.m)};
+}
+function updateWindow(){
+  const p=$('period').value,w=rbtWindow(p);
+  if(!w){$('rbtWindow').textContent='Informe uma competência válida.';return}
+  $('rbtWindow').innerHTML=`Para a competência <strong>${p.slice(5)}/${p.slice(0,4)}</strong>, utilize a RBT12 formada por <strong>${w.start} a ${w.end}</strong>.`;
+}
+function updateManualHint(){
+  const p=$('period').value;
+  const w=rbtWindow(p);
+  if(p==='2027-01'){
+    $('manualHint').innerHTML='Para <strong>01/2027</strong>, nas 1ª a 5ª faixas, a alíquota efetiva do PA 12/2026 pode ser usada como atalho porque a RBT12 utilizada é a mesma (<strong>12/2025 a 11/2026</strong>), desde que o Anexo e a situação tributária sejam os mesmos. Na <strong>6ª faixa</strong>, use obrigatoriamente o modo RBT12.';
+  }else{
+    $('manualHint').innerHTML=`No modo manual, informe uma alíquota efetiva já determinada com a RBT12 correta desta competência${w?` (<strong>${w.start} a ${w.end}</strong>)`:''}. <strong>Não reaproveite automaticamente a alíquota do mês anterior.</strong> Na 6ª faixa, use obrigatoriamente o modo RBT12.`;
+  }
+}
+function showInputError(msg){const a=$('inputAlert');a.textContent=msg;a.classList.toggle('show',!!msg)}
+function showResultAlert(msg,kind='warn'){const a=$('resultAlert');a.className='alert '+kind+(msg?' show':'');a.textContent=msg||''}
+function resetOutputs(message='Informe os dados e calcule.'){
+  resultValid=false;
+  ['effectiveOut','cbsShareOut','ibsShareOut','cbsRateOut','ibsRateOut','nominalOut','deductOut','combinedOut','windowOut'].forEach(id=>$(id).textContent='—');
+  $('bandOut').textContent=message;
+  $('formulaOut').textContent='A fórmula detalhada aparecerá aqui.';
+  $('cbsValueOut').textContent='Valor da operação: —';
+  $('ibsValueOut').textContent='Valor da operação: —';
+  showResultAlert('');
+}
+function invalidateResult(){
+  resetOutputs('Dados alterados. Calcule novamente.');
+  showInputError('');
+}
+function setMode(next){
+  mode=next;
+  $('modeRbt').classList.toggle('active',next==='rbt');
+  $('modeRate').classList.toggle('active',next==='rate');
+  $('rbtMode').classList.toggle('hidden',next!=='rbt');
+  $('rateMode').classList.toggle('hidden',next!=='rate');
+  invalidateResult();
+}
+function bandForRbt(rbt,table){return table.findIndex(x=>rbt<=x.max)}
+function effectiveFor(rbt,row){return ((rbt*(row.nominal/100))-row.deduct)/rbt*100}
+function manualBandRange(table,bandIndex){
+  const row=table[bandIndex];
+  if(!row || bandIndex===5) return null;
+  if(bandIndex===0) return {min:row.nominal,max:row.nominal};
+  const low=table[bandIndex-1].max+0.01;
+  return {min:effectiveFor(low,row),max:effectiveFor(row.max,row)};
+}
+function validateManualRate(effective,table,bandIndex){
+  const range=manualBandRange(table,bandIndex);
+  if(!range) return null;
+  const tolerance=0.02; // aceita arredondamentos usuais do percentual informado
+  if(effective < range.min-tolerance || effective > range.max+tolerance){
+    return `A alíquota informada (${ptPct(effective,4)}) não é compatível com a ${bandIndex+1}ª faixa selecionada. Para essa faixa, a alíquota efetiva esperada fica aproximadamente entre ${ptPct(range.min,4)} e ${ptPct(range.max,4)}. Confira a faixa, o Anexo e a RBT12.`;
+  }
+  return null;
+}
+
+function calculate(){
+  resetOutputs('Calculando…');
+  showInputError('');
+
+  const annex=$('annex').value, table=TABLES[annex], period=$('period').value;
+  const status=$('ibsStatus').value;
+
+  if(period<'2027-01'||period>'2028-12'){
+    showInputError('As tabelas desta versão são válidas apenas para competências de 01/2027 a 12/2028.'); return;
+  }
+  if(status==='hybrid'){
+    showInputError('Esta calculadora não se aplica ao Simples híbrido/regime regular de IBS e CBS. Nesse caso, as alíquotas e a apuração seguem as regras do regime regular.'); return;
+  }
+  if(status==='blocked'){
+    showInputError('Esta calculadora não deve ser usada quando o impedimento por sublimite já retirou o IBS do Simples na competência. O tratamento passa a exigir segregação própria e regras do regime regular para o IBS.'); return;
+  }
+  if(status==='unknown'){
+    showInputError('Confirme primeiro se IBS e CBS permanecem dentro do Simples nesta competência. A ultrapassagem do sublimite pode alterar o tratamento do IBS.'); return;
+  }
+
+  let bandIndex, effective, rbt=NaN, row;
+  if(mode==='rbt'){
+    rbt=roundMoney(parseBR($('rbt12').value));
+    if(!Number.isFinite(rbt)||rbt<=0){showInputError('Informe uma RBT12 válida e maior que zero. Casos de início de atividade/RBT12 zero não são tratados nesta versão.');return}
+    if(rbt>4800000){showInputError('RBT12 acima de R$ 4.800.000,00: fora do escopo desta calculadora. Há regras específicas para excesso de limite e efeitos de exclusão/impedimento.');return}
+    bandIndex=bandForRbt(rbt,table); row=table[bandIndex];
+    if(bandIndex<0){showInputError('Não foi possível identificar a faixa da RBT12.');return}
+    effective=effectiveFor(rbt,row);
+  }else{
+    effective=parseBR($('effectiveInput').value);
+    bandIndex=Number($('bandManual').value)-1; row=table[bandIndex];
+    if(!Number.isFinite(effective)||effective<=0||effective>40){showInputError('Informe uma alíquota efetiva válida, em percentual.');return}
+    if(bandIndex===5){showInputError('Na 6ª faixa, use o modo “Calcular pela RBT12”. O IBS depende da fórmula específica da 5ª faixa e não pode ser obtido apenas pela alíquota efetiva total.');return}
+    const manualError=validateManualRate(effective,table,bandIndex);
+    if(manualError){showInputError(manualError);return}
+  }
+
+  const rawInvoice=$('invoice').value.trim();
+  let invoice=NaN, hasInvoice=false;
+  if(rawInvoice!==''){
+    invoice=roundMoney(parseBR(rawInvoice));
+    if(!Number.isFinite(invoice)||invoice<0){showInputError('Informe um valor de operação válido e não negativo, ou deixe o campo em branco.');return}
+    hasInvoice=true;
+  }
+
+  let cbsRate, ibsRate, cbsShare=row.cbs, ibsShare=row.ibs;
+  let specialCap=false, sixthIbsRef=false, ibsBaseEffective=null;
+
+  if(bandIndex===5 && row.above5){
+    cbsRate=effective*(row.cbs/100);
+    ibsBaseEffective=effectiveFor(rbt,row.above5);
+    ibsRate=ibsBaseEffective*(row.above5.ibs/100);
+    ibsShare=row.above5.ibs;
+    sixthIbsRef=true;
+  }else if(row.cap && effective>row.cap.threshold){
+    specialCap=true;
+    cbsRate=(effective-5)*(row.cap.cbs/100);
+    ibsRate=(effective-5)*(row.cap.ibs/100);
+    cbsShare=row.cap.cbs; ibsShare=row.cap.ibs;
+  }else{
+    cbsRate=effective*(row.cbs/100);
+    ibsRate=effective*(row.ibs/100);
+  }
+
+  const combined=cbsRate+ibsRate;
+  const w=rbtWindow(period);
+  const cbsValue=hasInvoice?roundTaxValue(invoice*cbsRate/100):NaN;
+  const ibsValue=hasInvoice&&!sixthIbsRef?roundTaxValue(invoice*ibsRate/100):NaN;
+
+  $('effectiveOut').textContent=ptPct(effective,4);
+  $('bandOut').textContent=`${bandIndex+1}ª faixa · Anexo ${annex}${mode==='rbt'?' · cálculo pela RBT12':' · alíquota informada manualmente'}${sixthIbsRef?' · IBS condicional até o sublimite':''}`;
+  $('cbsShareOut').textContent=ptPct(cbsShare,2)+(specialCap?'*':'');
+  $('ibsShareOut').textContent=sixthIbsRef?`${ptPct(ibsShare,2)}* (5ª faixa)`:ptPct(ibsShare,2)+(specialCap?'*':'');
+  $('cbsRateOut').textContent=ptPct(cbsRate,4);
+  $('ibsRateOut').textContent=ptPct(ibsRate,4)+(sixthIbsRef?'*':'');
+  $('nominalOut').textContent=ptPct(row.nominal,2)+(mode==='rate'?' (referência da faixa)':'');
+  $('deductOut').textContent=ptMoney(row.deduct)+(mode==='rate'?' (referência da faixa)':'');
+  $('combinedOut').textContent=sixthIbsRef?'Não aplicável como taxa única*':ptPct(combined,4);
+  $('windowOut').textContent=w?`${w.start} a ${w.end}`:'—';
+  $('cbsValueOut').textContent=hasInvoice?`Sobre ${ptMoney(invoice)}: ${ptMoney(cbsValue)} (simulação)`:'Valor da operação: —';
+  $('ibsValueOut').textContent=sixthIbsRef?'Valor por NFS-e não calculado*: depende da parcela ainda sujeita ao sublimite.':(hasInvoice?`Sobre ${ptMoney(invoice)}: ${ptMoney(ibsValue)} (simulação)`:'Valor da operação: —');
+
+  let f='';
+  if(mode==='rbt'){
+    f += `Alíquota efetiva = [(RBT12 × alíquota nominal) − parcela a deduzir] ÷ RBT12\n`;
+    f += `= [(${ptMoney(rbt)} × ${ptPct(row.nominal,2)}) − ${ptMoney(row.deduct)}] ÷ ${ptMoney(rbt)}\n`;
+    f += `= ${ptPct(effective,4)}\n\n`;
+  }
+  if(sixthIbsRef){
+    f += `CBS — 6ª faixa:\n`;
+    f += `CBS = ${ptPct(effective,4)} × ${ptPct(row.cbs,2)} = ${ptPct(cbsRate,4)}\n\n`;
+    f += `IBS* — fórmula da 5ª faixa para a parcela que não exceder o sublimite:\n`;
+    f += `Base efetiva IBS = [(${ptMoney(rbt)} × ${ptPct(row.above5.nominal,2)}) − ${ptMoney(row.above5.deduct)}] ÷ ${ptMoney(rbt)}\n`;
+    f += `= ${ptPct(ibsBaseEffective,4)}\n`;
+    f += `IBS* = ${ptPct(ibsBaseEffective,4)} × ${ptPct(row.above5.ibs,2)} = ${ptPct(ibsRate,4)}\n\n`;
+    f += `* Percentual condicional. Não foi convertido em valor por NFS-e nem somado à CBS como taxa única.`;
+  }else if(specialCap){
+    f += `Regra especial da 5ª faixa — teto efetivo do ISS em 5%:\n`;
+    f += `CBS = (${ptPct(effective,4)} − 5,0000%) × ${ptPct(row.cap.cbs,2)} = ${ptPct(cbsRate,4)}\n`;
+    f += `IBS = (${ptPct(effective,4)} − 5,0000%) × ${ptPct(row.cap.ibs,2)} = ${ptPct(ibsRate,4)}`;
+  }else{
+    f += `CBS = ${ptPct(effective,4)} × ${ptPct(row.cbs,2)} = ${ptPct(cbsRate,4)}\n`;
+    f += `IBS = ${ptPct(effective,4)} × ${ptPct(row.ibs,2)} = ${ptPct(ibsRate,4)}`;
+  }
+  $('formulaOut').textContent=f;
+
+  resultValid=true;
+  if(sixthIbsRef){
+    showResultAlert('6ª faixa: a CBS foi calculada pela repartição da 6ª faixa. O IBS marcado com * é somente o percentual de referência para a parcela que não exceder o sublimite, calculado pela fórmula da 5ª faixa. O app não calcula valor de IBS por nota nem soma CBS+IBS nessa situação, porque isso exigiria conhecer a parcela da receita ainda sujeita ao sublimite e os efeitos do eventual excesso.','warn');
+  }else if(specialCap){
+    showResultAlert('Aplicada automaticamente a regra especial da 5ª faixa por superação do teto efetivo de ISS de 5%; CBS e IBS foram redistribuídos conforme a tabela legal.','ok');
+  }else{
+    showResultAlert('Resultado calculado com a alíquota efetiva total e a repartição de CBS/IBS do Anexo selecionado para 2027–2028.','ok');
+  }
+}
+function copyResult(){
+  if(!resultValid){
+    showResultAlert('Calcule novamente antes de copiar: não há resultado válido e atual.','warn');
+    return;
+  }
+  const text=`Calculadora IBS/CBS — Simples Nacional\nCompetência: ${$('period').value}\nAnexo: ${$('annex').value}\n${$('bandOut').textContent}\nAlíquota efetiva total: ${$('effectiveOut').textContent}\nRepartição CBS: ${$('cbsShareOut').textContent}\nPercentual efetivo CBS: ${$('cbsRateOut').textContent}\nRepartição IBS: ${$('ibsShareOut').textContent}\nPercentual efetivo IBS: ${$('ibsRateOut').textContent}\nCBS + IBS: ${$('combinedOut').textContent}\nJanela RBT12: ${$('windowOut').textContent}`;
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(()=>showResultAlert('Resultado copiado para a área de transferência.','ok')).catch(()=>fallbackCopy(text));
+  }else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.position='absolute';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');showResultAlert('Resultado copiado para a área de transferência.','ok')}catch(e){showResultAlert('Não foi possível copiar automaticamente. Selecione o resultado manualmente.','warn')}
+  ta.remove();
+}
+function clearAll(){
+  $('rbt12').value='';$('effectiveInput').value='';$('invoice').value='';$('bandManual').value='1';$('ibsStatus').value='inside';
+  resetOutputs();showInputError('');
+}
+
+$('modeRbt').addEventListener('click',()=>setMode('rbt'));
+$('modeRate').addEventListener('click',()=>setMode('rate'));
+$('period').addEventListener('change',()=>{updateWindow();updateManualHint();invalidateResult()});
+$('annex').addEventListener('change',invalidateResult);
+$('ibsStatus').addEventListener('change',invalidateResult);
+$('bandManual').addEventListener('change',invalidateResult);
+$('rbt12').addEventListener('input',invalidateResult);
+$('effectiveInput').addEventListener('input',invalidateResult);
+$('invoice').addEventListener('input',invalidateResult);
+$('calc').addEventListener('click',calculate);
+$('copy').addEventListener('click',copyResult);
+$('clear').addEventListener('click',clearAll);
+$('rbt12').addEventListener('blur',()=>formatMoneyField($('rbt12')));
+$('invoice').addEventListener('blur',()=>formatMoneyField($('invoice')));
+updateWindow();updateManualHint();
+calculate();
+</script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

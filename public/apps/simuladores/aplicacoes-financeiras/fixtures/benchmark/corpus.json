@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "description": "Corpus sintético, anonimizado e não representativo dos layouts oficiais das instituições. Serve para medir robustez estrutural fora dos modelos Inter/BB.",
+  "cases": [
+    {
+      "id": "aurora-cdb-digital",
+      "institution": "Banco Aurora S.A.",
+      "format": "TEXT",
+      "fileName": "aurora_extrato_cdb_2026q1.txt",
+      "text": "BANCO AURORA S.A.\nEXTRATO DE MOVIMENTAÇÃO DE RENDA FIXA\nAgência: 1234 Conta: 56789-0\nProduto: CDB EMPRESARIAL 110% CDI\nData da aplicação: 10/01/2026\nValor aplicado: R$ 100.000,00\n31/03/2026 RESGATE R$ 20.000,00\n31/03/2026 IRRF R$ 150,00\n31/03/2026 SALDO FINAL R$ 81.500,00",
+      "expected": {"documentKind":"FIXED_INCOME_STATEMENT","bankNameContains":"BANCO AURORA","positionCount":1,"families":["FIXED_INCOME_SECURITY"],"events":{"APPLICATION":0,"REDEMPTION":1,"REDEMPTION_IRRF":1,"BALANCE_SNAPSHOT":1},"amounts":{"REDEMPTION":[2000000],"REDEMPTION_IRRF":[15000],"BALANCE_SNAPSHOT":[8150000]}}
+    },
+    {
+      "id": "horizonte-rdb-ocr",
+      "institution": "Cooperativa Horizonte", 
+      "format": "TEXT",
+      "fileName": "horizonte_rdb_ocr.txt",
+      "text": "COOPERATIVA HORIZONTE\nEXTRATO DE INVESTIMENTOS\nAgencia: 0099 Conta: 7771-2\nRDB EMPRESARIAL POS FIXADO\nDATA DA APLICACAO: 15/02/2026\nPRINCIPAL: R$ 75.000,00\n30/04/2026 RETIRADA R$ 10.000,00\n30/04/2026 IR RETIDO R$ 92,50\n30/04/2026 POSICAO ATUAL R$ 66.245,50",
+      "expected": {"documentKind":"INVESTMENT_STATEMENT","bankNameContains":"COOPERATIVA HORIZONTE","positionCount":1,"families":["FIXED_INCOME_SECURITY"],"events":{"REDEMPTION":1,"REDEMPTION_IRRF":1,"BALANCE_SNAPSHOT":1},"amounts":{"REDEMPTION":[1000000],"REDEMPTION_IRRF":[9250],"BALANCE_SNAPSHOT":[6624550]}}
+    },
+    {
+      "id": "delta-fundo-cotas",
+      "institution": "Financeira Delta S.A.",
+      "format": "TEXT",
+      "fileName": "delta_fundo_cotas_mar2026.txt",
+      "text": "FINANCEIRA DELTA S.A.\nEXTRATO DE INVESTIMENTOS FUNDOS - MENSAL\nAgência: 0010 Conta: 445566-7\nFUNDO RF CURTO PRAZO DELTA\nQuantidade cotas: 91.753,782876\nValor da cota: 1,502861314\n31/03/2026 RENDIMENTO BRUTO R$ 1.396,99\n31/03/2026 COBRANÇA DE IR R$ 326,91\n31/03/2026 SALDO ATUAL R$ 137.893,21",
+      "expected": {"documentKind":"QUOTA_FUND_STATEMENT","bankNameContains":"FINANCEIRA DELTA","positionCount":1,"families":["QUOTA_FUND"],"events":{"PERIOD_INCOME":1,"PERIODIC_IR":1,"BALANCE_SNAPSHOT":1},"amounts":{"PERIOD_INCOME":[139699],"PERIODIC_IR":[32691],"BALANCE_SNAPSHOT":[13789321]}}
+    },
+    {
+      "id": "serra-caixa-automatico",
+      "institution": "Banco Serra S.A.",
+      "format": "TEXT",
+      "fileName": "serra_aplicacao_automatica_2026q2.txt",
+      "text": "BANCO SERRA S.A.\nPOSIÇÃO DE INVESTIMENTOS\nAgência: 0101 Conta: 998877-0\nAPLICAÇÃO AUTOMÁTICA EMPRESARIAL\n01/04/2026 SALDO ATUAL R$ 250.000,00\n30/04/2026 RENDIMENTO DO PERÍODO R$ 1.850,25\n31/05/2026 RENDIMENTO DO PERÍODO R$ 1.923,44\n30/06/2026 RENDIMENTO DO PERÍODO R$ 2.004,31\n30/06/2026 SALDO FINAL R$ 255.778,00",
+      "expected": {"documentKind":"POSITION_REPORT","bankNameContains":"BANCO SERRA","positionCount":1,"families":["AUTOMATIC_CASH"],"events":{"PERIOD_INCOME":3,"BALANCE_SNAPSHOT":2},"amounts":{"PERIOD_INCOME":[185025,192344,200431],"BALANCE_SNAPSHOT":[25000000,25577800]}}
+    },
+    {
+      "id": "prisma-multiproduto",
+      "institution": "Corretora Prisma Investimentos",
+      "format": "TEXT",
+      "fileName": "prisma_posicao_multiproduto.txt",
+      "text": "CORRETORA PRISMA INVESTIMENTOS\nEXTRATO DE INVESTIMENTOS\nAgência: 0001 Conta: 112233\nProduto: CDB EMPRESARIAL A\nData da aplicação: 05/01/2026\nValor aplicado: R$ 120.000,00\n31/03/2026 SALDO FINAL R$ 123.400,00\nProduto: LCI EMPRESARIAL B\nData da aplicação: 20/01/2026\nValor aplicado: R$ 80.000,00\n31/03/2026 SALDO FINAL R$ 81.250,00",
+      "expected": {"documentKind":"FIXED_INCOME_STATEMENT","bankNameContains":"CORRETORA PRISMA","positionCount":2,"families":["FIXED_INCOME_SECURITY","FIXED_INCOME_SECURITY"],"events":{"BALANCE_SNAPSHOT":2},"amounts":{"BALANCE_SNAPSHOT":[12340000,8125000]}}
+    },
+    {
+      "id": "vale-informe-multipagina",
+      "institution": "Distribuidora Vale Investimentos",
+      "format": "TEXT",
+      "fileName": "vale_informe_rendimentos_2026q1.txt",
+      "text": "DISTRIBUIDORA VALE INVESTIMENTOS\nINFORME DE RENDIMENTOS\nANO-CALENDÁRIO DE 2026 - PRIMEIRO TRIMESTRE\nRenda fixa - aplicações empresariais\nTOTAL R$ 25.550,75 R$ 5.748,92\n\f\nAPLICAÇÃO AUTOMÁTICA\nTOTAL R$ 1.204,40 R$ 270,99",
+      "expected": {"documentKind":"INCOME_REPORT","bankNameContains":"DISTRIBUIDORA VALE","positionCount":0,"families":[],"reportedTotals":[{"category":"FIXED_INCOME","incomeCents":2555075,"irrfCents":574892,"quarter":"2026-Q1"},{"category":"AUTOMATIC_CASH","incomeCents":120440,"irrfCents":27099,"quarter":"2026-Q1"}]}
+    },
+    {
+      "id": "aurora-ofx-xml",
+      "institution": "Banco Aurora S.A.",
+      "format": "OFX",
+      "fileName": "aurora_2026q1.ofx",
+      "text": "<?xml version=\"1.0\"?><OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKACCTFROM><BANKID>AURORA</BANKID><ACCTID>567890</ACCTID></BANKACCTFROM><BANKTRANLIST><DTSTART>20260301000000</DTSTART><DTEND>20260331235959</DTEND><STMTTRN><TRNTYPE>CREDIT</TRNTYPE><DTPOSTED>20260331120000</DTPOSTED><TRNAMT>20000.00</TRNAMT><FITID>AUR-001</FITID><NAME>RESGATE INVESTIMENTO</NAME></STMTTRN><STMTTRN><TRNTYPE>DEBIT</TRNTYPE><DTPOSTED>20260331121000</DTPOSTED><TRNAMT>-150.00</TRNAMT><FITID>AUR-002</FITID><NAME>IRRF INVESTIMENTO</NAME></STMTTRN></BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>",
+      "expected": {"syntax":"XML","bankId":"AURORA","accountId":"567890","transactions":2,"creditsCents":[2000000],"debitsCents":[15000],"duplicates":0}
+    },
+    {
+      "id": "horizonte-ofx-sgml-duplicado",
+      "institution": "Cooperativa Horizonte",
+      "format": "OFX",
+      "fileName": "horizonte_2026q2.ofx",
+      "text": "OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\n<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKACCTFROM><BANKID>HORIZONTE<ACCTID>77712</BANKACCTFROM><BANKTRANLIST><DTSTART>20260401000000<DTEND>20260430235959<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260430120000<TRNAMT>10000.00<FITID>HOR-001<NAME>RETIRADA RDB</STMTTRN><STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260430120000<TRNAMT>10000.00<FITID>HOR-001<NAME>RETIRADA RDB</STMTTRN></BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>",
+      "expected": {"syntax":"SGML","bankId":"HORIZONTE","accountId":"77712","transactions":1,"creditsCents":[1000000],"debitsCents":[],"duplicates":1}
+    }
+  ]
+}

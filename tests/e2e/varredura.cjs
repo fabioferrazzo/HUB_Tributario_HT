@@ -19,7 +19,8 @@ require("fs").mkdirSync(out, { recursive: true });
   await page.click('button[type="submit"]');
   await page.waitForTimeout(1500);
 
-  const labels = await page.locator(".sidebar nav button, .sidebar button").allInnerTexts();
+  // o botão que abre/fecha um submenu (ex.: Simuladores) não é tela: fica de fora para o submenu continuar aberto
+  const labels = await page.locator(".sidebar button:not(.side-nav-submenu-toggle)").allInnerTexts();
   const menu = labels.map((l) => l.trim()).filter((l) => l && !/Sair/.test(l));
   console.log("Menu:", JSON.stringify(menu));
 

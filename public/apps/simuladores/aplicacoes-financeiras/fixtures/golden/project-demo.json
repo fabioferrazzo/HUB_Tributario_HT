@@ -1,0 +1,47 @@
+{
+  "project": {
+    "id": "project-empresa-demo",
+    "name": "EMPRESA DEMONSTRATIVA — Base ouro Inter + BB",
+    "companyId": "company-demo",
+    "periodStart": "2024-01-01",
+    "periodEnd": "2026-07-31",
+    "createdAt": "2026-08-10T00:00:00.000Z",
+    "updatedAt": "2026-08-10T00:00:00.000Z",
+    "schemaVersion": 1,
+    "status": "ACTIVE"
+  },
+  "company": {
+    "id": "company-demo",
+    "legalName": "EMPRESA DEMONSTRATIVA LTDA",
+    "taxId": "00.000.000/0001-00"
+  },
+  "positions": [
+    {
+      "id": "position-inter-cdb",
+      "projectId": "project-empresa-demo",
+      "bank": "Banco Inter",
+      "family": "INDIVIDUAL_FIXED_INCOME",
+      "productName": "CDBs e aplicações individualizadas",
+      "status": "PARTIALLY_REDEEMED",
+      "evidenceState": "CONCILIATED"
+    },
+    {
+      "id": "position-inter-auto",
+      "projectId": "project-empresa-demo",
+      "bank": "Banco Inter",
+      "family": "AUTOMATIC_CASH_SWEEP",
+      "productName": "Aplicações Automáticas Renda Fixa",
+      "status": "ACTIVE",
+      "evidenceState": "CONFIRMED"
+    },
+    {
+      "id": "position-bb-fund",
+      "projectId": "project-empresa-demo",
+      "bank": "Banco do Brasil",
+      "family": "QUOTA_BASED_FUND",
+      "productName": "BB RF CP Automático",
+      "status": "PARTIALLY_REDEEMED",
+      "evidenceState": "PENDING"
+    }
+  ]
+}

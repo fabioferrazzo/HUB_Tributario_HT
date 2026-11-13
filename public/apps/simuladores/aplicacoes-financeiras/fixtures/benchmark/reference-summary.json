@@ -1,0 +1,201 @@
+{
+  "stage": "15-offline",
+  "version": "1.7.0-offline.stage15",
+  "status": "PASSED",
+  "executedAt": "2026-09-29T19:38:26.422Z",
+  "corpus": {
+    "status": "PASSED",
+    "overallScore": 100,
+    "dimensions": {
+      "bank": {
+        "passed": 6,
+        "total": 6,
+        "pct": 100
+      },
+      "classification": {
+        "passed": 6,
+        "total": 6,
+        "pct": 100
+      },
+      "structure": {
+        "passed": 12,
+        "total": 12,
+        "pct": 100
+      },
+      "events": {
+        "passed": 13,
+        "total": 13,
+        "pct": 100
+      },
+      "amounts": {
+        "passed": 14,
+        "total": 14,
+        "pct": 100
+      },
+      "ofx": {
+        "passed": 14,
+        "total": 14,
+        "pct": 100
+      }
+    },
+    "gates": {
+      "overallScore": true,
+      "bankIdentification": true,
+      "classification": true,
+      "structure": true,
+      "eventAmountExact": true,
+      "ofx": true
+    },
+    "caseCount": 8,
+    "p50Ms": 0.761,
+    "p95Ms": 1.385,
+    "maxMs": 4.534
+  },
+  "coverage": [
+    {
+      "id": "aurora-cdb-digital",
+      "institution": "Banco Aurora S.A.",
+      "templateId": "GENERIC_BANK_NEUTRAL",
+      "score": 100,
+      "status": "HOMOLOGADO",
+      "dimensions": {
+        "bank": 100,
+        "classification": 100,
+        "structure": 100,
+        "events": 100,
+        "amounts": 100
+      }
+    },
+    {
+      "id": "horizonte-rdb-ocr",
+      "institution": "Cooperativa Horizonte",
+      "templateId": "GENERIC_BANK_NEUTRAL",
+      "score": 100,
+      "status": "HOMOLOGADO",
+      "dimensions": {
+        "bank": 100,
+        "classification": 100,
+        "structure": 100,
+        "events": 100,
+        "amounts": 100
+      }
+    },
+    {
+      "id": "delta-fundo-cotas",
+      "institution": "Financeira Delta S.A.",
+      "templateId": "GENERIC_BANK_NEUTRAL",
+      "score": 100,
+      "status": "HOMOLOGADO",
+      "dimensions": {
+        "bank": 100,
+        "classification": 100,
+        "structure": 100,
+        "events": 100,
+        "amounts": 100
+      }
+    },
+    {
+      "id": "serra-caixa-automatico",
+      "institution": "Banco Serra S.A.",
+      "templateId": "GENERIC_BANK_NEUTRAL",
+      "score": 100,
+      "status": "HOMOLOGADO",
+      "dimensions": {
+        "bank": 100,
+        "classification": 100,
+        "structure": 100,
+        "events": 100,
+        "amounts": 100
+      }
+    },
+    {
+      "id": "prisma-multiproduto",
+      "institution": "Corretora Prisma Investimentos",
+      "templateId": "GENERIC_BANK_NEUTRAL",
+      "score": 100,
+      "status": "HOMOLOGADO",
+      "dimensions": {
+        "bank": 100,
+        "classification": 100,
+        "structure": 100,
+        "events": 100,
+        "amounts": 100
+      }
+    },
+    {
+      "id": "vale-informe-multipagina",
+      "institution": "Distribuidora Vale Investimentos",
+      "templateId": "GENERIC_INCOME_REPORT",
+      "score": 100,
+      "status": "HOMOLOGADO",
+      "dimensions": {
+        "bank": 100,
+        "classification": 100,
+        "structure": 100,
+        "events": 100,
+        "amounts": 100
+      }
+    }
+  ],
+  "stress": {
+    "parser": {
+      "documentsProcessed": 1800,
+      "totalMs": 234.803,
+      "docsPerSecond": 7666,
+      "p50Ms": 0.122,
+      "p95Ms": 0.229,
+      "maxMs": 0.72,
+      "rssDeltaMb": 3.01
+    },
+    "pdf": {
+      "digital": {
+        "ok": true,
+        "method": "PDF_TEXT_LOCAL",
+        "quality": 0.8588,
+        "pages": 2,
+        "elapsedMs": 469.95,
+        "warnings": []
+      },
+      "ocr": {
+        "ok": true,
+        "method": "OCR_LOCAL",
+        "quality": 0.7381,
+        "pages": 1,
+        "elapsedMs": 2265.85,
+        "warnings": []
+      }
+    },
+    "largeProject": {
+      "positions": 300,
+      "events": 3000,
+      "documents": 1200,
+      "issues": 12,
+      "serializedMb": 1.61,
+      "snapshotMs": 141.647,
+      "xlsxMs": 75.052,
+      "xlsxMb": 4.12,
+      "pdfMs": 251.639,
+      "pdfMb": 0.64,
+      "htafExportMs": 148.909,
+      "htafRestoreMs": 64.673,
+      "htafMb": 2.15,
+      "roundtripOk": true
+    }
+  },
+  "gates": {
+    "corpus": true,
+    "parserP95": true,
+    "parserThroughput": true,
+    "pdfDigital": true,
+    "ocr": true,
+    "largeXlsx": true,
+    "largePdf": true,
+    "htafRoundtrip": true,
+    "serializedFootprint": true
+  },
+  "limitations": [
+    "O corpus multibanco da Etapa 15 é sintético e anonimizado; não representa nem certifica layouts oficiais de instituições reais.",
+    "O desempenho do IndexedDB varia por navegador/dispositivo. Neste container foram medidos footprint serializado, MemoryRepository e round-trip HTAF; a quota real permanece visível no app.",
+    "OCR depende de Poppler/Tesseract instalados localmente e deve ser reavaliado quando novos layouts reais forem incorporados."
+  ]
+}
