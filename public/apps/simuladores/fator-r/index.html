@@ -4,8 +4,52 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fator R — Simples Nacional — H. Teixeira</title>
-<link rel="stylesheet" href="../simples-comum/simples.css?v=2">
-<style>.campo { align-content: start; }</style>
+<link rel="stylesheet" href="../simples-comum/simples.css?v=3">
+<style>
+.campo { align-content: start; }
+.abas { max-width: 360px; }
+.mon { grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); }
+.mon-dir { display: grid; gap: 12px; min-width: 0; }
+.lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 62vh; overflow: auto; }
+.lista button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; text-align: left; border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 9px; padding: 7px 8px; font: inherit; cursor: pointer; }
+.lista button:hover { background: var(--soft); }
+.lista button.sel { background: var(--accent-soft); border-color: var(--accent); }
+.lista button.inativa .nm { color: var(--muted); text-decoration: line-through; }
+.lista .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista .sb { grid-column: 1 / -1; font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; border: 1px solid var(--line); background: var(--soft); color: var(--ink); }
+.chip.ok { background: var(--accent-soft); border-color: var(--accent); }
+.chip.perto { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+.chip.abaixo { background: var(--err-bg); border-color: var(--err-line); color: var(--err-ink); }
+.emp-tit { min-width: 0; }
+.emp-tit h2 { font-size: 15px; }
+.grade-lanc td { padding: 3px 6px; }
+.grade-lanc th { position: sticky; top: 0; z-index: 1; }
+.grade-lanc input { min-height: 28px; padding: 3px 7px; width: 102px; border-radius: 7px; }
+.grade-lanc th, .grade-lanc td { font-size: 12px; }
+.grade-lanc input.sujo { border-color: var(--accent); background: var(--accent-soft); }
+.grade-lanc input.invalido { border-color: var(--err-ink); background: var(--err-bg); }
+.grade-lanc tbody tr:hover td { background: var(--soft); }
+.grade-lanc tr.atual td { background: var(--accent-soft); }
+.grafico svg { width: 100%; height: auto; display: block; }
+.grafico text { font-size: 10px; fill: var(--muted); }
+.grafico .eixo { stroke: var(--line); stroke-width: 1; }
+.grafico .lim { stroke: var(--brand); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.grafico .linha { fill: none; stroke: var(--brand-2); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.grafico .pt { fill: var(--accent); stroke: var(--surface); stroke-width: 1.2; }
+.grafico .pt.abaixo { fill: var(--err-ink); } .grafico .pt.perto { fill: #d39b1c; }
+.grafico .pt.falta { fill: var(--surface); stroke: var(--muted); stroke-width: 1.4; }
+.grafico .pt.sel { stroke: var(--brand); stroke-width: 2.4; }
+.dlg { border: 1px solid var(--line); border-radius: var(--radius); padding: 0; width: min(560px, calc(100vw - 24px)); background: var(--surface); color: var(--ink); box-shadow: 0 18px 50px rgba(0,0,0,.25); }
+.dlg::backdrop { background: rgba(10, 22, 38, .45); }
+.dlg form { display: grid; gap: 10px; padding: 16px; }
+.dlg h3 { margin: 0; font-size: 15px; color: var(--brand); }
+.dlg textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font: inherit; resize: vertical; }
+.dlg-acoes { margin-top: 4px; }
+.btn.perigo { color: var(--err-ink); border-color: var(--err-line); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 900px) { .mon { grid-template-columns: 1fr; } .lista { max-height: 240px; } }
+</style>
 </head>
 <body>
 <div class="app">
@@ -16,6 +60,12 @@
     </div>
     <span class="selo">Res. CGSN 140/2018 e 190/2026, art. 26 · conferido em 13/11/2026</span>
   </header>
+  <div class="segmento abas" role="tablist" aria-label="Formas de uso">
+    <button type="button" class="ativo" role="tab" id="tabCalc" aria-selected="true" aria-controls="abaCalc" data-aba="calc">Calculadora</button>
+    <button type="button" role="tab" id="tabMon" aria-selected="false" aria-controls="abaMon" data-aba="mon">Monitoramento</button>
+  </div>
+
+  <div id="abaCalc" role="tabpanel" aria-labelledby="tabCalc">
 
   <div class="grade">
     <section class="painel">
@@ -85,6 +135,138 @@
 
       <div class="fontes">Fontes: LC 123/2006, art. 18, §§ 5º-J, 5º-K, 5º-M e 24 a 26; Res. CGSN 140/2018, arts. 21, 22 e 26 (até 2026); Res. CGSN 190/2026, arts. 21, 22 e 26 e Anexos III e V (a partir de 01/2027). Vale para as atividades dos §§ 5º-I e 5º-D do art. 18 (sujeitas ao fator “r”). Cálculo de apoio, sem segregação de receitas e sem reduções municipais de ISS.</div>
     </div>
+  </div>
+  </div>
+  <div id="abaMon" class="oculto" role="tabpanel" aria-labelledby="tabMon">
+    <div id="monSessao" class="aviso oculto"></div>
+    <div class="grade mon" id="monCorpo">
+      <aside class="painel lista-emp">
+        <div class="cab"><h2>Empresas</h2><button type="button" class="btn primario" id="btnNova">+ Nova</button></div>
+        <div class="corpo">
+          <input id="busca" type="search" placeholder="Buscar por nome, CNPJ ou CNAE" aria-label="Buscar empresa">
+          <label class="marcar"><input type="checkbox" id="verInativas"> Mostrar inativas</label>
+          <ul id="lista" class="lista" aria-label="Empresas monitoradas"></ul>
+          <div class="dica" id="listaRodape"></div>
+        </div>
+      </aside>
+
+      <div class="mon-dir">
+        <section class="painel" id="monVazio"><div class="corpo"><div class="dica" id="monVazioTxt">Carregando…</div></div></section>
+
+        <div id="monEmpresa" class="oculto" style="display:grid;gap:12px">
+          <section class="painel">
+            <div class="cab">
+              <div class="emp-tit"><h2 id="empNome">—</h2><div class="dica" id="empMeta"></div></div>
+              <div class="linha-acoes">
+                <button type="button" class="btn" id="btnEditar">Editar</button>
+                <button type="button" class="btn primario" id="btnRegistrar" title="Grava o fator R na coluna “Pendência / obs. do mês” do Controle de Apuração">Registrar no Controle de Apuração</button>
+              </div>
+            </div>
+            <div class="corpo" style="padding-top:10px;padding-bottom:10px">
+              <div class="linha-acoes">
+                <label for="monPA" style="margin:0">Período de apuração (PA)</label>
+                <select id="monPA" style="width:auto;min-width:130px"></select>
+                <span class="dica" id="monJanela"></span>
+              </div>
+            </div>
+          </section>
+
+          <div class="kpis">
+            <div class="kpi destaque"><div class="rot" id="mkFatorRot">Fator R</div><div class="val" id="mkFator">—</div><div class="sub" id="mkFatorSub">—</div></div>
+            <div class="kpi"><div class="rot">Anexo</div><div class="val" id="mkAnexo">—</div><div class="sub" id="mkAnexoSub">—</div></div>
+            <div class="kpi"><div class="rot" id="mkMetaRot">Folga sobre 28%</div><div class="val" id="mkMeta">—</div><div class="sub" id="mkMetaSub">—</div></div>
+            <div class="kpi"><div class="rot">DAS estimado no PA</div><div class="val" id="mkDas">—</div><div class="sub" id="mkDasSub">—</div></div>
+          </div>
+          <div id="monAvisos" style="display:grid;gap:8px"></div>
+
+          <details class="painel" open id="pnGrafico">
+            <summary><h2>Evolução do fator R</h2></summary>
+            <div class="corpo"><div id="grafico" class="grafico" role="img" aria-label="Gráfico do fator R mês a mês"></div>
+              <div class="dica">Cada ponto é o fator R do período de apuração; a linha tracejada marca 28%. Pontos vazados: faltam meses na base de cálculo.</div></div>
+          </details>
+
+          <details class="painel" open id="pnLanc">
+            <summary><h2>Receita e folha mês a mês</h2></summary>
+            <div class="corpo" style="padding-bottom:6px">
+              <div class="linha-acoes">
+                <button type="button" class="btn primario" id="btnSalvar" disabled>Salvar alterações</button>
+                <button type="button" class="btn" id="btnColar">Colar do Excel</button>
+                <button type="button" class="btn" id="btnMaisMeses">+ 12 meses anteriores</button>
+                <span class="dica" id="salvarStatus"></span>
+              </div>
+              <div class="dica">Folha = salários (com 13º) + pró-labore + encargos (INSS patronal e FGTS efetivamente recolhidos). Receita = receita bruta do mês (mercado interno e exportação). Cada linha mostra o fator R do próprio mês como período de apuração.</div>
+            </div>
+            <div class="tabela-rolagem">
+              <table class="grade-lanc">
+                <thead><tr><th>Mês</th><th>Receita bruta</th><th>Salários</th><th>Pró-labore</th><th>Encargos</th><th>Folha do mês</th><th>Receita 12m</th><th>Folha 12m</th><th>Fator R</th><th>Anexo</th><th>DAS est.</th></tr></thead>
+                <tbody id="grade"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="painel" id="pnHist">
+            <summary><h2>Registros no Controle de Apuração</h2></summary>
+            <div class="corpo"><div id="historico" class="dica">Nenhum registro.</div></div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <dialog id="dlgEmpresa" class="dlg">
+      <form method="dialog" id="formEmpresa">
+        <h3 id="dlgEmpTit">Nova empresa</h3>
+        <div class="campos">
+          <div class="campo inteiro"><label for="fVinculo">Linha no Controle de Apuração</label><select id="fVinculo"></select>
+            <div class="dica">O vínculo permite registrar o fator R na coluna “Pendência / obs. do mês”. Escolher uma empresa preenche nome e CNPJ.</div></div>
+          <div class="campo inteiro"><label for="fNome">Nome</label><input id="fNome" maxlength="160" required></div>
+          <div class="campo"><label for="fCnpj">CNPJ</label><input id="fCnpj" maxlength="18" inputmode="numeric" placeholder="00.000.000/0000-00"></div>
+          <div class="campo"><label for="fCnae">CNAE</label><input id="fCnae" maxlength="20" placeholder="0000-0/00"></div>
+          <div class="campo"><label for="fInicio">Início de atividade</label><input id="fInicio" type="month">
+            <div class="dica">Só se tiver menos de 13 meses de atividade: o cálculo anualiza a média e aplica as regras do início.</div></div>
+          <div class="campo"><label class="marcar" style="margin-top:22px"><input type="checkbox" id="fAtivo" checked> Empresa ativa</label></div>
+          <div class="campo inteiro"><label for="fObs">Observações</label><textarea id="fObs" rows="2" maxlength="1000"></textarea></div>
+        </div>
+        <div class="aviso erro oculto" id="fErro"></div>
+        <div class="linha-acoes dlg-acoes">
+          <button type="button" class="btn perigo oculto" id="btnExcluir">Excluir empresa</button>
+          <span style="flex:1"></span>
+          <button type="button" class="btn" data-fechar>Cancelar</button>
+          <button type="submit" class="btn primario" id="btnSalvarEmp">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlgColar" class="dlg">
+      <form method="dialog" id="formColar">
+        <h3>Colar do Excel</h3>
+        <div class="dica">Uma linha por mês, colunas nesta ordem: <strong>mês</strong> (MM/AAAA), <strong>receita bruta</strong>, <strong>salários</strong>, <strong>pró-labore</strong>, <strong>encargos</strong>. Pode copiar direto da planilha (colunas separadas por tabulação) ou separar por ponto e vírgula. Colunas em branco valem zero; meses já lançados são substituídos.</div>
+        <textarea id="txtColar" rows="9" placeholder="01/2026	45.000,00	9.000,00	3.000,00	1.700,00"></textarea>
+        <div class="aviso erro oculto" id="colarErro"></div>
+        <div class="linha-acoes dlg-acoes"><span style="flex:1"></span>
+          <button type="button" class="btn" data-fechar>Cancelar</button>
+          <button type="submit" class="btn primario">Lançar na grade</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlgRegistrar" class="dlg">
+      <form method="dialog" id="formRegistrar">
+        <h3>Registrar no Controle de Apuração</h3>
+        <div class="campos">
+          <div class="campo"><label for="rComp">Competência no Controle</label><input id="rComp" type="month" required></div>
+          <div class="campo"><label for="rPA">Fator R do período (PA)</label><select id="rPA"></select></div>
+        </div>
+        <div class="dica" id="rDestino"></div>
+        <label>Texto que será gravado na coluna “Pendência / obs. do mês”</label>
+        <div class="texto-nota" id="rPrevia">—</div>
+        <div class="dica">Se já houver uma linha “Fator R” nessa competência, ela é substituída; o restante do texto e a marcação de pendência continuam como estão.</div>
+        <div class="aviso erro oculto" id="rErro"></div>
+        <div class="linha-acoes dlg-acoes"><span style="flex:1"></span>
+          <button type="button" class="btn" data-fechar>Cancelar</button>
+          <button type="submit" class="btn primario" id="btnConfRegistrar">Registrar</button>
+        </div>
+      </form>
+    </dialog>
   </div>
 </div>
 <script src="../simples-comum/simples.js?v=2"></script>
@@ -195,7 +377,7 @@
 
   function trocarModo(novo) {
     modo = novo;
-    Array.prototype.forEach.call(document.querySelectorAll(".segmento button"), function (b) { b.classList.toggle("ativo", b.dataset.modo === novo); });
+    Array.prototype.forEach.call(document.querySelectorAll("#abaCalc .segmento button"), function (b) { b.classList.toggle("ativo", b.dataset.modo === novo); });
     Array.prototype.forEach.call(document.querySelectorAll(".modo-normal"), function (el) { el.classList.toggle("oculto", novo !== "normal"); });
     Array.prototype.forEach.call(document.querySelectorAll(".modo-menos13"), function (el) { el.classList.toggle("oculto", novo !== "menos13"); });
     $("tituloFolha").textContent = novo === "inicio" ? "Folha de salários do mês de início" : novo === "menos13" ? "Folha de salários dos meses anteriores" : "Folha de salários dos 12 meses anteriores";
@@ -205,13 +387,30 @@
   }
 
   U.prepararCamposMoeda();
-  Array.prototype.forEach.call(document.querySelectorAll(".segmento button"), function (b) { b.addEventListener("click", function () { trocarModo(b.dataset.modo); }); });
-  Array.prototype.forEach.call(document.querySelectorAll("input, select"), function (el) { el.addEventListener("input", calcular); });
+  Array.prototype.forEach.call(document.querySelectorAll("#abaCalc .segmento button"), function (b) { b.addEventListener("click", function () { trocarModo(b.dataset.modo); }); });
+  Array.prototype.forEach.call(document.querySelectorAll("#abaCalc input, #abaCalc select"), function (el) { el.addEventListener("input", calcular); });
   $("periodo").addEventListener("change", function () {
     $("btnInicio").textContent = S.reforma(ano()) ? "1º ou 2º mês" : "Mês de início";
     trocarModo(modo);
   });
   trocarModo("normal");
+})();
+</script>
+<script src="monitor.js?v=1"></script>
+<script src="hub-rpc.js?v=1"></script>
+<script src="monitor-ui.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  function aba(qual, historico) {
+    Array.prototype.forEach.call(document.querySelectorAll(".abas button"), function (b) { var on = b.dataset.aba === qual; b.classList.toggle("ativo", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+    document.getElementById("abaCalc").classList.toggle("oculto", qual !== "calc");
+    document.getElementById("abaMon").classList.toggle("oculto", qual !== "mon");
+    if (qual === "mon") window.FatorRMonitorUI.abrir();
+    if (historico) try { history.replaceState(null, "", qual === "mon" ? "#monitoramento" : location.pathname + location.search); } catch (e) { /* sem histórico */ }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".abas button"), function (b) { b.addEventListener("click", function () { aba(b.dataset.aba, true); }); });
+  if (location.hash === "#monitoramento") aba("mon", false);
 })();
 </script>
 <script src="/apps/hub-app-shell.js" defer></script>

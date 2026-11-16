@@ -220,7 +220,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/fator-r/index.html",
     mode: "embutido",
-    description: "Folha de salários ÷ receita bruta dos 12 meses, anexo aplicável, comparação de DAS e folha necessária para 28%."
+    description: "Calculadora (folha ÷ receita dos 12 meses, anexo, DAS e folha necessária para 28%) e monitoramento mês a mês por empresa, com registro no Controle de Apuração."
   },
   {
     id: "sim-retencoes-nfse",

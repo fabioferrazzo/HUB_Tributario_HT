@@ -62,9 +62,12 @@
   function num(v) { v = Number(v); return Number.isFinite(v) && v > 0 ? v : 0; }
 
   function baseInss(valor, cfg) {
-    var mat = num(cfg.valorMateriais), base = valor, regra, pctMin = null;
+    var mat = cfg.materiaisModo === "pct" ? valor * Math.min(100, num(cfg.materiaisPct)) / 100 : num(cfg.valorMateriais);
+    mat = Math.min(valor, arred(mat));
+    var base = valor, regra, pctMin = null, situacao = cfg.materiais, assumido = false;
     var servico = SERVICOS_INSS[cfg.servico] || SERVICOS_INSS.geral;
-    switch (cfg.materiais) {
+    if ((!situacao || situacao === "bruto") && mat > 0) { situacao = "discriminado"; assumido = true; }
+    switch (situacao) {
       case "discriminado":
         base = valor - mat;
         regra = "Materiais/equipamentos discriminados no contrato e na nota saem da base (IN 2110, art. 116).";
@@ -84,10 +87,12 @@
       default:
         regra = "Sem material/equipamento discriminado na nota: a base é o valor bruto (IN 2110, art. 119, parágrafo único).";
     }
-    var deducoes = num(cfg.deducoes);
+    if (assumido) regra = "Dedução de materiais/equipamentos informada: tratada como discriminada no contrato e na nota (IN 2110, art. 116). Se o contrato não traz o valor, escolha a situação dos arts. 117 ou 118, que fixam base mínima.";
+    if (mat > 0 && cfg.materiaisModo === "pct") regra += " Materiais/equipamentos: " + String(Math.min(100, num(cfg.materiaisPct))).replace(".", ",") + "% do valor bruto = " + fmt(mat) + ".";
+    var deducoes = Math.min(Math.max(0, arred(base)), num(cfg.deducoes));
     if (deducoes > 0) regra += " Deduzidos alimentação e vale-transporte discriminados na nota (art. 120).";
     base = Math.max(0, arred(base - deducoes));
-    return { base: base, regra: regra, pctMin: pctMin };
+    return { base: base, regra: regra, pctMin: pctMin, materiais: mat, situacao: situacao, assumido: assumido };
   }
 
   /*
@@ -96,12 +101,18 @@
    *   regime: "normal" | "simples", anexoSimples: "I".."V", tomadorSimples: bool (tomador privado optante pelo Simples),
    *   natureza (privado), valorVeiculos (propaganda), codigo (IN 1234),
    *   inss: { aplica, servico, materiais, valorMateriais, tipoConstrucao, deducoes, especial: 0|15|20|25, valorEspecial, dispensa: "" | "semEmpregados" | "profissionalSocios" },
-   *   iss: { aplica, aliquota, deducoes }
+   *   iss: { aplica, aliquota, deducaoModo: "valor" | "pct", deducoes (R$), deducaoPct (%) },
+   *   inss.materiaisModo: "valor" | "pct" (com inss.materiaisPct), federal: { deducaoModo: "valor" | "pct", deducao (R$), deducaoPct (%) }
    * }
    */
   function calcular(o) {
     var valor = num(o.valor), simples = o.regime === "simples", ano2027 = Number(o.ano) >= 2027;
     var linhas = [], avisos = [];
+    // Dedução da base das retenções federais (só com previsão legal específica)
+    var fedCfg = o.federal || {};
+    var dedFed = fedCfg.deducaoModo === "pct" ? arred(valor * Math.min(100, num(fedCfg.deducaoPct)) / 100) : Math.min(valor, num(fedCfg.deducao));
+    var valorFed = Math.max(0, arred(valor - dedFed));
+    var avisoDedFed = dedFed > 0 && !simples;
     function linha(tributo, base, aliquota, valorRet, fundamento, extra) {
       var l = { tributo: tributo, base: arred(base), aliquota: aliquota, valor: arred(valorRet), fundamento: fundamento, dispensado: false, grupo: null };
       if (extra) for (var k in extra) l[k] = extra[k];
@@ -121,7 +132,7 @@
         ];
         var grupo = [];
         partes.forEach(function (p) {
-          if (p[1] > 0) grupo.push(linha(p[0], valor, p[1], valor * p[1] / 100, "IN RFB 1.234/2012, Anexo I — código " + it.codigo, { grupo: "in1234", codigo: it.codigo }));
+          if (p[1] > 0) grupo.push(linha(p[0], valorFed, p[1], valorFed * p[1] / 100, "IN RFB 1.234/2012, Anexo I — código " + it.codigo, { grupo: "in1234", codigo: it.codigo }));
         });
         var totalGrupo = grupo.reduce(function (s, l) { return s + l.valor; }, 0);
         if (totalGrupo > 0 && totalGrupo < 10) {
@@ -136,7 +147,7 @@
       if (simples) {
         avisos.push({ tipo: "neutro", texto: "Prestador do Simples Nacional: sem retenção de IR pelo ente estadual ou municipal (IN RFB 1.234/2012, art. 4º, XI, aplicável ao art. 2º-A), mediante a declaração do Anexo IV." });
       } else if (it2.ir > 0) {
-        linha("IR", valor, it2.ir, valor * it2.ir / 100, "IN RFB 1.234/2012, arts. 2º-A e 3º-A (coluna 02 do Anexo I)", { grupo: "estadual" });
+        linha("IR", valorFed, it2.ir, valorFed * it2.ir / 100, "IN RFB 1.234/2012, arts. 2º-A e 3º-A (coluna 02 do Anexo I)", { grupo: "estadual" });
         avisos.push({ tipo: "neutro", texto: "Estados, DF e municípios (com suas autarquias e fundações) retêm só o IR, pela coluna 02 do Anexo I. O IR retido fica com o próprio ente (CF, arts. 157, I, e 158, I)." });
       } else {
         avisos.push({ tipo: "neutro", texto: "Para esta natureza a coluna de IR do Anexo I é zero: não há retenção de IR pelo ente." });
@@ -147,10 +158,10 @@
         if (nat.ir > 0 || nat.csrf) avisos.push({ tipo: "neutro", texto: "Prestador do Simples Nacional: sem retenção de IR (IN RFB 765/2007) e de PIS, Cofins e CSLL (Lei 10.833/2003, art. 32, III). Peça a declaração de optante para o arquivo do tomador." });
       } else {
         if (nat.ir > 0) {
-          var baseIr = valor;
+          var baseIr = valorFed;
           if (nat.excluiVeiculos) {
-            var veic = Math.min(valor, num(o.valorVeiculos));
-            baseIr = valor - veic;
+            var veic = Math.min(valorFed, num(o.valorVeiculos));
+            baseIr = valorFed - veic;
             if (veic > 0) avisos.push({ tipo: "neutro", texto: "Valores repassados a rádio, TV, jornais e revistas saem da base do IR (RIR/2018, art. 718, § 1º)." });
           }
           var lir = linha("IRRF", baseIr, nat.ir, baseIr * nat.ir / 100, nat.irBase);
@@ -160,10 +171,10 @@
           avisos.push({ tipo: "neutro", texto: "Tomador optante pelo Simples Nacional não é obrigado a reter PIS, Cofins e CSLL (Lei 10.833/2003, art. 30, § 2º). O IRRF e o INSS continuam sendo retidos." });
         } else if (nat.csrf) {
           var g = [];
-          g.push(linha("CSLL", valor, 1, valor * 0.01, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
+          g.push(linha("CSLL", valorFed, 1, valorFed * 0.01, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
           if (!ano2027) {
-            g.push(linha("Cofins", valor, 3, valor * 0.03, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
-            g.push(linha("PIS/Pasep", valor, 0.65, valor * 0.0065, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
+            g.push(linha("Cofins", valorFed, 3, valorFed * 0.03, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
+            g.push(linha("PIS/Pasep", valorFed, 0.65, valorFed * 0.0065, "Lei 10.833/2003, arts. 30 e 31", { grupo: "csrf" }));
           } else {
             avisos.push({ tipo: "aviso", texto: "2027: PIS e Cofins deixam de existir (EC 132/2023, ADCT, art. 126, II; LC 214/2025, art. 542). Os arts. 30 a 36 da Lei 10.833/2003 não foram revogados, então sobra a retenção da CSLL de 1%. Confira se a Receita publicou ajuste antes de usar." });
           }
@@ -177,6 +188,7 @@
       }
     }
 
+    if (avisoDedFed && linhas.length) avisos.push({ tipo: "aviso", texto: "Base das retenções federais: " + fmt(valor) + " − dedução de " + fmt(dedFed) + (fedCfg.deducaoModo === "pct" ? " (" + pctTxt(num(fedCfg.deducaoPct)) + ")" : "") + " = " + fmt(valorFed) + ". Em regra o IR e as contribuições são retidos sobre o valor bruto do pagamento (RIR/2018, arts. 714 e 716; Lei 10.833/2003, art. 30; IN RFB 1.234/2012, art. 2º). Use a dedução só com previsão legal específica para o caso e guarde o fundamento." });
     // ---------- INSS ----------
     var inss = o.inss || {};
     if (inss.aplica) {
@@ -216,8 +228,11 @@
         aliq = NaN;
       }
       if (Number.isFinite(aliq)) {
-        var baseIss = Math.max(0, valor - num(iss.deducoes));
+        var dedIss = iss.deducaoModo === "pct" ? arred(valor * Math.min(100, num(iss.deducaoPct)) / 100) : Math.min(valor, num(iss.deducoes));
+        var baseIss = Math.max(0, arred(valor - dedIss));
+        if (dedIss > 0) avisos.push({ tipo: "neutro", texto: "Base do ISS: " + fmt(valor) + " − dedução/redução de " + fmt(dedIss) + (iss.deducaoModo === "pct" ? " (" + pctTxt(num(iss.deducaoPct)) + " do valor do serviço)" : "") + " = " + fmt(baseIss) + ". A dedução ou redução tem de estar prevista: materiais fornecidos pelo prestador nas obras dos itens 7.02 e 7.05 (LC 116/2003, art. 7º, § 2º, I) ou regra da lei do município, que pode fixar valor ou percentual. A alíquota efetiva final não pode ficar abaixo de 2% (LC 116/2003, art. 8º-A, § 1º)." });
         linha("ISS", baseIss, aliq, baseIss * aliq / 100, simples ? "LC 123/2006, art. 21, § 4º; Res. CGSN 140/2018, art. 27" : "LC 116/2003, art. 6º, e lei do município", { grupo: "iss" });
+        if (!simples && dedIss > 0 && aliq * baseIss / valor < 2 - 1e-9) avisos.push({ tipo: "aviso", texto: "Com a dedução, o ISS fica em " + pctTxt(aliq * baseIss / valor) + " do valor do serviço, abaixo do mínimo de 2% (LC 116/2003, art. 8º-A, § 1º). Só vale se a dedução for das exceções do próprio art. 8º-A (itens 7.02, 7.05 e 16.01) — confira a lei do município." });
         if (!simples && (aliq < 2 || aliq > 5)) avisos.push({ tipo: "aviso", texto: "Alíquota de ISS fora da faixa de 2% a 5% da LC 116/2003 (arts. 8º, II, e 8º-A). Confira a lei do município." });
       } else {
         avisos.push({ tipo: "erro", texto: "Informe a alíquota do ISS do município." });

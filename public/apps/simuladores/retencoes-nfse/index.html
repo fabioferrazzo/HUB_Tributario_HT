@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Retenções em NFS-e — H. Teixeira</title>
-<link rel="stylesheet" href="../simples-comum/simples.css?v=1">
+<link rel="stylesheet" href="../simples-comum/simples.css?v=3">
 <style>
   .campo { align-content: start; }
   select { text-overflow: ellipsis; }
@@ -12,6 +12,8 @@
   tr.dispensado td { color: var(--muted); text-decoration: line-through; }
   tr.dispensado td.fund { text-decoration: none; }
   .sub-bloco { border-top: 1px solid var(--line); }
+.valor-modo { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 4px; }
+.valor-modo select { padding: 6px 4px; text-align: center; }
 </style>
 </head>
 <body>
@@ -75,6 +77,11 @@
             <label for="codigo">Natureza pela tabela da IN 1.234 (Anexo I)</label>
             <select id="codigo"></select>
           </div>
+          <div class="campo inteiro" id="blocoDedFed">
+            <label for="dedFed">Dedução da base do IR e das contribuições</label>
+            <div class="valor-modo"><input id="dedFed" class="num moeda" value="0,00" aria-describedby="dicaDedFed"><select id="dedFedModo" aria-label="Dedução federal em reais ou percentual"><option value="valor">R$</option><option value="pct">%</option></select></div>
+            <div class="dica" id="dicaDedFed">Em regra a retenção federal incide sobre o valor bruto. Preencha só se houver previsão legal específica para deduzir parte do valor.</div>
+          </div>
         </div>
       </div>
 
@@ -89,7 +96,7 @@
               <select id="inssServico"></select>
             </div>
             <div class="campo inteiro">
-              <label for="inssMateriais">Materiais e equipamentos</label>
+              <label for="inssMateriais">Situação dos materiais e equipamentos</label>
               <select id="inssMateriais">
                 <option value="bruto">Não há ou não estão discriminados na nota</option>
                 <option value="discriminado">Discriminados no contrato e na nota (art. 116)</option>
@@ -101,8 +108,11 @@
               <label for="tipoConstrucao">Serviço de construção com equipamento</label>
               <select id="tipoConstrucao"></select>
             </div>
-            <div class="campo"><label for="inssValorMateriais">Valor de materiais/equipamentos na nota</label><input id="inssValorMateriais" class="num moeda" value="0,00"></div>
-            <div class="campo"><label for="inssDeducoes">Alimentação e vale-transporte na nota</label><input id="inssDeducoes" class="num moeda" value="0,00"></div>
+            <div class="campo"><label for="inssValorMateriais">Dedução de materiais/equipamentos</label>
+              <div class="valor-modo"><input id="inssValorMateriais" class="num moeda" value="0,00"><select id="inssMatModo" aria-label="Dedução do INSS em reais ou percentual"><option value="valor">R$</option><option value="pct">%</option></select></div>
+              <div class="dica">Valor (ou % do valor bruto) de materiais e equipamentos fornecidos pela contratada e discriminados na nota. Nos casos dos arts. 117 e 118 vale a base mínima.</div></div>
+            <div class="campo"><label for="inssDeducoes">Alimentação e vale-transporte na nota</label><input id="inssDeducoes" class="num moeda" value="0,00">
+              <div class="dica">Fornecidos de acordo com a legislação e discriminados na nota (IN 2110, art. 120).</div></div>
             <div class="campo">
               <label for="inssEspecial">Atividade especial no tomador</label>
               <select id="inssEspecial">
@@ -132,8 +142,10 @@
           <div class="dica">A retenção depende da lei do município e dos casos da LC 116/2003 (art. 6º, § 2º, e art. 3º). Confira a lei local.</div>
           <div class="campos">
             <div class="campo"><label for="issAliquota">Alíquota do ISS (%)</label><input id="issAliquota" class="num" inputmode="decimal" value="5,00"></div>
-            <div class="campo"><label for="issDeducoes">Deduções da base (ex.: materiais na obra)</label><input id="issDeducoes" class="num moeda" value="0,00"></div>
+            <div class="campo"><label for="issDeducoes">Dedução ou redução da base</label>
+              <div class="valor-modo"><input id="issDeducoes" class="num moeda" value="0,00"><select id="issDedModo" aria-label="Dedução do ISS em reais ou percentual"><option value="valor">R$</option><option value="pct">%</option></select></div></div>
           </div>
+          <div class="dica">Materiais fornecidos pelo prestador em obras (itens 7.02 e 7.05 da lista da LC 116/2003, art. 7º, § 2º, I), máquinas e equipamentos ou redução de base prevista na lei do município — em reais ou em percentual do valor do serviço.</div>
           <div id="blocoIssSimples" class="oculto" style="display:grid;gap:8px">
             <div class="dica">No Simples, o tomador usa a alíquota informada na nota: o percentual efetivo de ISS da faixa do mês anterior até 2026 e, a partir de 2027, da faixa do próprio mês da prestação (Res. CGSN 140/2018, art. 27, na redação da Res. CGSN 190/2026). Deixe a alíquota em branco para ver a regra dos 5% quando a nota não informa.</div>
             <div class="campos">
@@ -213,7 +225,8 @@
     $("blocoTipoConstrucao").classList.toggle("oculto", !($("inssMateriais").value === "equipInerente" && $("inssServico").value === "construcao"));
     var inssOn = $("inssAplica").checked;
     Array.prototype.forEach.call($("camposInss").querySelectorAll("input, select"), function (el) { el.disabled = !inssOn; });
-    $("issAliquota").disabled = !$("issAplica").checked; $("issDeducoes").disabled = !$("issAplica").checked;
+    $("issAliquota").disabled = $("issDeducoes").disabled = $("issDedModo").disabled = !$("issAplica").checked;
+    $("blocoDedFed").classList.toggle("oculto", simples);
 
     var valor = U.valorCampo($("valor"));
     if (!Number.isFinite(valor) || valor <= 0) return erro("Informe o valor bruto da nota em reais.");
@@ -221,10 +234,11 @@
     var r = R.calcular({
       ano: ano, tomador: tomador, valor: valor, regime: $("regime").value, anexoSimples: $("anexo").value,
       natureza: $("natureza").value, tomadorSimples: tomador === "privado" && $("tomadorSimples").checked, valorVeiculos: moedaCampo("veiculos"), codigo: $("codigo").value,
-      inss: { aplica: inssOn, servico: $("inssServico").value, materiais: $("inssMateriais").value, valorMateriais: moedaCampo("inssValorMateriais"),
+      inss: { aplica: inssOn, servico: $("inssServico").value, materiais: $("inssMateriais").value, materiaisModo: $("inssMatModo").value, valorMateriais: moedaCampo("inssValorMateriais"), materiaisPct: moedaCampo("inssValorMateriais"),
         tipoConstrucao: $("tipoConstrucao").value, deducoes: moedaCampo("inssDeducoes"), especial: Number($("inssEspecial").value),
         valorEspecial: moedaCampo("inssValorEspecial"), dispensa: $("inssDispensa").value },
-      iss: { aplica: $("issAplica").checked, aliquota: issTxt ? U.parseBR(issTxt) : NaN, deducoes: moedaCampo("issDeducoes") }
+      iss: { aplica: $("issAplica").checked, aliquota: issTxt ? U.parseBR(issTxt) : NaN, deducaoModo: $("issDedModo").value, deducoes: moedaCampo("issDeducoes"), deducaoPct: moedaCampo("issDeducoes") },
+      federal: { deducaoModo: $("dedFedModo").value, deducao: moedaCampo("dedFed"), deducaoPct: moedaCampo("dedFed") }
     });
 
     var fed = 0, outros = 0, regraInss = null;
