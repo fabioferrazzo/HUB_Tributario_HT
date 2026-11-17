@@ -54,6 +54,7 @@ import {
 import { BotoesArquivos, MODELO_EMAIL, anexosDa, preencherModelo } from "./Arquivos";
 import { baixarConsolidado } from "./exportar";
 import { Formulario, Medias } from "./Formulario";
+import { apagarLocal, chaveLocal, guardarLocal, lerLocal, quando } from "./rascunhoLocal";
 import { useSecoes } from "./secoes";
 
 const COLUNAS: Array<{ id: AvaliacaoStatus; titulo: string }> = [
@@ -117,17 +118,44 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
     return !sujo || window.confirm("Há alterações não salvas na correção. Descartar?");
   }
 
+  const chave = (id: string) => chaveLocal("coord", user.id || user.email, id);
+
+  function salvaDe(a: Avaliacao) {
+    return a.coordenacao ? { ...coordenacaoVazia(), ...a.coordenacao } : coordenacaoVazia();
+  }
+
+  // Abre a correção; se houver cópia local não salva (e mais nova que a do HUB), recupera.
   function aplicar(a: Avaliacao) {
     setAberta(a);
-    const c = a.coordenacao ? { ...coordenacaoVazia(), ...a.coordenacao } : coordenacaoVazia();
+    let c = salvaDe(a);
+    let recuperada: string | null = null;
+    if (podeAcao("corrigir", a.status, "coordenacao")) {
+      const local = lerLocal<ParteCoordenacao>(chave(a.id));
+      if (local && !(a.updatedAt && a.updatedAt > local.em)) {
+        c = { ...coordenacaoVazia(), ...local.dados };
+        recuperada = local.em;
+      } else if (local) apagarLocal(chave(a.id));
+    } else apagarLocal(chave(a.id));
+    setParte(completarRecs(c));
+    setMostrarSub(notasPreenchidas(c.subcoordenacao) > 0);
+    setSujo(!!recuperada);
+    setResposta("");
+    if (recuperada) setAviso({ texto: `Recuperei alterações não salvas de ${quando(recuperada)}. Salve a correção ou clique em “Descartar alterações”.` });
+  }
+
+  function descartar() {
+    if (!aberta || !window.confirm("Descartar as alterações não salvas desta correção?")) return;
+    apagarLocal(chave(aberta.id));
+    const c = salvaDe(aberta);
     setParte(completarRecs(c));
     setMostrarSub(notasPreenchidas(c.subcoordenacao) > 0);
     setSujo(false);
-    setResposta("");
+    setAviso({ texto: "Alterações descartadas." });
   }
 
   async function abrir(id: string) {
     if (!descartarOk()) return;
+    if (aberta && sujo) apagarLocal(chave(aberta.id));
     setAviso(null);
     setOcupado(true);
     try {
@@ -142,6 +170,7 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
 
   function voltar() {
     if (!descartarOk()) return;
+    if (aberta) apagarLocal(chave(aberta.id));
     setAberta(null);
     setSujo(false);
     setAviso(null);
@@ -156,6 +185,7 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
   function alterar(p: ParteCoordenacao) {
     setParte(p);
     setSujo(true);
+    if (aberta) guardarLocal(chave(aberta.id), p);
   }
 
   async function executar(fn: () => Promise<Avaliacao | void>, ok: string, aviso?: "finalizada" | "resposta" | "devolvida") {
@@ -163,6 +193,7 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
     setOcupado(true);
     try {
       const r = await fn();
+      apagarLocal(chave(aberta.id));
       let texto = ok;
       if (r) {
         if (r.status === "rascunho") {
@@ -221,6 +252,7 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
     setOcupado(true);
     try {
       await excluirAvaliacao(user, aberta.id);
+      apagarLocal(chave(aberta.id));
       setAberta(null);
       setSujo(false);
       await carregar();
@@ -367,7 +399,15 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
           </div>
           <div style={{ padding: "0 16px 16px", display: "grid", gap: 12 }}>
             {aviso ? <p className={`avd-aviso ${aviso.erro ? "avd-aviso--erro" : ""}`}>{aviso.texto}</p> : null}
-            {sujo ? <p className="avd-aviso avd-aviso--alerta">Alterações ainda não salvas.</p> : null}
+            {sujo ? (
+              <p className="avd-aviso avd-aviso--alerta avd-linha">
+                Alterações ainda não salvas.
+                <button className="avd-btn" type="button" onClick={descartar}>
+                  <RotateCcw size={14} strokeWidth={1.6} />
+                  Descartar alterações
+                </button>
+              </p>
+            ) : null}
             {st === "replica" ? <p className="avd-aviso avd-aviso--alerta">O colaborador enviou réplica — veja em “Avaliação geral” e responda.</p> : null}
             <Medias colaborador={aberta.colaborador} coordenacao={coordMostrar} mostrarSub={mostrarSub} />
             <Formulario

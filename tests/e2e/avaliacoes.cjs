@@ -28,6 +28,13 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
     await page.getByRole("button", { name: /Sair/ }).first().click();
     await page.waitForTimeout(600);
   };
+  const recarregar = async (email) => {
+    await page.reload();
+    await page.waitForTimeout(900);
+    if (await page.locator('input[type="password"]').count()) return login(email);
+    await page.locator(".sidebar button", { hasText: "Avaliações" }).first().click();
+    await page.waitForTimeout(800);
+  };
   const aviso = async () => (await page.locator(".avd-aviso").allInnerTexts()).join(" | ");
   const botao = (nome) => page.getByRole("button", { name: nome, exact: true });
   const baixar = async (nome) => {
@@ -71,6 +78,15 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("rascunho salvo", /Rascunho salvo/.test(await aviso()));
   check("média da autoavaliação (soma ÷ 7)", (await page.locator('[data-media="colaborador"]').innerText()).trim() === "8,86");
   check("lista mostra o rascunho", /Rascunho/.test(await page.locator(".avd-lista").innerText()));
+  const just1 = page.locator('textarea[aria-label^="Justificativa do colaborador"]').first();
+  await just1.fill("Texto ainda não salvo");
+  await recarregar("colaborador@hteixeira.local");
+  check("recupera alteração não salva (colaborador)", /Recuperei alterações/.test(await aviso()) && (await just1.inputValue()) === "Texto ainda não salvo");
+  await botao("Descartar alterações").click();
+  await page.waitForTimeout(300);
+  check("descartar volta ao rascunho salvo", (await just1.inputValue()).startsWith("Justificativa 1") && !/não salvas/.test(await aviso()));
+  await recarregar("colaborador@hteixeira.local");
+  check("sem recuperação após descartar", !/Recuperei/.test(await aviso()));
   await botao("Salvar para a coordenação").click();
   await page.waitForTimeout(700);
   check("salva para a coordenação", /salva para a coordenação/i.test(await aviso()));
@@ -133,6 +149,15 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await col("em_correcao").first().click();
   await page.waitForTimeout(500);
   check("correção mantida", (await page.locator("#avd-melhorar").inputValue()) === "Revisar o SPED antes do envio.");
+  check("e-mail ao colaborador só após finalizar", await botao("E-mail").first().isDisabled());
+  await page.locator("#avd-melhorar").fill("Rascunho local da correção");
+  await recarregar("");
+  await col("em_correcao").first().click();
+  await page.waitForTimeout(600);
+  check("recupera correção não salva", /Recuperei alterações/.test(await aviso()) && (await page.locator("#avd-melhorar").inputValue()) === "Rascunho local da correção");
+  await botao("Descartar alterações").click();
+  await page.waitForTimeout(300);
+  check("descartar volta à correção salva", (await page.locator("#avd-melhorar").inputValue()) === "Revisar o SPED antes do envio.");
   await botao("Finalizar avaliação").click();
   await page.waitForTimeout(600);
   check("finalizada", /Avaliação finalizada/.test(await aviso()) && /Finalizada/.test(await page.locator(".avd-topo .avd-pill").first().innerText()));

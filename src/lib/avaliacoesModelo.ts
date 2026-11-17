@@ -144,7 +144,7 @@ export function notaValida(n: unknown): n is number {
 
 // Lê o que foi digitado ("8,5", "10", "") — devolve null se vazio e NaN se inválido.
 export function lerNota(valor: string): number | null {
-  const t = String(valor ?? "").trim().replace(",", ".");
+  const t = String(valor ?? "").trim().replace(",", ".").replace(/\.$/, "");
   if (!t) return null;
   if (!/^\d{1,2}(\.\d{1,2})?$/.test(t)) return Number.NaN;
   const n = Number(t);

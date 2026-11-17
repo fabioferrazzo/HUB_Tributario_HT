@@ -1,6 +1,6 @@
 // Tela do colaborador: escolhe o mês, preenche a autoavaliação, salva para a coordenação e, depois da
 // correção, vê o resultado e pode enviar réplica (sem alterar a avaliação).
-import { Award, MessageSquareReply, Save, Send, Sparkles, Trash2 } from "lucide-react";
+import { Award, MessageSquareReply, RotateCcw, Save, Send, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { HubUser } from "../../types";
 import { getErrorMessage } from "../../lib/formatters";
@@ -28,6 +28,7 @@ import {
 } from "../../lib/avaliacoes";
 import { BotoesArquivos } from "./Arquivos";
 import { Formulario, Medias, type SecaoId } from "./Formulario";
+import { apagarLocal, chaveLocal, guardarLocal, lerLocal, quando } from "./rascunhoLocal";
 import { useSecoes } from "./secoes";
 
 export function AreaColaborador({ user }: { user: HubUser }) {
@@ -45,15 +46,37 @@ export function AreaColaborador({ user }: { user: HubUser }) {
   const status = atual?.status ?? null;
   const editavel = podeAcao("editarColaborador", status, "colaborador");
 
+  const chave = (c: string) => chaveLocal("colab", user.id || user.email, c);
+
+  // Parte do colaborador da competência: a salva no HUB ou, se houver, a cópia local não salva (só em rascunho).
+  function parteDe(itens: Avaliacao[], c: string): { parte: ParteColaborador; recuperada: string | null } {
+    const a = itens.find((x) => x.competencia === c);
+    const base = a ? { ...a.colaborador, sugestoes: a.colaborador.sugestoes.length ? a.colaborador.sugestoes : colaboradorVazio().sugestoes } : colaboradorVazio();
+    if (a && a.status !== "rascunho") {
+      apagarLocal(chave(c));
+      return { parte: base, recuperada: null };
+    }
+    let local = lerLocal<ParteColaborador>(chave(c));
+    if (local && a?.updatedAt && a.updatedAt > local.em) {
+      apagarLocal(chave(c)); // a versão salva é mais nova que a cópia local
+      local = null;
+    }
+    return local ? { parte: local.dados, recuperada: local.em } : { parte: base, recuperada: null };
+  }
+
+  function aplicarParte(itens: Avaliacao[], c: string) {
+    const { parte: p, recuperada } = parteDe(itens, c);
+    setParte(p);
+    setSujo(!!recuperada);
+    if (recuperada) setAviso({ texto: `Recuperei alterações não salvas de ${quando(recuperada)}. Salve o rascunho ou clique em “Descartar alterações”.` });
+  }
+
   async function carregar(manter?: string) {
     setCarregando(true);
     try {
       const itens = await listarMinhas(user);
       setLista(itens);
-      const alvo = manter ?? comp;
-      const a = itens.find((x) => x.competencia === alvo);
-      setParte(a ? { ...a.colaborador, sugestoes: a.colaborador.sugestoes.length ? a.colaborador.sugestoes : colaboradorVazio().sugestoes } : colaboradorVazio());
-      setSujo(false);
+      aplicarParte(itens, manter ?? comp);
     } catch (e) {
       setAviso({ texto: getErrorMessage(e), erro: true });
     } finally {
@@ -79,17 +102,26 @@ export function AreaColaborador({ user }: { user: HubUser }) {
   function trocarComp(c: string) {
     if (!c || c === comp) return;
     if (sujo && !window.confirm("Há alterações não salvas nesta avaliação. Descartar e trocar de mês?")) return;
+    if (sujo) apagarLocal(chave(comp));
     setComp(c);
-    const a = lista.find((x) => x.competencia === c);
-    setParte(a ? { ...a.colaborador, sugestoes: a.colaborador.sugestoes.length ? a.colaborador.sugestoes : colaboradorVazio().sugestoes } : colaboradorVazio());
-    setSujo(false);
     setAviso(null);
     setReplica("");
+    aplicarParte(lista, c);
   }
 
   function alterar(p: ParteColaborador) {
     setParte(p);
     setSujo(true);
+    guardarLocal(chave(comp), p);
+  }
+
+  function descartar() {
+    if (!window.confirm("Descartar as alterações não salvas desta avaliação?")) return;
+    apagarLocal(chave(comp));
+    const a = lista.find((x) => x.competencia === comp);
+    setParte(a ? { ...a.colaborador, sugestoes: a.colaborador.sugestoes.length ? a.colaborador.sugestoes : colaboradorVazio().sugestoes } : colaboradorVazio());
+    setSujo(false);
+    setAviso({ texto: "Alterações descartadas." });
   }
 
   async function salvar(enviar: boolean) {
@@ -101,6 +133,7 @@ export function AreaColaborador({ user }: { user: HubUser }) {
     setOcupado(true);
     try {
       const salvo = await salvarColaborador(user, comp, parte, enviar);
+      apagarLocal(chave(comp));
       await carregar(salvo.competencia);
       let texto = enviar ? "Avaliação salva para a coordenação." : "Rascunho salvo.";
       if (enviar) {
@@ -124,6 +157,7 @@ export function AreaColaborador({ user }: { user: HubUser }) {
     setOcupado(true);
     try {
       await excluirAvaliacao(user, atual.id);
+      apagarLocal(chave(comp));
       await carregar();
       setAviso({ texto: "Rascunho excluído." });
     } catch (e) {
@@ -236,7 +270,15 @@ export function AreaColaborador({ user }: { user: HubUser }) {
         </div>
         <div style={{ padding: "0 16px 16px", display: "grid", gap: 12 }}>
           {aviso ? <p className={`avd-aviso ${aviso.erro ? "avd-aviso--erro" : ""}`}>{aviso.texto}</p> : null}
-          {sujo ? <p className="avd-aviso avd-aviso--alerta">Alterações ainda não salvas.</p> : null}
+          {sujo ? (
+            <p className="avd-aviso avd-aviso--alerta avd-linha">
+              Alterações ainda não salvas.
+              <button className="avd-btn" type="button" onClick={descartar}>
+                <RotateCcw size={14} strokeWidth={1.6} />
+                Descartar alterações
+              </button>
+            </p>
+          ) : null}
           {status === "enviada" || status === "em_correcao" ? (
             <p className="avd-aviso avd-aviso--neutro">Sua avaliação está com a coordenação. Você será avisado quando ela for finalizada.</p>
           ) : null}
@@ -252,7 +294,7 @@ export function AreaColaborador({ user }: { user: HubUser }) {
             replicaSlot={replicaSlot}
             replicas={atual?.replicas || []}
             onAlternar={(s: SecaoId) => alternar(s)}
-            onColaborador={editavel ? alterar : undefined}
+            onColaborador={editavel && !carregando ? alterar : undefined}
           />
         </div>
       </section>

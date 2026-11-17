@@ -350,7 +350,7 @@ export function Formulario(p: Props) {
         </Secao>
       ) : null}
 
-      {verColab ? (
+      {/* Sugestões e feedback do colaborador: sempre visíveis (a opção de ocultar vale para as notas da autoavaliação) */}
         <>
           <Secao fechadas={p.fechadas} id="sugestoes" titulo="Sugestões do colaborador" onAlternar={p.onAlternar}>
             {sugestoes.length ? (
@@ -441,7 +441,7 @@ export function Formulario(p: Props) {
             ))}
           </Secao>
         </>
-      ) : null}
+      
     </div>
   );
 }

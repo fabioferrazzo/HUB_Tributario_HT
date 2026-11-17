@@ -31,6 +31,7 @@ export function BotoesArquivos({ avaliacao, coordenacao, onAviso }: { avaliacao:
   const [pdf, setPdf] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const podeEnviar = avaliacao.status === "finalizada" || avaliacao.status === "replica";
 
   function abrir() {
     setAssunto(preencherModelo(MODELO_EMAIL.assunto, avaliacao));
@@ -73,7 +74,19 @@ export function BotoesArquivos({ avaliacao, coordenacao, onAviso }: { avaliacao:
         <FileText size={15} strokeWidth={1.6} />
         PDF
       </button>
-      <button className="avd-btn" title={coordenacao ? "Enviar ao colaborador por e-mail, com os arquivos anexados" : "Enviar uma cópia para o seu e-mail"} type="button" onClick={abrir}>
+      <button
+        className="avd-btn"
+        disabled={coordenacao && !podeEnviar}
+        title={
+          coordenacao
+            ? podeEnviar
+              ? "Enviar ao colaborador por e-mail, com os arquivos anexados"
+              : "Disponível depois de finalizar a avaliação"
+            : "Enviar uma cópia para o seu e-mail"
+        }
+        type="button"
+        onClick={abrir}
+      >
         <Mail size={15} strokeWidth={1.6} />
         E-mail
       </button>

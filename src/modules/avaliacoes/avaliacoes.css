@@ -159,3 +159,4 @@
   .avd-topo, .avd-acoes, .avd-lista { display: none !important; }
 }
 .avd-dica { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.avd-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; }

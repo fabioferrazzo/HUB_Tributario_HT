@@ -187,7 +187,7 @@ async function enviarArquivos(ctx, av, payload, { isAdmin, isOwner, owner }) {
   let destino;
   if (para === "colaborador") {
     if (!isAdmin) return json(403, { error: "Somente a coordenação envia a avaliação ao colaborador." });
-    if (av.status === "rascunho") return json(409, { error: "A avaliação ainda é rascunho do colaborador." });
+    if (av.status !== "finalizada" && av.status !== "replica") return json(409, { error: "Finalize a avaliação antes de enviá-la ao colaborador." });
     destino = owner;
   } else {
     if (!isOwner) return json(403, { error: "Você só pode enviar a sua própria avaliação para o seu e-mail." });
