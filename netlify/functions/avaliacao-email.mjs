@@ -1,9 +1,15 @@
-// Avisos da avaliação por desempenho, por e-mail e no sino do HUB:
-// - envio:     o colaborador enviou a autoavaliação → administradores (coordenação);
-// - devolvida: a coordenação devolveu a avaliação → colaborador;
-// - replica:   o colaborador respondeu às recomendações → administradores.
-// Quem dispara precisa ter permissão sobre a avaliação (dono ou administrador, conforme o tipo).
-import { processDueEmails } from "./email-outbox.mjs";
+// Avaliações por desempenho (tabelas avd_*): avisos por e-mail e no sino do HUB, e envio da avaliação
+// por e-mail com os arquivos (XLSX/PDF) gerados no navegador.
+//
+// POST { acao: "aviso", id, tipo }
+//   enviada    colaborador salvou para a coordenação  → administradores
+//   finalizada coordenação finalizou                   → colaborador
+//   replica    colaborador enviou réplica             → administradores
+//   resposta   coordenação respondeu à réplica        → colaborador
+//   devolvida  coordenação devolveu para ajustes      → colaborador
+// POST { acao: "arquivos", id, para: "colaborador" | "eu", assunto, mensagem, anexos: [{ nome, tipo, base64 }] }
+//   coordenação → colaborador da avaliação; colaborador → o próprio e-mail. Só Gmail (SMTP com senha de app).
+import { assertDeliveryConfig, isDeliveryEnabled, processDueEmails } from "./email-outbox.mjs";
 
 const CRITERIOS = [
   ["producao", "Produção"],
@@ -14,13 +20,12 @@ const CRITERIOS = [
   ["atendimento", "Atendimento ao cliente"],
   ["autonomia", "Autonomia"]
 ];
-const FEEDBACK = [
-  ["gosta", "Dentre as atividades que você realiza hoje, o que você mais gosta?"],
-  ["naoGosta", "O que você não gosta e gostaria de deixar de fazer?"],
-  ["gostaria", "Qual atividade você não faz, mas gostaria de realizar?"],
-  ["sugestoes", "Sugestões e críticas"]
-];
-const TIPOS = ["envio", "devolvida", "replica"];
+const TIPOS = ["enviada", "finalizada", "replica", "resposta", "devolvida"];
+const ANEXO_TIPOS = {
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".pdf": "application/pdf"
+};
+const LIMITE_ANEXOS = 4 * 1024 * 1024; // bytes decodificados (a função recebe até ~6 MB em base64)
 const CELL = "border:1px solid #c9d1dc;padding:6px";
 const HEAD = `${CELL};background:#eef1f6`;
 
@@ -40,239 +45,279 @@ export default async function handler(request) {
 
     const payload = await request.json().catch(() => ({}));
     const id = String(payload?.id || "");
-    const tipo = TIPOS.includes(payload?.tipo) ? payload.tipo : "envio";
     if (!/^[0-9a-f-]{36}$/i.test(id)) return json(400, { error: "Avaliação inválida." });
 
     const headers = { apikey: serviceKey, authorization: `Bearer ${serviceKey}` };
-    const [avaliacao] = (await req(`${supabaseUrl}/rest/v1/avaliacoes?id=eq.${id}&select=*`, { headers })) || [];
-    if (!avaliacao) return json(404, { error: "Avaliação não encontrada." });
+    const [av] = (await req(`${supabaseUrl}/rest/v1/avd_avaliacoes?id=eq.${id}&select=*`, { headers })) || [];
+    if (!av) return json(404, { error: "Avaliação não encontrada." });
 
     const profiles = (await req(`${supabaseUrl}/rest/v1/profiles?select=id,email,nome,role,active`, { headers })) || [];
     const me = profiles.find((p) => p.id === authUser.id);
-    const isAdmin = me?.role === "admin" && me?.active !== false;
-    const isOwner = avaliacao.user_id === authUser.id;
+    if (!me || me.active === false) return json(403, { error: "Usuário inativo." });
+    const isAdmin = me.role === "admin";
+    const isOwner = av.user_id === authUser.id;
     const admins = profiles.filter((p) => p.role === "admin" && p.active !== false && p.email);
-    const owner = profiles.find((p) => p.id === avaliacao.user_id);
-
-    let coordenacao = null;
-    if (tipo !== "envio") {
-      const [coord] = (await req(`${supabaseUrl}/rest/v1/avaliacoes_coordenacao?avaliacao_id=eq.${id}&select=*`, { headers })) || [];
-      coordenacao = coord || null;
-    }
-
+    const owner = profiles.find((p) => p.id === av.user_id);
     const appUrl = trimUrl(getEnv("APP_BASE_URL") || getEnv("URL") || "");
-    let destinatarios = [];
-    let subject = "";
-    let html = "";
-    let text = "";
-    let dedupe = "";
-    let aviso = null;
-    let okMessage = "";
+    const ctx = { supabaseUrl, headers, authUser, me };
 
-    if (tipo === "envio") {
-      if (!isOwner && !isAdmin) return json(403, { error: "Sem permissão para esta avaliação." });
-      if (avaliacao.status !== "enviada") return json(409, { error: "A avaliação ainda não foi enviada." });
-      destinatarios = admins;
-      subject = `Autoavaliação ${avaliacao.competencia} - ${avaliacao.colaborador_nome}`;
-      html = buildEnvioHtml(avaliacao, appUrl);
-      text = buildEnvioText(avaliacao, appUrl);
-      dedupe = `avaliacao:${avaliacao.id}:${avaliacao.enviada_em || ""}`;
-      aviso = { titulo: `Autoavaliação recebida: ${avaliacao.colaborador_nome}`, body: `Competência ${avaliacao.competencia}. Abra o HUB em Avaliações para avaliar.` };
-      okMessage = "A coordenação recebeu por e-mail.";
-    } else if (tipo === "devolvida") {
-      if (!isAdmin) return json(403, { error: "Somente a coordenação pode devolver a avaliação." });
-      if (avaliacao.status !== "devolvida") return json(409, { error: "A avaliação ainda não foi devolvida." });
-      if (!owner?.email) return json(409, { error: "O colaborador não tem e-mail cadastrado." });
-      destinatarios = [owner];
-      subject = `Sua avaliação ${avaliacao.competencia} foi avaliada pela coordenação`;
-      html = buildDevolvidaHtml(avaliacao, coordenacao, appUrl);
-      text = buildDevolvidaText(avaliacao, coordenacao, appUrl);
-      // A cada "Salvar e devolver" (updated_at muda) sai um novo aviso, inclusive após correções.
-      dedupe = `avaliacao-devolvida:${avaliacao.id}:${avaliacao.updated_at || avaliacao.devolvida_em || ""}`;
-      aviso = { titulo: `Avaliação ${avaliacao.competencia} avaliada pela coordenação`, body: "Abra o HUB em Avaliações para ver as notas, a média geral e as recomendações." };
-      okMessage = "O colaborador recebeu o aviso por e-mail.";
-    } else {
-      if (!isOwner && !isAdmin) return json(403, { error: "Sem permissão para esta avaliação." });
-      if (avaliacao.status !== "devolvida") return json(409, { error: "A avaliação ainda não foi devolvida." });
-      destinatarios = admins;
-      subject = `Réplica às recomendações ${avaliacao.competencia} - ${avaliacao.colaborador_nome}`;
-      html = buildReplicaHtml(avaliacao, coordenacao, appUrl);
-      text = buildReplicaText(avaliacao, coordenacao, appUrl);
-      dedupe = `avaliacao-replica:${avaliacao.id}:${avaliacao.replicas_em || ""}`;
-      aviso = { titulo: `Réplica de ${avaliacao.colaborador_nome}`, body: `Competência ${avaliacao.competencia}: o colaborador respondeu às recomendações.` };
-      okMessage = "A coordenação recebeu as réplicas por e-mail.";
-    }
-
-    if (!destinatarios.length) return json(500, { error: "Nenhum destinatário ativo para este aviso." });
-
-    for (const pessoa of destinatarios) {
-      await req(`${supabaseUrl}/rest/v1/rpc/queue_email`, {
-        method: "POST",
-        headers: { ...headers, "content-type": "application/json" },
-        body: JSON.stringify({
-          p_to_email: pessoa.email,
-          p_to_name: pessoa.nome || null,
-          p_subject: subject,
-          p_html_body: html,
-          p_text_body: text,
-          p_category: "avaliacao",
-          p_target_type: "avaliacao",
-          p_target_ref: avaliacao.id,
-          p_scheduled_for: new Date().toISOString(),
-          p_dedupe_key: `${dedupe}:${pessoa.id}`,
-          p_created_by: authUser.id
-        })
-      });
-    }
-
-    // Aviso no sino (ignora duplicados).
-    const now = new Date().toISOString();
-    await fetch(`${supabaseUrl}/rest/v1/notificacoes?on_conflict=user_id,dedupe_key`, {
-      method: "POST",
-      headers: { ...headers, "content-type": "application/json", prefer: "resolution=ignore-duplicates,return=minimal" },
-      body: JSON.stringify(
-        destinatarios.map((pessoa) => ({
-          user_id: pessoa.id,
-          tipo: "avaliacao",
-          titulo: aviso.titulo,
-          body: aviso.body,
-          meta: JSON.stringify({ route: "avaliacoes", id: avaliacao.id, tipo }),
-          target_type: "avaliacao",
-          target_ref: avaliacao.id,
-          dedupe_key: dedupe,
-          route: "avaliacoes",
-          tone: "info",
-          active: true,
-          created_at: now,
-          updated_at: now
-        }))
-      )
-    }).catch(() => null);
-
-    const processed = await processDueEmails(supabaseUrl, serviceKey, destinatarios.length).catch((error) => ({ error: error?.message }));
-    const sent = Number(processed?.processed || 0) > 0;
-    return json(200, { ok: true, message: sent ? okMessage : "O e-mail foi colocado na fila e sai no próximo envio automático." });
+    if (payload?.acao === "arquivos") return await enviarArquivos(ctx, av, payload, { isAdmin, isOwner, owner });
+    return await enviarAviso(ctx, av, String(payload?.tipo || ""), { isAdmin, isOwner, owner, admins, appUrl, serviceKey });
   } catch (error) {
-    return json(400, { error: error?.message || "Não foi possível enviar o aviso da avaliação." });
+    return json(400, { error: error?.message || "Não foi possível enviar o e-mail da avaliação." });
   }
 }
 
 // ----------------------------------------------------------------------------------------------
-// Conteúdo dos e-mails
+// Avisos (fila de e-mails do HUB + sino)
+
+async function enviarAviso(ctx, av, tipo, { isAdmin, isOwner, owner, admins, appUrl, serviceKey }) {
+  if (!TIPOS.includes(tipo)) return json(400, { error: "Tipo de aviso inválido." });
+  const comp = rotulo(av.competencia);
+  const nome = av.colaborador_nome || owner?.nome || "";
+  const ultima = Array.isArray(av.replicas) && av.replicas.length ? av.replicas[av.replicas.length - 1] : null;
+  let destinatarios = [];
+  let subject = "";
+  let corpo = "";
+  let aviso = null;
+  let dedupe = "";
+  let okMessage = "";
+
+  if (tipo === "enviada") {
+    if (!isOwner && !isAdmin) return json(403, { error: "Sem permissão para esta avaliação." });
+    if (av.status !== "enviada") return json(409, { error: "A avaliação ainda não foi salva para a coordenação." });
+    destinatarios = admins;
+    subject = `Avaliação ${comp} - ${nome} (aguardando correção)`;
+    corpo = `<p><strong>${esc(nome)}</strong> salvou a avaliação de <strong>${esc(comp)}</strong> para a coordenação.</p>${tabelaNotas(av, false)}`;
+    aviso = { titulo: `Avaliação recebida: ${nome}`, body: `Competência ${comp}. Abra o HUB em Avaliações para corrigir.` };
+    dedupe = `avd-enviada:${av.id}:${av.enviada_em || ""}`;
+    okMessage = "A coordenação foi avisada por e-mail.";
+  } else if (tipo === "replica") {
+    if (!isOwner && !isAdmin) return json(403, { error: "Sem permissão para esta avaliação." });
+    if (av.status !== "replica" || !ultima) return json(409, { error: "Não há réplica enviada." });
+    destinatarios = admins;
+    subject = `Réplica à avaliação ${comp} - ${nome}`;
+    corpo = `<p><strong>${esc(nome)}</strong> enviou réplica à avaliação de <strong>${esc(comp)}</strong>:</p><blockquote style="border-left:3px solid #8a2f74;margin:0;padding:6px 12px">${esc(ultima.texto)}</blockquote>`;
+    aviso = { titulo: `Réplica de ${nome}`, body: `Competência ${comp}: o colaborador enviou réplica à avaliação.` };
+    dedupe = `avd-replica:${av.id}:${ultima.enviadaEm || ""}`;
+    okMessage = "A coordenação foi avisada por e-mail.";
+  } else {
+    if (!isAdmin) return json(403, { error: "Somente a coordenação envia este aviso." });
+    if (!owner?.email) return json(409, { error: "O colaborador não tem e-mail cadastrado." });
+    destinatarios = [owner];
+    if (tipo === "finalizada") {
+      if (av.status !== "finalizada") return json(409, { error: "A avaliação ainda não foi finalizada." });
+      subject = `Sua avaliação ${comp} foi finalizada pela coordenação`;
+      corpo = `<p>Olá, ${esc(primeiroNome(nome))}.</p><p>A coordenação finalizou a sua avaliação de <strong>${esc(comp)}</strong>.</p>${tabelaNotas(av, true)}${blocoGeral(av)}<p>Se quiser esclarecer algum ponto, abra a avaliação no HUB e use <strong>Enviar réplica</strong>.</p>`;
+      aviso = { titulo: `Avaliação ${comp} finalizada`, body: "Abra o HUB em Avaliações para ver as notas, o feedback e as recomendações da coordenação." };
+      dedupe = `avd-finalizada:${av.id}:${av.finalizada_em || ""}`;
+    } else if (tipo === "resposta") {
+      if (av.status !== "finalizada" || !ultima?.resposta) return json(409, { error: "Não há resposta à réplica." });
+      subject = `Resposta à sua réplica - avaliação ${comp}`;
+      corpo = `<p>Olá, ${esc(primeiroNome(nome))}.</p><p>A coordenação respondeu à sua réplica da avaliação de <strong>${esc(comp)}</strong>:</p><blockquote style="border-left:3px solid #174c44;margin:0;padding:6px 12px">${esc(ultima.resposta)}</blockquote><p style="color:#64716b">Sua réplica: ${esc(ultima.texto)}</p>`;
+      aviso = { titulo: `Resposta à réplica (${comp})`, body: "A coordenação respondeu à sua réplica. Abra o HUB em Avaliações." };
+      dedupe = `avd-resposta:${av.id}:${ultima.respondidaEm || ""}`;
+    } else {
+      if (av.status !== "rascunho") return json(409, { error: "A avaliação não está devolvida." });
+      const [ev] =
+        (await req(`${ctx.supabaseUrl}/rest/v1/avd_eventos?avaliacao_id=eq.${av.id}&acao=like.Devolveu*&select=detalhe,em&order=em.desc&limit=1`, { headers: ctx.headers })) || [];
+      subject = `Avaliação ${comp} devolvida para ajustes`;
+      corpo = `<p>Olá, ${esc(primeiroNome(nome))}.</p><p>A coordenação devolveu a sua avaliação de <strong>${esc(comp)}</strong> para ajustes na autoavaliação.</p>${ev?.detalhe ? `<p><strong>Motivo:</strong> ${esc(ev.detalhe)}</p>` : ""}<p>Abra o HUB em Avaliações, ajuste e salve de novo para a coordenação.</p>`;
+      aviso = { titulo: `Avaliação ${comp} devolvida para ajustes`, body: ev?.detalhe ? `Motivo: ${ev.detalhe}` : "Abra o HUB em Avaliações para ajustar." };
+      dedupe = `avd-devolvida:${av.id}:${ev?.em || av.updated_at || ""}`;
+    }
+    okMessage = "O colaborador foi avisado por e-mail.";
+  }
+  if (!destinatarios.length) return json(500, { error: "Nenhum destinatário ativo para este aviso." });
+
+  const html = `<div style="font-family:Arial,sans-serif;font-size:12pt;color:#1b2a41">${corpo}${link(appUrl)}</div>`;
+  const text = stripHtml(html);
+  for (const pessoa of destinatarios) {
+    await req(`${ctx.supabaseUrl}/rest/v1/rpc/queue_email`, {
+      method: "POST",
+      headers: { ...ctx.headers, "content-type": "application/json" },
+      body: JSON.stringify({
+        p_to_email: pessoa.email,
+        p_to_name: pessoa.nome || null,
+        p_subject: subject,
+        p_html_body: html,
+        p_text_body: text,
+        p_category: "avaliacao",
+        p_target_type: "avaliacao",
+        p_target_ref: av.id,
+        p_scheduled_for: new Date().toISOString(),
+        p_dedupe_key: `${dedupe}:${pessoa.id}`,
+        p_created_by: ctx.authUser.id
+      })
+    });
+  }
+  const now = new Date().toISOString();
+  await fetch(`${ctx.supabaseUrl}/rest/v1/notificacoes?on_conflict=user_id,dedupe_key`, {
+    method: "POST",
+    headers: { ...ctx.headers, "content-type": "application/json", prefer: "resolution=ignore-duplicates,return=minimal" },
+    body: JSON.stringify(
+      destinatarios.map((pessoa) => ({
+        user_id: pessoa.id,
+        tipo: "avaliacao",
+        titulo: aviso.titulo,
+        body: aviso.body,
+        meta: JSON.stringify({ route: "avaliacoes", id: av.id, tipo }),
+        target_type: "avaliacao",
+        target_ref: av.id,
+        dedupe_key: dedupe,
+        route: "avaliacoes",
+        tone: "info",
+        active: true,
+        created_at: now,
+        updated_at: now
+      }))
+    )
+  }).catch(() => null);
+
+  const processed = await processDueEmails(ctx.supabaseUrl, serviceKey, destinatarios.length).catch((error) => ({ error: error?.message }));
+  const sent = Number(processed?.processed || 0) > 0;
+  return json(200, { ok: true, message: sent ? okMessage : "O aviso foi colocado na fila e sai no próximo envio automático." });
+}
+
+// ----------------------------------------------------------------------------------------------
+// Envio da avaliação com anexos (direto pelo Gmail; a fila do HUB não leva anexos)
+
+async function enviarArquivos(ctx, av, payload, { isAdmin, isOwner, owner }) {
+  const para = payload?.para === "eu" ? "eu" : "colaborador";
+  let destino;
+  if (para === "colaborador") {
+    if (!isAdmin) return json(403, { error: "Somente a coordenação envia a avaliação ao colaborador." });
+    if (av.status === "rascunho") return json(409, { error: "A avaliação ainda é rascunho do colaborador." });
+    destino = owner;
+  } else {
+    if (!isOwner) return json(403, { error: "Você só pode enviar a sua própria avaliação para o seu e-mail." });
+    destino = ctx.me;
+  }
+  if (!destino?.email) return json(409, { error: "Destinatário sem e-mail cadastrado no HUB." });
+
+  const assunto = String(payload?.assunto || "").trim().slice(0, 200);
+  const mensagem = String(payload?.mensagem || "").slice(0, 4000);
+  if (!assunto) return json(400, { error: "Informe o assunto." });
+  const anexos = Array.isArray(payload?.anexos) ? payload.anexos.slice(0, 3) : [];
+  if (!anexos.length) return json(400, { error: "Nenhum arquivo anexado." });
+  let total = 0;
+  const attachments = [];
+  for (const a of anexos) {
+    const nome = String(a?.nome || "").replace(/[\\/:*?"<>|\r\n]+/g, " ").trim().slice(0, 120);
+    const ext = (nome.match(/\.(xlsx|pdf)$/i)?.[0] || "").toLowerCase();
+    if (!ext) return json(400, { error: "Só são aceitos anexos .xlsx e .pdf." });
+    const conteudo = Buffer.from(String(a?.base64 || ""), "base64");
+    if (!conteudo.length) return json(400, { error: `Anexo vazio: ${nome}.` });
+    total += conteudo.length;
+    attachments.push({ filename: nome, content: conteudo, contentType: ANEXO_TIPOS[ext] });
+  }
+  if (total > LIMITE_ANEXOS) return json(413, { error: "Anexos grandes demais para enviar por e-mail." });
+
+  if (!isDeliveryEnabled()) return json(409, { error: "O envio de e-mails está desligado no servidor (EMAIL_DELIVERY_ENABLED)." });
+  if ((getEnv("EMAIL_PROVIDER") || "resend").toLowerCase() !== "gmail") return json(409, { error: "O envio com anexos exige o Gmail configurado como provedor de e-mail." });
+  assertDeliveryConfig();
+
+  const forced = getEnv("EMAIL_FORCE_TEST_TO");
+  const html = `<div style="font-family:Arial,sans-serif;font-size:12pt;color:#1b2a41">${esc(mensagem)}</div>`;
+  const { default: nodemailer } = await import("nodemailer");
+  const port = Number(getEnv("GMAIL_SMTP_PORT") || 465);
+  const transport = nodemailer.createTransport({
+    host: getEnv("GMAIL_SMTP_HOST") || "smtp.gmail.com",
+    port,
+    secure: port === 465,
+    auth: { user: getEnv("GMAIL_USER"), pass: getEnv("GMAIL_APP_PASSWORD").replace(/\s+/g, "") },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 20000
+  });
+  await transport.sendMail({
+    from: { name: getEnv("EMAIL_FROM_NAME") || "HUB Depto Tributário", address: getEnv("GMAIL_USER") },
+    to: forced || destino.email,
+    replyTo: (para === "colaborador" ? ctx.me.email : "") || getEnv("EMAIL_REPLY_TO") || undefined,
+    subject: forced ? `[TESTE HUB] ${assunto}` : assunto,
+    text: mensagem,
+    html,
+    attachments
+  });
+
+  await fetch(`${ctx.supabaseUrl}/rest/v1/avd_eventos`, {
+    method: "POST",
+    headers: { ...ctx.headers, "content-type": "application/json", prefer: "return=minimal" },
+    body: JSON.stringify({
+      avaliacao_id: av.id,
+      por: ctx.me.id,
+      por_nome: ctx.me.nome || ctx.me.email || "",
+      acao: "Enviou por e-mail",
+      detalhe: `Para ${destino.email}: ${attachments.map((x) => x.filename).join(", ")}`
+    })
+  }).catch(() => null);
+
+  return json(200, { ok: true, message: `E-mail enviado para ${destino.email}${forced ? " (modo de teste: entregue no endereço de teste)" : ""}.` });
+}
+
+// ----------------------------------------------------------------------------------------------
+// Conteúdo
 
 function media(notas) {
-  const valores = CRITERIOS.map(([id]) => notas?.[id]?.nota).filter((n) => typeof n === "number");
-  return valores.length ? valores.reduce((s, n) => s + n, 0) / valores.length : null;
+  const v = CRITERIOS.map(([id]) => notas?.[id]?.nota);
+  if (v.some((n) => typeof n !== "number")) return null;
+  return v.reduce((s, n) => s + n, 0) / v.length;
 }
 
-function mediaGeral(av, coord) {
-  const mc = media(coord?.coordenador);
-  const ms = media(coord?.subcoordenacao);
-  if (mc === null && ms === null) return null;
-  const valores = [media(av.autoavaliacao), mc, ms].filter((n) => typeof n === "number");
-  return valores.length ? valores.reduce((s, n) => s + n, 0) / valores.length : null;
+function tabelaNotas(av, comCoord) {
+  const auto = av.colaborador?.notas || {};
+  const co = av.coordenacao?.notas || {};
+  const linhas = CRITERIOS.map(
+    ([id, nome], i) =>
+      `<tr><td style="${CELL}"><strong>${i + 1}. ${esc(nome)}</strong></td><td style="${CELL};text-align:center">${fmt(auto[id]?.nota)}</td>` +
+      (comCoord
+        ? `<td style="${CELL};text-align:center">${fmt(co[id]?.nota)}</td><td style="${CELL}">${esc(co[id]?.justificativa || "")}</td>`
+        : `<td style="${CELL}">${esc(auto[id]?.justificativa || "")}</td>`) +
+      `</tr>`
+  ).join("");
+  const cab = comCoord
+    ? `<th style="${HEAD}">Autoavaliação</th><th style="${HEAD}">Coordenador</th><th style="${HEAD};text-align:left">Justificativa do coordenador</th>`
+    : `<th style="${HEAD}">Nota</th><th style="${HEAD};text-align:left">Justificativa</th>`;
+  const pe = comCoord
+    ? `<td style="${CELL};text-align:center"><strong>${fmt(media(auto))}</strong></td><td style="${CELL};text-align:center"><strong>${fmt(media(co))}</strong></td><td style="${CELL}"></td>`
+    : `<td style="${CELL};text-align:center"><strong>${fmt(media(auto))}</strong></td><td style="${CELL}"></td>`;
+  return `<table style="border-collapse:collapse;width:100%"><thead><tr><th style="${HEAD};text-align:left">Critério</th>${cab}</tr></thead><tbody>${linhas}</tbody><tfoot><tr><td style="${CELL}"><strong>Total (média)</strong></td>${pe}</tr></tfoot></table>`;
 }
 
-function recomendacoes(coord) {
-  const itens = Array.isArray(coord?.recomendacoes_itens) ? coord.recomendacoes_itens.filter((r) => r?.texto?.trim()) : [];
-  if (itens.length) return itens;
-  return String(coord?.recomendacoes || "")
-    .split(/\r?\n/)
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .map((t, i) => ({ id: `texto-${i + 1}`, texto: t }));
+function blocoGeral(av) {
+  const k = av.coordenacao || {};
+  const recs = Array.isArray(k.recomendacoes) ? k.recomendacoes.filter((r) => String(r || "").trim()) : [];
+  return (
+    `<p><strong>1 - Pontos positivos</strong><br>${esc(k.pontosPositivos || "—")}</p>` +
+    `<p><strong>2 - A melhorar/Sugestões</strong><br>${esc(k.aMelhorar || "—")}</p>` +
+    (recs.length ? `<p><strong>Recomendações</strong></p><ol>${recs.map((r) => `<li>${esc(r)}</li>`).join("")}</ol>` : "")
+  );
 }
 
 function link(appUrl) {
   return appUrl ? `<p><a href="${esc(appUrl)}/#/avaliacoes">Abrir no HUB (Avaliações)</a></p>` : "";
 }
-
-function cabecalho(titulo, av) {
-  return `<p><strong>${esc(titulo)}</strong></p><p>Colaborador: <strong>${esc(av.colaborador_nome)}</strong><br>Competência: <strong>${esc(av.competencia)}</strong></p>`;
+function rotulo(c) {
+  return /^\d{4}-\d{2}$/.test(String(c || "")) ? `${c.slice(5, 7)}/${c.slice(0, 4)}` : String(c || "");
 }
-
-function buildEnvioHtml(av, appUrl) {
-  const auto = av.autoavaliacao || {};
-  const linhas = CRITERIOS.map(
-    ([id, nome], i) =>
-      `<tr><td style="${CELL}"><strong>${i + 1}. ${esc(nome)}</strong></td>` +
-      `<td style="${CELL};text-align:center">${fmt(auto[id]?.nota)}</td>` +
-      `<td style="${CELL}">${esc(auto[id]?.justificativa || "")}</td></tr>`
-  ).join("");
-  const fb = FEEDBACK.map(([id, q], i) => `<p><strong>${i + 1}) ${esc(q)}</strong><br>${esc(av.feedback?.[id] || "—")}</p>`).join("");
-  return (
-    `<div style="font-family:Arial,sans-serif;font-size:12pt;color:#1b2a41">${cabecalho("Autoavaliação recebida", av)}` +
-    `<table style="border-collapse:collapse;width:100%"><thead><tr>` +
-    `<th style="${HEAD};text-align:left">Critério</th><th style="${HEAD}">Nota</th><th style="${HEAD};text-align:left">Justificativa</th></tr></thead>` +
-    `<tbody>${linhas}</tbody><tfoot><tr><td style="${CELL}"><strong>Média aritmética</strong></td>` +
-    `<td style="${CELL};text-align:center"><strong>${fmt(media(auto))}</strong></td><td style="${CELL}"></td></tr></tfoot></table>` +
-    `<p><strong>Feedback</strong></p>${fb}${link(appUrl)}</div>`
-  );
+function primeiroNome(n) {
+  return String(n || "").trim().split(/\s+/)[0] || "";
 }
-
-function buildEnvioText(av, appUrl) {
-  const auto = av.autoavaliacao || {};
-  const linhas = CRITERIOS.map(([id, nome], i) => `${i + 1}. ${nome}: ${fmt(auto[id]?.nota)} - ${auto[id]?.justificativa || ""}`).join("\n");
-  const fb = FEEDBACK.map(([id, q], i) => `${i + 1}) ${q}\n${av.feedback?.[id] || "—"}`).join("\n\n");
-  return `Autoavaliação recebida\nColaborador: ${av.colaborador_nome}\nCompetência: ${av.competencia}\n\n${linhas}\n\nMédia aritmética: ${fmt(media(auto))}\n\nFeedback\n${fb}${appUrl ? `\n\n${appUrl}/#/avaliacoes` : ""}`;
+function stripHtml(html) {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|tr|li|blockquote|h\d)>/gi, "\n")
+    .replace(/<\/t[dh]>/gi, "\t")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
-
-function buildDevolvidaHtml(av, coord, appUrl) {
-  const auto = av.autoavaliacao || {};
-  const co = coord?.coordenador || {};
-  const linhas = CRITERIOS.map(
-    ([id, nome], i) =>
-      `<tr><td style="${CELL}"><strong>${i + 1}. ${esc(nome)}</strong></td>` +
-      `<td style="${CELL};text-align:center">${fmt(auto[id]?.nota)}</td>` +
-      `<td style="${CELL};text-align:center">${fmt(co[id]?.nota)}</td>` +
-      `<td style="${CELL}">${esc(co[id]?.justificativa || "")}</td></tr>`
-  ).join("");
-  const recs = recomendacoes(coord);
-  const recHtml = recs.length ? `<ol>${recs.map((r) => `<li>${esc(r.texto)}</li>`).join("")}</ol>` : "<p>—</p>";
-  const respostas = FEEDBACK.filter(([id]) => coord?.feedback_respostas?.[id]?.trim());
-  const respHtml = respostas.length
-    ? `<p><strong>Respostas da coordenação ao seu feedback</strong></p>` +
-      respostas.map(([id, q]) => `<p><strong>${esc(q)}</strong><br>${esc(coord.feedback_respostas[id])}</p>`).join("")
-    : "";
-  return (
-    `<div style="font-family:Arial,sans-serif;font-size:12pt;color:#1b2a41">${cabecalho("Sua avaliação foi avaliada pela coordenação", av)}` +
-    `<table style="border-collapse:collapse;width:100%"><thead><tr>` +
-    `<th style="${HEAD};text-align:left">Critério</th><th style="${HEAD}">Autoavaliação</th><th style="${HEAD}">Coordenador</th><th style="${HEAD};text-align:left">Justificativa do coordenador</th></tr></thead>` +
-    `<tbody>${linhas}</tbody><tfoot><tr><td style="${CELL}"><strong>Média aritmética</strong></td>` +
-    `<td style="${CELL};text-align:center"><strong>${fmt(media(auto))}</strong></td><td style="${CELL};text-align:center"><strong>${fmt(media(co))}</strong></td><td style="${CELL}"></td></tr></tfoot></table>` +
-    `<p><strong>Média geral: ${fmt(mediaGeral(av, coord))}</strong></p>` +
-    `<p><strong>Recomendações da coordenação</strong></p>${recHtml}${respHtml}` +
-    `<p>No HUB você pode registrar a sua réplica a cada recomendação.</p>${link(appUrl)}</div>`
-  );
-}
-
-function buildDevolvidaText(av, coord, appUrl) {
-  const auto = av.autoavaliacao || {};
-  const co = coord?.coordenador || {};
-  const linhas = CRITERIOS.map(([id, nome], i) => `${i + 1}. ${nome}: autoavaliação ${fmt(auto[id]?.nota)} | coordenador ${fmt(co[id]?.nota)} ${co[id]?.justificativa ? `- ${co[id].justificativa}` : ""}`).join("\n");
-  const recs = recomendacoes(coord).map((r, i) => `${i + 1}. ${r.texto}`).join("\n") || "—";
-  const respostas = FEEDBACK.filter(([id]) => coord?.feedback_respostas?.[id]?.trim())
-    .map(([id, q]) => `${q}\n${coord.feedback_respostas[id]}`)
-    .join("\n\n");
-  return `Sua avaliação foi avaliada pela coordenação\nCompetência: ${av.competencia}\n\n${linhas}\n\nMédia geral: ${fmt(mediaGeral(av, coord))}\n\nRecomendações\n${recs}${respostas ? `\n\nRespostas da coordenação ao seu feedback\n${respostas}` : ""}${appUrl ? `\n\n${appUrl}/#/avaliacoes` : ""}`;
-}
-
-function buildReplicaHtml(av, coord, appUrl) {
-  const replicas = av.replicas || {};
-  const itens = recomendacoes(coord)
-    .map((r) => `<li><p>${esc(r.texto)}</p><p style="margin:4px 0 10px;padding-left:10px;border-left:3px solid #9aa6b8"><strong>Réplica:</strong> ${esc(replicas[r.id] || "—")}</p></li>`)
-    .join("");
-  return `<div style="font-family:Arial,sans-serif;font-size:12pt;color:#1b2a41">${cabecalho("Réplica às recomendações da coordenação", av)}<ol>${itens}</ol>${link(appUrl)}</div>`;
-}
-
-function buildReplicaText(av, coord, appUrl) {
-  const replicas = av.replicas || {};
-  const itens = recomendacoes(coord).map((r, i) => `${i + 1}. ${r.texto}\n   Réplica: ${replicas[r.id] || "—"}`).join("\n\n");
-  return `Réplica às recomendações da coordenação\nColaborador: ${av.colaborador_nome}\nCompetência: ${av.competencia}\n\n${itens}${appUrl ? `\n\n${appUrl}/#/avaliacoes` : ""}`;
-}
-
-// ----------------------------------------------------------------------------------------------
-
 async function req(url, options = {}) {
   const response = await fetch(url, options);
   const text = await response.text();
@@ -285,11 +330,9 @@ async function req(url, options = {}) {
   if (!response.ok) throw new Error(data?.message || data?.msg || data?.error || text || response.statusText);
   return data;
 }
-
 function fmt(n) {
   return typeof n === "number" ? n.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : "—";
 }
-
 function esc(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -299,15 +342,12 @@ function esc(value) {
     .replace(/'/g, "&#39;")
     .replace(/\n/g, "<br>");
 }
-
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 }
-
 function getEnv(name) {
   return globalThis.Netlify?.env?.get?.(name) || process.env[name] || "";
 }
-
 function trimUrl(value) {
   return String(value || "").replace(/\/+$/, "");
 }
