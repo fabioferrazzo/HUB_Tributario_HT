@@ -56,9 +56,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await botao("Salvar para a coordenação").click();
   await page.waitForTimeout(300);
   check("envio exige as notas", /Informe a nota/.test(await aviso()));
-  await botao("Preencher tudo com nota 10").click();
-  await page.waitForTimeout(300);
-  check("preencher tudo com 10", (await notaCol.nth(3).inputValue()) === "10");
+  check("colaborador não tem 'preencher tudo com 10'", (await page.getByRole("button", { name: /Preencher/ }).count()) === 0);
   for (let i = 0; i < 7; i++) {
     await notaCol.nth(i).fill(String(notas[i]).replace(".", ","));
     await page.locator('textarea[aria-label^="Justificativa do colaborador"]').nth(i).fill(`Justificativa ${i + 1} — acentuação: está ótimo.`);

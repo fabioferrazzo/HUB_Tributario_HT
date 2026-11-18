@@ -1,6 +1,6 @@
 // Tela do colaborador: escolhe o mês, preenche a autoavaliação, salva para a coordenação e, depois da
 // correção, vê o resultado e pode enviar réplica (sem alterar a avaliação).
-import { Award, MessageSquareReply, RotateCcw, Save, Send, Sparkles, Trash2 } from "lucide-react";
+import { Award, MessageSquareReply, RotateCcw, Save, Send, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { HubUser } from "../../types";
 import { getErrorMessage } from "../../lib/formatters";
@@ -20,7 +20,6 @@ import {
   media,
   notasPreenchidas,
   podeAcao,
-  preencherCom10,
   rotuloCompetencia,
   salvarColaborador,
   type Avaliacao,
@@ -245,10 +244,6 @@ export function AreaColaborador({ user }: { user: HubUser }) {
         <div className="avd-topo avd-acoes" style={{ paddingTop: 0 }}>
           {editavel ? (
             <>
-              <button className="avd-btn" disabled={ocupado} type="button" onClick={() => alterar({ ...parte, notas: preencherCom10(parte.notas) })}>
-                <Sparkles size={15} strokeWidth={1.6} />
-                Preencher tudo com nota 10
-              </button>
               <button className="avd-btn" disabled={ocupado} type="button" onClick={() => salvar(false)}>
                 <Save size={15} strokeWidth={1.6} />
                 Salvar rascunho

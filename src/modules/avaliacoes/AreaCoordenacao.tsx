@@ -375,11 +375,11 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
                   <Save size={15} strokeWidth={1.6} />
                   Salvar correção
                 </button>
-                <button className="avd-btn avd-btn--pri" disabled={ocupado} type="button" onClick={() => salvar("finalizar")}>
+                <button className="avd-btn avd-btn--pri" disabled={ocupado} title="Conclui a correção: o colaborador passa a ver as notas e o feedback e pode enviar réplica" type="button" onClick={() => salvar("finalizar")}>
                   <CheckCircle2 size={15} strokeWidth={1.6} />
                   Finalizar avaliação
                 </button>
-                <button className="avd-btn" disabled={ocupado} title="Volta para o colaborador ajustar a autoavaliação" type="button" onClick={devolver}>
+                <button className="avd-btn" disabled={ocupado} title="Não corrige: devolve a autoavaliação ao colaborador para ajustes (ele edita e salva de novo para a coordenação)" type="button" onClick={devolver}>
                   <Undo2 size={15} strokeWidth={1.6} />
                   Devolver ao colaborador
                 </button>
