@@ -49,7 +49,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("abre no Quadro geral", (await page.locator(".quadro-geral").count()) === 1 && (await page.evaluate(() => location.hash)) === "#/home");
   const grupos = await page.evaluate(() => [...document.querySelectorAll(".sidebar .nav-group, .sidebar nav > div, .sidebar section")].map((g) => g.innerText.replace(/\s+/g, " ").trim()).filter(Boolean));
   const menu = (await page.locator(".sidebar").innerText()).replace(/\s+/g, " ");
-  check("menu: Quadro geral em Principal e Pautas em Ferramentas", /PRINCIPAL Quadro geral FERRAMENTAS Pautas Calendário/i.test(menu), menu.slice(0, 160) || grupos.join(" | "));
+  check("menu: Quadro geral e Chat em Principal e Pautas em Ferramentas", /PRINCIPAL Quadro geral Chat FERRAMENTAS Pautas Calendário/i.test(menu), menu.slice(0, 160) || grupos.join(" | "));
   check("três colunas da semana", (await page.locator(".qg-colunas > .qg-coluna").count()) === 3);
   const titulos = await page.locator(".qg-coluna-head h2").allInnerTexts();
   check("colunas: Pautas e avisos, Calendário, Agenda tributária", titulos.join("|") === "Pautas e avisos|Calendário|Agenda tributária", titulos.join("|"));

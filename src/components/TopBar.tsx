@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, CheckCircle2, ExternalLink, Link2, Maximize2, Menu, Minimize2, RotateCw, X } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, ExternalLink, Link2, Maximize2, Menu, MessagesSquare, Minimize2, RotateCw, X } from "lucide-react";
 import type { HubNotification, HubRoute, HubUser } from "../types";
 import { downloadDocxReport } from "../lib/reportExport";
 import { getErrorMessage, getInitials } from "../lib/formatters";
@@ -18,7 +18,9 @@ export function TopBar({
   isFullscreen = false,
   onFullscreen,
   onOpenWindow,
-  onReload
+  onReload,
+  chatNaoLidas = 0,
+  onChat
 }: {
   route: HubRoute;
   notificationItems: HubNotification[];
@@ -32,6 +34,8 @@ export function TopBar({
   onFullscreen?: () => void;
   onOpenWindow?: () => void;
   onReload?: () => void;
+  chatNaoLidas?: number;
+  onChat?: () => void;
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -102,6 +106,12 @@ export function TopBar({
             Pautas HUB <strong>app</strong>
           </span>
         </div>
+        {onChat ? (
+          <button aria-label={chatNaoLidas ? `Chat: ${chatNaoLidas} mensagem(ns) não lida(s)` : "Chat"} className="notification-button" title="Chat" type="button" onClick={onChat}>
+            <MessagesSquare size={18} strokeWidth={1.6} />
+            {chatNaoLidas ? <span className="notification-badge">{chatNaoLidas}</span> : null}
+          </button>
+        ) : null}
         <div className="notification-wrap">
           <button
             aria-controls="hub-notifications"

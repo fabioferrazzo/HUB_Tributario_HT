@@ -240,4 +240,5 @@ export type HubRoute =
   | "admin"
   | "avaliacoes"
   | "historico"
+  | "chat"
   | `app:${string}`;

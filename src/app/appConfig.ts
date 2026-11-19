@@ -1,4 +1,4 @@
-import { Award, Bell, Calculator, CalendarDays, ClipboardList, FileArchive, History, Home, LayoutDashboard, Link2, ListChecks, Settings, Timer, UserRoundCog } from "lucide-react";
+import { Award, Bell, Calculator, CalendarDays, ClipboardList, FileArchive, History, Home, LayoutDashboard, Link2, ListChecks, MessagesSquare, Settings, Timer, UserRoundCog } from "lucide-react";
 import type { FileResourceCategory, HubRoute, UserRole } from "../types";
 import { getAppRoute, hubApps, type HubAppGroup } from "./appsRegistry";
 import type { HomologationBlock, HomologationStatus } from "./appTypes";
@@ -153,6 +153,7 @@ export const homologationBlocks: HomologationBlock[] = [
 // vêm do cadastro único em ./appsRegistry.ts.
 const nativeRoutes: Array<{ id: HubRoute; label: string; icon: typeof Home }> = [
   { id: "home", label: "Quadro geral", icon: LayoutDashboard },
+  { id: "chat", label: "Chat", icon: MessagesSquare },
   { id: "pautas", label: "Pautas", icon: ClipboardList },
   { id: "tarefas", label: "Calendário de Tarefas", icon: CalendarDays },
   { id: "lembretes", label: "Lembretes", icon: Bell },
@@ -172,7 +173,7 @@ const appRoutesOf = (group: HubAppGroup) => hubApps.filter((app) => app.group ==
 
 // submenu: o grupo aparece como um item do menu que abre e fecha a lista dos seus apps (ex.: Simuladores).
 export const routeGroups: Array<{ label: string; items: HubRoute[]; submenu?: { id: string; label: string; icon: typeof Home } }> = [
-  { label: "Principal", items: ["home", ...appRoutesOf("Principal")] },
+  { label: "Principal", items: ["home", "chat", ...appRoutesOf("Principal")] },
   { label: "Ferramentas", items: ["pautas", "tarefas", "arquivos", ...appRoutesOf("Ferramentas"), "links"] },
   { label: "Escritório", items: ["avaliacoes", ...appRoutesOf("Escritório")] },
   { label: "Simuladores", items: appRoutesOf("Simuladores"), submenu: { id: "simuladores", label: "Simuladores", icon: Calculator } },

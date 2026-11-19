@@ -13,6 +13,7 @@ const requiredFiles = [
   "netlify/functions/coord-data.mjs",
   "netlify/functions/email-outbox.mjs",
   "netlify/functions/email-fila.mjs",
+  "netlify/functions/chat-limpeza.mjs",
   "netlify/functions/coord-email.mjs",
   "netlify/functions/refresh-updates.mjs",
   "netlify/functions/rfb-agenda.mjs",
@@ -70,6 +71,11 @@ const commandChecks = [
     label: "Function email-fila",
     command: process.execPath,
     args: ["--check", "netlify/functions/email-fila.mjs"]
+  },
+  {
+    label: "Function chat-limpeza",
+    command: process.execPath,
+    args: ["--check", "netlify/functions/chat-limpeza.mjs"]
   },
   {
     label: "Function coord-email",

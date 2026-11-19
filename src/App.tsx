@@ -14,6 +14,7 @@ import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
 import { TasksModule } from "./modules/TasksModule";
 import { TopBar } from "./components/TopBar";
+import { ChatCentral, type ChatJanela } from "./components/chat/ChatCentral";
 import { routeGroups, routes } from "./app/appConfig";
 import { canUserSeeApp, findAppByRoute } from "./app/appsRegistry";
 import { buildSystemNotifications } from "./lib/hubNotifications";
@@ -40,6 +41,22 @@ export function App() {
   const [user, setUser] = useState<HubUser | null>(() => getStoredSession());
   const [avisoLogin, setAvisoLogin] = useState<{ texto: string; email: string } | null>(null);
   const saindoRef = useRef(false);
+  const [chatJanela, setChatJanela] = useState<ChatJanela>(() => {
+    try {
+      const salvo = window.sessionStorage.getItem("hub_chat_janela");
+      return salvo === "aberto" || salvo === "minimizado" ? salvo : "fechado";
+    } catch {
+      return "fechado";
+    }
+  });
+  const [chatNaoLidas, setChatNaoLidas] = useState(0);
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem("hub_chat_janela", chatJanela);
+    } catch {
+      // ignorado
+    }
+  }, [chatJanela]);
 
   // Sessão vencida: volta para o login em vez de deixar os menus falhando com "sessão não encontrada".
   useEffect(() => {
@@ -483,11 +500,16 @@ export function App() {
           onNavigate={handleRoute}
           onNotificationRead={handleNotificationRead}
           onNotificationsReadAll={handleAllNotificationsRead}
+          chatNaoLidas={chatNaoLidas}
+          onChat={() => (currentRoute === "chat" ? undefined : setChatJanela((atual) => (atual === "aberto" ? "fechado" : "aberto")))}
         />
         <section className={`workspace-body ${workspaceFullscreen && isHubScreen ? "workspace-body--fullscreen" : ""}`} ref={workspaceRef}>
           {renderRoute(currentRoute, user, hubUsers, handleRoute)}
         </section>
       </main>
+      {currentRoute !== "chat" ? (
+        <ChatCentral hubUsers={hubUsers} janela={chatJanela} modo="janela" onJanela={setChatJanela} onNaoLidas={setChatNaoLidas} user={user} />
+      ) : null}
       <PomodoroFloatingNotes
         archivedNotes={pomodoroArchivedNotes}
         notes={pomodoroNotes}
@@ -507,6 +529,7 @@ export function App() {
 
 function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
   if (route === "home") return <QuadroGeral hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
+  if (route === "chat") return <ChatCentral hubUsers={hubUsers} modo="pagina" user={user} />;
   if (route === "pautas") return <Dashboard hubUsers={hubUsers} user={user} />;
   if (route === "tarefas") return <TasksModule hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
