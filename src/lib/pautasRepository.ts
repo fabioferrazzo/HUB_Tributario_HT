@@ -58,7 +58,7 @@ export function getPautasSource(user?: HubUser | null): PautasSource {
 export function canUserViewPautaApp(pauta: Pauta, user?: HubUser | null) {
   if (!user) return false;
   if (user.role === "admin" || user.role === "gestor") return true;
-  if (hasUserCompletedPauta(pauta, user)) return false;
+  // Pauta que o próprio usuário já concluiu continua visível para ele (em "Concluídas").
   if ((pauta.createdBy || "").toLowerCase() === user.email.toLowerCase() || pauta.createdBy === user.id) return true;
   if ((pauta.scope || "todos") === "todos") return true;
   return (pauta.responsaveis || []).some((email) => email.toLowerCase() === user.email.toLowerCase());

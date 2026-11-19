@@ -222,9 +222,10 @@ export function Dashboard({
       if (pautaFilter === "minhas" && !isPautaAssignedToUser(pauta, user)) return false;
       if (pautaFilter === "destaques" && !pauta.destaque) return false;
       if (pautaFilter === "alta" && !isPautaAlta(pauta)) return false;
-      if (pautaFilter === "atrasadas" && !isPautaAtrasada(pauta)) return false;
+      const concluidaPorMim = hasUserCompletedPauta(pauta, user);
+      if (pautaFilter === "atrasadas" && (!isPautaAtrasada(pauta) || concluidaPorMim)) return false;
       if (pautaFilter === "semPrazo" && pauta.prazo.trim()) return false;
-      if (pautaFilter === "concluidas" && !isPautaConcluida(pauta)) return false;
+      if (pautaFilter === "concluidas" && !isPautaConcluida(pauta) && !concluidaPorMim) return false;
 
       if (!query) return true;
 

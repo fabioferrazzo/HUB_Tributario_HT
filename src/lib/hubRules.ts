@@ -1,6 +1,6 @@
 import { CSSProperties } from "react";
 import type { HubProfile, HubUser, Pauta, TaskItem } from "../types";
-import { canUserViewPautaApp } from "./pautasRepository";
+import { canUserViewPautaApp, hasUserCompletedPauta } from "./pautasRepository";
 import { getDateSortValue, getDueTone, normalizeForSearch } from "./formatters";
 
 export const TASK_SIDEBAR_HISTORY_DAYS = 7;
@@ -199,8 +199,9 @@ export function countPautaStatus(pautas: Pauta[], user: HubUser) {
       if (isPautaAssignedToUser(pauta, user)) acc.minhas += 1;
       if (pauta.destaque) acc.destaques += 1;
       if (isPautaAlta(pauta)) acc.alta += 1;
-      if (isPautaAtrasada(pauta)) acc.atrasado += 1;
-      if (isPautaConcluida(pauta)) acc.concluidas += 1;
+      const concluidaPorMim = hasUserCompletedPauta(pauta, user);
+      if (isPautaAtrasada(pauta) && !concluidaPorMim) acc.atrasado += 1;
+      if (isPautaConcluida(pauta) || concluidaPorMim) acc.concluidas += 1;
       if (!pauta.prazo.trim()) acc.semPrazo += 1;
       return acc;
     },
