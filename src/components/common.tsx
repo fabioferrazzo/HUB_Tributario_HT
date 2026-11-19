@@ -65,7 +65,7 @@ export function PanelHeader({ title, icon, action }: { title: string; icon: Reac
 export function StatusPill({ label }: { label: string }) {
   const normalized = label.toLowerCase();
   const tone =
-    normalized.includes("atrasado") || normalized.includes("alta") || normalized.includes("urgente")
+    normalized.includes("atrasad") || normalized.includes("alta") || normalized.includes("urgente")
       ? "danger"
       : normalized.includes("conclu")
         ? "ok"

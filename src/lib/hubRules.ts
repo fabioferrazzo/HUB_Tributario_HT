@@ -7,23 +7,40 @@ export const TASK_SIDEBAR_HISTORY_DAYS = 7;
 
 export const TASK_SIDEBAR_HISTORY_MS = TASK_SIDEBAR_HISTORY_DAYS * 24 * 60 * 60 * 1000;
 
-export function shouldKeepTaskInSidebarHistory(task: TaskItem) {
+/**
+ * Regra da lista lateral do Calendário de Tarefas:
+ * - tarefa arquivada nunca aparece;
+ * - tarefa em aberto (inclusive atrasada) aparece sempre, até ser concluída;
+ * - tarefa concluída continua visível por 7 dias, contados da data mais
+ *   recente entre o prazo e a última atualização (momento da conclusão).
+ */
+export function shouldKeepTaskInSidebarHistory(task: TaskItem, agora = Date.now()) {
   if (task.archivedAt) return false;
-  if (!task.prazo) return true;
+  if (task.status !== "concluida") return true;
 
-  const timestamp = Date.parse(task.prazo);
-  if (!Number.isFinite(timestamp)) return true;
-  if (timestamp > Date.now()) return true;
+  const referencias = [task.prazo, task.updatedAt]
+    .map((valor) => (valor ? Date.parse(valor) : Number.NaN))
+    .filter((valor) => Number.isFinite(valor));
+  if (!referencias.length) return true;
 
-  return Date.now() - timestamp <= TASK_SIDEBAR_HISTORY_MS;
+  const referencia = Math.max(...referencias);
+  if (referencia > agora) return true;
+  return agora - referencia <= TASK_SIDEBAR_HISTORY_MS;
 }
 
-export function isTaskSidebarHistoryRecord(task: TaskItem) {
-  if (task.archivedAt) return false;
+export function isTaskSidebarHistoryRecord(task: TaskItem, agora = Date.now()) {
+  if (task.archivedAt || task.status !== "concluida") return false;
   if (!task.prazo) return false;
 
   const timestamp = Date.parse(task.prazo);
-  return Number.isFinite(timestamp) && timestamp < Date.now();
+  return Number.isFinite(timestamp) && timestamp < agora;
+}
+
+/** Tarefa em aberto com prazo vencido: continua na lista até ser concluída. */
+export function isTaskAtrasada(task: TaskItem, agora = Date.now()) {
+  if (task.archivedAt || task.status === "concluida" || !task.prazo) return false;
+  const timestamp = Date.parse(task.prazo);
+  return Number.isFinite(timestamp) && timestamp < agora;
 }
 
 export function taskToCalendarFrameEvent(task: TaskItem) {

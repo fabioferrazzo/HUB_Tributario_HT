@@ -91,7 +91,11 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(400);
   const taskForm = page.locator("form.task-form").first();
   await taskForm.getByLabel("Título").fill("Tarefa de teste");
-  await taskForm.locator("input[type=datetime-local]").fill("2026-11-10T09:00");
+  // Prazo relativo (10 dias atrás): tarefa em aberto e atrasada deve continuar visível.
+  const prazoAntigo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const prazoAntigoTxt = `${prazoAntigo.getFullYear()}-${pad2(prazoAntigo.getMonth() + 1)}-${pad2(prazoAntigo.getDate())}T09:00`;
+  await taskForm.locator("input[type=datetime-local]").fill(prazoAntigoTxt);
   await page.getByRole("button", { name: "Salvar tarefa" }).click();
   await page.waitForTimeout(800);
   await page.screenshot({ path: require("path").join(OUT, "tarefa_salva.png") });
@@ -100,6 +104,20 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(300);
   const taskItem = page.locator("article", { hasText: "Tarefa de teste" }).first();
   check("tarefas: criada", (await taskItem.count()) === 1);
+  if (await taskItem.count()) {
+    const pills = (await taskItem.locator(".status-pill").allInnerTexts()).join(" | ");
+    check("tarefas: aberta e vencida aparece como atrasada (sem 'histórico')", /atrasada/i.test(pills) && !/histórico/i.test(pills), pills);
+  }
+  const abertasBtn = page.getByRole("button", { name: /^Abertas \(/ }).first();
+  if (await abertasBtn.count()) {
+    const rotulo = await abertasBtn.innerText();
+    await abertasBtn.click();
+    await page.waitForTimeout(300);
+    const qtd = await page.locator(".task-list article").count();
+    check("tarefas: contador 'Abertas' igual à lista filtrada", rotulo.includes(`(${qtd})`), `${rotulo} x ${qtd} na lista`);
+    await todas.click();
+    await page.waitForTimeout(300);
+  }
   if (await taskItem.count()) {
     const btns = await taskItem.locator("button").allInnerTexts();
     check("tarefas: botoes editar/concluir/excluir", btns.some((b) => /Editar/.test(b)) && btns.some((b) => /Excluir/.test(b)), btns.join(", "));

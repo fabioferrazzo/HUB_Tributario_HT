@@ -8,7 +8,7 @@ import { canUserManageTask, deleteAppTask, deleteCalendarEventTask, getTarefasSo
 import { confirmDeletion, formatDateTime, formatResponsaveis, getActiveProfiles, getDueTone, getErrorMessage, getInitials, normalizeForSearch } from "../lib/formatters";
 import { escapeHtmlText, exportReport } from "../lib/reportExport";
 import { getSupabaseAccessToken } from "../lib/auth";
-import { isTaskAssignedToUser, isTaskSidebarHistoryRecord, shouldKeepTaskInSidebarHistory, taskToCalendarFrameEvent } from "../lib/hubRules";
+import { isTaskAssignedToUser, isTaskAtrasada, isTaskSidebarHistoryRecord, shouldKeepTaskInSidebarHistory, taskToCalendarFrameEvent } from "../lib/hubRules";
 import { lembreteToReportRow, taskToReportRow } from "../lib/reportRows";
 
 export function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; onNavigate: (route: HubRoute) => void; user: HubUser }) {
@@ -181,8 +181,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
     };
   }, [user]);
 
-  const sidebarTasks = useMemo(() => tasks.filter(shouldKeepTaskInSidebarHistory), [tasks]);
-  const activeTasks = useMemo(() => tasks.filter((task) => !task.archivedAt), [tasks]);
+  const sidebarTasks = useMemo(() => tasks.filter((task) => shouldKeepTaskInSidebarHistory(task)), [tasks]);
 
   const filteredTasks = useMemo(() => {
     const normalizedQuery = normalizeForSearch(query);
@@ -210,7 +209,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
   }, [filter, hubUsers, query, sidebarTasks, user]);
 
   const minhasTasks = useMemo(() => sidebarTasks.filter((task) => isTaskAssignedToUser(task, user, hubUsers)), [hubUsers, sidebarTasks, user]);
-  const abertasCount = activeTasks.filter((task) => task.status === "aberta").length;
+  const abertasCount = sidebarTasks.filter((task) => task.status === "aberta").length;
 
   function clearFormFields() {
     setEditingId(null);
@@ -571,6 +570,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
         {filteredTasks.map((task) => {
           const canManage = canUserManageTask(task, user);
           const isHistoryTask = isTaskSidebarHistoryRecord(task);
+          const atrasada = isTaskAtrasada(task);
 
           return (
             <article
@@ -586,6 +586,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
                 <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
                 <div className="lembrete-tags">
                   {isHistoryTask ? <StatusPill label="histórico" /> : null}
+                  {atrasada ? <StatusPill label="atrasada" /> : null}
                   {task.destaque ? <StatusPill label="destaque" /> : null}
                   <StatusPill label={task.status} />
                   <StatusPill label={task.prioridade} />
