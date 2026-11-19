@@ -6504,3 +6504,35 @@ a.aviso-card__file:hover {
   color: var(--danger);
   font-size: 12px;
 }
+
+/* Quadro geral: editar/excluir pauta (administrador) */
+.qg-item:has(.qg-item-acoes) {
+  position: relative;
+  padding-right: 70px;
+}
+
+.qg-item-acoes {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.qg-item-acoes .qg-icon-btn {
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.qg-item:hover .qg-item-acoes .qg-icon-btn,
+.qg-item-acoes .qg-icon-btn:focus-visible {
+  opacity: 1;
+}
+
+.qg-icon-btn--perigo:hover {
+  border-color: #efc9c5;
+  background: #fbeceb;
+  color: var(--danger);
+}

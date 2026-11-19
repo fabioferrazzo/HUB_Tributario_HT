@@ -3,7 +3,7 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, La
 import type { HubProfile, HubRoute, HubUser, Pauta, QuadroAviso, TaskItem } from "../types";
 import { FooterUpdates } from "../components/Updates";
 import { RichTextEditor } from "../components/RichTextEditor";
-import { listAppPautas, hasUserCompletedPauta } from "../lib/pautasRepository";
+import { canUserManagePautaApp, deleteAppPauta, listAppPautas, hasUserCompletedPauta } from "../lib/pautasRepository";
 import { listQuadroAvisos } from "../lib/avisosRepository";
 import { listAppTasks } from "../lib/tarefasRepository";
 import { canUserViewPauta, isPautaAlta, isPautaConcluida } from "../lib/hubRules";
@@ -119,6 +119,34 @@ export function QuadroGeral({
   const fimSemana = dias[6];
   const hoje = inicioDoDia(new Date());
   const ehSemanaAtual = isoLocal(semana) === isoLocal(segundaDaSemana(new Date()));
+
+  // Administrador: editar (abre o editor em Pautas) ou excluir a pauta direto daqui.
+  const [excluindoPauta, setExcluindoPauta] = useState("");
+  function editarPauta(pauta: Pauta) {
+    try {
+      window.sessionStorage.setItem("hub_pautas_editar", pauta.id);
+    } catch {
+      // sem armazenamento: abre Pautas sem o editor
+    }
+    onNavigate("pautas");
+  }
+  async function excluirPauta(pauta: Pauta) {
+    if (!confirmDeletion(`Excluir a pauta "${pauta.tema}"?`)) return;
+    setExcluindoPauta(pauta.id);
+    try {
+      const restantes = await deleteAppPauta({ current: pautas, pauta, user });
+      setPautas(restantes);
+      setErros((atual) => ({ ...atual, pautas: "" }));
+    } catch (erro) {
+      setErros((atual) => ({ ...atual, pautas: getErrorMessage(erro) }));
+    } finally {
+      setExcluindoPauta("");
+    }
+  }
+  const acoesPauta = (pauta: Pauta) =>
+    canUserManagePautaApp(pauta, user)
+      ? { onEditar: () => editarPauta(pauta), onExcluir: () => void excluirPauta(pauta), excluindo: excluindoPauta === pauta.id }
+      : undefined;
 
   const carregarPautas = useCallback(async () => {
     setCarregando((atual) => ({ ...atual, pautas: true }));
@@ -286,7 +314,7 @@ export function QuadroGeral({
                 <h3 className="qg-bloco-titulo qg-bloco-titulo--alerta">Atrasadas ({pautasAtrasadas.length})</h3>
                 <ul className="qg-lista">
                   {pautasAtrasadas.slice(0, 5).map(({ pauta, data }) => (
-                    <PautaLinha key={pauta.id} data={data} hubUsers={hubUsers} pauta={pauta} atrasada />
+                    <PautaLinha key={pauta.id} acoes={acoesPauta(pauta)} data={data} hubUsers={hubUsers} pauta={pauta} atrasada />
                   ))}
                 </ul>
                 {pautasAtrasadas.length > 5 ? <p className="qg-mais">+{pautasAtrasadas.length - 5} atrasada(s) em Pautas</p> : null}
@@ -297,7 +325,7 @@ export function QuadroGeral({
               {!carregando.pautas && !pautasSemana.length ? <p className="qg-vazio">Nenhuma pauta com prazo nesta semana.</p> : null}
               <ul className="qg-lista">
                 {pautasSemana.map(({ pauta, data }) => (
-                  <PautaLinha key={pauta.id} data={data} hubUsers={hubUsers} pauta={pauta} />
+                  <PautaLinha key={pauta.id} acoes={acoesPauta(pauta)} data={data} hubUsers={hubUsers} pauta={pauta} />
                 ))}
               </ul>
             </div>
@@ -439,7 +467,21 @@ export function QuadroGeral({
   );
 }
 
-function PautaLinha({ pauta, data, hubUsers, atrasada }: { pauta: Pauta; data: Date; hubUsers: HubProfile[]; atrasada?: boolean }) {
+type AcoesPauta = { onEditar: () => void; onExcluir: () => void; excluindo: boolean };
+
+function PautaLinha({
+  pauta,
+  data,
+  hubUsers,
+  atrasada,
+  acoes
+}: {
+  pauta: Pauta;
+  data: Date;
+  hubUsers: HubProfile[];
+  atrasada?: boolean;
+  acoes?: AcoesPauta;
+}) {
   const titulo = pauta.tema?.trim() || pautaRichTextToPlain(pauta.acoes).slice(0, 120) || "Pauta sem título";
   const responsaveis = pauta.responsaveis?.length ? formatResponsaveis(pauta.responsaveis, hubUsers) : pauta.scope === "todos" ? "Todos" : pauta.responsavel;
   return (
@@ -452,6 +494,23 @@ function PautaLinha({ pauta, data, hubUsers, atrasada }: { pauta: Pauta; data: D
         <strong className="qg-item-data">{rotuloDia(data)}</strong>
         {responsaveis ? ` · ${responsaveis}` : ""}
       </span>
+      {acoes ? (
+        <span className="qg-item-acoes">
+          <button aria-label={`Editar a pauta ${titulo}`} className="qg-icon-btn" title="Editar pauta" type="button" onClick={acoes.onEditar}>
+            <Pencil size={13} strokeWidth={1.6} />
+          </button>
+          <button
+            aria-label={`Excluir a pauta ${titulo}`}
+            className="qg-icon-btn qg-icon-btn--perigo"
+            disabled={acoes.excluindo}
+            title="Excluir pauta"
+            type="button"
+            onClick={acoes.onExcluir}
+          >
+            <Trash2 size={13} strokeWidth={1.6} />
+          </button>
+        </span>
+      ) : null}
     </li>
   );
 }

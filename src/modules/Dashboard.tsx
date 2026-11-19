@@ -15,6 +15,7 @@ import { exportReport } from "../lib/reportExport";
 import { getSupabaseAccessToken } from "../lib/auth";
 import { Comentarios } from "../components/Comentarios";
 import { aoMudarComentarios, contarComentarios } from "../lib/comentariosRepository";
+import { postarPautaComoAviso } from "../lib/pautaAviso";
 
 export function Dashboard({
   hubUsers,
@@ -25,6 +26,7 @@ export function Dashboard({
 }) {
   const [pautas, setPautas] = useState<Pauta[]>([]);
   const [comentariosPorPauta, setComentariosPorPauta] = useState<Record<string, number>>({});
+  const [postarComoAviso, setPostarComoAviso] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -63,6 +65,27 @@ export function Dashboard({
       return "geral";
     }
   });
+
+  // "Editar" no Quadro geral abre aqui o editor da pauta.
+  useEffect(() => {
+    let id = "";
+    try {
+      id = window.sessionStorage.getItem("hub_pautas_editar") || "";
+    } catch {
+      id = "";
+    }
+    if (!id) return;
+    const alvo = pautas.find((pauta) => pauta.id === id);
+    if (!alvo) return;
+    try {
+      window.sessionStorage.removeItem("hub_pautas_editar");
+    } catch {
+      // ignorado
+    }
+    setPautasView("lista");
+    startEditPauta(alvo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pautas]);
 
   // Quantidade de comentários por pauta (uma consulta só para a lista inteira).
   useEffect(() => {
@@ -288,6 +311,7 @@ export function Dashboard({
     setDestaque(false);
     setResponsaveis([]);
     setSelectedFiles([]);
+    setPostarComoAviso(false);
   }
 
   function startNewPauta() {
@@ -313,6 +337,7 @@ export function Dashboard({
     setDestaque(Boolean(pauta.destaque));
     setResponsaveis(pauta.responsaveis || []);
     setSelectedFiles([]);
+    setPostarComoAviso(false);
     setFormOpen(true);
     setError("");
     window.requestAnimationFrame(() => pautaEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -365,8 +390,17 @@ export function Dashboard({
     try {
       const saved = await saveAppPauta({ current: pautas, files: selectedFiles, pauta: nextPauta, user });
       setPautas(saved);
+      const postar = postarComoAviso;
       clearForm();
       setFormOpen(false);
+      if (postar) {
+        try {
+          await postarPautaComoAviso(nextPauta, user);
+          setPautasEmailStatus("Pauta salva e postada como Aviso da Coordenação no alto do Quadro geral.");
+        } catch (avisoError) {
+          setError(`A pauta foi salva, mas não foi postada como Aviso da Coordenação: ${getErrorMessage(avisoError)}`);
+        }
+      }
     } catch (saveError) {
       setError(getErrorMessage(saveError));
     } finally {
@@ -1378,6 +1412,13 @@ export function Dashboard({
               <span>
                 <strong>Destacar pauta</strong>
                 <small>Exibe o item em alto relevo no painel principal.</small>
+              </span>
+            </label>
+            <label className="confidential-field">
+              <input checked={postarComoAviso} onChange={(event) => setPostarComoAviso(event.target.checked)} type="checkbox" />
+              <span>
+                <strong>Postar como Aviso da Coordenação</strong>
+                <small>Ao salvar, a pauta aparece no alto do Quadro geral para toda a equipe (substitui o aviso atual e avisa todos no sino).</small>
               </span>
             </label>
             {scope === "usuarios" ? (
