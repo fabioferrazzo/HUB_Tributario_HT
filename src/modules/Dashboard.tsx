@@ -44,8 +44,44 @@ export function Dashboard({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [pautasEmailStatus, setPautasEmailStatus] = useState("");
   const [sendingPautasEmail, setSendingPautasEmail] = useState(false);
-  const [pautasView, setPautasView] = useState<"lista" | "avisos">("lista");
-  const [avisosView, setAvisosView] = useState<"geral" | "particular">("geral");
+  const [pautasView, setPautasView] = useState<"lista" | "avisos">(() => {
+    try {
+      return window.sessionStorage.getItem("hub_pautas_aba") ? "avisos" : "lista";
+    } catch {
+      return "lista";
+    }
+  });
+
+  const [avisosView, setAvisosView] = useState<"geral" | "particular">(() => {
+    try {
+      return window.sessionStorage.getItem("hub_pautas_aba") === "particular" ? "particular" : "geral";
+    } catch {
+      return "geral";
+    }
+  });
+
+  // Notificação de aviso do quadro: abre direto a aba "Quadro de Avisos" (geral ou particular).
+  useEffect(() => {
+    const trocar = (event: Event) => {
+      const quadro = (event as CustomEvent<string>).detail;
+      if (quadro === "geral" || quadro === "particular") {
+        setPautasView("avisos");
+        setAvisosView(quadro);
+        try {
+          window.sessionStorage.removeItem("hub_pautas_aba");
+        } catch {
+          // ignorado
+        }
+      }
+    };
+    try {
+      window.sessionStorage.removeItem("hub_pautas_aba");
+    } catch {
+      // ignorado
+    }
+    window.addEventListener("hub:pautas-aba", trocar);
+    return () => window.removeEventListener("hub:pautas-aba", trocar);
+  }, []);
   const [avisosDrawMode, setAvisosDrawMode] = useState(false);
   const [selectedAvisoCell, setSelectedAvisoCell] = useState(1);
   const [quadroAvisos, setQuadroAvisos] = useState<QuadroAviso[]>([]);

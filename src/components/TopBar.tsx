@@ -150,6 +150,7 @@ export function TopBar({
                         type="button"
                         onClick={() => {
                           onNotificationRead(item.id);
+                          if (item.targetType === "quadro_aviso") abrirAbaAvisos(/particular/i.test(item.title) ? "particular" : "geral");
                           onNavigate(item.route);
                           setNotificationsOpen(false);
                         }}
@@ -184,4 +185,14 @@ export function TopBar({
       </div>
     </header>
   );
+}
+
+// Notificação de aviso do quadro abre Pautas já na aba "Quadro de Avisos".
+function abrirAbaAvisos(quadro: "geral" | "particular") {
+  try {
+    window.sessionStorage.setItem("hub_pautas_aba", quadro);
+  } catch {
+    // sem armazenamento: o evento abaixo ainda troca a aba se Pautas já estiver aberto
+  }
+  window.dispatchEvent(new CustomEvent("hub:pautas-aba", { detail: quadro }));
 }

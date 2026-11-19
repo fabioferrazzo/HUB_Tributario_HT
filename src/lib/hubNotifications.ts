@@ -1,6 +1,6 @@
 import type { HubNotification, HubProfile, HubRoute, HubUser, Lembrete, Pauta, TaskItem } from "../types";
 import { formatDate, formatDateTime, formatOwner, formatResponsaveis, getDateSortValue, getDueTone, isRecentIso } from "./formatters";
-import { isPautaAssignedToUser, isPautaAtrasada, isPautaConcluida, isTaskAssignedToUser, isTaskOwnerForUser } from "./hubRules";
+import { canUserViewPauta, isPautaAtrasada, isPautaConcluida, isTaskAssignedToUser, isTaskOwnerForUser } from "./hubRules";
 
 export function buildSystemNotifications({
   hubUsers,
@@ -95,7 +95,8 @@ export function buildLembreteNotifications(lembretes: Lembrete[], profiles: HubP
 export function buildPautaNotifications(pautas: Pauta[], user: HubUser): HubNotification[] {
   return pautas
     .filter((pauta) => !isPautaConcluida(pauta) && pauta.prazo.trim())
-    .filter((pauta) => user.role !== "colaborador" || isPautaAssignedToUser(pauta, user))
+    // Vencimentos de todas as pautas que o usuário enxerga (menos as que ele já concluiu).
+    .filter((pauta) => canUserViewPauta(pauta, user))
     .map((pauta) => ({ pauta, tone: isPautaAtrasada(pauta) ? "danger" : getDueTone(pauta.prazo) }))
     .filter(
       (item): item is { pauta: Pauta; tone: "danger" | "warning" } =>
