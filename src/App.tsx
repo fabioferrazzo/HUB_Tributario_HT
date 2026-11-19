@@ -1,18 +1,10 @@
-import { AdminModule } from "./modules/AdminModule";
-import { ArquivosModule } from "./modules/ArquivosModule";
-import { AvaliacoesModule } from "./modules/AvaliacoesModule";
-import { HistoricoModule } from "./modules/HistoricoModule";
 import { QuadroGeral } from "./modules/QuadroGeral";
-import { Dashboard } from "./modules/Dashboard";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
-import { LembretesModule } from "./modules/LembretesModule";
-import { LinksModule } from "./modules/LinksModule";
 import { ChevronDown, LogOut, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
 import { ModuleFrame, dispatchFrameAction } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
-import { TasksModule } from "./modules/TasksModule";
 import { TopBar } from "./components/TopBar";
 import { ChatCentral, type ChatJanela } from "./components/chat/ChatCentral";
 import { routeGroups, routes } from "./app/appConfig";
@@ -27,7 +19,18 @@ import { listAppPautas } from "./lib/pautasRepository";
 import { listAppTasks } from "./lib/tarefasRepository";
 import { listAppUsers } from "./lib/usersRepository";
 import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { CarregamentoModulo } from "./components/CarregamentoModulo";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+
+// Módulos carregados sob demanda: o Quadro geral (tela inicial) e o chat seguem no pacote principal.
+const AdminModule = lazy(() => import("./modules/AdminModule").then((m) => ({ default: m.AdminModule })));
+const ArquivosModule = lazy(() => import("./modules/ArquivosModule").then((m) => ({ default: m.ArquivosModule })));
+const AvaliacoesModule = lazy(() => import("./modules/AvaliacoesModule").then((m) => ({ default: m.AvaliacoesModule })));
+const HistoricoModule = lazy(() => import("./modules/HistoricoModule").then((m) => ({ default: m.HistoricoModule })));
+const Dashboard = lazy(() => import("./modules/Dashboard").then((m) => ({ default: m.Dashboard })));
+const LembretesModule = lazy(() => import("./modules/LembretesModule").then((m) => ({ default: m.LembretesModule })));
+const LinksModule = lazy(() => import("./modules/LinksModule").then((m) => ({ default: m.LinksModule })));
+const TasksModule = lazy(() => import("./modules/TasksModule").then((m) => ({ default: m.TasksModule })));
 
 // A rota fica no endereço (#/rota) para abrir qualquer menu em nova janela ou por link.
 function readRouteFromHash(): HubRoute | null {
@@ -528,6 +531,16 @@ export function App() {
 }
 
 function renderRoute(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
+  return (
+    <CarregamentoModulo key={route}>
+      <Suspense fallback={<div className="modulo-carregando" role="status">Carregando…</div>}>
+        {renderRouteConteudo(route, user, hubUsers, onNavigate)}
+      </Suspense>
+    </CarregamentoModulo>
+  );
+}
+
+function renderRouteConteudo(route: HubRoute, user: HubUser, hubUsers: HubProfile[], onNavigate: (route: HubRoute) => void) {
   if (route === "home") return <QuadroGeral hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "chat") return <ChatCentral hubUsers={hubUsers} modo="pagina" user={user} />;
   if (route === "pautas") return <Dashboard hubUsers={hubUsers} user={user} />;

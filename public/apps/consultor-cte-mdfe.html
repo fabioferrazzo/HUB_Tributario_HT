@@ -613,10 +613,10 @@ body.is-fullscreen{background:var(--bg)}
         <section class="wizard-step active" data-wizard-step="1">
           <div class="section-title">1. Operação física</div>
           <div class="form-grid">
-            <div class="field"><label>Data da prestação</label><input id="operationDate" type="date"></div>
-            <div class="field"><label>UF de início</label><select id="originUF"></select></div>
+            <div class="field"><label for="operationDate">Data da prestação</label><input id="operationDate" type="date"></div>
+            <div class="field"><label for="originUF">UF de início</label><select id="originUF"></select></div>
             <div class="field"><label for="originCity">Município de início</label><select id="originCity"></select><small id="originCityCode" class="city-code"></small></div>
-            <div class="field"><label>UF de término</label><select id="destinationUF"></select></div>
+            <div class="field"><label for="destinationUF">UF de término</label><select id="destinationUF"></select></div>
             <div class="field"><label for="destinationCity">Município de término</label><select id="destinationCity"></select><small id="destinationCityCode" class="city-code"></small></div>
             <div class="field wide"><label>UFs adicionais de descarregamento no mesmo veículo/rota</label><div class="check-grid inline-checks"><label class="check"><input id="unload_RS" type="checkbox"> RS</label><label class="check"><input id="unload_SC" type="checkbox"> SC</label><label class="check"><input id="unload_PR" type="checkbox"> PR</label><label class="check"><input id="unload_SP" type="checkbox"> SP</label></div><small>Marque somente se houver cargas a descarregar em outra UF além do destino principal.</small></div>
             <div class="field wide"><label>UFs intermediárias do percurso</label><div class="check-grid inline-checks"><label class="check"><input id="route_RS" type="checkbox"> RS</label><label class="check"><input id="route_SC" type="checkbox"> SC</label><label class="check"><input id="route_PR" type="checkbox"> PR</label><label class="check"><input id="route_SP" type="checkbox"> SP</label></div><small>Informe apenas UFs efetivamente percorridas entre os extremos.</small></div>
@@ -626,8 +626,8 @@ body.is-fullscreen{background:var(--bg)}
         <section class="wizard-step" data-wizard-step="2">
           <div class="section-title">2. Emissor e tomador</div>
           <div class="form-grid">
-            <div class="field wide"><label>Estabelecimento emissor do CT-e</label><select id="establishmentId"></select></div>
-            <div class="field wide"><label>Natureza do tomador</label><select id="takerNature"></select></div>
+            <div class="field wide"><label for="establishmentId">Estabelecimento emissor do CT-e</label><select id="establishmentId"></select></div>
+            <div class="field wide"><label for="takerNature">Natureza do tomador</label><select id="takerNature"></select></div>
             <label class="check"><input id="takerContribuinte" type="checkbox" checked> Tomador é contribuinte do ICMS</label>
           </div>
           <div id="rsBenefitPanel" class="subpanel" hidden>
@@ -642,9 +642,9 @@ body.is-fullscreen{background:var(--bg)}
         <section class="wizard-step" data-wizard-step="3">
           <div class="section-title">3. Cadeia, ICMS e Reforma Tributária</div>
           <div class="form-grid">
-            <div class="field"><label>Natureza da cadeia</label><select id="operationType"><option value="direta">Contratação direta</option><option value="subcontratacao">Subcontratação</option><option value="redespacho">Redespacho</option><option value="redespacho_intermediario">Redespacho intermediário</option><option value="agenciamento">Agenciamento</option></select></div>
-            <div class="field"><label>Regime tributário do emitente</label><select id="regime"><option value="normal">Regime normal / CRT 3</option><option value="simples">Simples Nacional</option></select></div>
-            <div class="field"><label>Tratamento IBS/CBS informado</label><select id="rtcTreatment"><option value="integral">Situação integralmente tributada</option><option value="outro">Benefício/redução/zero/diferimento/outro</option></select></div>
+            <div class="field"><label for="operationType">Natureza da cadeia</label><select id="operationType"><option value="direta">Contratação direta</option><option value="subcontratacao">Subcontratação</option><option value="redespacho">Redespacho</option><option value="redespacho_intermediario">Redespacho intermediário</option><option value="agenciamento">Agenciamento</option></select></div>
+            <div class="field"><label for="regime">Regime tributário do emitente</label><select id="regime"><option value="normal">Regime normal / CRT 3</option><option value="simples">Simples Nacional</option></select></div>
+            <div class="field"><label for="rtcTreatment">Tratamento IBS/CBS informado</label><select id="rtcTreatment"><option value="integral">Situação integralmente tributada</option><option value="outro">Benefício/redução/zero/diferimento/outro</option></select></div>
           </div>
           <div class="check-grid">
             <label class="check"><input id="exportLinked" type="checkbox"> Mercadoria efetivamente vinculada à exportação</label>
@@ -655,10 +655,10 @@ body.is-fullscreen{background:var(--bg)}
             <div class="field"><label for="exportDestination">Para onde vai a carga de exportação neste frete?</label><select id="exportDestination"><option value="">Selecione antes de concluir</option><option value="porto">Porto (embarque marítimo)</option><option value="aeroporto">Aeroporto</option><option value="fronteira">Ponto de fronteira (transbordo para outro transportador)</option><option value="trading_recinto">Trading, armazém alfandegado ou entreposto aduaneiro</option><option value="exterior_direto">Exterior — o mesmo veículo leva a carga até o destino no exterior</option></select><small>SC isenta o frete rodoviário até porto (Anexo 2, art. 5º, XIII). Fora dessa hipótese e do transporte direto ao exterior, não há norma estadual: o app mostra a tributação normal e a tese fica para o Depto.</small></div>
           </div>
           <div id="managerPanel" class="subpanel" hidden>
-            <div class="field"><label>Quem gerencia efetivamente a viagem na subcontratação?</label><select id="tripManager"><option value="indefinido">Ainda não definido</option><option value="contratante">Transportador contratante</option><option value="subcontratado">Transportador subcontratado</option></select></div>
+            <div class="field"><label for="tripManager">Quem gerencia efetivamente a viagem na subcontratação?</label><select id="tripManager"><option value="indefinido">Ainda não definido</option><option value="contratante">Transportador contratante</option><option value="subcontratado">Transportador subcontratado</option></select></div>
           </div>
           <div id="spPanel" class="subpanel danger" hidden>
-            <div class="field"><label>Início em SP sem inscrição paulista — condição do tomador / opção</label><select id="spTakerCondition"><option value="">Selecione antes de concluir</option><option value="contribuinte_comum">Contribuinte paulista comum (não produtor rural/MEI)</option><option value="produtor_mei">Produtor rural ou MEI</option><option value="nao_contribuinte">Não contribuinte paulista</option><option value="transportador_recolhe">Transportador optará por recolher</option></select></div>
+            <div class="field"><label for="spTakerCondition">Início em SP sem inscrição paulista — condição do tomador / opção</label><select id="spTakerCondition"><option value="">Selecione antes de concluir</option><option value="contribuinte_comum">Contribuinte paulista comum (não produtor rural/MEI)</option><option value="produtor_mei">Produtor rural ou MEI</option><option value="nao_contribuinte">Não contribuinte paulista</option><option value="transportador_recolhe">Transportador optará por recolher</option></select></div>
           </div>
         </section>
 
@@ -738,8 +738,8 @@ body.is-fullscreen{background:var(--bg)}
 
       <section class="card report-controls">
         <div class="report-control-grid">
-          <div class="field wide"><label>Título do relatório</label><input id="reportTitle" value="Ficha Operacional CT-e / MDF-e"></div>
-          <div class="field"><label>Perfil</label><select id="reportProfile"><option value="daily" selected>Simplificada / uso diário</option><option value="executive">Executivo / sintético</option><option value="technical">Técnico completo</option></select></div>
+          <div class="field wide"><label for="reportTitle">Título do relatório</label><input id="reportTitle" value="Ficha Operacional CT-e / MDF-e"></div>
+          <div class="field"><label for="reportProfile">Perfil</label><select id="reportProfile"><option value="daily" selected>Simplificada / uso diário</option><option value="executive">Executivo / sintético</option><option value="technical">Técnico completo</option></select></div>
         </div>
         <div class="report-options">
           <label class="check"><input id="reportIncludeFields" type="checkbox" checked> Detalhamento dos campos CT-e/MDF-e</label>

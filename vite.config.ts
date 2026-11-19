@@ -24,6 +24,20 @@ function hubPublicConfig(mode: string): Plugin {
 export default defineConfig(({ mode }) => ({
   base: "./",
   plugins: [react(), hubPublicConfig(mode)],
+  build: {
+    rollupOptions: {
+      output: {
+        // Bibliotecas estáveis em arquivos próprios: continuam no cache do navegador após cada publicação.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor-react";
+          if (/node_modules[\\/]@supabase[\\/]/.test(id)) return "vendor-supabase";
+          if (/node_modules[\\/]lucide-react[\\/]/.test(id)) return "vendor-icones";
+          return undefined;
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     strictPort: false

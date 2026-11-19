@@ -24,7 +24,7 @@
 
 <!-- Login -->
 <section id="telaLogin" class="tela-login" hidden>
-  <button class="btn icone tema-flutuante" type="button" data-acao="tema"></button>
+  <button class="btn icone tema-flutuante" type="button" data-acao="tema" aria-label="Trocar tema" title="Trocar tema"></button>
   <form id="formLogin" class="cartao-login" autocomplete="on">
     <div class="marca grande"><span class="logo">HT</span></div>
     <div class="login-titulo"><h1>Controle de Férias</h1><p>H. Teixeira Contabilidade</p></div>
@@ -37,7 +37,7 @@
 
 <!-- Troca obrigatória de senha -->
 <section id="telaSenha" class="tela-login" hidden>
-  <button class="btn icone tema-flutuante" type="button" data-acao="tema"></button>
+  <button class="btn icone tema-flutuante" type="button" data-acao="tema" aria-label="Trocar tema" title="Trocar tema"></button>
   <form id="formSenhaObrig" class="cartao-login">
     <div class="marca grande"><span class="logo">HT</span></div>
     <div class="login-titulo"><h1>Defina sua senha</h1><p>Primeiro acesso ou senha redefinida pelo ADM</p></div>
@@ -66,7 +66,7 @@
       <div class="topo-acoes">
         <button class="btn" data-acao="nova-ausencia" title="Registrar um ou mais dias de ausência (não é férias)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Ausência</button>
         <button class="btn primario" data-acao="nova-ferias" id="btnNovaTopo"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Férias</button>
-        <button class="btn icone" data-acao="tema"></button>
+        <button class="btn icone" data-acao="tema" aria-label="Trocar tema" title="Trocar tema"></button>
         <button class="btn icone" data-acao="backup" data-adm title="Backup XLSX — baixa todos os dados em planilha Excel" aria-label="Backup XLSX"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4.5 19.5h15"/></svg></button>
         <details class="menu-usuario">
           <summary><span class="avatar" id="avatarUsuario"></span><span id="nomeUsuario" class="nome-usuario">Usuário</span></summary>

@@ -46,19 +46,19 @@
             
             <div class="flex gap-1.5">
                 <div class="relative flex items-center shrink-0" title="Cor de Fundo">
-                    <input type="color" id="color-picker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#f5f5f4">
-                    <button class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-paint-bucket text-lg"></i></button>
+                    <input type="color" id="color-picker" aria-label="Cor de fundo" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#f5f5f4">
+                    <button type="button" tabindex="-1" aria-hidden="true" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-paint-bucket text-lg"></i></button>
                 </div>
                 <div class="relative flex items-center shrink-0" title="Cor do Cartão">
-                    <input type="color" id="card-color-picker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#ffffff">
-                    <button class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-square text-lg"></i></button>
+                    <input type="color" id="card-color-picker" aria-label="Cor do cartão" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#ffffff">
+                    <button type="button" tabindex="-1" aria-hidden="true" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-square text-lg"></i></button>
                 </div>
                 <div class="relative flex items-center shrink-0" title="Cor do Timer">
-                    <input type="color" id="text-color-picker" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#292524">
-                    <button class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-text-t text-lg"></i></button>
+                    <input type="color" id="text-color-picker" aria-label="Cor do timer" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" value="#292524">
+                    <button type="button" tabindex="-1" aria-hidden="true" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-text-t text-lg"></i></button>
                 </div>
-                <button id="notes-toggle" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-notepad text-lg"></i></button>
-                <button id="settings-toggle" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-gear text-lg"></i></button>
+                <button id="notes-toggle" type="button" aria-label="Anotações" title="Anotações" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-notepad text-lg"></i></button>
+                <button id="settings-toggle" type="button" aria-label="Ajustar tempos" title="Ajustar tempos" class="text-stone-400 hover:text-stone-600 p-2 rounded-full bg-stone-50"><i class="ph ph-gear text-lg"></i></button>
             </div>
         </header>
 
@@ -70,16 +70,16 @@
         </div>
 
         <div class="flex flex-col items-center justify-center mb-10 w-full">
-            <input type="text" id="task-input" placeholder="No que você vai focar?" class="w-full bg-transparent border-none text-center focus:outline-none opacity-60 transition-all font-medium text-sm">
+            <input type="text" id="task-input" aria-label="Tarefa em foco" placeholder="No que você vai focar?" class="w-full bg-transparent border-none text-center focus:outline-none opacity-60 transition-all font-medium text-sm">
             <div class="text-[7rem] leading-none font-light tracking-tighter tabular-nums text-stone-800 transition-colors duration-500" id="time-display">25:00</div>
         </div>
 
         <div class="flex items-center gap-4 w-full mb-8">
-            <button id="reset-btn" class="w-14 h-14 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center active:scale-95"><i class="ph ph-arrow-counter-clockwise text-2xl"></i></button>
+            <button id="reset-btn" type="button" aria-label="Reiniciar timer" title="Reiniciar timer" class="w-14 h-14 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center active:scale-95"><i class="ph ph-arrow-counter-clockwise text-2xl"></i></button>
             <button id="main-btn" class="flex-1 h-16 rounded-full bg-stone-900 text-white font-bold shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
                 <i class="ph-fill ph-play text-xl" id="main-btn-icon"></i> <span id="main-btn-text">INICIAR</span>
             </button>
-            <button id="open-reminder-btn" class="w-14 h-14 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center active:scale-95"><i class="ph ph-microphone text-2xl"></i></button>
+            <button id="open-reminder-btn" type="button" aria-label="Novo lembrete de áudio" title="Novo lembrete de áudio" class="w-14 h-14 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center active:scale-95"><i class="ph ph-microphone text-2xl"></i></button>
         </div>
 
         <button id="pip-toggle" class="text-xs text-stone-500 font-medium hover:text-stone-700 flex items-center gap-1">
@@ -97,20 +97,20 @@
                 <button id="archive-note" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Arquivar</button>
                 <button id="open-notes-archive" class="text-xs px-3 py-2 rounded-xl border border-stone-200 bg-white text-stone-600 font-semibold" type="button">Arquivo</button>
                 <button id="save-notes" class="text-xs px-3 py-2 rounded-xl bg-stone-900 text-white font-semibold" type="button">Salvar</button>
-                <button id="close-notes" class="text-stone-400 p-2" type="button"><i class="ph ph-x text-xl"></i></button>
+                <button id="close-notes" class="text-stone-400 p-2" type="button" aria-label="Fechar anotações" title="Fechar anotações"><i class="ph ph-x text-xl"></i></button>
             </div>
         </div>
         <div class="px-4 py-2 border-b flex gap-2 items-center overflow-x-auto no-scrollbar bg-white">
-            <button onmousedown="event.preventDefault();" onclick="formatDoc('bold')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-b"></i></button>
-            <button onmousedown="event.preventDefault();" onclick="formatDoc('italic')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-italic"></i></button>
-            <button onmousedown="event.preventDefault();" onclick="formatDoc('strikeThrough')" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-strikethrough"></i></button>
-            <button onmousedown="event.preventDefault();" onclick="formatDoc('backColor', '#fef08a')" class="p-1.5 hover:bg-yellow-100 rounded text-yellow-600"><i class="ph-fill ph-highlighter"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('bold')" type="button" aria-label="Negrito" title="Negrito" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-b"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('italic')" type="button" aria-label="Itálico" title="Itálico" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-italic"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('strikeThrough')" type="button" aria-label="Tachado" title="Tachado" class="p-1.5 hover:bg-stone-100 rounded text-stone-600"><i class="ph ph-text-strikethrough"></i></button>
+            <button onmousedown="event.preventDefault();" onclick="formatDoc('backColor', '#fef08a')" type="button" aria-label="Grifar" title="Grifar" class="p-1.5 hover:bg-yellow-100 rounded text-yellow-600"><i class="ph-fill ph-highlighter"></i></button>
             <div class="w-px h-5 bg-stone-200 mx-1 shrink-0"></div>
             <label class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-stone-200 bg-white cursor-pointer" title="Cor do texto">
                 <input type="color" aria-label="Cor do texto" onchange="formatDoc('foreColor', this.value); this.nextElementSibling.style.backgroundColor = this.value;" class="absolute inset-0 h-full w-full opacity-0 cursor-pointer" value="#292524">
                 <span class="block h-5 w-5 rounded border border-stone-300 bg-stone-900"></span>
             </label>
-            <select onchange="formatDoc('fontSize', this.value)" class="text-sm bg-transparent border rounded p-1 text-stone-600">
+            <select onchange="formatDoc('fontSize', this.value)" aria-label="Tamanho da fonte" class="text-sm bg-transparent border rounded p-1 text-stone-600">
                 <option value="5">Normal</option><option value="6">Grande</option><option value="7">Enorme</option>
             </select>
         </div>
@@ -136,9 +136,9 @@
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-sm shadow-xl">
             <h2 class="text-xl font-bold mb-6 text-stone-700">Ajustar Tempos</h2>
             <div class="space-y-4 mb-8">
-                <div class="flex justify-between items-center"><label class="text-sm font-medium">Foco</label><input type="number" id="input-pomodoro" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="25"></div>
-                <div class="flex justify-between items-center"><label class="text-sm font-medium">Pausa Curta</label><input type="number" id="input-shortBreak" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="5"></div>
-                <div class="flex justify-between items-center"><label class="text-sm font-medium">Pausa Longa</label><input type="number" id="input-longBreak" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="15"></div>
+                <div class="flex justify-between items-center"><label class="text-sm font-medium">Foco</label><input type="number" id="input-pomodoro" aria-label="Foco (minutos)" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="25"></div>
+                <div class="flex justify-between items-center"><label class="text-sm font-medium">Pausa Curta</label><input type="number" id="input-shortBreak" aria-label="Pausa curta (minutos)" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="5"></div>
+                <div class="flex justify-between items-center"><label class="text-sm font-medium">Pausa Longa</label><input type="number" id="input-longBreak" aria-label="Pausa longa (minutos)" class="w-16 p-2 bg-stone-50 border rounded-xl text-center font-bold" value="15"></div>
             </div>
             <div class="flex gap-3">
                 <button id="cancel-settings" class="flex-1 py-3 rounded-xl bg-stone-100 font-bold">Sair</button>
@@ -150,13 +150,13 @@
     <div id="create-reminder-modal" class="hidden fixed inset-0 bg-stone-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
             <h2 class="text-xl font-bold mb-6 text-purple-700 flex items-center gap-2"><i class="ph ph-microphone-stage text-2xl"></i> Novo Lembrete</h2>
-            <input type="text" id="reminder-title" placeholder="Título do lembrete..." class="w-full bg-stone-50 border rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-purple-400 font-medium">
+            <input type="text" id="reminder-title" aria-label="Título do lembrete" placeholder="Título do lembrete..." class="w-full bg-stone-50 border rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-purple-400 font-medium">
             <div class="grid grid-cols-2 gap-3 mb-6">
-                <div><label class="text-[10px] uppercase font-bold text-stone-400 block mb-1">Minutos:</label><input type="number" id="reminder-minutes" value="5" class="w-full bg-stone-50 border rounded-xl px-4 py-2 text-center font-bold" oninput="document.getElementById('reminder-datetime').value=''"></div>
-                <div><label class="text-[10px] uppercase font-bold text-stone-400 block mb-1">Ou Data/Hora:</label><input type="datetime-local" id="reminder-datetime" class="w-full bg-stone-50 border rounded-xl px-2 py-2 text-[10px] font-bold" oninput="document.getElementById('reminder-minutes').value=''"></div>
+                <div><label class="text-[10px] uppercase font-bold text-stone-400 block mb-1">Minutos:</label><input type="number" id="reminder-minutes" aria-label="Minutos" value="5" class="w-full bg-stone-50 border rounded-xl px-4 py-2 text-center font-bold" oninput="document.getElementById('reminder-datetime').value=''"></div>
+                <div><label class="text-[10px] uppercase font-bold text-stone-400 block mb-1">Ou Data/Hora:</label><input type="datetime-local" id="reminder-datetime" aria-label="Data e hora" class="w-full bg-stone-50 border rounded-xl px-2 py-2 text-[10px] font-bold" oninput="document.getElementById('reminder-minutes').value=''"></div>
             </div>
             <div class="bg-purple-50 p-6 rounded-3xl text-center mb-6 border border-purple-100">
-                <button id="record-action-btn" class="bg-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg active:scale-90"><i id="record-icon-main" class="ph-fill ph-microphone text-3xl"></i></button>
+                <button id="record-action-btn" type="button" aria-label="Gravar ou parar áudio" title="Gravar ou parar áudio" class="bg-purple-600 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg active:scale-90"><i id="record-icon-main" class="ph-fill ph-microphone text-3xl"></i></button>
                 <p id="record-status" class="text-xs font-medium text-purple-800">Toque para gravar</p>
             </div>
             <div class="flex gap-3 mb-6">
@@ -455,7 +455,7 @@
                 <div class="flex justify-between items-center bg-stone-50 p-2 rounded-lg border text-[10px]">
                     <span class="font-bold truncate w-24 text-stone-600">${r.title}</span>
                     <span>${new Date(r.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                    <button onclick="deleteRem(${r.id})" class="text-red-500"><i class="ph ph-trash"></i></button>
+                    <button type="button" aria-label="Excluir lembrete" title="Excluir lembrete" onclick="deleteRem(${r.id})" class="text-red-500"><i class="ph ph-trash"></i></button>
                 </div>
             `).join('');
 
@@ -464,8 +464,8 @@
                     <span class="font-bold truncate w-20 text-stone-500">${r.title}</span>
                     <span>${new Date(r.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                     <div class="flex gap-2">
-                        <button onclick="playHistRem(${r.id})" class="text-purple-600"><i class="ph-fill ph-play-circle text-lg"></i></button>
-                        <button onclick="deleteRem(${r.id})" class="text-red-500"><i class="ph ph-trash text-lg"></i></button>
+                        <button type="button" aria-label="Ouvir lembrete" title="Ouvir lembrete" onclick="playHistRem(${r.id})" class="text-purple-600"><i class="ph-fill ph-play-circle text-lg"></i></button>
+                        <button type="button" aria-label="Excluir lembrete" title="Excluir lembrete" onclick="deleteRem(${r.id})" class="text-red-500"><i class="ph ph-trash text-lg"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -611,7 +611,7 @@
             Array.from(this.files).forEach(f => {
                 const div = document.createElement('div');
                 div.className = "flex items-center justify-between p-2 bg-white border rounded-lg text-[10px]";
-                div.innerHTML = `<span class="truncate w-32 font-bold">${f.name}</span><button onclick="this.parentElement.remove(); saveData();" class="text-red-500"><i class="ph ph-trash"></i></button>`;
+                div.innerHTML = `<span class="truncate w-32 font-bold">${f.name}</span><button type="button" aria-label="Remover anexo" title="Remover anexo" onclick="this.parentElement.remove(); saveData();" class="text-red-500"><i class="ph ph-trash"></i></button>`;
                 list.appendChild(div);
             });
             saveData();

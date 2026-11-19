@@ -635,6 +635,28 @@
   body.theme-dark .share-all,body.theme-dark .share-user{border-color:#3a4256}
   body.theme-dark .share-label{color:#c5cede}
   body.theme-dark .pill.share-pill,body.theme-dark .share-note{background:#25305a;color:#dbe4ff;border-color:#3b4a86}
+    /* Revisão 11/2026 (celular): a página inteira rola, sem cortar a lista nem sobrepor o cabeçalho. */
+    @media (max-width:820px){
+      html,body:not(.floating){height:auto;min-height:100%}
+      body:not(.floating) .app{height:auto;min-height:100vh;overflow:visible;overflow-x:clip;grid-template-rows:auto auto}
+      body:not(.floating){overflow-x:clip}
+      body:not(.floating) .sidebar{max-height:none;overflow:visible}
+      body:not(.floating) .brand{padding:12px 14px 10px}
+      body:not(.floating) .brand-badge,body:not(.floating) .brand-sub,body:not(.floating) .app-signature{display:none}
+      body:not(.floating) .brand-head{justify-content:flex-start;gap:10px}
+      body:not(.floating) .brand-logo{width:38px;height:38px;border-radius:12px}
+      body:not(.floating) .brand-title{font-size:20px}
+      body:not(.floating) .list-panel{max-height:220px}
+      body:not(.floating) .workspace{height:auto;min-height:70vh;overflow:visible}
+      body:not(.floating) .main{height:auto;max-height:none;overflow:visible}
+      body:not(.floating) .topbar{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:8px;padding:10px 12px}
+      body:not(.floating) .topbar-left{width:auto;flex:1 1 auto;min-width:0;flex-wrap:nowrap}
+      body:not(.floating) .topbar-actions{width:auto;flex:0 0 auto;flex-wrap:nowrap;gap:6px;justify-content:flex-end}
+      body:not(.floating) .topbar-actions .btn{width:34px;height:34px;padding:0;justify-content:center}
+      body:not(.floating) .topbar-mark,body:not(.floating) .crumb-label{display:none}
+      body:not(.floating) .crumb-wrap{min-width:0}
+      body:not(.floating) .crumb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    }
   </style>
   <script>document.documentElement.classList.add("in-hub");</script>
 </head>
