@@ -2,8 +2,8 @@ import { FormEvent, useState } from "react";
 import type { HubUser } from "../types";
 import { signIn } from "../lib/auth";
 
-export function LoginScreen({ onLogin }: { onLogin: (user: HubUser) => void }) {
-  const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com");
+export function LoginScreen({ onLogin, aviso, emailInicial }: { onLogin: (user: HubUser) => void; aviso?: string; emailInicial?: string }) {
+  const [email, setEmail] = useState(emailInicial || import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,6 +49,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: HubUser) => void }) {
           />
         </label>
 
+        {aviso && !error ? <p className="form-notice" role="status">{aviso}</p> : null}
         {error ? <p className="form-error">{error}</p> : null}
 
         <button className="primary-action" disabled={loading} type="submit">

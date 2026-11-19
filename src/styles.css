@@ -163,6 +163,16 @@ textarea:focus {
   font-size: 13px;
 }
 
+.form-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #f0dfb0;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #7a5a12;
+  font-size: 13px;
+}
+
 .module-error {
   margin: 10px 14px 0;
   border: 1px solid #f3c8c8;

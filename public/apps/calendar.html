@@ -410,16 +410,19 @@ function renderDayPanel(){
   evs.forEach(ev=>container.appendChild(makeEvCard(ev,false)));
 }
 
+// Textos vindos do banco (título, descrição, anexos) entram como texto, nunca como HTML.
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function jsArg(v){return esc(JSON.stringify(String(v==null?"":v)));}
 function makeEvCard(ev,showDate){
   const past=new Date(ev.date)<new Date();
   const col=CATS[ev.category]?.col||"#7F77DD";
   const wrap=document.createElement("div");wrap.className="ev-card";wrap.style.opacity=past?.6:1;
   const attHtml=(ev.attachments||[]).map(att=>{
-    if(isImage(att.name))return"<div class='att-chip' onclick='previewImage(\""+att.dataUrl.replace(/"/g,"&quot;")+"\")'><span>"+fileIcon(att.name)+"</span>"+att.name+"</div>";
-    return"<div class='att-chip' onclick='downloadAtt(\""+att.dataUrl.replace(/"/g,"&quot;")+"\",\""+att.name+"\")'><span>"+fileIcon(att.name)+"</span>"+att.name+"</div>";
+    if(isImage(att.name))return"<div class='att-chip' onclick='previewImage("+jsArg(att.dataUrl)+")'><span>"+fileIcon(att.name)+"</span>"+esc(att.name)+"</div>";
+    return"<div class='att-chip' onclick='downloadAtt("+jsArg(att.dataUrl)+","+jsArg(att.name)+")'><span>"+fileIcon(att.name)+"</span>"+esc(att.name)+"</div>";
   }).join("");
   const manageHtml=HUB_EMBEDDED?"":"<button onclick='openForm(\""+ev.id+"\")'>\u270F Editar</button><button class='danger' onclick='deleteEv(\""+ev.id+"\")'>\uD83D\uDDD1 Excluir</button>";
-  wrap.innerHTML="<div class='ev-bar' style='background:"+col+"'></div><div class='ev-body'><div class='ev-title'>"+ev.title+"<span class='ev-badge' style='background:"+col+"22;color:"+col+"'>"+(CATS[ev.category]?.label||"Outro")+"</span></div><div class='ev-meta'>"+(showDate?fDateShort(ev.date)+" · ":"")+fTime(ev.date)+(ev.description?" · "+ev.description:"")+"</div>"+(attHtml?"<div class='att-list'>"+attHtml+"</div>":"")+"<div class='ev-actions'>"+((!past)?"<button onclick='openRemind(\""+ev.id+"\")'>\uD83D\uDD14 Lembrar</button>":"")+"<button onclick='openGCal(\""+ev.id+"\")'>\u2197 Google Cal</button>"+manageHtml+"</div></div>";
+  wrap.innerHTML="<div class='ev-bar' style='background:"+col+"'></div><div class='ev-body'><div class='ev-title'>"+esc(ev.title)+"<span class='ev-badge' style='background:"+col+"22;color:"+col+"'>"+(CATS[ev.category]?.label||"Outro")+"</span></div><div class='ev-meta'>"+(showDate?fDateShort(ev.date)+" · ":"")+fTime(ev.date)+(ev.description?" · "+esc(ev.description):"")+"</div>"+(attHtml?"<div class='att-list'>"+attHtml+"</div>":"")+"<div class='ev-actions'>"+((!past)?"<button onclick='openRemind(\""+ev.id+"\")'>\uD83D\uDD14 Lembrar</button>":"")+"<button onclick='openGCal(\""+ev.id+"\")'>\u2197 Google Cal</button>"+manageHtml+"</div></div>";
   return wrap;
 }
 
@@ -454,7 +457,7 @@ function renderRemindersList(){
   reminders.forEach(r=>{
     const div=document.createElement("div");div.className="ev-card";
     const typeLabel=r.type==="large"?"🕐 Grande":"🔔 Padrão";
-    div.innerHTML="<div class='ev-bar' style='background:#7F77DD'></div><div class='ev-body'><div class='ev-title'>"+typeLabel+" "+r.ev.title+"</div><div class='ev-meta'>"+new Date(r.notifAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+" · "+(r.mins<60?r.mins+" min antes":r.mins/60+"h antes")+"</div><div class='ev-actions'><button class='danger' onclick='removeReminder("+r.id+")'>Remover</button></div></div>";
+    div.innerHTML="<div class='ev-bar' style='background:#7F77DD'></div><div class='ev-body'><div class='ev-title'>"+typeLabel+" "+esc(r.ev.title)+"</div><div class='ev-meta'>"+new Date(r.notifAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+" · "+(r.mins<60?r.mins+" min antes":r.mins/60+"h antes")+"</div><div class='ev-actions'><button class='danger' onclick='removeReminder("+r.id+")'>Remover</button></div></div>";
     lv.appendChild(div);
   });
 }
@@ -477,7 +480,7 @@ async function openForm(evId,defaultDate){
   if(ev&&ev.attachments)pendingFiles=[...ev.attachments];
   const cat=ev?.category||"personal";window._formCat=cat;
   const ps=document.getElementById("panel-screen");ps.style.display="flex";ps.style.flexDirection="column";
-  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>"+(ev?"Editar tarefa":"Nova tarefa")+"</h2><span class='form-label'>Título *</span><input class='form-input' id='f-title' value='"+(ev?.title||"")+"' placeholder='Nome da tarefa'/><span class='form-label'>Data e hora *</span><input class='form-input' id='f-date' type='datetime-local' value='"+(ev?.date?ev.date.slice(0,16):(defaultDate||""))+"'/><span class='form-label'>Categoria</span><div id='cat-btns'>"+Object.entries(CATS).map(([k,v])=>"<button class='cat-btn"+(k===cat?" active":"")+"' style='color:"+(k===cat?v.col:"#666")+";background:"+(k===cat?v.col+"22":"none")+";border-color:"+(k===cat?v.col:"#ddd")+"' onclick='selectCat(\""+k+"\")'>"+ v.label+"</button>").join("")+"</div><span class='form-label'>Descrição</span><textarea class='form-input' id='f-desc' rows='2' placeholder='Detalhes opcionais...'>"+(ev?.description||"")+"</textarea><span class='form-label'>Anexos</span><div id='drop-zone' onclick='document.getElementById(\"file-input\").click()' ondragover='event.preventDefault();this.classList.add(\"dragover\")' ondragleave='this.classList.remove(\"dragover\")' ondrop='handleDrop(event)'><p>Clique ou arraste arquivos aqui</p><span>PDF, Word, Excel, imagens, etc.</span></div><input type='file' id='file-input' multiple style='display:none' onchange='handleFiles(this.files)'/><div id='file-list'></div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='saveEv()'>Salvar tarefa</button></div>";
+  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>"+(ev?"Editar tarefa":"Nova tarefa")+"</h2><span class='form-label'>Título *</span><input class='form-input' id='f-title' value='"+esc(ev?.title||"")+"' placeholder='Nome da tarefa'/><span class='form-label'>Data e hora *</span><input class='form-input' id='f-date' type='datetime-local' value='"+(ev?.date?ev.date.slice(0,16):(defaultDate||""))+"'/><span class='form-label'>Categoria</span><div id='cat-btns'>"+Object.entries(CATS).map(([k,v])=>"<button class='cat-btn"+(k===cat?" active":"")+"' style='color:"+(k===cat?v.col:"#666")+";background:"+(k===cat?v.col+"22":"none")+";border-color:"+(k===cat?v.col:"#ddd")+"' onclick='selectCat(\""+k+"\")'>"+ v.label+"</button>").join("")+"</div><span class='form-label'>Descrição</span><textarea class='form-input' id='f-desc' rows='2' placeholder='Detalhes opcionais...'>"+esc(ev?.description||"")+"</textarea><span class='form-label'>Anexos</span><div id='drop-zone' onclick='document.getElementById(\"file-input\").click()' ondragover='event.preventDefault();this.classList.add(\"dragover\")' ondragleave='this.classList.remove(\"dragover\")' ondrop='handleDrop(event)'><p>Clique ou arraste arquivos aqui</p><span>PDF, Word, Excel, imagens, etc.</span></div><input type='file' id='file-input' multiple style='display:none' onchange='handleFiles(this.files)'/><div id='file-list'></div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='saveEv()'>Salvar tarefa</button></div>";
   renderFileList();
 }
 function selectCat(k){
@@ -497,7 +500,7 @@ function handleFiles(fileList){
 }
 function renderFileList(){
   const fl=document.getElementById("file-list");if(!fl)return;
-  fl.innerHTML=pendingFiles.map((f,i)=>"<div class='file-item'><span style='font-size:16px'>"+fileIcon(f.name)+"</span><span class='file-item-name'>"+f.name+"</span><button class='file-remove' onclick='removeFile("+i+")'>✕</button></div>").join("");
+  fl.innerHTML=pendingFiles.map((f,i)=>"<div class='file-item'><span style='font-size:16px'>"+fileIcon(f.name)+"</span><span class='file-item-name'>"+esc(f.name)+"</span><button class='file-remove' onclick='removeFile("+i+")'>✕</button></div>").join("");
 }
 function removeFile(i){pendingFiles.splice(i,1);renderFileList();}
 async function saveEv(){
@@ -527,7 +530,7 @@ function openRemind(evId){
   const ps=document.getElementById("panel-screen");ps.style.display="flex";ps.style.flexDirection="column";
   const opts=[5,10,15,30,60,120,1440];
   const lbl=m=>m<60?m+" min":m<1440?(m/60)+"h":(m/1440)+"d";
-  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>Agendar lembrete</h2><div class='remind-ev-box'><div style='font-weight:500'>"+ev.title+"</div><div style='color:#888;margin-top:2px;font-size:12px'>"+fDateLong(ev.date)+" às "+fTime(ev.date)+"</div></div><span class='form-label'>Tipo de lembrete</span><div style='display:flex;gap:10px;margin:8px 0 20px;flex-wrap:wrap'><button class='rtype-btn active-std' id='rtype-standard' onclick=\"selectRType('standard')\">🔔 Padrão — silencioso, 50% da tela</button><button class='rtype-btn' id='rtype-large' onclick=\"selectRType('large')\">🕐 Grande — com alarme sonoro, 80% da tela</button></div><span class='form-label'>Notificar antes de:</span><div class='remind-opts' id='remind-opts'>"+opts.map(m=>"<button class='remind-opt"+(m===30?" active":"")+"' onclick='selectMins("+m+")'>"+lbl(m)+"</button>").join("")+"</div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='doRemind()'>Agendar lembrete</button></div>";
+  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>Agendar lembrete</h2><div class='remind-ev-box'><div style='font-weight:500'>"+esc(ev.title)+"</div><div style='color:#888;margin-top:2px;font-size:12px'>"+fDateLong(ev.date)+" às "+fTime(ev.date)+"</div></div><span class='form-label'>Tipo de lembrete</span><div style='display:flex;gap:10px;margin:8px 0 20px;flex-wrap:wrap'><button class='rtype-btn active-std' id='rtype-standard' onclick=\"selectRType('standard')\">🔔 Padrão — silencioso, 50% da tela</button><button class='rtype-btn' id='rtype-large' onclick=\"selectRType('large')\">🕐 Grande — com alarme sonoro, 80% da tela</button></div><span class='form-label'>Notificar antes de:</span><div class='remind-opts' id='remind-opts'>"+opts.map(m=>"<button class='remind-opt"+(m===30?" active":"")+"' onclick='selectMins("+m+")'>"+lbl(m)+"</button>").join("")+"</div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='doRemind()'>Agendar lembrete</button></div>";
 }
 function selectRType(t){
   window._remindType=t;

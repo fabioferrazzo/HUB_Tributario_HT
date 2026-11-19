@@ -659,7 +659,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
 
     try {
       const payload = await buildEmailOperationPayload("preview");
-      const response = await fetch("/.netlify/functions/email-outbox", {
+      const response = await fetch("/.netlify/functions/email-fila", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -689,7 +689,7 @@ export function OperationalEmailConsole({ currentUser, users }: { currentUser: H
 
     try {
       const payload = await buildEmailOperationPayload(action);
-      const response = await fetch("/.netlify/functions/email-outbox", {
+      const response = await fetch("/.netlify/functions/email-fila", {
         method: "POST",
         headers: {
           accept: "application/json",

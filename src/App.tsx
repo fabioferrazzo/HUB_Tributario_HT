@@ -20,7 +20,7 @@ import { buildSystemNotifications } from "./lib/hubNotifications";
 import { canUserViewPauta } from "./lib/hubRules";
 import { confirmDeletion } from "./lib/formatters";
 import { getPlainTextFromHtml, readPomodoroArchivedNotes, readPomodoroNotes, savePomodoroArchivedNotes, savePomodoroNotes } from "./lib/pomodoroNotes";
-import { getStoredSession, signOut } from "./lib/auth";
+import { aoEncerrarSessao, getStoredSession, limparSessaoLocal, sessaoSupabaseValida, signOut } from "./lib/auth";
 import { listAppLembretes } from "./lib/lembretesRepository";
 import { listAppPautas } from "./lib/pautasRepository";
 import { listAppTasks } from "./lib/tarefasRepository";
@@ -38,6 +38,38 @@ const windowMode = new URLSearchParams(window.location.search).get("janela") ===
 
 export function App() {
   const [user, setUser] = useState<HubUser | null>(() => getStoredSession());
+  const [avisoLogin, setAvisoLogin] = useState<{ texto: string; email: string } | null>(null);
+  const saindoRef = useRef(false);
+
+  // Sessão vencida: volta para o login em vez de deixar os menus falhando com "sessão não encontrada".
+  useEffect(() => {
+    if (!user) return;
+    let ativo = true;
+    const expirar = () => {
+      // Saída pelo botão "Sair" desta aba não é sessão vencida.
+      if (!ativo || saindoRef.current) return;
+      ativo = false;
+      limparSessaoLocal();
+      setAvisoLogin({ texto: "Sua sessão expirou ou foi encerrada. Entre novamente para continuar.", email: user.email });
+      setUser(null);
+    };
+    const conferir = () => {
+      void sessaoSupabaseValida().then((ok) => {
+        if (!ok) expirar();
+      });
+    };
+    conferir();
+    const parar = aoEncerrarSessao(expirar);
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible") conferir();
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      ativo = false;
+      parar();
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, [user]);
   const [route, setRoute] = useState<HubRoute>(() => readRouteFromHash() || "home");
   const workspaceRef = useRef<HTMLElement | null>(null);
   const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
@@ -202,7 +234,17 @@ export function App() {
   }, [hubUsers, lembretesVersion, pautasVersion, tasksVersion, user]);
 
   if (!user) {
-    return <LoginScreen onLogin={setUser} />;
+    return (
+      <LoginScreen
+        aviso={avisoLogin?.texto}
+        emailInicial={avisoLogin?.email}
+        onLogin={(novo) => {
+          saindoRef.current = false;
+          setAvisoLogin(null);
+          setUser(novo);
+        }}
+      />
+    );
   }
 
   const visibleRoutes = routes.filter((item) => {
@@ -251,6 +293,7 @@ export function App() {
   }
 
   function handleSignOut() {
+    saindoRef.current = true;
     signOut();
     setUser(null);
     setRoute("home");

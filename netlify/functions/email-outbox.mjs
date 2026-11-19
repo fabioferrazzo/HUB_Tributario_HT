@@ -7,13 +7,20 @@ const EMAIL_SELECT =
   "id,dedupe_key,to_email,to_name,subject,html_body,text_body,category,target_type,target_ref,attempts,scheduled_for";
 const MANAGER_ROLES = new Set(["admin", "gestor"]);
 
+// Execução agendada (Netlify, diariamente). Pelo endereço, em produção, função agendada não responde;
+// as ações manuais do painel do admin usam a função "email-fila", que sempre exige login ou token.
 export default async function handler(request) {
+  return handleEmailOutbox(request, { scheduledEntry: true });
+}
+
+export async function handleEmailOutbox(request, { scheduledEntry = false } = {}) {
   if (!["GET", "POST"].includes(request.method)) {
     return json(405, { error: "Método não permitido." });
   }
 
   const payload = request.method === "POST" ? await parseJsonBody(request) : readQueryPayload(request);
-  const scheduled = Boolean(payload.next_run);
+  // Só a entrada agendada pode dispensar a autorização; "next_run" vindo de uma chamada comum não vale.
+  const scheduled = scheduledEntry && Boolean(payload.next_run);
   const dispatchToken = getEnv("EMAIL_DISPATCH_TOKEN");
   const requestToken = readToken(request);
 

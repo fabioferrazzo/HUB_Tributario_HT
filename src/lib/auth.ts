@@ -93,6 +93,34 @@ export function signOut() {
   localStorage.removeItem(SESSION_KEY);
 }
 
+// Confere se o login do Supabase ainda vale. O perfil guardado no navegador sozinho não basta:
+// se a sessão venceu (ou a senha foi redefinida), o HUB precisa voltar para a tela de login.
+export async function sessaoSupabaseValida(): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return true;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (data.session) return true;
+    // Sem internet não dá para confirmar: mantém a tela e deixa para a próxima conferência.
+    if (error && typeof navigator !== "undefined" && !navigator.onLine) return true;
+    return false;
+  } catch {
+    return typeof navigator !== "undefined" && !navigator.onLine;
+  }
+}
+
+// Avisa quando o Supabase encerra a sessão (logout em outra aba, sessão vencida sem renovação).
+export function aoEncerrarSessao(callback: () => void) {
+  if (!isSupabaseConfigured || !supabase) return () => undefined;
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session)) callback();
+  });
+  return () => data.subscription.unsubscribe();
+}
+
+export function limparSessaoLocal() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
 export async function getSupabaseAccessToken() {
   if (!isSupabaseConfigured || !supabase) return "";
   const { data } = await supabase.auth.getSession();
