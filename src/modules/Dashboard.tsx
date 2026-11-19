@@ -7,7 +7,7 @@ import type { PautaFilter, ReportFormat } from "../app/appTypes";
 import { RichTextEditor } from "../components/RichTextEditor";
 import { buildPautasEmailHtml, pautaToReportRow } from "../lib/reportRows";
 import { canUserCompletePautaApp, canUserManagePautaApp, completeAppPauta, deleteAppPauta, getPautasSource, hasUserCompletedPauta, listAppPautas, saveAppPauta } from "../lib/pautasRepository";
-import { canUserViewPauta, countPautaStatus, getPautaContentStyle, getPautaTone, isPautaAlta, isPautaAssignedToUser, isPautaAtrasada, isPautaConcluida, sortPautasForDashboard } from "../lib/hubRules";
+import { canUserViewPauta, countPautaStatus, isPautaConcluidaParaUsuario, getPautaContentStyle, getPautaTone, isPautaAlta, isPautaAssignedToUser, isPautaAtrasada, isPautaConcluida, sortPautasForDashboard } from "../lib/hubRules";
 import { confirmDeletion, formatDate, formatResponsaveis, getActiveProfiles, getErrorMessage, getInitials, normalizeForSearch, parseBrazilianDate, toDatetimeLocalValue } from "../lib/formatters";
 import { convertLegacyPautaFormatting, hasPautaRichContent, pautaRichTextToPlain, sanitizePautaRichHtml } from "../lib/richText";
 import { deleteQuadroAviso, listQuadroAvisos, removeQuadroAvisoFile, saveQuadroAviso, uploadQuadroAvisoFile } from "../lib/avisosRepository";
@@ -87,6 +87,7 @@ export function Dashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pautas]);
 
+
   // Quantidade de comentários por pauta (uma consulta só para a lista inteira).
   useEffect(() => {
     let ativo = true;
@@ -151,6 +152,27 @@ export function Dashboard({
   const avisoCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const avisoDrawingRef = useRef(false);
   const avisoLastPointRef = useRef<{ x: number; y: number } | null>(null);
+  // "Editar" de um aviso no Quadro geral abre aqui o editor do aviso.
+  useEffect(() => {
+    let id = "";
+    try {
+      id = window.sessionStorage.getItem("hub_avisos_editar") || "";
+    } catch {
+      id = "";
+    }
+    if (!id) return;
+    const alvo = quadroAvisos.find((aviso) => aviso.id === id);
+    if (!alvo) return;
+    try {
+      window.sessionStorage.removeItem("hub_avisos_editar");
+    } catch {
+      // ignorado
+    }
+    setPautasView("avisos");
+    startEditAviso(alvo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quadroAvisos]);
+
   const source = getPautasSource(user);
 
   useEffect(() => {
@@ -222,10 +244,10 @@ export function Dashboard({
       if (pautaFilter === "minhas" && !isPautaAssignedToUser(pauta, user)) return false;
       if (pautaFilter === "destaques" && !pauta.destaque) return false;
       if (pautaFilter === "alta" && !isPautaAlta(pauta)) return false;
-      const concluidaPorMim = hasUserCompletedPauta(pauta, user);
-      if (pautaFilter === "atrasadas" && (!isPautaAtrasada(pauta) || concluidaPorMim)) return false;
+      const concluida = isPautaConcluidaParaUsuario(pauta, user);
+      if (pautaFilter === "atrasadas" && (!isPautaAtrasada(pauta) || concluida)) return false;
       if (pautaFilter === "semPrazo" && pauta.prazo.trim()) return false;
-      if (pautaFilter === "concluidas" && !isPautaConcluida(pauta) && !concluidaPorMim) return false;
+      if (pautaFilter === "concluidas" && !concluida) return false;
 
       if (!query) return true;
 
@@ -458,6 +480,29 @@ export function Dashboard({
     } catch (deleteError) {
       setError(getErrorMessage(deleteError));
     } finally {
+      setSaving(false);
+    }
+  }
+
+  // Administrador: exclui de uma vez as pautas listadas no filtro "Concluídas".
+  async function excluirConcluidas() {
+    const alvo = filteredPautas.filter((pauta) => canUserManagePautaApp(pauta, user));
+    if (!alvo.length) return;
+    if (!confirmDeletion(`Excluir definitivamente ${alvo.length === 1 ? "a pauta concluída exibida" : `as ${alvo.length} pautas concluídas exibidas`}? Os comentários e anexos delas também serão apagados.`)) return;
+    setSaving(true);
+    setError("");
+    let atual = pautas;
+    let excluidas = 0;
+    try {
+      for (const pauta of alvo) {
+        atual = await deleteAppPauta({ current: atual, pauta, user });
+        excluidas += 1;
+      }
+      setPautasEmailStatus(`${excluidas} pauta(s) concluída(s) excluída(s).`);
+    } catch (deleteError) {
+      setError(`${excluidas} excluída(s); as demais não: ${getErrorMessage(deleteError)}`);
+    } finally {
+      setPautas(atual);
       setSaving(false);
     }
   }
@@ -1326,6 +1371,15 @@ export function Dashboard({
                 </button>
               </div>
             </div>
+            {pautaFilter === "concluidas" && canManagePautas && filteredPautas.length ? (
+              <div className="pautas-concluidas-barra">
+                <span>Concluídas ficam visíveis aos demais usuários por 7 dias; para o administrador, até serem excluídas.</span>
+                <button className="danger-action" disabled={saving} type="button" onClick={() => void excluirConcluidas()}>
+                  <Trash2 size={14} />
+                  Excluir concluídas ({filteredPautas.length})
+                </button>
+              </div>
+            ) : null}
             {error ? <p className="module-error module-error--compact">{error}</p> : null}
             {pautasEmailStatus ? <p className="module-notice module-notice--compact">{pautasEmailStatus}</p> : null}
             <div

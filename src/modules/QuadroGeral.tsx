@@ -4,9 +4,9 @@ import type { HubProfile, HubRoute, HubUser, Pauta, QuadroAviso, TaskItem } from
 import { FooterUpdates } from "../components/Updates";
 import { RichTextEditor } from "../components/RichTextEditor";
 import { canUserManagePautaApp, deleteAppPauta, listAppPautas, hasUserCompletedPauta } from "../lib/pautasRepository";
-import { listQuadroAvisos } from "../lib/avisosRepository";
-import { listAppTasks } from "../lib/tarefasRepository";
-import { canUserViewPauta, isPautaAlta, isPautaConcluida } from "../lib/hubRules";
+import { deleteQuadroAviso, listQuadroAvisos } from "../lib/avisosRepository";
+import { canUserManageTask, deleteAppTask, listAppTasks } from "../lib/tarefasRepository";
+import { canUserViewPauta, isPautaAlta, isPautaConcluidaParaUsuario } from "../lib/hubRules";
 import { confirmDeletion, formatResponsaveis, getErrorMessage, parseBrazilianDate } from "../lib/formatters";
 import { pautaRichTextToPlain, sanitizePautaRichHtml } from "../lib/richText";
 import { AGENDA_CATEGORIA_ROTULO, carregarAgendaSemana, type AgendaSemana } from "../lib/agendaSemana";
@@ -148,6 +148,61 @@ export function QuadroGeral({
       ? { onEditar: () => editarPauta(pauta), onExcluir: () => void excluirPauta(pauta), excluindo: excluindoPauta === pauta.id }
       : undefined;
 
+  // Tarefas do calendário: quem pode alterá-las no Calendário (criador, gestor ou administrador).
+  function editarTarefa(tarefa: TaskItem) {
+    try {
+      window.sessionStorage.setItem("hub_tarefas_editar", tarefa.id);
+    } catch {
+      // sem armazenamento: abre o Calendário sem o editor
+    }
+    onNavigate("tarefas");
+  }
+  async function excluirTarefa(tarefa: TaskItem) {
+    if (!confirmDeletion(`Excluir a tarefa "${tarefa.titulo}"?`)) return;
+    setExcluindoPauta(tarefa.id);
+    try {
+      const restantes = await deleteAppTask({ current: tarefas, task: tarefa, user });
+      setTarefas(restantes.filter((item) => item.id !== tarefa.id));
+      setErros((atual) => ({ ...atual, tarefas: "" }));
+    } catch (erro) {
+      setErros((atual) => ({ ...atual, tarefas: getErrorMessage(erro) }));
+    } finally {
+      setExcluindoPauta("");
+    }
+  }
+  const acoesTarefa = (tarefa: TaskItem) =>
+    canUserManageTask(tarefa, user)
+      ? { onEditar: () => editarTarefa(tarefa), onExcluir: () => void excluirTarefa(tarefa), excluindo: excluindoPauta === tarefa.id }
+      : undefined;
+
+  // Avisos do quadro: autor do aviso ou administrador.
+  function podeGerenciarAviso(aviso: QuadroAviso) {
+    if (user.role === "admin") return true;
+    if (aviso.createdBy && user.id && aviso.createdBy === user.id) return true;
+    return Boolean(aviso.createdByEmail) && aviso.createdByEmail === user.email.trim().toLowerCase();
+  }
+  function editarAviso(aviso: QuadroAviso) {
+    try {
+      window.sessionStorage.setItem("hub_avisos_editar", aviso.id);
+      window.sessionStorage.setItem("hub_pautas_aba", aviso.visibility === "particular" ? "particular" : "geral");
+    } catch {
+      // sem armazenamento: abre Pautas sem o editor
+    }
+    onNavigate("pautas");
+  }
+  async function excluirAviso(aviso: QuadroAviso) {
+    if (!confirmDeletion(`Excluir o aviso "${resumoAviso(aviso)}" do quadro?`)) return;
+    setExcluindoPauta(aviso.id);
+    try {
+      setAvisos(await deleteQuadroAviso({ current: avisos, aviso, user }));
+      setErros((atual) => ({ ...atual, pautas: "" }));
+    } catch (erro) {
+      setErros((atual) => ({ ...atual, pautas: getErrorMessage(erro) }));
+    } finally {
+      setExcluindoPauta("");
+    }
+  }
+
   const carregarPautas = useCallback(async () => {
     setCarregando((atual) => ({ ...atual, pautas: true }));
     try {
@@ -211,7 +266,7 @@ export function QuadroGeral({
 
   // ---- Pautas da semana (e atrasadas, só na semana atual)
   const pautasAbertas = useMemo(
-    () => pautas.filter((pauta) => canUserViewPauta(pauta, user) && !isPautaConcluida(pauta) && !hasUserCompletedPauta(pauta, user)),
+    () => pautas.filter((pauta) => canUserViewPauta(pauta, user) && !isPautaConcluidaParaUsuario(pauta, user)),
     [pautas, user]
   );
   const pautasSemana = useMemo(
@@ -339,6 +394,14 @@ export function QuadroGeral({
                   <li key={aviso.id} className="qg-item qg-item--aviso" style={{ borderLeftColor: aviso.color || undefined }}>
                     <span className="qg-item-titulo">{resumoAviso(aviso)}</span>
                     <span className="qg-item-meta">{formatarDataCurta(aviso.updatedAt || aviso.createdAt)}</span>
+                    {podeGerenciarAviso(aviso) ? (
+                      <AcoesQuadro
+                        excluindo={excluindoPauta === aviso.id}
+                        onEditar={() => editarAviso(aviso)}
+                        onExcluir={() => void excluirAviso(aviso)}
+                        rotulo={`o aviso ${resumoAviso(aviso)}`}
+                      />
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -363,7 +426,7 @@ export function QuadroGeral({
                 <h3 className="qg-bloco-titulo qg-bloco-titulo--alerta">Atrasadas ({tarefasAtrasadas.length})</h3>
                 <ul className="qg-lista">
                   {tarefasAtrasadas.slice(0, 5).map(({ tarefa, data }) => (
-                    <TarefaLinha key={tarefa.id} data={data} hubUsers={hubUsers} tarefa={tarefa} atrasada />
+                    <TarefaLinha key={tarefa.id} acoes={acoesTarefa(tarefa)} data={data} hubUsers={hubUsers} tarefa={tarefa} atrasada />
                   ))}
                 </ul>
                 {tarefasAtrasadas.length > 5 ? (
@@ -385,7 +448,7 @@ export function QuadroGeral({
                     <DiaTitulo data={dia} hoje={ehHoje} />
                     <ul className="qg-lista">
                       {lista.map(({ tarefa, data }) => (
-                        <TarefaLinha key={tarefa.id} data={data} hubUsers={hubUsers} tarefa={tarefa} atrasada={data < hoje} />
+                        <TarefaLinha key={tarefa.id} acoes={acoesTarefa(tarefa)} data={data} hubUsers={hubUsers} tarefa={tarefa} atrasada={data < hoje} />
                       ))}
                     </ul>
                   </div>
@@ -397,7 +460,7 @@ export function QuadroGeral({
                 <h3 className="qg-bloco-titulo">Próximas tarefas</h3>
                 <ul className="qg-lista">
                   {proximasTarefas.map(({ tarefa, data }) => (
-                    <TarefaLinha key={tarefa.id} data={data} hubUsers={hubUsers} tarefa={tarefa} />
+                    <TarefaLinha key={tarefa.id} acoes={acoesTarefa(tarefa)} data={data} hubUsers={hubUsers} tarefa={tarefa} />
                   ))}
                 </ul>
               </div>
@@ -494,23 +557,7 @@ function PautaLinha({
         <strong className="qg-item-data">{rotuloDia(data)}</strong>
         {responsaveis ? ` · ${responsaveis}` : ""}
       </span>
-      {acoes ? (
-        <span className="qg-item-acoes">
-          <button aria-label={`Editar a pauta ${titulo}`} className="qg-icon-btn" title="Editar pauta" type="button" onClick={acoes.onEditar}>
-            <Pencil size={13} strokeWidth={1.6} />
-          </button>
-          <button
-            aria-label={`Excluir a pauta ${titulo}`}
-            className="qg-icon-btn qg-icon-btn--perigo"
-            disabled={acoes.excluindo}
-            title="Excluir pauta"
-            type="button"
-            onClick={acoes.onExcluir}
-          >
-            <Trash2 size={13} strokeWidth={1.6} />
-          </button>
-        </span>
-      ) : null}
+      {acoes ? <AcoesQuadro {...acoes} rotulo={`a pauta ${titulo}`} /> : null}
     </li>
   );
 }
@@ -526,7 +573,40 @@ function DiaTitulo({ data, hoje, contagem }: { data: Date; hoje?: boolean; conta
   );
 }
 
-function TarefaLinha({ tarefa, data, hubUsers, atrasada }: { tarefa: TaskItem; data: Date; hubUsers: HubProfile[]; atrasada?: boolean }) {
+// Ícones de editar/excluir no canto do item (só para quem pode alterar o item no menu de origem).
+function AcoesQuadro({ rotulo, onEditar, onExcluir, excluindo }: AcoesPauta & { rotulo: string }) {
+  return (
+    <span className="qg-item-acoes">
+      <button aria-label={`Editar ${rotulo}`} className="qg-icon-btn" title="Editar" type="button" onClick={onEditar}>
+        <Pencil size={13} strokeWidth={1.6} />
+      </button>
+      <button
+        aria-label={`Excluir ${rotulo}`}
+        className="qg-icon-btn qg-icon-btn--perigo"
+        disabled={excluindo}
+        title="Excluir"
+        type="button"
+        onClick={onExcluir}
+      >
+        <Trash2 size={13} strokeWidth={1.6} />
+      </button>
+    </span>
+  );
+}
+
+function TarefaLinha({
+  tarefa,
+  data,
+  hubUsers,
+  atrasada,
+  acoes
+}: {
+  tarefa: TaskItem;
+  data: Date;
+  hubUsers: HubProfile[];
+  atrasada?: boolean;
+  acoes?: AcoesPauta;
+}) {
   const responsaveis = tarefa.responsaveis?.length ? formatResponsaveis(tarefa.responsaveis, hubUsers) : "Sem responsável";
   return (
     <li className={`qg-item${atrasada ? " qg-item--atrasada" : ""}${tarefa.prioridade === "alta" ? " qg-item--alta" : ""}`}>
@@ -541,6 +621,7 @@ function TarefaLinha({ tarefa, data, hubUsers, atrasada }: { tarefa: TaskItem; d
         </strong>
         {` · ${responsaveis}`}
       </span>
+      {acoes ? <AcoesQuadro {...acoes} rotulo={`a tarefa ${tarefa.titulo || "sem título"}`} /> : null}
     </li>
   );
 }

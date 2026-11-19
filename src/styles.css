@@ -6536,3 +6536,24 @@ a.aviso-card__file:hover {
   background: #fbeceb;
   color: var(--danger);
 }
+
+.pautas-concluidas-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 14px 0;
+  padding: 8px 12px;
+  border: 1px solid #ecd9d6;
+  border-radius: 8px;
+  background: #fdf7f6;
+  color: #6b5551;
+  font-size: 12.5px;
+}
+
+.pautas-concluidas-barra button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

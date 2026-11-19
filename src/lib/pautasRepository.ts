@@ -55,9 +55,34 @@ export function getPautasSource(user?: HubUser | null): PautasSource {
   return isSupabaseConfigured && Boolean(user?.id) ? "supabase" : "local";
 }
 
+// Pauta concluída (pela pauta inteira ou pelo próprio usuário) fica visível por 7 dias para quem não é administrador.
+export const PAUTA_CONCLUIDA_VISIVEL_DIAS = 7;
+
+export function pautaConcluidaEmParaUsuario(pauta: Pauta, user: HubUser): number | null {
+  const minha = (pauta.conclusoes || []).find(
+    (item) => item.email.toLowerCase() === user.email.toLowerCase() || (Boolean(user.id) && item.userId === user.id)
+  );
+  if (minha?.completedAt) {
+    const quando = Date.parse(minha.completedAt);
+    if (!Number.isNaN(quando)) return quando;
+  }
+  if (/conclu/i.test(`${pauta.status || ""} ${pauta.concluidoEm || ""}`)) {
+    const quando = Date.parse(pauta.concluidoEm || pauta.updatedAt || pauta.modificadoEm || "");
+    return Number.isNaN(quando) ? Date.now() : quando;
+  }
+  return null;
+}
+
+function conclusaoExpirada(pauta: Pauta, user: HubUser) {
+  const quando = pautaConcluidaEmParaUsuario(pauta, user);
+  return quando !== null && Date.now() - quando > PAUTA_CONCLUIDA_VISIVEL_DIAS * 24 * 60 * 60 * 1000;
+}
+
 export function canUserViewPautaApp(pauta: Pauta, user?: HubUser | null) {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "gestor") return true;
+  if (user.role === "admin") return true;
+  if (conclusaoExpirada(pauta, user)) return false;
+  if (user.role === "gestor") return true;
   // Pauta que o próprio usuário já concluiu continua visível para ele (em "Concluídas").
   if ((pauta.createdBy || "").toLowerCase() === user.email.toLowerCase() || pauta.createdBy === user.id) return true;
   if ((pauta.scope || "todos") === "todos") return true;

@@ -239,6 +239,26 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
     setFormOpen(true);
   }
 
+  // "Editar" no Quadro geral abre aqui o editor da tarefa.
+  useEffect(() => {
+    let id = "";
+    try {
+      id = window.sessionStorage.getItem("hub_tarefas_editar") || "";
+    } catch {
+      id = "";
+    }
+    if (!id) return;
+    const alvo = tasks.find((task) => task.id === id);
+    if (!alvo) return;
+    try {
+      window.sessionStorage.removeItem("hub_tarefas_editar");
+    } catch {
+      // ignorado
+    }
+    startEdit(alvo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks]);
+
   function startEdit(task: TaskItem) {
     setTaskEmailStatus("");
 

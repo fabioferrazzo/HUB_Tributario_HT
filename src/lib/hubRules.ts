@@ -141,6 +141,19 @@ export function isPautaConcluida(pauta: Pauta) {
   return normalizeForSearch(`${pauta.status} ${pauta.concluidoEm}`).includes("conclu");
 }
 
+// Concluída do ponto de vista de quem vê: encerrada, concluída pelo próprio usuário
+// ou, nas pautas com responsáveis, quando todos eles já concluíram.
+export function todosResponsaveisConcluiram(pauta: Pauta) {
+  const responsaveis = (pauta.responsaveis || []).map((email) => email.toLowerCase());
+  if ((pauta.scope || "todos") !== "usuarios" || !responsaveis.length) return false;
+  const concluiram = new Set((pauta.conclusoes || []).map((item) => item.email.toLowerCase()));
+  return responsaveis.every((email) => concluiram.has(email));
+}
+
+export function isPautaConcluidaParaUsuario(pauta: Pauta, user: HubUser) {
+  return isPautaConcluida(pauta) || hasUserCompletedPauta(pauta, user) || todosResponsaveisConcluiram(pauta);
+}
+
 export function isPautaAtrasada(pauta: Pauta) {
   const status = normalizeForSearch(pauta.status);
   if (isPautaConcluida(pauta)) return false;
@@ -199,9 +212,9 @@ export function countPautaStatus(pautas: Pauta[], user: HubUser) {
       if (isPautaAssignedToUser(pauta, user)) acc.minhas += 1;
       if (pauta.destaque) acc.destaques += 1;
       if (isPautaAlta(pauta)) acc.alta += 1;
-      const concluidaPorMim = hasUserCompletedPauta(pauta, user);
-      if (isPautaAtrasada(pauta) && !concluidaPorMim) acc.atrasado += 1;
-      if (isPautaConcluida(pauta) || concluidaPorMim) acc.concluidas += 1;
+      const concluida = isPautaConcluidaParaUsuario(pauta, user);
+      if (isPautaAtrasada(pauta) && !concluida) acc.atrasado += 1;
+      if (concluida) acc.concluidas += 1;
       if (!pauta.prazo.trim()) acc.semPrazo += 1;
       return acc;
     },
