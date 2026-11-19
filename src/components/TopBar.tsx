@@ -150,7 +150,8 @@ export function TopBar({
                         type="button"
                         onClick={() => {
                           onNotificationRead(item.id);
-                          if (item.targetType === "quadro_aviso") abrirAbaAvisos(/particular/i.test(item.title) ? "particular" : "geral");
+                          if (item.targetType === "quadro_aviso") abrirAbaPautas(/particular/i.test(`${item.title} ${item.meta}`) ? "particular" : "geral");
+                          else if (item.targetType === "pauta") abrirAbaPautas("lista");
                           onNavigate(item.route);
                           setNotificationsOpen(false);
                         }}
@@ -187,8 +188,8 @@ export function TopBar({
   );
 }
 
-// Notificação de aviso do quadro abre Pautas já na aba "Quadro de Avisos".
-function abrirAbaAvisos(quadro: "geral" | "particular") {
+// Notificação de aviso abre Pautas já no "Quadro de Avisos"; de pauta, na lista de pautas.
+function abrirAbaPautas(quadro: "geral" | "particular" | "lista") {
   try {
     window.sessionStorage.setItem("hub_pautas_aba", quadro);
   } catch {

@@ -13,6 +13,8 @@ import { convertLegacyPautaFormatting, hasPautaRichContent, pautaRichTextToPlain
 import { deleteQuadroAviso, listQuadroAvisos, removeQuadroAvisoFile, saveQuadroAviso, uploadQuadroAvisoFile } from "../lib/avisosRepository";
 import { exportReport } from "../lib/reportExport";
 import { getSupabaseAccessToken } from "../lib/auth";
+import { Comentarios } from "../components/Comentarios";
+import { aoMudarComentarios, contarComentarios } from "../lib/comentariosRepository";
 
 export function Dashboard({
   hubUsers,
@@ -22,6 +24,7 @@ export function Dashboard({
   user: HubUser;
 }) {
   const [pautas, setPautas] = useState<Pauta[]>([]);
+  const [comentariosPorPauta, setComentariosPorPauta] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -46,7 +49,8 @@ export function Dashboard({
   const [sendingPautasEmail, setSendingPautasEmail] = useState(false);
   const [pautasView, setPautasView] = useState<"lista" | "avisos">(() => {
     try {
-      return window.sessionStorage.getItem("hub_pautas_aba") ? "avisos" : "lista";
+      const aba = window.sessionStorage.getItem("hub_pautas_aba");
+      return aba === "geral" || aba === "particular" ? "avisos" : "lista";
     } catch {
       return "lista";
     }
@@ -60,10 +64,30 @@ export function Dashboard({
     }
   });
 
+  // Quantidade de comentários por pauta (uma consulta só para a lista inteira).
+  useEffect(() => {
+    let ativo = true;
+    const ids = pautas.map((pauta) => pauta.id);
+    const atualizar = () => {
+      void contarComentarios("pauta", ids, user).then((contagem) => {
+        if (ativo) setComentariosPorPauta(contagem);
+      });
+    };
+    atualizar();
+    const parar = aoMudarComentarios((alvo) => {
+      if (alvo === "pauta") atualizar();
+    });
+    return () => {
+      ativo = false;
+      parar();
+    };
+  }, [pautas, user]);
+
   // Notificação de aviso do quadro: abre direto a aba "Quadro de Avisos" (geral ou particular).
   useEffect(() => {
     const trocar = (event: Event) => {
       const quadro = (event as CustomEvent<string>).detail;
+      if (quadro === "lista") setPautasView("lista");
       if (quadro === "geral" || quadro === "particular") {
         setPautasView("avisos");
         setAvisosView(quadro);
@@ -486,6 +510,7 @@ export function Dashboard({
             </>
           ) : null}
         </div>
+        {keyPrefix ? null : <Comentarios alvo="pauta" alvoId={pauta.id} contagem={comentariosPorPauta[pauta.id] || 0} user={user} />}
       </article>
     );
   }
@@ -1023,7 +1048,12 @@ export function Dashboard({
                 </header>
                 <div className="avisos-side-panel__body">
                   {selectedCellAvisos.length ? (
-                    selectedCellAvisos.map((aviso) => renderAvisoCard(aviso, "leitura"))
+                    selectedCellAvisos.map((aviso) => (
+                      <div className="aviso-com-comentarios" key={aviso.id}>
+                        {renderAvisoCard(aviso, "leitura")}
+                        <Comentarios abertoInicial alvo="aviso" alvoId={aviso.id} user={user} />
+                      </div>
+                    ))
                   ) : (
                     <p className="avisos-muted">Nenhum aviso neste espaço.</p>
                   )}
