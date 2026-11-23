@@ -8,6 +8,7 @@ import {
   Landmark,
   LayoutGrid,
   Moon,
+  Palette,
   Pencil,
   StickyNote,
   Sun,
@@ -20,7 +21,7 @@ import { AGENDA_CATEGORIA_ROTULO } from "../lib/agendaSemana";
 import { formatResponsaveis } from "../lib/formatters";
 import { isPautaAlta } from "../lib/hubRules";
 import { pautaRichTextToPlain } from "../lib/richText";
-import { salvarVisualPremium, type TamanhoPremium, type TemaPremium } from "../lib/visualPremium";
+import { abrirPersonalizarVisual, salvarVisualPremium, type TamanhoPremium, type TemaPremium } from "../lib/visualPremium";
 import "./quadroPremium.css";
 
 // Quadro geral no visual premium (beta, só para o administrador por enquanto).
@@ -224,6 +225,15 @@ export function QuadroPremium(props: QuadroPremiumProps) {
               title={tema === "escuro" ? "Mudar para o tema claro" : "Mudar para o tema escuro"}
             >
               {tema === "escuro" ? <Sun size={19} strokeWidth={1.6} /> : <Moon size={19} strokeWidth={1.6} />}
+            </button>
+            <button
+              type="button"
+              className="qp-icone qp-icone--grande"
+              onClick={abrirPersonalizarVisual}
+              aria-label="Personalizar visual"
+              title="Personalizar visual (cores, luzes, degradê, sombra)"
+            >
+              <Palette size={19} strokeWidth={1.6} />
             </button>
             <button type="button" className="qp-botao" onClick={onSair} title="Voltar ao visual atual do Quadro geral">
               <LayoutGrid size={15} strokeWidth={1.6} /> Visual atual

@@ -67,7 +67,8 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   const menuRaio = await page.locator(".sidebar").evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
   check("menu lateral flutuante com cantos arredondados", menuRaio === "24px", menuRaio);
   const ativoCor = await page.locator(".side-nav button.active .side-nav-icon").first().evaluate((el) => getComputedStyle(el).color);
-  check("item ativo do menu com ícone turquesa", ativoCor === "rgb(95, 216, 214)", ativoCor);
+  const [ar, ag, ab] = (ativoCor.match(/[\d.]+/g) || []).map(Number);
+  check("item ativo do menu com ícone turquesa", ag > 200 && ab > 200 && ar < 110 && Math.abs(ag - ab) < 8, ativoCor);
   const topoFundo = await page.evaluate(() => getComputedStyle(document.querySelector(".topbar"), "::before").backgroundColor);
   check("cabeçalho em vidro escuro", /rgba\(255, 255, 255, 0\.04/.test(topoFundo), topoFundo);
   const tituloCor = await page.locator(".topbar h1").evaluate((el) => getComputedStyle(el).color);
@@ -103,7 +104,9 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
   // Fundo escuro nunca chega ao preto no fim da página.
   const fundo = await page.locator(".hp-fundo").evaluate((el) => getComputedStyle(el).backgroundImage);
-  check("tema escuro: fundo termina em azul-acinzentado (não preto)", /rgb\(24, 38, 64\)/.test(fundo), fundo.slice(0, 120));
+  // Última parada do degradê: azul-acinzentado #182640 (aceita rgb() ou color(srgb ...)).
+  const ultima = fundo.slice(fundo.lastIndexOf("100%") - 60, fundo.lastIndexOf("100%"));
+  check("tema escuro: fundo termina em azul-acinzentado (não preto)", /rgb\(24, 38, 64\)|0\.0941\d* 0\.149\d* 0\.25/.test(ultima), ultima);
   await page.screenshot({ path: path.join(OUT, "qp-escuro-compacto.png"), fullPage: true });
 
   // Ações aparecem ao passar o mouse.

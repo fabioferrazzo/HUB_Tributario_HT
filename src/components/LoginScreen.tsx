@@ -1,7 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, type CSSProperties } from "react";
 import type { HubUser } from "../types";
 import { signIn } from "../lib/auth";
-import { carregarFontesPremium, lerVisualPremium } from "../lib/visualPremium";
+import { carregarFontesPremium, lerVisualPremium, variaveisDaPaleta } from "../lib/visualPremium";
 import "./loginScreen.css";
 
 // Fotos da sede da H. Teixeira na tela de entrada; a foto muda a cada dois dias (a mesma para toda a equipe).
@@ -50,7 +50,10 @@ export function LoginScreen({ onLogin, aviso, emailInicial }: { onLogin: (user: 
   }
 
   return (
-    <div className={`login-page login-page--foto${visual.ativo ? ` login-premium login-premium--${visual.tema}` : ""}`}>
+    <div
+      className={`login-page login-page--foto${visual.ativo ? ` login-premium login-premium--${visual.tema}` : ""}`}
+      style={visual.ativo ? (variaveisDaPaleta(visual.paleta, visual.tema) as CSSProperties) : undefined}
+    >
       <div className="login-foto">
         <img src={foto.src} alt="" style={{ objectPosition: foto.posicao }} />
         <div className="login-foto-legenda">

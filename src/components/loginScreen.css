@@ -116,12 +116,12 @@
   --lp-texto: #eef2fa;
   --lp-mudo: #a3aecb;
   --lp-titulo: #ffffff;
-  --lp-acento: #1bbcbb;
+  --lp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 42%));
   --lp-sobre-acento: #04121a;
   --lp-orbe-1: #2b3aa8;
-  --lp-orbe-2: #1bbcbb;
+  --lp-orbe-2: hsl(var(--ht-h, 179) var(--ht-s, 75%) 42%);
   --lp-orbe-3: #4a4fa6;
-  --lp-orbe-op: 0.5;
+  --lp-orbe-op: calc(0.5 * var(--ht-luz, 1));
   color-scheme: dark;
 }
 
@@ -133,12 +133,12 @@
   --lp-texto: #1a2033;
   --lp-mudo: #5b6274;
   --lp-titulo: #111830;
-  --lp-acento: #0f8f8e;
+  --lp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 28%));
   --lp-sobre-acento: #ffffff;
   --lp-orbe-1: #cdd8e8;
   --lp-orbe-2: #d8e4e2;
   --lp-orbe-3: #e6dfd3;
-  --lp-orbe-op: 0.55;
+  --lp-orbe-op: calc(0.55 * var(--ht-luz, 1));
   color-scheme: light;
 }
 

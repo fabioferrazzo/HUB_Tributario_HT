@@ -1,11 +1,12 @@
 import { QuadroGeral } from "./modules/QuadroGeral";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
-import { ChevronDown, LogOut, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, LogOut, Maximize2, Palette, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
 import { ModuleFrame, dispatchFrameAction } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
-import { useVisualPremium } from "./lib/visualPremium";
+import { useVisualPremium, variaveisDaPaleta, abrirPersonalizarVisual } from "./lib/visualPremium";
+import { PersonalizarVisual } from "./components/PersonalizarVisual";
 import "./premium.css";
 import { TopBar } from "./components/TopBar";
 import { ChatCentral, type ChatJanela } from "./components/chat/ChatCentral";
@@ -24,7 +25,7 @@ import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotificati
 import { CarregamentoModulo } from "./components/CarregamentoModulo";
 import { InstalarDesktop } from "./components/InstalarDesktop";
 import { hubDesktop } from "./lib/desktop";
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 // Módulos carregados sob demanda: o Quadro geral (tela inicial) e o chat seguem no pacote principal.
 const AdminModule = lazy(() => import("./modules/AdminModule").then((m) => ({ default: m.AdminModule })));
@@ -142,6 +143,12 @@ export function App() {
       delete corpo.dataset.hubPremium;
     };
   }, [visual.ativo, visual.tema]);
+  const [paletaAberta, setPaletaAberta] = useState(false);
+  useEffect(() => {
+    const abrir = () => setPaletaAberta(true);
+    window.addEventListener("hub:abrir-paleta", abrir);
+    return () => window.removeEventListener("hub:abrir-paleta", abrir);
+  }, []);
   // submenus do menu lateral (ex.: Simuladores): começam abertos; os que o usuário fecha ficam guardados neste navegador
   const [closedSubmenus, setClosedSubmenus] = useState<string[]>(() => {
     try {
@@ -426,6 +433,7 @@ export function App() {
       className={`app-shell ${menuCollapsed ? "app-shell--collapsed" : ""}${
         visual.ativo ? ` hub-premium hub-premium--${visual.tema} hub-premium--${visual.tamanho}` : ""
       }`}
+      style={visual.ativo ? (variaveisDaPaleta(visual.paleta, visual.tema) as CSSProperties) : undefined}
     >
       {visual.ativo ? (
         <div className="hp-fundo" aria-hidden="true">
@@ -515,6 +523,12 @@ export function App() {
           })}
         </nav>
 
+        {visual.ativo ? (
+          <button className="sign-out sign-out--paleta" type="button" title="Personalizar visual" onClick={abrirPersonalizarVisual}>
+            <Palette size={17} />
+            <span>Personalizar visual</span>
+          </button>
+        ) : null}
         <InstalarDesktop />
         <button className="sign-out" type="button" onClick={handleSignOut}>
           <LogOut size={17} />
@@ -543,6 +557,7 @@ export function App() {
           {renderRoute(currentRoute, user, hubUsers, handleRoute)}
         </section>
       </main>
+      {visual.ativo && paletaAberta ? <PersonalizarVisual visual={visual} onFechar={() => setPaletaAberta(false)} /> : null}
       {currentRoute !== "chat" ? (
         <ChatCentral hubUsers={hubUsers} janela={chatJanela} modo="janela" onJanela={setChatJanela} onNaoLidas={setChatNaoLidas} user={user} />
       ) : null}
