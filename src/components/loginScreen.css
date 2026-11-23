@@ -1,0 +1,279 @@
+/* Tela de entrada com foto da sede (muda a cada dois dias).
+   Sem o visual premium: cores atuais do HUB. Com o visual premium ligado neste navegador: vidro e luzes. */
+
+.login-page.login-page--foto {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(380px, 0.75fr);
+  place-items: stretch;
+  min-height: 100vh;
+  padding: 0;
+  background: #f4f1ea;
+}
+
+.login-foto {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  background: #15263f;
+}
+
+.login-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-foto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(21, 38, 63, 0) 45%, rgba(21, 38, 63, 0.82) 100%);
+  pointer-events: none;
+}
+
+.login-foto-legenda {
+  position: absolute;
+  z-index: 1;
+  right: 40px;
+  bottom: 40px;
+  left: 40px;
+  display: grid;
+  gap: 10px;
+  color: #ffffff;
+}
+
+.login-foto-legenda span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.login-foto-legenda p {
+  max-width: 560px;
+  margin: 0;
+  font-size: clamp(22px, 2.2vw, 32px);
+  font-weight: 300;
+  line-height: 1.25;
+}
+
+.login-lado {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  overflow: hidden;
+}
+
+.login-page.login-page--foto .login-panel {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
+  gap: 18px;
+  padding: 32px;
+  border-radius: 16px;
+}
+
+@media (max-width: 860px) {
+  .login-page.login-page--foto {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .login-foto {
+    min-height: 34vh;
+  }
+
+  .login-foto-legenda {
+    right: 20px;
+    bottom: 18px;
+    left: 20px;
+  }
+
+  /* No celular a foto vira uma faixa: fica só a assinatura, sem a frase por cima do letreiro. */
+  .login-foto-legenda p {
+    display: none;
+  }
+
+  .login-lado {
+    padding: 20px 16px 32px;
+  }
+}
+
+/* ================================================================ Visual premium */
+.login-page.login-premium {
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.login-page.login-premium--escuro {
+  --lp-fundo: linear-gradient(180deg, #070b1a 0%, #0b1227 55%, #182640 100%);
+  --lp-vidro: rgba(255, 255, 255, 0.05);
+  --lp-linha: rgba(255, 255, 255, 0.1);
+  --lp-campo: rgba(255, 255, 255, 0.06);
+  --lp-texto: #eef2fa;
+  --lp-mudo: #a3aecb;
+  --lp-titulo: #ffffff;
+  --lp-acento: #1bbcbb;
+  --lp-sobre-acento: #04121a;
+  --lp-orbe-1: #2b3aa8;
+  --lp-orbe-2: #1bbcbb;
+  --lp-orbe-3: #4a4fa6;
+  --lp-orbe-op: 0.5;
+  color-scheme: dark;
+}
+
+.login-page.login-premium--claro {
+  --lp-fundo: linear-gradient(160deg, #f3f4f6 0%, #f7f5f0 45%, #eef1f4 100%);
+  --lp-vidro: rgba(255, 255, 255, 0.7);
+  --lp-linha: rgba(40, 44, 56, 0.12);
+  --lp-campo: #ffffff;
+  --lp-texto: #1a2033;
+  --lp-mudo: #5b6274;
+  --lp-titulo: #111830;
+  --lp-acento: #0f8f8e;
+  --lp-sobre-acento: #ffffff;
+  --lp-orbe-1: #cdd8e8;
+  --lp-orbe-2: #d8e4e2;
+  --lp-orbe-3: #e6dfd3;
+  --lp-orbe-op: 0.55;
+  color-scheme: light;
+}
+
+.login-page.login-premium,
+.login-page.login-premium .login-lado {
+  background: var(--lp-fundo);
+  color: var(--lp-texto);
+}
+
+.login-page.login-premium .login-foto::after {
+  background: linear-gradient(180deg, rgba(7, 11, 26, 0) 40%, rgba(7, 11, 26, 0.85) 100%);
+}
+
+.login-page.login-premium .login-foto-legenda span {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+}
+
+.login-page.login-premium .login-foto-legenda p {
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 300;
+}
+
+.login-orbes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-orbes i {
+  position: absolute;
+  border-radius: 999px;
+  opacity: var(--lp-orbe-op);
+}
+
+.login-orbes i:nth-child(1) { width: 520px; height: 520px; left: -180px; top: -200px; background: var(--lp-orbe-1); filter: blur(120px); }
+.login-orbes i:nth-child(2) { width: 460px; height: 460px; right: -160px; top: 30%; background: var(--lp-orbe-2); filter: blur(130px); }
+.login-orbes i:nth-child(3) { width: 480px; height: 480px; left: 10%; bottom: -220px; background: var(--lp-orbe-3); filter: blur(130px); }
+
+.login-page.login-premium .login-panel {
+  gap: 20px;
+  padding: 36px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 24px;
+  background: var(--lp-vidro);
+  color: var(--lp-texto);
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.login-page.login-premium .login-brand {
+  border-bottom-color: var(--lp-linha);
+}
+
+.login-page.login-premium .login-brand .brand-mark {
+  position: relative;
+  border-radius: 12px;
+  background: #232f6b;
+  color: #ffffff;
+  font-family: Nunito, "Segoe UI", sans-serif;
+  box-shadow: none;
+}
+
+.login-page.login-premium .login-brand .brand-mark::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #72b1a6;
+  box-shadow: 0 0 10px #72b1a6;
+}
+
+.login-page.login-premium .login-brand strong {
+  color: var(--lp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 800;
+}
+
+.login-page.login-premium .login-brand span {
+  color: var(--lp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.login-titulo {
+  margin: 0;
+  color: var(--lp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: 30px;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+}
+
+.login-page.login-premium label {
+  color: var(--lp-mudo);
+  font-weight: 500;
+}
+
+.login-page.login-premium input {
+  min-height: 46px;
+  border: 1px solid var(--lp-linha);
+  border-radius: 12px;
+  background: var(--lp-campo);
+  color: var(--lp-texto);
+}
+
+.login-page.login-premium input:focus {
+  border-color: var(--lp-acento);
+  outline: 2px solid color-mix(in srgb, var(--lp-acento) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.login-page.login-premium .primary-action {
+  min-height: 48px;
+  border-radius: 14px;
+  background: var(--lp-acento);
+  color: var(--lp-sobre-acento);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-page.login-premium .primary-action:focus-visible {
+  outline: 2px solid var(--lp-titulo);
+  outline-offset: 2px;
+}
+
+.login-page.login-premium--escuro .form-error {
+  color: #ff8c7e;
+}
