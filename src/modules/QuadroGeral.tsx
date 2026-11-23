@@ -22,6 +22,7 @@ import {
   type AvisoCoordenacaoNivel
 } from "../lib/avisoCoordenacaoRepository";
 import { getAppRoute, hubApps } from "../app/appsRegistry";
+import { salvarVisualPremium, useVisualPremium } from "../lib/visualPremium";
 
 // Quadro geral: tela inicial do HUB.
 // No alto, o Aviso da Coordenação; abaixo, três colunas com o resumo da semana:
@@ -31,24 +32,7 @@ const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const AVISO_RECOLHIDO_KEY = "hub_quadro_geral_aviso_recolhido";
 const AGENDA_ITENS_POR_DIA = 4;
 // Visual premium (beta): por enquanto só o administrador vê a opção; a equipe segue no visual atual.
-const VISUAL_PREMIUM_KEY = "hub_qg_visual_premium";
 const QuadroPremium = lazy(() => import("./QuadroPremium").then((modulo) => ({ default: modulo.QuadroPremium })));
-
-function lerVisualPremium() {
-  try {
-    return localStorage.getItem(VISUAL_PREMIUM_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function gravarVisualPremium(ativo: boolean) {
-  try {
-    localStorage.setItem(VISUAL_PREMIUM_KEY, ativo ? "1" : "0");
-  } catch {
-    // sem armazenamento local: vale só nesta tela
-  }
-}
 
 function inicioDoDia(data: Date) {
   return new Date(data.getFullYear(), data.getMonth(), data.getDate());
@@ -349,13 +333,12 @@ export function QuadroGeral({
   const rotaAgenda = rotaDoApp("agenda");
 
   const podeVisualPremium = user.role === "admin";
-  const [visualPremium, setVisualPremium] = useState(() => podeVisualPremium && lerVisualPremium());
+  const visual = useVisualPremium(podeVisualPremium);
   function alternarVisualPremium(ativo: boolean) {
-    setVisualPremium(ativo);
-    gravarVisualPremium(ativo);
+    salvarVisualPremium({ ativo });
   }
 
-  if (podeVisualPremium && visualPremium) {
+  if (visual.ativo) {
     return (
       <div className="quadro-geral quadro-geral--premium">
         <Suspense fallback={<div className="modulo-carregando" role="status">Carregando…</div>}>
@@ -389,6 +372,8 @@ export function QuadroGeral({
             semana={semana}
             tarefasAtrasadas={tarefasAtrasadas}
             tarefasPorDia={tarefasPorDia}
+            tamanho={visual.tamanho}
+            tema={visual.tema}
             totalTarefasSemana={totalTarefasSemana}
             user={user}
           />

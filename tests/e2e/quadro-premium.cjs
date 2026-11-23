@@ -60,6 +60,31 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.waitForTimeout(800);
 
   check("abre o visual premium no tema escuro e compacto", (await page.locator(".qp.qp--escuro.qp--compacto").count()) === 1);
+  // Menu lateral, cabeçalho e rodapé no tema novo.
+  check("app inteiro no visual premium escuro", (await page.locator(".app-shell.hub-premium.hub-premium--escuro").count()) === 1);
+  const menuFundo = await page.locator(".sidebar").evaluate((el) => getComputedStyle(el).backgroundImage);
+  check("menu lateral em vidro (sem o degradê azul antigo)", menuFundo === "none", menuFundo.slice(0, 80));
+  const menuRaio = await page.locator(".sidebar").evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+  check("menu lateral flutuante com cantos arredondados", menuRaio === "24px", menuRaio);
+  const ativoCor = await page.locator(".side-nav button.active .side-nav-icon").first().evaluate((el) => getComputedStyle(el).color);
+  check("item ativo do menu com ícone turquesa", ativoCor === "rgb(95, 216, 214)", ativoCor);
+  const topoFundo = await page.evaluate(() => getComputedStyle(document.querySelector(".topbar"), "::before").backgroundColor);
+  check("cabeçalho em vidro escuro", /rgba\(255, 255, 255, 0\.04/.test(topoFundo), topoFundo);
+  const tituloCor = await page.locator(".topbar h1").evaluate((el) => getComputedStyle(el).color);
+  check("título do cabeçalho claro no tema escuro", tituloCor === "rgb(255, 255, 255)", tituloCor);
+  const rodape = await page.locator(".news-band").first().evaluate((el) => getComputedStyle(el).backgroundColor);
+  check("rodapé de notícias em vidro", /rgba\(255, 255, 255, 0\.04/.test(rodape), rodape);
+  await page.screenshot({ path: path.join(OUT, "hp-app-escuro.png") });
+
+  // Outra tela (ainda no visual atual) fica numa folha clara dentro do tema escuro.
+  await page.click(".side-nav button[title='Pautas']");
+  await page.waitForTimeout(900);
+  const folha = await page.locator(".workspace-body").evaluate((el) => getComputedStyle(el).backgroundColor);
+  check("telas ainda não migradas ficam em folha clara", folha === "rgb(244, 241, 234)", folha);
+  await page.screenshot({ path: path.join(OUT, "hp-pautas-escuro.png") });
+  await page.click(".side-nav button[title='Quadro geral']");
+  await page.waitForSelector(".qp", { timeout: 8000 });
+  await page.waitForTimeout(500);
   const blocos = await page.evaluate(() => ["A", "B", "C", "D", "E", "F", "G"].filter((l) => document.querySelector(`.qp-${l}`)));
   check("os sete blocos estão na grade", blocos.length === 7, blocos.join(","));
   const saudacao = await page.locator(".qp h1").innerText();
@@ -77,7 +102,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("Aviso da Coordenação dentro da grade", (await page.locator(".qp-C .qg-aviso").count()) === 1);
 
   // Fundo escuro nunca chega ao preto no fim da página.
-  const fundo = await page.locator(".qp").evaluate((el) => getComputedStyle(el).backgroundImage);
+  const fundo = await page.locator(".hp-fundo").evaluate((el) => getComputedStyle(el).backgroundImage);
   check("tema escuro: fundo termina em azul-acinzentado (não preto)", /rgb\(24, 38, 64\)/.test(fundo), fundo.slice(0, 120));
   await page.screenshot({ path: path.join(OUT, "qp-escuro-compacto.png"), fullPage: true });
 
@@ -162,6 +187,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.click(".qp button:has-text('Visual atual')");
   await page.waitForTimeout(500);
   check("Visual atual volta às três colunas", (await page.locator(".qg-colunas").count()) === 1 && (await page.locator(".qp").count()) === 0);
+  check("Visual atual tira o tema do menu e do cabeçalho", (await page.locator(".app-shell.hub-premium").count()) === 0);
 
   check("sem erros no console", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.evaluate(() => localStorage.removeItem("hub_qg_visual_premium"));

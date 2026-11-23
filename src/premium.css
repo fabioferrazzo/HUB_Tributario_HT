@@ -1,0 +1,433 @@
+/* Visual premium (beta) do HUB: menu lateral, cabeçalho, rodapé e fundo.
+   Só vale quando o app tem a classe .hub-premium (administrador que ligou o visual).
+   As telas internas dos menus continuam no visual atual até a etapa delas. */
+
+.hub-premium {
+  --hp-esc: 1.06;
+  position: relative;
+  isolation: isolate;
+  background: var(--hp-fundo);
+  color: var(--hp-texto);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium--ampliado {
+  --hp-esc: 1.22;
+}
+
+.hub-premium--escuro {
+  --hp-fundo: linear-gradient(180deg, #070b1a 0%, #070b1a 36%, #0b1227 58%, #121c36 78%, #182640 100%);
+  --hp-vidro: rgba(255, 255, 255, 0.045);
+  --hp-vidro-2: rgba(255, 255, 255, 0.07);
+  --hp-menu: rgba(255, 255, 255, 0.035);
+  --hp-linha: rgba(255, 255, 255, 0.09);
+  --hp-linha-forte: rgba(255, 255, 255, 0.22);
+  --hp-texto: #eef2fa;
+  --hp-texto-2: #b9c3da;
+  --hp-mudo: #93a0bf;
+  --hp-titulo: #ffffff;
+  --hp-acento: #1bbcbb;
+  --hp-acento-texto: #5fd8d6;
+  --hp-brilho: rgba(27, 188, 187, 0.28);
+  --hp-urgente: #ff7a6b;
+  --hp-sombra: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+  --hp-orbe-1: #2b3aa8;
+  --hp-orbe-2: #1bbcbb;
+  --hp-orbe-3: #c2410c;
+  --hp-orbe-op: 0.55;
+  --hp-orbe-b1: #178c84;
+  --hp-orbe-b2: #4a4fa6;
+  --hp-orbe-b3: #3b4c6b;
+  --hp-orbe-b-op: 0.3;
+  color-scheme: dark;
+}
+
+.hub-premium--claro {
+  --hp-fundo: linear-gradient(160deg, #f3f4f6 0%, #f7f5f0 38%, #f2f1ed 68%, #eef1f4 100%);
+  --hp-vidro: rgba(255, 255, 255, 0.62);
+  --hp-vidro-2: rgba(255, 255, 255, 0.8);
+  --hp-menu: rgba(251, 250, 247, 0.86);
+  --hp-linha: rgba(40, 44, 56, 0.1);
+  --hp-linha-forte: rgba(40, 44, 56, 0.26);
+  --hp-texto: #1a2033;
+  --hp-texto-2: #3d4456;
+  --hp-mudo: #5b6274;
+  --hp-titulo: #111830;
+  --hp-acento: #0f8f8e;
+  --hp-acento-texto: #0a6e6d;
+  --hp-brilho: rgba(15, 143, 142, 0.14);
+  --hp-urgente: #b93e0e;
+  --hp-sombra: 0 1px 2px rgba(40, 44, 56, 0.05), 0 14px 34px -24px rgba(40, 44, 56, 0.22);
+  --hp-orbe-1: #cdd8e8;
+  --hp-orbe-2: #d8e4e2;
+  --hp-orbe-3: #e6dfd3;
+  --hp-orbe-op: 0.4;
+  --hp-orbe-b1: #e4dccd;
+  --hp-orbe-b2: #d6dee7;
+  --hp-orbe-b3: #ece7de;
+  --hp-orbe-b-op: 0.45;
+  color-scheme: light;
+}
+
+body[data-hub-premium="escuro"] {
+  background: #0b1227;
+}
+
+body[data-hub-premium="claro"] {
+  background: #f2f1ed;
+}
+
+/* ---- Luzes de fundo (fixas: acompanham a tela ao rolar) */
+.hp-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--hp-fundo);
+}
+
+.hp-orbe {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.hp-orbe--1 { width: 640px; height: 640px; left: 80px; top: -220px; background: var(--hp-orbe-1); opacity: var(--hp-orbe-op); filter: blur(120px); }
+.hp-orbe--2 { width: 520px; height: 520px; right: -120px; top: 260px; background: var(--hp-orbe-2); opacity: var(--hp-orbe-op); filter: blur(140px); }
+.hp-orbe--3 { width: 420px; height: 420px; left: 500px; top: 380px; background: var(--hp-orbe-3); opacity: calc(var(--hp-orbe-op) * 0.7); filter: blur(130px); }
+.hp-orbe--b1 { width: 640px; height: 640px; left: 160px; bottom: -260px; background: var(--hp-orbe-b1); opacity: var(--hp-orbe-b-op); filter: blur(140px); }
+.hp-orbe--b3 { width: 560px; height: 560px; left: 46%; bottom: 4%; background: var(--hp-orbe-b3); opacity: var(--hp-orbe-b-op); filter: blur(150px); }
+.hp-orbe--b2 { width: 600px; height: 600px; right: -60px; bottom: -220px; background: var(--hp-orbe-b2); opacity: var(--hp-orbe-b-op); filter: blur(140px); }
+
+/* ================================================================ Menu lateral */
+.hub-premium .sidebar {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-menu);
+  color: var(--hp-texto);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+@media (min-width: 821px) {
+  .hub-premium {
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+
+  .hub-premium.hub-premium--ampliado {
+    grid-template-columns: 284px minmax(0, 1fr);
+  }
+
+  .hub-premium.app-shell--collapsed {
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+
+  .hub-premium .sidebar {
+    top: 16px;
+    height: calc(100vh - 32px);
+    margin: 16px 0 16px 16px;
+    border-radius: 24px;
+  }
+
+  .hub-premium .sidebar--collapsed {
+    width: auto;
+  }
+}
+
+@media (max-width: 820px) {
+  .hub-premium .sidebar {
+    background: var(--hp-fundo);
+  }
+}
+
+.hub-premium .brand-block {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .brand-block .brand-mark {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: #232f6b;
+  color: #ffffff;
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.hub-premium .brand-block .brand-mark::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #72b1a6;
+  box-shadow: 0 0 10px #72b1a6;
+}
+
+.hub-premium .brand-block strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(14.5px * var(--hp-esc));
+  font-weight: 800;
+}
+
+.hub-premium .brand-block span {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10px * var(--hp-esc));
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.hub-premium .sidebar-header-toggle {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .sidebar-header-toggle:hover {
+  border-color: var(--hp-acento);
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+}
+
+.hub-premium .side-nav-label {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  font-weight: 400;
+  letter-spacing: 0.22em;
+}
+
+.hub-premium .side-nav button,
+.hub-premium .sign-out {
+  min-height: calc(44px * var(--hp-esc));
+  border-radius: 12px;
+  color: var(--hp-texto-2);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: calc(13.5px * var(--hp-esc));
+  font-weight: 500;
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hub-premium .side-nav button:hover,
+.hub-premium .sign-out:hover {
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+}
+
+.hub-premium .side-nav button.active {
+  border-color: transparent;
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+  box-shadow: 0 0 0 1px var(--hp-linha) inset, 0 0 28px var(--hp-brilho);
+}
+
+.hub-premium .side-nav-icon {
+  width: calc(32px * var(--hp-esc));
+  height: calc(32px * var(--hp-esc));
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+}
+
+.hub-premium .side-nav-icon svg {
+  width: calc(18px * var(--hp-esc));
+  height: calc(18px * var(--hp-esc));
+  stroke-width: 1.6;
+}
+
+.hub-premium .side-nav button.active .side-nav-icon {
+  background: transparent;
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .side-nav-submenu {
+  border-left-color: var(--hp-linha);
+}
+
+.hub-premium .side-nav-submenu button {
+  font-size: calc(13px * var(--hp-esc));
+}
+
+.hub-premium .side-nav-submenu-toggle.active-parent {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .sidebar :focus-visible {
+  outline: 2px solid var(--hp-acento);
+  outline-offset: 2px;
+}
+
+/* O modal "Instalar no PC" continua claro (é uma janela por cima do app). */
+.hub-premium .instalar-desktop {
+  color: #1c2a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* ================================================================ Cabeçalho */
+.hub-premium .topbar {
+  padding-top: 16px;
+}
+
+.hub-premium .topbar::before {
+  inset: 16px 22px 0;
+  border-color: var(--hp-linha);
+  border-radius: 20px;
+  background: var(--hp-vidro);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.hub-premium .topbar h1 {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(19px * var(--hp-esc));
+  font-weight: 800;
+}
+
+.hub-premium .topbar h1 span {
+  background: linear-gradient(180deg, var(--hp-acento), #72b1a6);
+}
+
+.hub-premium .topbar-brand-strip::before,
+.hub-premium .topbar-brand-strip::after {
+  background: var(--hp-linha);
+}
+
+.hub-premium .topbar-brand-strip img {
+  box-shadow: 0 0 0 1px var(--hp-linha);
+}
+
+.hub-premium .topbar-brand-strip span {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(23px * var(--hp-esc));
+  font-weight: 800;
+}
+
+.hub-premium .top-chip {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-size: calc(12px * var(--hp-esc));
+}
+
+.hub-premium .top-chip strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .topbar .notification-button,
+.hub-premium .topbar .icon-button,
+.hub-premium .topbar .top-page-actions button {
+  border: 1px solid var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .topbar .notification-button:hover,
+.hub-premium .topbar .icon-button:hover,
+.hub-premium .topbar .top-page-actions button:hover,
+.hub-premium .topbar .notification-button.active {
+  border-color: var(--hp-acento);
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+}
+
+.hub-premium .notification-button .notification-badge {
+  border-color: transparent;
+}
+
+.hub-premium .user-chip {
+  border-color: transparent;
+  background: #232f6b;
+  box-shadow: 0 0 0 1px var(--hp-linha);
+}
+
+/* ================================================================ Rodapé (notícias e legislação) */
+.hub-premium .news-band {
+  border: 1px solid var(--hp-linha);
+  border-radius: 18px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.hub-premium .news-label {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .news-label strong {
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .ticker-item {
+  color: var(--hp-texto-2);
+  font-size: calc(13.5px * var(--hp-esc));
+}
+
+.hub-premium .ticker-track strong {
+  color: var(--hp-titulo);
+}
+
+/* ================================================================ Área de conteúdo */
+.hub-premium .workspace-body {
+  padding-top: 8px;
+}
+
+/* Telas que ainda não ganharam o visual novo ficam numa "folha" clara dentro do tema escuro,
+   para nenhum texto escuro cair direto sobre o fundo escuro. Cada menu sai daqui na sua etapa. */
+.hub-premium--escuro .workspace-body:not(:has(.qp)) {
+  margin: 0 22px 18px;
+  padding: 18px;
+  border: 1px solid var(--hp-linha);
+  border-radius: 24px;
+  background: #f4f1ea;
+  color: #1c2a3a;
+  color-scheme: light;
+  box-shadow: var(--hp-sombra);
+}
+
+.hub-premium--escuro .workspace-body:not(:has(.qp)) .footer-updates .news-band {
+  background: #ffffff;
+  color: #1c2a3a;
+  backdrop-filter: none;
+}
+
+.hub-premium--escuro .workspace-body:not(:has(.qp)) .news-label {
+  color: #1e3a5f;
+}
+
+.hub-premium--escuro .workspace-body:not(:has(.qp)) .ticker-item {
+  color: #45556c;
+}
+
+.hub-premium--escuro .workspace-body:not(:has(.qp)) .ticker-track strong {
+  color: #1c2a3a;
+}
+
+/* O Quadro geral premium usa o fundo do app (sem painel próprio). */
+.hub-premium .qp {
+  min-height: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.hub-premium .qp-orbes {
+  display: none;
+}
+
+.hub-premium .qp-conteudo {
+  padding: 8px 0 4px;
+}

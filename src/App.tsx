@@ -5,6 +5,8 @@ import { LoginScreen } from "./components/LoginScreen";
 import { ModuleFrame, dispatchFrameAction } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
+import { useVisualPremium } from "./lib/visualPremium";
+import "./premium.css";
 import { TopBar } from "./components/TopBar";
 import { ChatCentral, type ChatJanela } from "./components/chat/ChatCentral";
 import { routeGroups, routes } from "./app/appConfig";
@@ -130,6 +132,16 @@ export function App() {
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
+  // Visual premium (beta, só administrador): menu, cabeçalho, rodapé e Quadro geral com o novo tema.
+  const visual = useVisualPremium(user?.role === "admin");
+  useEffect(() => {
+    const corpo = document.body;
+    if (visual.ativo) corpo.dataset.hubPremium = visual.tema;
+    else delete corpo.dataset.hubPremium;
+    return () => {
+      delete corpo.dataset.hubPremium;
+    };
+  }, [visual.ativo, visual.tema]);
   // submenus do menu lateral (ex.: Simuladores): começam abertos; os que o usuário fecha ficam guardados neste navegador
   const [closedSubmenus, setClosedSubmenus] = useState<string[]>(() => {
     try {
@@ -410,7 +422,21 @@ export function App() {
   }
 
   return (
-    <div className={`app-shell ${menuCollapsed ? "app-shell--collapsed" : ""}`}>
+    <div
+      className={`app-shell ${menuCollapsed ? "app-shell--collapsed" : ""}${
+        visual.ativo ? ` hub-premium hub-premium--${visual.tema} hub-premium--${visual.tamanho}` : ""
+      }`}
+    >
+      {visual.ativo ? (
+        <div className="hp-fundo" aria-hidden="true">
+          <i className="hp-orbe hp-orbe--1" />
+          <i className="hp-orbe hp-orbe--2" />
+          <i className="hp-orbe hp-orbe--3" />
+          <i className="hp-orbe hp-orbe--b1" />
+          <i className="hp-orbe hp-orbe--b3" />
+          <i className="hp-orbe hp-orbe--b2" />
+        </div>
+      ) : null}
       <aside className={`sidebar ${menuOpen ? "sidebar--open" : ""} ${menuCollapsed ? "sidebar--collapsed" : ""}`}>
         <div className="brand-block">
           <div className="brand-mark">HT</div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -20,6 +20,7 @@ import { AGENDA_CATEGORIA_ROTULO } from "../lib/agendaSemana";
 import { formatResponsaveis } from "../lib/formatters";
 import { isPautaAlta } from "../lib/hubRules";
 import { pautaRichTextToPlain } from "../lib/richText";
+import { salvarVisualPremium, type TamanhoPremium, type TemaPremium } from "../lib/visualPremium";
 import "./quadroPremium.css";
 
 // Quadro geral no visual premium (beta, só para o administrador por enquanto).
@@ -34,6 +35,8 @@ export type QuadroPremiumProps = {
   hubUsers: HubProfile[];
   onNavigate: (route: HubRoute) => void;
   onSair: () => void;
+  tema: TemaPremium;
+  tamanho: TamanhoPremium;
   avisoCoordenacao: ReactNode;
   semana: Date;
   fimSemana: Date;
@@ -62,36 +65,6 @@ export type QuadroPremiumProps = {
 const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const DIAS_LONGOS = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-const TEMA_KEY = "hub_qp_tema";
-const TAMANHO_KEY = "hub_qp_tamanho";
-const FONTES_URL =
-  "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Nunito:wght@200;300;600;700;800&display=swap";
-
-function ler(chave: string, padrao: string) {
-  try {
-    return localStorage.getItem(chave) || padrao;
-  } catch {
-    return padrao;
-  }
-}
-
-function gravar(chave: string, valor: string) {
-  try {
-    localStorage.setItem(chave, valor);
-  } catch {
-    // sem armazenamento local: vale só nesta tela
-  }
-}
-
-function carregarFontes() {
-  if (document.getElementById("qp-fontes")) return;
-  const link = document.createElement("link");
-  link.id = "qp-fontes";
-  link.rel = "stylesheet";
-  link.href = FONTES_URL;
-  document.head.appendChild(link);
-}
-
 function iso(data: Date) {
   return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
 }
@@ -152,25 +125,17 @@ export function QuadroPremium(props: QuadroPremiumProps) {
     tarefasAtrasadas,
     totalTarefasSemana,
     agenda,
-    rotaAgenda
+    rotaAgenda,
+    tema,
+    tamanho
   } = props;
-  const [tema, setTema] = useState(() => (ler(TEMA_KEY, "escuro") === "claro" ? "claro" : "escuro"));
-  const [tamanho, setTamanho] = useState(() => (ler(TAMANHO_KEY, "compacto") === "ampliado" ? "ampliado" : "compacto"));
-
-  useEffect(() => {
-    carregarFontes();
-  }, []);
 
   function alternarTema() {
-    const novo = tema === "escuro" ? "claro" : "escuro";
-    setTema(novo);
-    gravar(TEMA_KEY, novo);
+    salvarVisualPremium({ tema: tema === "escuro" ? "claro" : "escuro" });
   }
 
   function alternarTamanho() {
-    const novo = tamanho === "compacto" ? "ampliado" : "compacto";
-    setTamanho(novo);
-    gravar(TAMANHO_KEY, novo);
+    salvarVisualPremium({ tamanho: tamanho === "compacto" ? "ampliado" : "compacto" });
   }
 
   const agora = new Date();
