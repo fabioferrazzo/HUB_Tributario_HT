@@ -2,6 +2,7 @@ import { CSSProperties, type ChangeEvent, FormEvent, type PointerEvent as ReactP
 import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Edit3, FileText, Image as ImageIcon, ListChecks, Paperclip, Plus, RefreshCw, Search, StickyNote, Tag, Trash2, Type as TypeIcon, X } from "lucide-react";
 import { DashboardPanelHeader, PanelHeader, StatusPill } from "../components/common";
 import { FooterUpdates } from "../components/Updates";
+import "./pautasPremium.css";
 import type { HubProfile, HubUser, Pauta, QuadroAviso, QuadroAvisoKind } from "../types";
 import type { PautaFilter, ReportFormat } from "../app/appTypes";
 import { RichTextEditor } from "../components/RichTextEditor";
@@ -1279,7 +1280,7 @@ export function Dashboard({
   }
 
   return (
-    <div className="pautas-page">
+    <div className="pautas-page hp-migrada">
       <section className="panel panel--pautas">
         <DashboardPanelHeader
           actionLabel={pautasView === "lista" && canManagePautas ? "Nova pauta" : undefined}

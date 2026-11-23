@@ -387,7 +387,7 @@ body[data-hub-premium="claro"] {
 
 /* Telas que ainda não ganharam o visual novo ficam numa "folha" clara dentro do tema escuro,
    para nenhum texto escuro cair direto sobre o fundo escuro. Cada menu sai daqui na sua etapa. */
-.hub-premium--escuro .workspace-body:not(:has(.qp)) {
+.hub-premium--escuro .workspace-body:not(:has(.qp, .hp-migrada)) {
   margin: 0 22px 18px;
   padding: 18px;
   border: 1px solid var(--hp-linha);
@@ -398,21 +398,21 @@ body[data-hub-premium="claro"] {
   box-shadow: var(--hp-sombra);
 }
 
-.hub-premium--escuro .workspace-body:not(:has(.qp)) .footer-updates .news-band {
+.hub-premium--escuro .workspace-body:not(:has(.qp, .hp-migrada)) .footer-updates .news-band {
   background: #ffffff;
   color: #1c2a3a;
   backdrop-filter: none;
 }
 
-.hub-premium--escuro .workspace-body:not(:has(.qp)) .news-label {
+.hub-premium--escuro .workspace-body:not(:has(.qp, .hp-migrada)) .news-label {
   color: #1e3a5f;
 }
 
-.hub-premium--escuro .workspace-body:not(:has(.qp)) .ticker-item {
+.hub-premium--escuro .workspace-body:not(:has(.qp, .hp-migrada)) .ticker-item {
   color: #45556c;
 }
 
-.hub-premium--escuro .workspace-body:not(:has(.qp)) .ticker-track strong {
+.hub-premium--escuro .workspace-body:not(:has(.qp, .hp-migrada)) .ticker-track strong {
   color: #1c2a3a;
 }
 

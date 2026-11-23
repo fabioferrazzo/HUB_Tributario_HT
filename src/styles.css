@@ -3725,7 +3725,11 @@ body {
 .pautas-monthbar strong {
   min-width: 190px;
   color: var(--ink);
-  text-transform: capitalize;
+}
+
+/* "Novembro de 2026": só a primeira letra maiúscula (norma culta). */
+.pautas-monthbar strong::first-letter {
+  text-transform: uppercase;
 }
 
 .pautas-monthbar button {

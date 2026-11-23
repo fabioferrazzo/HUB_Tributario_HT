@@ -1,0 +1,638 @@
+/* Pautas e Quadro de Avisos no visual premium (padrão H. Teixeira Premium).
+   Só vale com o visual premium ligado (.hub-premium). Sem ele, a tela segue igual. */
+
+.hub-premium .pautas-page {
+  --surface: var(--hp-vidro);
+  --surface-muted: var(--hp-vidro-2);
+  --bg: transparent;
+  --bg-soft: var(--hp-vidro-2);
+  --ink: var(--hp-texto);
+  --muted: var(--hp-mudo);
+  --line: var(--hp-linha);
+  --line-soft: var(--hp-linha);
+  --accent: var(--hp-acento);
+  --accent-deep: var(--hp-acento);
+  --accent-gold: #e0a030;
+  --danger: var(--hp-urgente);
+  --shadow: var(--hp-sombra);
+  color: var(--hp-texto);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium--escuro .pautas-page {
+  --pp-ambar: #f0c46a;
+  --pp-ambar-fundo: rgba(224, 160, 48, 0.14);
+  --pp-urgente-fundo: rgba(255, 122, 107, 0.14);
+  --pp-ok: #7fd6b0;
+  --pp-ok-fundo: rgba(127, 214, 176, 0.12);
+  --pp-sobre-acento: #04121a;
+  --ok: #7fd6b0;
+  --warning: #f0c46a;
+}
+
+.hub-premium--claro .pautas-page {
+  --pp-ambar: #8a5300;
+  --pp-ambar-fundo: rgba(224, 160, 48, 0.14);
+  --pp-urgente-fundo: rgba(185, 62, 14, 0.08);
+  --pp-ok: #2f7d4f;
+  --pp-ok-fundo: rgba(47, 125, 79, 0.1);
+  --pp-sobre-acento: #ffffff;
+  --ok: #2f7d4f;
+  --warning: #8a5300;
+}
+
+/* ---------------------------------------------------------------- Painel e cabeçalho */
+.hub-premium .pautas-page .panel--pautas {
+  border: 1px solid var(--hp-linha);
+  border-radius: var(--ht-raio, 24px);
+  background: var(--hp-vidro);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  overflow: hidden;
+}
+
+.hub-premium .pautas-page .panel-head {
+  padding: calc(18px * var(--hp-esc)) calc(22px * var(--hp-esc));
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .pautas-page .panel-head h2 {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(22px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .pautas-page .panel-head h2 svg {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .pautas-page .panel-head small,
+.hub-premium .pautas-page .panel-head .panel-meta {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+/* Botões pequenos (cabeçalho, exportar, mês) */
+.hub-premium .pautas-page :is(.btn-mini, .panel-export-actions button, .pautas-monthbar button, .avisos-toolbar button, .avisos-mode-switch button, .avisos-export-actions button, .avisos-side-panel__actions button) {
+  min-height: calc(34px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.hub-premium .pautas-page :is(.btn-mini, .panel-export-actions button, .pautas-monthbar button, .avisos-toolbar button, .avisos-mode-switch button, .avisos-export-actions button, .avisos-side-panel__actions button):hover {
+  border-color: var(--hp-acento);
+}
+
+.hub-premium .pautas-page :is(.btn-mini.primary, .avisos-toolbar button.primary, .avisos-mode-switch button.active, .avisos-toolbar button.avisos-new) {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--pp-sobre-acento);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- Abas Pautas / Quadro de Avisos */
+.hub-premium .pautas-page .pautas-subtabs {
+  gap: 6px;
+  padding: calc(10px * var(--hp-esc)) calc(22px * var(--hp-esc));
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .pautas-page .pautas-subtabs button {
+  min-height: calc(36px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: calc(13.5px * var(--hp-esc));
+  font-weight: 500;
+  padding-inline: 16px;
+}
+
+.hub-premium .pautas-page .pautas-subtabs button.active {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--pp-sobre-acento);
+  font-weight: 600;
+  box-shadow: 0 0 24px var(--hp-brilho);
+}
+
+/* ---------------------------------------------------------------- Barra do mês */
+.hub-premium .pautas-page .pautas-monthbar {
+  padding: calc(12px * var(--hp-esc)) calc(22px * var(--hp-esc));
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .pautas-page .pautas-monthbar strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(20px * var(--hp-esc));
+  font-weight: 300;
+}
+
+/* ---------------------------------------------------------------- Filtros e busca */
+.hub-premium .pautas-page .panel-toolbar {
+  gap: 8px;
+  padding: calc(12px * var(--hp-esc)) calc(22px * var(--hp-esc));
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .pautas-page .filter-pill {
+  min-height: calc(32px * var(--hp-esc));
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hp-texto-2);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .pautas-page .filter-pill:hover {
+  border-color: var(--hp-linha);
+}
+
+.hub-premium .pautas-page .filter-pill.active {
+  border-color: var(--hp-acento);
+  background: var(--hp-brilho);
+  color: var(--hp-titulo);
+  box-shadow: none;
+}
+
+.hub-premium .pautas-page .filter-pill--danger {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .filter-pill--warning {
+  color: var(--pp-ambar);
+}
+
+.hub-premium .pautas-page .panel-search {
+  min-height: calc(36px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-mudo);
+}
+
+.hub-premium .pautas-page .panel-search input {
+  color: var(--hp-texto);
+  font-size: calc(13px * var(--hp-esc));
+}
+
+.hub-premium .pautas-page .panel-search input::placeholder {
+  color: var(--hp-mudo);
+}
+
+/* ---------------------------------------------------------------- Lista de pautas */
+.hub-premium .pautas-page .pautas-stack {
+  gap: 12px;
+  padding: calc(14px * var(--hp-esc)) calc(18px * var(--hp-esc));
+}
+
+.hub-premium .pautas-page .list-row--pauta {
+  margin: 0;
+  padding: calc(18px * var(--hp-esc)) calc(20px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 6px);
+  background: var(--hp-vidro);
+  box-shadow: none;
+  transition: border-color 0.25s ease;
+}
+
+.hub-premium .pautas-page .list-row--pauta:hover {
+  border-color: var(--hp-linha-forte);
+  background: var(--hp-vidro-2);
+}
+
+/* Destaque: brilho da cor de destaque (frio); vermelho fica só para atraso e prioridade alta */
+.hub-premium .pautas-page .list-row--pauta-featured {
+  border-color: color-mix(in srgb, var(--hp-acento) 55%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hp-acento) 14%, transparent), transparent 60%), var(--hp-vidro);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--hp-acento) 18%, transparent);
+}
+
+.hub-premium .pautas-page .pauta-content {
+  color: var(--hp-texto);
+}
+
+.hub-premium .pautas-page .list-row--pauta .pauta-content strong,
+.hub-premium .pautas-page .list-row--pauta-featured strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(17px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .pautas-page .list-row--pauta .pauta-description,
+.hub-premium .pautas-page .list-row--pauta-featured .pauta-description {
+  color: var(--hp-texto-2);
+  font-size: calc(14px * var(--hp-esc));
+}
+
+.hub-premium .pautas-page .list-row--pauta em {
+  color: var(--hp-acento-texto);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* :where() mantém a especificidade baixa: datas e etiquetas abaixo conseguem trocar a cor. */
+.hub-premium .pautas-page .list-row--pauta :where(span, small),
+.hub-premium .pautas-page .pauta-return {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .pautas-page .pauta-date {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(12px * var(--hp-esc));
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.hub-premium .pautas-page .pauta-date--danger {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .pauta-date--warning {
+  color: var(--pp-ambar);
+}
+
+.hub-premium .pautas-page .pauta-date--ok {
+  color: var(--pp-ok);
+}
+
+.hub-premium .pautas-page .pauta-rich-text mark {
+  background: rgba(240, 196, 106, 0.35);
+  color: inherit;
+}
+
+/* Etiquetas (destaque, aberta, alta…) */
+.hub-premium .pautas-page .status-pill {
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+.hub-premium .pautas-page .status-pill--danger {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--pp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .status-pill--warning {
+  border-color: color-mix(in srgb, var(--pp-ambar) 40%, transparent);
+  background: var(--pp-ambar-fundo);
+  color: var(--pp-ambar);
+}
+
+.hub-premium .pautas-page .status-pill--ok {
+  border-color: color-mix(in srgb, var(--pp-ok) 40%, transparent);
+  background: var(--pp-ok-fundo);
+  color: var(--pp-ok);
+}
+
+/* Ações da pauta */
+.hub-premium .pautas-page :is(.record-actions button, .record-actions a, .pauta-attachments a, .attachment-list button) {
+  min-height: calc(34px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .pautas-page :is(.record-actions button, .record-actions a):hover {
+  border-color: var(--hp-acento);
+}
+
+.hub-premium .pautas-page .record-actions .danger-action {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .record-actions .danger-action:hover {
+  border-color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .attachment-list span {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .pautas-page :is(.empty-state, .readonly-note, .pautas-concluidas-barra) {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .pautas-page .module-notice {
+  border-color: color-mix(in srgb, var(--hp-acento) 40%, transparent);
+  border-radius: 12px;
+  background: var(--hp-brilho);
+  color: var(--hp-texto);
+}
+
+/* ---------------------------------------------------------------- Comentários */
+.hub-premium .pautas-page .hub-comentarios {
+  border-top-color: var(--hp-linha);
+  color: var(--hp-texto);
+}
+
+.hub-premium .pautas-page :is(.hub-comentarios__toggle, .hub-comentarios__lock) {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .pautas-page :is(.hub-comentarios__toggle, .hub-comentarios__lock):hover {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .pautas-page .hub-comentarios__lista li {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .pautas-page :is(.hub-comentarios__meta, .hub-comentarios__vazio, .hub-comentarios__bloqueio, .hub-comentarios__excluir) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .pautas-page .hub-comentarios__meta strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .pautas-page .hub-comentarios__form textarea {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .pautas-page .hub-comentarios__form textarea::placeholder {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .pautas-page .hub-comentarios__form button {
+  border-radius: 10px;
+  background: var(--hp-acento);
+  color: var(--pp-sobre-acento);
+}
+
+/* ---------------------------------------------------------------- Editor de pauta: folha clara (padrão) */
+.hub-premium .pautas-page .pauta-editor-panel {
+  --surface: #ffffff;
+  --surface-muted: #eef2ed;
+  --bg-soft: #ebe6db;
+  --ink: #1c2a3a;
+  --muted: #5e6d82;
+  --line: #e2dccc;
+  --line-soft: #efeae0;
+  --accent: #1e3a5f;
+  --accent-deep: #15263f;
+  --danger: #b73e3e;
+  --warning: #8a6400;
+  --ok: #2f7d4f;
+  color-scheme: light;
+  border: 1px solid var(--hp-linha);
+  border-radius: var(--ht-raio, 24px);
+  background: #ffffff;
+  color: #1c2a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------- Quadro de Avisos */
+.hub-premium .pautas-page .avisos-board {
+  padding: calc(14px * var(--hp-esc)) calc(18px * var(--hp-esc));
+  background: transparent;
+}
+
+.hub-premium .pautas-page .avisos-status,
+.hub-premium .pautas-page .avisos-muted {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .pautas-page .avisos-mode-switch {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+}
+
+.hub-premium .pautas-page .avisos-message {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  border-radius: 12px;
+  background: var(--pp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .avisos-message.success {
+  border-color: color-mix(in srgb, var(--pp-ok) 40%, transparent);
+  background: var(--pp-ok-fundo);
+  color: var(--pp-ok);
+}
+
+.hub-premium .pautas-page .avisos-grid {
+  gap: 14px;
+}
+
+.hub-premium .pautas-page .aviso-cell {
+  border: 1px solid var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 6px);
+  background: var(--hp-vidro);
+  box-shadow: none;
+}
+
+.hub-premium .pautas-page .aviso-cell:hover {
+  border-color: var(--hp-linha-forte);
+  box-shadow: none;
+}
+
+.hub-premium .pautas-page .aviso-cell.active {
+  border-color: var(--hp-acento);
+  box-shadow: 0 0 0 1px var(--hp-acento) inset, 0 0 24px var(--hp-brilho);
+}
+
+.hub-premium .pautas-page .aviso-cell--vazia {
+  background: transparent;
+  border-style: dashed;
+}
+
+.hub-premium .pautas-page .aviso-cell__head {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .pautas-page .aviso-cell__title {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(11px * var(--hp-esc));
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hub-premium .pautas-page .aviso-cell__count {
+  background: var(--hp-brilho);
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .pautas-page .aviso-cell__empty {
+  color: var(--hp-mudo);
+}
+
+/* Cartões de texto, imagem e anexo em vidro; post-its mantêm a cor escolhida (são "papel"). */
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .pautas-page .aviso-card--texto {
+  border-left: 3px solid var(--hp-acento);
+}
+
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) :is(.aviso-card__text, .aviso-card__para) {
+  color: var(--hp-texto);
+}
+
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) .aviso-card__meta {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) .aviso-card__file {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) .aviso-card__actions {
+  border-top-color: var(--hp-linha);
+}
+
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) .aviso-card__actions button {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .pautas-page .aviso-card:not(.aviso-card--postit) .aviso-card__actions button.danger {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--pp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .pautas-page .aviso-card--postit {
+  color: #1c2a3a;
+  color-scheme: light;
+}
+
+/* Painel lateral do espaço (ver e editar avisos): folha clara, como os demais editores. */
+.hub-premium .pautas-page .avisos-side-panel {
+  --surface: #ffffff;
+  --ink: #1c2a3a;
+  --muted: #5e6d82;
+  --line: #e2dccc;
+  --line-soft: #efeae0;
+  --accent: #1e3a5f;
+  color-scheme: light;
+  border-color: var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 4px);
+  background: #ffffff;
+  color: #1c2a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium .pautas-page .avisos-side-panel :is(.avisos-side-panel__actions button) {
+  border-color: #e2dccc;
+  background: #ffffff;
+  color: #1b365d;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .aviso-card:not(.aviso-card--postit) {
+  border-color: #e3e8ef;
+  background: #ffffff;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .aviso-card:not(.aviso-card--postit) :is(.aviso-card__text, .aviso-card__para) {
+  color: #15233a;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .aviso-card:not(.aviso-card--postit) .aviso-card__meta {
+  color: #5e6d82;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .aviso-card:not(.aviso-card--postit) .aviso-card__actions button {
+  border-color: #e2dccc;
+  background: #ffffff;
+  color: #45556c;
+}
+
+.hub-premium .pautas-page .avisos-side-panel__head span {
+  color: #5e6d82;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .hub-comentarios {
+  color: #23344a;
+}
+
+.hub-premium .pautas-page .avisos-side-panel :is(.hub-comentarios__toggle, .hub-comentarios__lock, .hub-comentarios__meta, .hub-comentarios__vazio) {
+  color: #45556c;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .hub-comentarios__meta strong {
+  color: #23344a;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .hub-comentarios__lista li {
+  border-color: #e6eaf0;
+  background: #ffffff;
+}
+
+.hub-premium .pautas-page .avisos-side-panel .hub-comentarios__form textarea {
+  border-color: #d5dce6;
+  background: #ffffff;
+  color: #23344a;
+}
+
+/* Modo desenho: o quadro continua branco (é a "lousa"); só a moldura segue o tema. */
+.hub-premium .pautas-page :is(.avisos-draw-head, .avisos-draw-tools) {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .pautas-page .avisos-draw-head strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .pautas-page .avisos-draw-head > div:first-child,
+.hub-premium .pautas-page .avisos-draw-tools label {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .pautas-page .avisos-draw-canvas {
+  border-color: var(--hp-linha-forte);
+  border-radius: 16px;
+}
+
+.hub-premium .pautas-page :focus-visible {
+  outline: 2px solid var(--hp-acento);
+  outline-offset: 2px;
+}
