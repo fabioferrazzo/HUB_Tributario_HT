@@ -13,3 +13,7 @@ vite.config.d.ts
 Thumbs.db
 # saídas dos testes em navegador (capturas de tela)
 tests/e2e/.saida/
+
+# HUB para Windows: cache do SDK e compilação local
+desktop/.cache/
+desktop/dist/

@@ -1,5 +1,6 @@
 // Alertas do "chamar atenção" no navegador: bip, tremor da tela do HUB, título piscando e notificação do Windows.
-// (O tremor da janela por cima de outros programas depende da versão instalada do HUB — etapa futura.)
+// No HUB instalado no Windows, a janela também vem para a frente, chacoalha e pisca (ver src/lib/desktop.ts).
+import { hubDesktop } from "../../lib/desktop";
 
 let audio: AudioContext | null = null;
 
@@ -78,6 +79,11 @@ export function piscarTitulo(texto: string) {
 }
 
 export function mostrarNotificacao(titulo: string, corpo: string, insistente: boolean) {
+  const desktop = hubDesktop();
+  if (desktop) {
+    desktop.notificar(titulo, corpo);
+    return;
+  }
   if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") return;
   try {
     const n = new Notification(titulo, { body: corpo, requireInteraction: insistente, tag: insistente ? "hub-chat-atencao" : "hub-chat", icon: "/hub-icon.svg" });

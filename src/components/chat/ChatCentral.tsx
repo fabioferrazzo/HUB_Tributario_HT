@@ -46,6 +46,7 @@ import {
 } from "../../lib/chatRepository";
 import { baixarBackupChat } from "./chatBackup";
 import { alertaSonoro, mostrarNotificacao, piscarTitulo, tremerTela } from "./chatAlertas";
+import { hubDesktop } from "../../lib/desktop";
 
 export type ChatJanela = "fechado" | "aberto" | "minimizado";
 
@@ -183,7 +184,9 @@ export function ChatCentral({
         tremerTela();
         alertaSonoro();
         piscarTitulo(`${c.remetenteNome} chamou sua atenção`);
-        mostrarNotificacao(`${c.remetenteNome} está chamando sua atenção`, "Clique para abrir o chat do HUB.", true);
+        const desktop = hubDesktop();
+        if (desktop) desktop.chamarAtencao(`${c.remetenteNome} está chamando sua atenção`, "Abra o chat do HUB.");
+        else mostrarNotificacao(`${c.remetenteNome} está chamando sua atenção`, "Clique para abrir o chat do HUB.", true);
         void recarregarConversas();
       },
       onMudanca: () => {
@@ -394,7 +397,8 @@ export function ChatCentral({
 
 // Pede permissão para as notificações do Windows (usadas no "chamar atenção" com o HUB em segundo plano).
 function PermissaoAlertas() {
-  const suportado = typeof window !== "undefined" && "Notification" in window;
+  // No HUB instalado, os avisos saem pelo ícone perto do relógio: não precisa pedir permissão.
+  const suportado = typeof window !== "undefined" && "Notification" in window && !hubDesktop();
   const [estado, setEstado] = useState(suportado ? Notification.permission : "denied");
   if (!suportado || estado !== "default") return null;
   return (

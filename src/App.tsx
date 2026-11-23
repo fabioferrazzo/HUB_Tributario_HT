@@ -20,6 +20,8 @@ import { listAppTasks } from "./lib/tarefasRepository";
 import { listAppUsers } from "./lib/usersRepository";
 import { markAllAppNotificationsRead, markAppNotificationRead, syncAppNotifications } from "./lib/notificationsRepository";
 import { CarregamentoModulo } from "./components/CarregamentoModulo";
+import { InstalarDesktop } from "./components/InstalarDesktop";
+import { hubDesktop } from "./lib/desktop";
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 
 // Módulos carregados sob demanda: o Quadro geral (tela inicial) e o chat seguem no pacote principal.
@@ -53,6 +55,10 @@ export function App() {
     }
   });
   const [chatNaoLidas, setChatNaoLidas] = useState(0);
+  // HUB instalado no Windows: contador de mensagens no ícone perto do relógio.
+  useEffect(() => {
+    hubDesktop()?.naoLidas(chatNaoLidas);
+  }, [chatNaoLidas]);
   useEffect(() => {
     try {
       window.sessionStorage.setItem("hub_chat_janela", chatJanela);
@@ -483,6 +489,7 @@ export function App() {
           })}
         </nav>
 
+        <InstalarDesktop />
         <button className="sign-out" type="button" onClick={handleSignOut}>
           <LogOut size={17} />
           <span>Sair</span>
