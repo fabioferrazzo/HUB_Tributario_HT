@@ -339,7 +339,7 @@ DIFAL = BC × alíq. destino − ICMS próprio</code>
     <h3>5. DIFAL-ST (uso, consumo e ativo com ST)</h3>
     <p>Quando o produto está em convênio ou protocolo de ST entre as UFs, o vendedor retém o DIFAL como substituto, sem MVA (Conv. ICMS 142/2018).</p>
     <ul>
-      <li><b>Compra:</b> o remetente de outra UF retém o DIFAL-ST devido ao RS. Se não reteve, ou reteve a menor, o adquirente gaúcho recolhe a diferença.</li>
+      <li><b>Compra:</b> o remetente de outra UF retém o DIFAL-ST devido ao RS. Se não reteve, ou reteve a menor, o adquirente gaúcho recolhe a diferença. Cálculo com base dupla: diferença de alíquotas sobre o valor da operação, observado o art. 18 do Livro I (Livro III, art. 37, parágrafo único, a; IN DRP 45/98, item 10.1).</li>
       <li><b>Venda:</b> a empresa do RS retém o DIFAL-ST (e o FCP-ST) devido à UF do cliente contribuinte. Vale também para o Simples Nacional.</li>
     </ul>
 
@@ -357,11 +357,11 @@ DIFAL = BC × alíq. destino − ICMS próprio</code>
       <li>Alíquotas e FCP das outras UFs vêm de tabelas de mercado (nov/2026), editáveis.</li>
       <li>Resultados para conferência: confirme no RICMS-RS vigente e nos pareceres da Receita Estadual antes de recolher.</li>
     </ul>
-    <p class="hint">Fontes: RICMS-RS (Decreto 37.699/97), Livro I, arts. 23, 27 e 46; Decreto 55.693/2020; IN DRP 45/98; pareceres SEFAZ-RS 13132, 13154, 15148, 16135, 17299 e 17385; Portal de Serviços da Receita RS; Conv. ICMS 142/2018 e 236/2021; LC 87/96, LC 123/06 e LC 190/22; STF, ADI 5464. Revisado em 23/11/2026.</p>
+    <p class="hint">Fontes: RICMS-RS (Decreto 37.699/97), Livro I, arts. 23, 27 e 46; Decreto 55.693/2020; IN DRP 45/98; pareceres SEFAZ-RS 13132, 13154, 16135, 17299 e 17385; RICMS-RS, Livro III, art. 37; Portal de Serviços da Receita RS; Conv. ICMS 142/2018 e 236/2021; LC 87/96, LC 123/06 e LC 190/22; STF, ADI 5464. Revisado em 23/11/2026.</p>
   </div>
 </aside>
 </div>
-<footer>H. Teixeira Contabilidade · Depto Fiscal · ferramenta de conferência, uso interno · v1.5.0</footer>
+<footer>H. Teixeira Contabilidade · Depto Fiscal · ferramenta de conferência, uso interno · v1.5.1</footer>
 
 <script>
 (function(){
@@ -446,6 +446,10 @@ $("uf").innerHTML = '<option value="">—</option>' + UFS.map(u=>`<option>${u}</
 
 // abas
 function selModo(m){
+  if(m==="difalST" && modo!=="difalST" && metodo!=="dupla"){
+    metodo = "dupla";
+    document.querySelectorAll("#segMetodo button").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v==="dupla"));
+  }
   modo = m;
   const v = VENDA(m);
   document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x.dataset.modo===m));
@@ -740,7 +744,7 @@ function analisar(){
     const dupla = difalCore(bc, io, aIcms, aAdic, "dupla", fRed).total;
     const unica = difalCore(bc, io, aIcms, aAdic, "unica", fRed).total;
     const obs = venda ? `Confirme o método adotado por ${dest}: a LC 190/2022 inclui o ICMS na própria base, e várias UFs usam base dupla.`
-      : modo==="difalST" ? "No DIFAL-ST de entrada no RS, o parecer SEFAZ-RS 15148 (anterior à LC 190/2022) indica diferença simples de alíquotas (base única); para o DIFAL comum, a IN DRP 45/98 usa base dupla. Confirme qual vale para o DIFAL-ST."
+      : modo==="difalST" ? "No DIFAL-ST de entrada no RS vale a base dupla: o Livro III, art. 37, parágrafo único, a, manda observar o art. 18 do Livro I (imposto na própria base), como no DIFAL comum. A base única aparece só para conferir retenções feitas a menor pelo remetente."
       : "A Receita RS usa base dupla no DIFAL de uso e consumo (IN DRP 45/98, item 10.1). Base única só para conferência.";
     P("possib","Base dupla × base única",`Base dupla: ${brl.format(dupla)} · base única: ${brl.format(unica)} (diferença de ${brl.format(r2(dupla-unica))}). Em uso: ${metodo==="dupla"?"base dupla":"base única"}. ${obs}`);
   }
@@ -865,7 +869,7 @@ function calcCore(){
     const cI = r2(Math.max(icms - retI, 0)), cA = r2(Math.max(amp - retA, 0));
     if(retI + retA > total + 0.05) alerts.unshift(["w",`O valor retido (${brl.format(retI+retA)}) é maior que o calculado (${brl.format(total)}). Confira base, método e alíquota; pode haver crédito a pedir ao remetente.`]);
     if(!retI && !retA) alerts.unshift(["w","Nada foi retido: o adquirente gaúcho responde pelo DIFAL-ST integral, recolhido na entrada."]);
-    alerts.push(["i","DIFAL-ST na entrada para uso, consumo ou ativo: sem MVA; BC = valor da operação com IPI, frete e despesas (Conv. ICMS 142/2018). Pelo Livro III, art. 37, parágrafo único, a, o débito é a diferença de alíquotas sobre a BC do débito próprio do remetente (parecer SEFAZ-RS 15148): equivale à opção “Base única”."]);
+    alerts.push(["i","DIFAL-ST na entrada para uso, consumo ou ativo: sem MVA; BC = valor da operação com IPI, frete e despesas (Conv. ICMS 142/2018). O débito do substituto é a diferença de alíquotas sobre o valor da operação na origem, \"observado o disposto no art. 18 do Livro I\" (Livro III, art. 37, parágrafo único, a): o ICMS integra a própria base, como no DIFAL comum (IN DRP 45/98, item 10.1). Por isso o padrão é a base dupla."]);
     const devidoBruto = total;
     icms = cI; amp = cA; total = r2(cI + cA);
     if((retI || retA) && total===0 && retI + retA <= devidoBruto + 0.05)

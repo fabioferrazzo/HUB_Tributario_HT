@@ -46,6 +46,13 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await caso("Venda NC SN",async()=>{await p.click('#segAdq button[data-v=sn]');await set("vProd","1000");},"0,00");
   await caso("vRev geral BA",async()=>{await p.click('#segAdq button[data-v=geral]');await p.click('.tab[data-modo=vRev]');await set("vProd","1000");},"70,00");
   await caso("vST BA",async()=>{await p.click('.tab[data-modo=vST]');await set("vProd","1000");},"169,81");
+  // DIFAL-ST de entrada: base dupla (Livro III, art. 37, p.ú., a, c/c art. 18 do Livro I), mesmo vindo da base única
+  await p.click('#segOper button[data-v=compra]');
+  await p.click('.tab[data-modo=difal]');
+  await p.click('#segMetodo button[data-v=unica]');
+  await caso("DIFAL-ST volta para base dupla ao abrir a aba", async () => { await p.click('.tab[data-modo=difalST]'); await set("vProd", "1000"); }, "60,24");
+  const alertaST = await p.locator("#alertas").innerText();
+  check("alerta do DIFAL-ST indica base dupla", /base dupla/i.test(alertaST) && !/15148/.test(alertaST), alertaST.slice(0, 160));
   const fontes = await p.evaluate(() => getComputedStyle(document.querySelector("#btnAdd")).fontWeight);
   check("botões com a fonte do app (peso 600)", fontes === "600", fontes);
   await p.selectOption("#uf", "SP");
