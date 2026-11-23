@@ -1,4 +1,4 @@
-/* Simuladores do Simples Nacional — visual do HUB (H. Teixeira). */
+/* Padrão visual dos simuladores do HUB (H. Teixeira): tokens, cabeçalho, painéis, campos, abas, indicadores e tabelas. */
 :root {
   --bg: #f3f6f9; --surface: #ffffff; --soft: #f6f8fb; --ink: #14243a; --muted: #5f6f82; --line: #d9e2ec;
   --brand: #123a63; --brand-2: #1d5a8f; --accent: #2dc9a4; --accent-soft: #e7f8f3;
@@ -44,6 +44,10 @@ input.num { text-align: right; font-variant-numeric: tabular-nums; }
 .segmento { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 3px; border-radius: 10px; background: var(--soft); border: 1px solid var(--line); }
 .segmento button { border: 0; border-radius: 8px; padding: 6px 8px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .segmento button.ativo { background: var(--surface); color: var(--brand); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+/* Abas de modo no topo do simulador (ex.: Calculadora | Monitoramento) */
+.abas { display: flex; gap: 6px; flex-wrap: wrap; }
+.abas button { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+.abas button.ativo { background: var(--brand); border-color: var(--brand); color: #fff; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 .kpi { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); min-width: 0; }
 .kpi.destaque { background: linear-gradient(135deg, #123a63, #1d5a8f); color: #fff; border: 0; }

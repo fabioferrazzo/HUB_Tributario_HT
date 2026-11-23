@@ -98,6 +98,53 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:6px 20px 20px}
 @media (max-width:1280px){.wrap{grid-template-columns:minmax(0,1fr)}aside .card{position:static;max-height:none}}
 @media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:560px){.g{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:12px}header{padding:12px}}
+/* Padrão visual dos simuladores do HUB (tokens de simples-comum/simples.css). */
+:root{--navy:#123a63;--navy2:#0e2d4d;--turq:#1d5a8f;--turq-l:#eaf1f8;--bg:#f3f6f9;--card:#ffffff;--tx:#14243a;--mut:#5f6f82;--line:#d9e2ec;
+  --warn-l:#fff8e6;--err-l:#fdf1f0;--ok:#0f5f56;--ok-l:#e7f8f3}
+html,body{font:13px/1.45 Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+header{background:transparent;border-bottom:0;padding:14px 16px 0;max-width:1320px;margin:0 auto}
+header .logo{display:none}
+header h1{font-size:20px;letter-spacing:-.01em;color:var(--navy)}
+header small{font-size:12px}
+.wrap{max-width:1320px;padding:12px 16px 24px;gap:12px}
+.main{gap:12px}
+.card{border-radius:14px;padding:12px 14px 14px;box-shadow:0 6px 18px rgba(18,58,99,.07)}
+.card h2{font-size:13px;text-transform:none;letter-spacing:0;color:var(--navy);margin:-12px -14px 12px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.card h2 svg{stroke:var(--navy)}
+.btn{border-radius:9px;padding:6px 12px;font-size:12px;color:var(--navy)}
+.btn.pri{background:var(--navy);border-color:var(--navy)}.btn.pri:hover{background:var(--navy);filter:brightness(1.08)}
+.btn.ghost{color:var(--navy)}
+.tab{border-radius:12px;padding:9px 12px}
+.tab b{font-size:13px;color:var(--navy)}.tab span{font-size:11px}
+.tab[aria-selected="true"]{border-color:var(--navy);background:var(--turq-l);box-shadow:inset 0 0 0 1px var(--navy)}
+legend{font-size:11.5px;color:var(--tx);text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+label.f{font-size:11.5px;font-weight:600;color:var(--tx)}
+input[type=text],select{min-height:34px;padding:6px 10px;border-radius:9px}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--turq);box-shadow:0 0 0 3px rgba(29,90,143,.14)}
+.hint{font-size:11px}
+.seg{display:inline-grid;grid-auto-flow:column;gap:4px;padding:3px;border-radius:10px;background:#f6f8fb;border:1px solid var(--line)}
+.seg button{border-radius:8px;padding:6px 10px;font-size:12px;background:transparent;color:var(--mut)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.res-top{border-radius:12px;padding:12px 14px}
+.res-top.dev{background:linear-gradient(135deg,#123a63,#1d5a8f)}
+.res-top.disp{background:var(--ok-l);color:var(--ok);border:1px solid #a9e9d8}
+.res-top .lbl{font-size:10.5px;letter-spacing:.05em;font-weight:600}
+.res-top .val{font-size:26px}
+.res-top .sub{font-size:11.5px}
+table{font-size:12px}
+th{font-size:11px;font-weight:600;color:var(--mut);background:#f6f8fb}
+.alert{border-radius:10px;font-size:12px}
+.alert.w{border:1px solid #f0d698;color:#73520f}
+.alert.i{background:#f6f8fb;border:1px solid var(--line);color:var(--mut)}
+.alert.e{border:1px solid #f5c6c2;color:#8f2018}
+.rtabs button{font-size:12.5px}
+.rtabs button[aria-selected="true"]{border-bottom-color:var(--navy)}
+.badge{background:var(--turq-l);color:var(--navy)}
+aside h3{font-size:12.5px}
+aside p,aside li{font-size:12px}
+code.fx{background:#f6f8fb;border:1px dashed var(--line);border-radius:9px;font-size:11.5px;color:var(--tx)}
+footer{font-size:11px}
+@media (max-width:560px){header{padding:10px 10px 0}.wrap{padding:10px}}
 @media print{
   header .sp,header button,.rowbtn,aside,.tabs,.rtabs,#painelEntrada,.lista td.acao,.lista th.acao{display:none!important}
   #pAlt{display:block!important;margin-top:12px}
@@ -361,7 +408,7 @@ DIFAL = BC × alíq. destino − ICMS próprio</code>
   </div>
 </aside>
 </div>
-<footer>H. Teixeira Contabilidade · Depto Fiscal · ferramenta de conferência, uso interno · v1.5.1</footer>
+<footer>H. Teixeira Contabilidade · Depto Fiscal · ferramenta de conferência, uso interno · v1.6.0</footer>
 
 <script>
 (function(){
