@@ -612,8 +612,10 @@
   flex: 1 1 0;
   flex-direction: column;
   gap: 6px;
+  container-type: inline-size;
   min-width: 0;
-  padding: 12px clamp(8px, 4cqi, 14px);
+  overflow: hidden;
+  padding: 12px clamp(6px, 2.4cqi, 14px);
   border: 1px solid var(--qp-linha);
   border-radius: 16px;
   background: var(--qp-vidro-2);
@@ -628,18 +630,19 @@
   opacity: 0.6;
 }
 
+/* Data e dia da semana encolhem com o cartão: nunca encostam na borda do quadradinho. */
 .qp-dia-semana {
   color: var(--qp-mudo);
   font-family: "DM Mono", ui-monospace, monospace;
-  font-size: calc(10.5px * var(--esc));
-  letter-spacing: 0.22em;
+  font-size: min(calc(10.5px * var(--esc)), 30cqi);
+  letter-spacing: min(0.22em, 3cqi);
   text-transform: uppercase;
 }
 
 .qp-dia-numero {
   color: var(--qp-texto);
   font-family: Nunito, "Segoe UI", sans-serif;
-  font-size: calc(30px * var(--esc));
+  font-size: min(calc(30px * var(--esc)), 70cqi);
   font-weight: 300;
   line-height: 1;
 }

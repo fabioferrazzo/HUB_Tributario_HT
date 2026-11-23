@@ -24,6 +24,9 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
     const chave = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
     const dados = {};
     dados[chave] = { source: "Teste", updated: "hoje", dates: { [String(hoje.getDate())]: [{ cat: "pj-fed", title: "<strong>[TESTE]</strong> DARF premium", periodo: "mês anterior" }] } };
+    // Um vencimento no sábado desta semana (seis quadros de data na faixa), se cair no mesmo mês.
+    const sabado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - ((hoje.getDay() + 6) % 7) + 5);
+    if (sabado.getMonth() === hoje.getMonth() && sabado.getDate() !== hoje.getDate()) dados[chave].dates[String(sabado.getDate())] = [{ cat: "simples", title: "[TESTE] Sábado", periodo: "" }];
     localStorage.setItem("agenda-tributaria-rfb-v1", JSON.stringify(dados));
     const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const segunda = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - ((hoje.getDay() + 6) % 7));
@@ -136,11 +139,21 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
         }
         return false;
       }).length;
-      return { menorTitulo: Math.min(...titulos), maiorBotao: Math.max(0, ...botoes), sobrepostos };
+      const diasApertados = [...document.querySelectorAll(".qp .qp-dia")].filter((dia) => {
+        const caixa = dia.getBoundingClientRect();
+        return [...dia.querySelectorAll(".qp-dia-numero, .qp-dia-semana")].some((t) => {
+          const r = document.createRange();
+          r.selectNodeContents(t);
+          const tx = r.getBoundingClientRect();
+          return tx.right > caixa.right - 4 || tx.left < caixa.left + 4;
+        });
+      }).length;
+      return { menorTitulo: Math.min(...titulos), maiorBotao: Math.max(0, ...botoes), sobrepostos, diasApertados };
     });
     check(`${largura}px ampliado: títulos com espaço (>= 140px)`, medida.menorTitulo >= 140, JSON.stringify(medida));
     check(`${largura}px ampliado: botões do aviso em uma linha`, medida.maiorBotao <= 48, JSON.stringify(medida));
     check(`${largura}px ampliado: nada sobreposto nas linhas`, medida.sobrepostos === 0, JSON.stringify(medida));
+    check(`${largura}px ampliado: datas da agenda com folga dentro dos quadros`, medida.diasApertados === 0, JSON.stringify(medida));
     await page.screenshot({ path: path.join(OUT, `qp-ampliado-${largura}.png`), fullPage: true });
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
