@@ -12,7 +12,8 @@ export const FOTOS_LOGIN = [
   { src: "/login/recepcao-2.webp", posicao: "50% 38%" },
   { src: "/login/frase.webp", posicao: "45% 40%" },
   { src: "/login/recepcao-4.webp", posicao: "30% 40%" },
-  { src: "/login/recepcao-5.webp", posicao: "45% 40%" }
+  { src: "/login/recepcao-5.webp", posicao: "45% 40%" },
+  { src: "/login/fachada.webp", posicao: "68% 40%" }
 ];
 
 export function fotoDoLogin(agora = new Date()) {

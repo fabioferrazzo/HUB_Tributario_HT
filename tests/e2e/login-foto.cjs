@@ -24,25 +24,25 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("formulário de entrada continua igual", (await page.locator('input[type="email"]').count()) === 1 && (await page.locator('input[type="password"]').count()) === 1);
   await page.screenshot({ path: path.join(OUT, "login-atual.png") });
 
-  // Troca a cada dois dias: dias 0 e 1 iguais, dia 2 diferente; as seis fotos aparecem num ciclo de 12 dias.
+  // Troca a cada dois dias: as sete fotos aparecem num ciclo de 14 dias.
   const ciclo = await page.evaluate(async () => {
     const fotos = new Set();
     const pares = [];
-    for (let d = 0; d < 12; d++) {
+    for (let d = 0; d < 14; d++) {
       const data = new Date(2026, 10, 2 + d);
       const dias = Math.floor(Date.UTC(data.getFullYear(), data.getMonth(), data.getDate()) / 86400000);
-      pares.push(Math.floor(dias / 2) % 6);
-      fotos.add(Math.floor(dias / 2) % 6);
+      pares.push(Math.floor(dias / 2) % 7);
+      fotos.add(Math.floor(dias / 2) % 7);
     }
     return { distintas: fotos.size, pares };
   });
-  check("seis fotos em rodízio de dois em dois dias", ciclo.distintas === 6, JSON.stringify(ciclo));
+  check("sete fotos em rodízio de dois em dois dias", ciclo.distintas === 7, JSON.stringify(ciclo));
   const todas = await page.evaluate(async () => {
-    const nomes = ["recepcao-1", "recepcao-2", "recepcao-3", "recepcao-4", "recepcao-5", "frase"];
+    const nomes = ["recepcao-1", "recepcao-2", "recepcao-3", "recepcao-4", "recepcao-5", "frase", "fachada"];
     const r = await Promise.all(nomes.map((n) => fetch(`/login/${n}.webp`).then((x) => x.ok && /image/.test(x.headers.get("content-type") || ""))));
     return r.every(Boolean);
   });
-  check("as seis fotos estão publicadas", todas);
+  check("as sete fotos estão publicadas", todas);
 
   // Visual premium ligado neste navegador.
   await page.evaluate(() => { localStorage.setItem("hub_qg_visual_premium", "1"); localStorage.setItem("hub_qp_tema", "escuro"); });
