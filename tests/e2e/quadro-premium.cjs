@@ -119,6 +119,32 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("celular sem rolagem lateral", largura.doc <= largura.tela + 1, JSON.stringify(largura));
   await page.setViewportSize({ width: 1600, height: 1000 });
 
+  // Tela menor (notebook) com texto ampliado: sem títulos espremidos nem botões quebrando linha.
+  for (const largura of [1280, 1100]) {
+    await page.setViewportSize({ width: largura, height: 800 });
+    const aumentar = page.locator(".qp button[aria-label='Aumentar o texto']");
+    if (await aumentar.count()) await aumentar.click();
+    await page.waitForTimeout(400);
+    const medida = await page.evaluate(() => {
+      const titulos = [...document.querySelectorAll(".qp .qp-linha-titulo")].map((el) => Math.round(el.getBoundingClientRect().width));
+      const botoes = [...document.querySelectorAll(".qp .qg-aviso .btn-mini")].map((el) => Math.round(el.getBoundingClientRect().height));
+      const sobrepostos = [...document.querySelectorAll(".qp .qp-linha")].filter((linha) => {
+        const filhos = [...linha.children].filter((f) => getComputedStyle(f).position !== "absolute" && f.getBoundingClientRect().width > 0);
+        for (let i = 0; i < filhos.length; i++) for (let j = i + 1; j < filhos.length; j++) {
+          const a = filhos[i].getBoundingClientRect(), b = filhos[j].getBoundingClientRect();
+          if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) return true;
+        }
+        return false;
+      }).length;
+      return { menorTitulo: Math.min(...titulos), maiorBotao: Math.max(0, ...botoes), sobrepostos };
+    });
+    check(`${largura}px ampliado: títulos com espaço (>= 140px)`, medida.menorTitulo >= 140, JSON.stringify(medida));
+    check(`${largura}px ampliado: botões do aviso em uma linha`, medida.maiorBotao <= 48, JSON.stringify(medida));
+    check(`${largura}px ampliado: nada sobreposto nas linhas`, medida.sobrepostos === 0, JSON.stringify(medida));
+    await page.screenshot({ path: path.join(OUT, `qp-ampliado-${largura}.png`), fullPage: true });
+  }
+  await page.setViewportSize({ width: 1600, height: 1000 });
+
   // Voltar ao visual atual.
   await page.click(".qp button:has-text('Visual atual')");
   await page.waitForTimeout(500);
