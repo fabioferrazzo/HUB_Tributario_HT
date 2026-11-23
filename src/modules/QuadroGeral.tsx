@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Landmark, Megaphone, Pencil, Plus, RefreshCw, StickyNote, Trash2 } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Landmark, Megaphone, Pencil, Plus, RefreshCw, Sparkles, StickyNote, Trash2 } from "lucide-react";
 import type { HubProfile, HubRoute, HubUser, Pauta, QuadroAviso, TaskItem } from "../types";
 import { FooterUpdates } from "../components/Updates";
 import { RichTextEditor } from "../components/RichTextEditor";
@@ -30,6 +30,25 @@ import { getAppRoute, hubApps } from "../app/appsRegistry";
 const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const AVISO_RECOLHIDO_KEY = "hub_quadro_geral_aviso_recolhido";
 const AGENDA_ITENS_POR_DIA = 4;
+// Visual premium (beta): por enquanto só o administrador vê a opção; a equipe segue no visual atual.
+const VISUAL_PREMIUM_KEY = "hub_qg_visual_premium";
+const QuadroPremium = lazy(() => import("./QuadroPremium").then((modulo) => ({ default: modulo.QuadroPremium })));
+
+function lerVisualPremium() {
+  try {
+    return localStorage.getItem(VISUAL_PREMIUM_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function gravarVisualPremium(ativo: boolean) {
+  try {
+    localStorage.setItem(VISUAL_PREMIUM_KEY, ativo ? "1" : "0");
+  } catch {
+    // sem armazenamento local: vale só nesta tela
+  }
+}
 
 function inicioDoDia(data: Date) {
   return new Date(data.getFullYear(), data.getMonth(), data.getDate());
@@ -329,6 +348,56 @@ export function QuadroGeral({
 
   const rotaAgenda = rotaDoApp("agenda");
 
+  const podeVisualPremium = user.role === "admin";
+  const [visualPremium, setVisualPremium] = useState(() => podeVisualPremium && lerVisualPremium());
+  function alternarVisualPremium(ativo: boolean) {
+    setVisualPremium(ativo);
+    gravarVisualPremium(ativo);
+  }
+
+  if (podeVisualPremium && visualPremium) {
+    return (
+      <div className="quadro-geral quadro-geral--premium">
+        <Suspense fallback={<div className="modulo-carregando" role="status">Carregando…</div>}>
+          <QuadroPremium
+            acoesAviso={(aviso) =>
+              podeGerenciarAviso(aviso)
+                ? { onEditar: () => editarAviso(aviso), onExcluir: () => void excluirAviso(aviso), excluindo: excluindoPauta === aviso.id }
+                : undefined
+            }
+            acoesPauta={acoesPauta}
+            acoesTarefa={acoesTarefa}
+            agenda={agenda}
+            avisoCoordenacao={<AvisoCoordenacaoPainel user={user} />}
+            avisosGerais={avisosGerais}
+            carregando={carregando}
+            dias={dias}
+            ehSemanaAtual={ehSemanaAtual}
+            erros={erros}
+            fimSemana={fimSemana}
+            hubUsers={hubUsers}
+            onHoje={() => setSemana(segundaDaSemana(new Date()))}
+            onNavigate={onNavigate}
+            onProximaSemana={() => setSemana(somarDias(semana, 7))}
+            onSair={() => alternarVisualPremium(false)}
+            onSemanaAnterior={() => setSemana(somarDias(semana, -7))}
+            pautasAbertas={pautasAbertas}
+            pautasAtrasadas={pautasAtrasadas}
+            pautasSemana={pautasSemana}
+            resumoAviso={resumoAviso}
+            rotaAgenda={rotaAgenda}
+            semana={semana}
+            tarefasAtrasadas={tarefasAtrasadas}
+            tarefasPorDia={tarefasPorDia}
+            totalTarefasSemana={totalTarefasSemana}
+            user={user}
+          />
+        </Suspense>
+        <FooterUpdates />
+      </div>
+    );
+  }
+
   return (
     <div className="quadro-geral">
       <AvisoCoordenacaoPainel user={user} />
@@ -347,6 +416,11 @@ export function QuadroGeral({
         {!ehSemanaAtual ? (
           <button type="button" className="btn-mini" onClick={() => setSemana(segundaDaSemana(new Date()))}>
             Voltar para hoje
+          </button>
+        ) : null}
+        {podeVisualPremium ? (
+          <button type="button" className="btn-mini qg-visual-premium" onClick={() => alternarVisualPremium(true)} title="Ver o Quadro geral no novo visual (só você vê esta opção)">
+            <Sparkles size={13} strokeWidth={1.6} /> Visual premium (beta)
           </button>
         ) : null}
       </div>

@@ -7268,3 +7268,8 @@ a.aviso-card__file:hover {
 .instalar-desktop-acoes a, .instalar-desktop-acoes button { display: inline-flex; align-items: center; gap: 6px; border-radius: 9px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
 .instalar-desktop-baixar { background: #123a63; color: #fff; border: 1px solid #123a63; }
 .instalar-desktop-acoes button { background: #fff; color: #123a63; border: 1px solid #d9e2ec; }
+
+/* Botão do visual premium (beta), só para o administrador, à direita da faixa da semana. */
+.qg-visual-premium {
+  margin-left: auto;
+}
