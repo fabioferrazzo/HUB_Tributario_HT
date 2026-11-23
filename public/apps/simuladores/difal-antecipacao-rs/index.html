@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora DIFAL e Antecipação RS</title>
+<style>
+:root{
+  --navy:#252C62; --navy2:#1b2150; --turq:#20B4A4; --turq-l:#e3f6f3;
+  --bg:#f4f6fa; --card:#ffffff; --tx:#1d2233; --mut:#5d6479; --line:#dde1ea;
+  --warn:#b7791f; --warn-l:#fdf3e1; --err:#b42318; --err-l:#fde8e6; --ok:#137a4c; --ok-l:#e5f5ec;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+header{background:#fff;color:var(--navy);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header .logo{font:700 20px/1 Georgia,"Times New Roman",serif;letter-spacing:.5px;border:1.5px solid var(--turq);border-radius:6px;padding:6px 8px;color:var(--navy)}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{display:block;color:var(--mut);font-weight:400;font-size:12.5px;margin-top:2px}
+header .sp{flex:1}
+.btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--turq)}
+.btn.pri{background:var(--turq);border-color:var(--turq);color:#fff}
+.btn.pri:hover{background:#1a9c8e}
+.btn.ghost{background:#fff;color:var(--navy);border-color:var(--line)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;padding:18px 20px;max-width:1400px;margin:0 auto}
+.wrap.semlateral{grid-template-columns:minmax(0,1fr)}
+.wrap.semlateral aside{display:none}
+.main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card h2{font-size:14px;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h2 svg{width:18px;height:18px;stroke:var(--turq);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{flex:1;min-width:150px;border:1px solid var(--line);background:#fff;font-family:inherit;color:inherit;border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left}
+.tab b{display:block;color:var(--navy);font-size:14px}
+.tab span{font-size:12px;color:var(--mut)}
+.tab[aria-selected="true"]{border-color:var(--turq);background:var(--turq-l);box-shadow:inset 0 0 0 1px var(--turq)}
+fieldset{border:0;padding:0;margin:0 0 14px}
+legend{font-weight:600;color:var(--navy);font-size:13px;margin-bottom:8px;padding:0}
+.g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mut)}
+input[type=text],select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;color:var(--tx);background:#fff;width:100%}
+input[type=text]:focus,select:focus{outline:2px solid var(--turq);outline-offset:-1px;border-color:var(--turq)}
+input.num{text-align:right;font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin:6px 0;cursor:pointer}
+.chk input{margin-top:3px;accent-color:var(--turq)}
+.hint{font-size:12px;color:var(--mut);margin-top:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 12px;font-family:inherit;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.res-top{border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.res-top.dev{background:var(--navy);color:#fff}
+.res-top.disp{background:var(--ok-l);color:var(--ok);border:1px solid #b8e2cb}
+.res-top .lbl{font-size:12.5px;opacity:.85;text-transform:uppercase;letter-spacing:.5px}
+.res-top .val{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0}
+.res-top .sub{font-size:13px;opacity:.9}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+td.v,th.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.tot td{font-weight:700;color:var(--navy);border-bottom:2px solid var(--navy)}
+td .f{display:block;font-size:11.5px;color:var(--mut)}
+.alert{border-radius:8px;padding:9px 12px;font-size:13px;margin:8px 0;display:flex;gap:8px}
+.alert svg{flex:none;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-top:1px}
+.alert.w{background:var(--warn-l);color:#7a4f10}
+.alert.i{background:var(--turq-l);color:#0f5f56}
+.alert.e{background:var(--err-l);color:var(--err)}
+aside .card{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+aside h3{font-size:13.5px;color:var(--navy);margin:14px 0 6px}
+aside p,aside li{font-size:12.8px;color:#353b50}
+aside ul{padding-left:18px;margin:4px 0}
+code.fx{display:block;background:#f1f3f8;border-radius:6px;padding:6px 8px;font:12px/1.4 Consolas,monospace;color:var(--navy2);margin:4px 0;white-space:pre-wrap}
+.lista td.acao{width:30px;text-align:center}
+.lista button{border:0;background:none;color:var(--mut);cursor:pointer;font-size:16px}
+.lista button:hover{color:var(--err)}
+.rowbtn{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.hide{display:none!important}
+.soPrint{display:none}
+.resumo{font-size:12.5px;margin-bottom:10px;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.resumo dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:0}
+.resumo dt{color:var(--mut)} .resumo dd{margin:0}
+.rtabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px 0 14px}
+.rtabs button{border:0;background:none;padding:8px 12px;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:6px}
+.rtabs button[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--turq)}
+.badge{display:inline-block;min-width:20px;padding:1px 6px;border-radius:10px;background:var(--turq-l);color:#0f5f56;font-size:11.5px;text-align:center}
+.badge.red{background:var(--err);color:#fff}
+.ag{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;display:flex;align-items:center;gap:6px}
+.ag:first-child{margin-top:0}
+.ag span{font-size:11px;border-radius:8px;padding:0 6px;background:var(--line);color:var(--tx)}
+.ag-atencao{color:var(--err)} .ag-possib{color:#6b3fa0} .ag-uf{color:#0f5f56} .ag-regra{color:var(--navy)}
+.acard{border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:8px;padding:8px 11px;margin-bottom:7px;font-size:13px}
+.acard b{color:var(--tx);font-size:13.5px}
+.acard p{margin:3px 0 0;color:#3b4157}
+.acard.atencao{border-left-color:var(--err);background:#fffafa}
+.acard.possib{border-left-color:#7c4dbb;background:#fbf9fe}
+.acard.uf{border-left-color:var(--turq);background:#f7fcfb}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:6px 20px 20px}
+@media (max-width:1280px){.wrap{grid-template-columns:minmax(0,1fr)}aside .card{position:static;max-height:none}}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.g{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:12px}header{padding:12px}}
+@media print{
+  header .sp,header button,.rowbtn,aside,.tabs,.rtabs,#painelEntrada,.lista td.acao,.lista th.acao{display:none!important}
+  #pAlt{display:block!important;margin-top:12px}
+  .soPrint{display:block!important}
+  body{background:#fff}.wrap,.main{display:block;padding:0}.card{border:0;padding:6px 0}
+  header{background:#fff;color:var(--navy);border-bottom:2px solid var(--navy)}header small{color:var(--mut)}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">HT</div>
+  <div><h1>Calculadora de DIFAL e ICMS Antecipado</h1><small>Empresa estabelecida no Rio Grande do Sul · compras e vendas interestaduais</small></div>
+  <div class="sp"></div>
+  <button class="btn ghost" id="btnLateral" title="Mostrar/ocultar painel de regras">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg><span>Regras e fontes</span>
+  </button>
+</header>
+
+<div class="wrap" id="wrap">
+<div>
+<div class="main">
+  <!-- ENTRADA -->
+  <section class="card" id="painelEntrada">
+    <h2><svg viewBox="0 0 24 24"><path d="M4 20h16M6 16l9-9 3 3-9 9H6z"/></svg>Dados da operação</h2>
+    <div class="seg oper" id="segOper" style="margin-bottom:12px">
+      <button data-v="compra" aria-pressed="true">Compra — entrada no RS</button><button data-v="venda" aria-pressed="false">Venda — saída do RS para outra UF</button>
+    </div>
+    <div class="tabs" role="tablist" id="tabsCompra">
+      <button class="tab" role="tab" data-modo="difal" aria-selected="true"><b>DIFAL</b><span>Uso e consumo / ativo imobilizado</span></button>
+      <button class="tab" role="tab" data-modo="antec" aria-selected="false"><b>Antecipação</b><span>Revenda / industrialização (art. 46, §4º)</span></button>
+      <button class="tab" role="tab" data-modo="st" aria-selected="false"><b>ICMS-ST antecipado</b><span>Com MVA, sem retenção na origem</span></button>
+      <button class="tab" role="tab" data-modo="difalST" aria-selected="false"><b>DIFAL-ST</b><span>Uso/consumo com ST: conferência do retido</span></button>
+    </div>
+    <div class="tabs hide" role="tablist" id="tabsVenda">
+      <button class="tab" role="tab" data-modo="vRev" aria-selected="false"><b>Contribuinte</b><span>Revenda / industrialização</span></button>
+      <button class="tab" role="tab" data-modo="vUso" aria-selected="false"><b>Contribuinte</b><span>Uso e consumo / ativo imobilizado</span></button>
+      <button class="tab" role="tab" data-modo="vNC" aria-selected="false"><b>Não contribuinte</b><span>Pessoa física ou PJ sem IE (EC 87)</span></button>
+      <button class="tab" role="tab" data-modo="vST" aria-selected="false"><b>DIFAL-ST</b><span>Contribuinte uso/consumo — RS substituto</span></button>
+    </div>
+
+    <fieldset>
+      <legend>Identificação (opcional)</legend>
+      <div class="g2">
+        <label class="f">Descrição / NF-e / item<input type="text" id="desc" placeholder="Ex.: NF 1234 — item 1"></label>
+        <label class="f"><span id="lblUF">UF de origem</span>
+          <select id="uf"></select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Tributação da mercadoria</legend>
+      <div class="g2">
+        <label class="f">Situação no destino da operação
+          <select id="trib">
+            <option value="integral">Tributada integralmente</option>
+            <option value="reducao">Com redução de BC</option>
+            <option value="st">Sujeita à substituição tributária</option>
+            <option value="isenta">Isenta / não tributada</option>
+          </select>
+        </label>
+        <div class="hint" style="align-self:end">Usada pela aba Alertas para apontar regras e conflitos com a aba escolhida.</div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Valores da nota fiscal (R$)</legend>
+      <div class="g">
+        <label class="f">Valor dos produtos<input type="text" class="num" id="vProd" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f">Frete<input type="text" class="num" id="vFrete" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f">Seguro<input type="text" class="num" id="vSeg" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f">Outras despesas<input type="text" class="num" id="vOutras" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f">Desconto<input type="text" class="num" id="vDesc" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f">IPI<input type="text" class="num" id="vIPI" inputmode="decimal" placeholder="0,00"></label>
+      </div>
+      <div class="g2" style="margin-top:10px">
+        <label class="f">BC do ICMS destacada na NF (opcional)<input type="text" class="num" id="bcNF" inputmode="decimal" placeholder="automática"></label>
+        <label class="f">ICMS destacado na NF (opcional)<input type="text" class="num" id="icmsNF" inputmode="decimal" placeholder="automático"></label>
+      </div>
+      <div class="hint" id="hintBC"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Alíquotas</legend>
+      <div class="g">
+        <label class="f">Alíquota interestadual
+          <select id="aInter"><option value="12">12%</option><option value="4">4% (importado / CI &gt; 40%)</option><option value="7">7%</option></select>
+        </label>
+        <label class="f" id="boxAIntRS">Alíquota interna RS
+          <select id="aIntSel">
+            <option value="17">17% — geral</option>
+            <option value="12">12%</option>
+            <option value="25">25%</option>
+            <option value="7">7%</option>
+            <option value="outra">Outra…</option>
+          </select>
+        </label>
+        <label class="f" id="boxAIntOutra" style="display:none">Alíquota interna (%)<input type="text" class="num" id="aIntOutra" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f hide" id="boxADest">Alíquota interna da UF de destino (%)<input type="text" class="num" id="aDest" inputmode="decimal" placeholder="selecione a UF"></label>
+        <label class="f hide" id="boxFcp">FCP da UF de destino (p.p.)<input type="text" class="num" id="fcp" inputmode="decimal" placeholder="0"></label>
+        <label class="f" id="boxAmp">Adicional AMPARA/RS (p.p.)<input type="text" class="num" id="aAmp" inputmode="decimal" placeholder="0"></label>
+        <label class="f" id="boxRed">Redução de BC (%)<input type="text" class="num" id="red" inputmode="decimal" placeholder="0"></label>
+      </div>
+      <div class="hint hide" id="hintDest">A alíquota interna e o FCP vêm de tabela de referência (nov/2026) ao escolher a UF; confirme na legislação da UF de destino, sobretudo para produtos com alíquota ou FCP específicos.</div>
+      <div class="hint" id="hintRed">Redução de BC: percentual que <b>reduz</b> a base (ex.: base reduzida a 66,667% → informe 33,333). Aplica-se também ao ICMS de origem a deduzir (RICMS-RS, Livro I, art. 23, §2º).</div>
+      <label class="chk" id="boxRemSN"><input type="checkbox" id="remSN"> <span>Remetente optante pelo Simples Nacional <span class="hint" style="display:block;margin:0">O ICMS de origem a deduzir é calculado como se o remetente não fosse optante, independentemente do valor destacado.</span></span></label>
+    </fieldset>
+
+    <!-- específicos -->
+    <fieldset id="optDifal">
+      <legend>Método de cálculo do DIFAL</legend>
+      <div class="seg" id="segMetodo"><button data-v="dupla" aria-pressed="true">Base dupla (por dentro)</button><button data-v="unica" aria-pressed="false">Base única</button></div>
+      <div class="hint">Base dupla: o ICMS do destino integra a própria base (LC 87/96, art. 13, §1º, I, com redação da LC 190/22). Base única: diferença de alíquotas sobre o valor da operação. Nas operações para uso/consumo ou consumidor final o IPI entra na base. <span id="hintMetodoVenda" class="hide">Nas vendas, confirme o método adotado pela UF de destino.</span></div>
+    </fieldset>
+
+    <fieldset id="optDifST" class="hide">
+      <legend>ICMS-ST retido pelo remetente</legend>
+      <div class="g2">
+        <label class="f">ICMS-ST (DIFAL) retido na NF (R$)<input type="text" class="num" id="stRet" inputmode="decimal" placeholder="0,00"></label>
+        <label class="f">AMPARA-ST/FCP-ST retido na NF (R$)<input type="text" class="num" id="stRetAmp" inputmode="decimal" placeholder="0,00"></label>
+      </div>
+      <div class="hint">Remetente de outra UF, substituto por convênio ou protocolo com o RS, deve reter o DIFAL na venda para uso, consumo ou ativo. A calculadora apura o devido ao RS e a complementação a cargo do adquirente gaúcho quando o retido for menor (ou nada tiver sido retido).</div>
+    </fieldset>
+
+    <fieldset id="optAntec" class="hide">
+      <legend>Finalidade da mercadoria</legend>
+      <div class="seg" id="segFinal"><button data-v="revenda" aria-pressed="true">Revenda</button><button data-v="ind" aria-pressed="false">Industrialização</button></div>
+      <label class="chk"><input type="checkbox" id="disp6" checked> <span>Regra dos 6 p.p. (vigente desde 01/04/2021): sem antecipação quando a diferença entre a alíquota interna e a interestadual for ≤ 6 p.p. <span class="hint" style="display:block;margin:0">Nota 05 do art. 46, §4º, red. Decreto 55.693/2020. Vale para revenda e industrialização. Desligue só para fatos geradores anteriores.</span></span></label>
+      <div class="hint">Mercadorias sujeitas à ST (Apêndice II, Seções II e III) não entram na antecipação: use a aba “ICMS-ST antecipado”. MEI não deve a antecipação (Nota 04).</div>
+    </fieldset>
+
+    <fieldset id="optST" class="hide">
+      <legend>Substituição tributária</legend>
+      <div class="g2">
+        <label class="f">MVA-ST original (%)<input type="text" class="num" id="mva" inputmode="decimal" placeholder="0,00"></label>
+        <div></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="mvaAj" checked> <span>Aplicar MVA ajustada (alíquota interestadual menor que a interna)</span></label>
+    </fieldset>
+
+    <fieldset>
+      <legend id="lblAdq">Adquirente no RS</legend>
+      <div class="seg" id="segAdq"><button data-v="sn" aria-pressed="true">Simples Nacional</button><button data-v="mei" aria-pressed="false">MEI</button><button data-v="geral" aria-pressed="false">Categoria geral</button></div>
+    </fieldset>
+
+    <div class="rowbtn">
+      <button class="btn pri" id="btnAdd"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Adicionar à lista</button>
+      <button class="btn" id="btnLimpar"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Limpar campos</button>
+    </div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section class="card" id="painelRes">
+    <h2><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M13 11h3M8 15h3M13 15h3"/></svg>Resultado</h2>
+    <div class="rtabs" role="tablist">
+      <button role="tab" data-p="pRes" aria-selected="true">Resultado</button>
+      <button role="tab" data-p="pAlt" aria-selected="false">Alertas <span class="badge" id="badgeAl">0</span></button>
+    </div>
+    <div id="pRes">
+    <div id="resumoPrint" class="soPrint"></div>
+    <div id="resTop" class="res-top dev" aria-live="polite"><div class="lbl" id="resLbl">—</div><div class="val" id="resVal">R$ 0,00</div><div class="sub" id="resSub"></div></div>
+    <div id="alertas"></div>
+    <table id="memoria"><thead><tr><th>Memória de cálculo</th><th class="v">Valor</th></tr></thead><tbody></tbody></table>
+    <div class="rowbtn">
+      <button class="btn" id="btnCopiar"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copiar memória</button>
+    </div>
+    </div>
+    <div id="pAlt" class="hide"></div>
+  </section>
+</div>
+
+<!-- LISTA -->
+<section class="card" style="margin-top:18px">
+  <h2><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Lista de cálculos</h2>
+  <div style="overflow-x:auto">
+  <table class="lista"><thead><tr><th>Descrição</th><th>Tipo</th><th>UF</th><th class="v">Base</th><th class="v">Alíq. int./inter.</th><th class="v">ICMS</th><th class="v">AMPARA/FCP</th><th class="v">Total</th><th>Responsável</th><th class="acao"></th></tr></thead>
+  <tbody id="listaBody"><tr><td colspan="10" class="hint">Nenhum item adicionado.</td></tr></tbody></table>
+  </div>
+  <div class="rowbtn">
+    <button class="btn" id="btnCSV"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Exportar CSV</button>
+    <button class="btn" id="btnPrint"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>Imprimir</button>
+    <button class="btn" id="btnZerar"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Esvaziar lista</button>
+  </div>
+</section>
+</div>
+
+<!-- LATERAL -->
+<aside>
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M8 7h6"/></svg>Regras e fontes</h2>
+
+    <h3>1. DIFAL — uso, consumo e ativo</h3>
+    <p>Devido pelo adquirente contribuinte do RS — categoria geral, Simples Nacional e também MEI — nas entradas de outra UF de bens para uso, consumo ou ativo imobilizado. A Receita RS calcula por dentro, com base dupla (IN DRP 45/98, Título I, Cap. III, item 10.1).</p>
+    <code class="fx">ICMS origem = BC × alíq. inter
+Base dupla:
+BC RS = (BC − ICMS origem) ÷ (1 − alíq. RS)
+DIFAL = BC RS × alíq. RS − ICMS origem
+Base única:
+DIFAL = BC × alíq. RS − ICMS origem</code>
+    <p>Com redução de base, o mesmo percentual reduz o débito e o ICMS de origem (Livro III, art. 15, §1º; Livro I, art. 23, §2º).</p>
+
+    <h3>2. Antecipação — art. 46, §4º, Livro I</h3>
+    <p>Na entrada de mercadoria de outra UF, parte do imposto da operação seguinte é devida no momento da entrada. Não se aplica às mercadorias da ST (Apêndice II, Seções II e III).</p>
+    <code class="fx">Antecipação = BC da NF × alíq. interna (× % base reduzida)
+             − ICMS destacado (× % base reduzida)</code>
+    <ul>
+      <li><b>Nota 02:</b> alíquota interna e, se houver, base reduzida do art. 23, sobre a BC da NF-e, deduzido o ICMS destacado.</li>
+      <li><b>Nota 03:</b> remetente do Simples — deduz-se o ICMS como se ele não fosse optante.</li>
+      <li><b>Nota 04:</b> MEI não deve a antecipação na revenda ou industrialização.</li>
+      <li><b>Nota 05 (red. Decreto 55.693/2020):</b> desde 01/04/2021, só há antecipação quando a diferença de alíquotas passa de 6 p.p., na revenda e na industrialização. A exclusão da industrialização acima de 4% valeu até 31/03/2021.</li>
+      <li><b>Simples Nacional:</b> GA código 379, vencimento no dia 23 do 2º mês subsequente (Portal da Receita RS; pareceres antigos citam o dia 20). Declaração na DeSTDA ou, para fatos geradores desde 01/11/2026, na Apuração do Simples Nacional (ASN), que a substitui no período em que for entregue (Decreto 59.045/2026).</li>
+    </ul>
+
+    <h3>3. ICMS-ST antecipado</h3>
+    <p>Quando a mercadoria está sujeita à ST e o remetente não reteve o imposto, o adquirente gaúcho recolhe na entrada.</p>
+    <code class="fx">MVA ajustada = [(1 + MVA) × (1 − alíq. inter) ÷ (1 − alíq. interna)] − 1
+BC ST = (produtos + frete + seguro + outras − desc. + IPI) × (1 + MVA aj.)
+ICMS-ST = BC ST × alíq. interna − ICMS próprio
+AMPARA-ST = BC ST × adicional</code>
+    <p>Remetente do Simples Nacional: usa-se a MVA original, sem ajuste (Conv. ICMS 142/2018). O adquirente do Simples não recolhe AMPARA próprio, mas recolhe o AMPARA-ST (GA código 1514, dia 23 do 2º mês subsequente, fora da DeSTDA).</p>
+
+    <h3>4. Vendas do RS para outras UFs</h3>
+    <p>Alíquota interestadual do RS: 12% para PR, SC, SP, RJ e MG; 7% para N, NE, CO e ES; 4% para importados.</p>
+    <ul>
+      <li><b>Contribuinte — revenda/industrialização:</b> só o ICMS próprio à alíquota interestadual, sem IPI na base. O destinatário cuida de eventual antecipação na UF dele.</li>
+      <li><b>Contribuinte — uso, consumo ou ativo:</b> ICMS próprio com IPI na base. O DIFAL é do destinatário (LC 87/96, art. 4º, §2º, I); a calculadora mostra uma estimativa.</li>
+      <li><b>Não contribuinte (EC 87/2015):</b> o vendedor recolhe o DIFAL e o FCP para a UF de destino (LC 87/96, art. 4º, §2º, II; LC 190/2022; Conv. ICMS 236/2021).</li>
+      <li><b>Vendedor do Simples Nacional:</b> não recolhe o DIFAL da EC 87 (STF, ADI 5464).</li>
+    </ul>
+    <code class="fx">ICMS próprio = BC × alíq. inter
+Base dupla:
+BC destino = (BC − ICMS próprio) ÷ (1 − alíq. destino − FCP)
+DIFAL = BC destino × alíq. destino − ICMS próprio
+FCP = BC destino × FCP
+Base única:
+DIFAL = BC × alíq. destino − ICMS próprio</code>
+
+    <h3>5. DIFAL-ST (uso, consumo e ativo com ST)</h3>
+    <p>Quando o produto está em convênio ou protocolo de ST entre as UFs, o vendedor retém o DIFAL como substituto, sem MVA (Conv. ICMS 142/2018).</p>
+    <ul>
+      <li><b>Compra:</b> o remetente de outra UF retém o DIFAL-ST devido ao RS. Se não reteve, ou reteve a menor, o adquirente gaúcho recolhe a diferença.</li>
+      <li><b>Venda:</b> a empresa do RS retém o DIFAL-ST (e o FCP-ST) devido à UF do cliente contribuinte. Vale também para o Simples Nacional.</li>
+    </ul>
+
+    <h3>Alíquotas</h3>
+    <ul>
+      <li>Interna geral do RS: 17% (Livro I, art. 27, X).</li>
+      <li>Interestadual para o RS: 12% de qualquer UF; 4% para importados ou com conteúdo de importação acima de 40% (Res. SF 13/2012).</li>
+      <li>AMPARA/RS: adicional de 2 p.p. apenas para as mercadorias listadas.</li>
+    </ul>
+
+    <h3>Premissas desta calculadora</h3>
+    <ul>
+      <li>DIFAL com base dupla por padrão (IN DRP 45/98); a antecipação do art. 46, §4º, segue a Nota 02 (diferença simples sobre a BC da NF).</li>
+      <li>Não calcula benefícios específicos (isenção, crédito presumido, carga reduzida por regime especial) nem ICMS-ST com MVA nas vendas do RS para outras UFs.</li>
+      <li>Alíquotas e FCP das outras UFs vêm de tabelas de mercado (nov/2026), editáveis.</li>
+      <li>Resultados para conferência: confirme no RICMS-RS vigente e nos pareceres da Receita Estadual antes de recolher.</li>
+    </ul>
+    <p class="hint">Fontes: RICMS-RS (Decreto 37.699/97), Livro I, arts. 23, 27 e 46; Decreto 55.693/2020; IN DRP 45/98; pareceres SEFAZ-RS 13132, 13154, 15148, 16135, 17299 e 17385; Portal de Serviços da Receita RS; Conv. ICMS 142/2018 e 236/2021; LC 87/96, LC 123/06 e LC 190/22; STF, ADI 5464. Revisado em 23/11/2026.</p>
+  </div>
+</aside>
+</div>
+<footer>H. Teixeira Contabilidade · Depto Fiscal · ferramenta de conferência, uso interno · v1.5.0</footer>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const UFS = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","SC","SE","SP","TO"];
+const NOMES = {difal:"DIFAL uso/consumo/ativo", antec:"Antecipação art. 46 §4º", st:"ICMS-ST antecipado",
+  vRev:"Venda a contribuinte — revenda/industrialização", vUso:"Venda a contribuinte — uso/consumo/ativo", vNC:"Venda a não contribuinte (EC 87)",
+  difalST:"Complementação de DIFAL-ST", vST:"DIFAL-ST retido pelo vendedor do RS"};
+// Tabela de referência (nov/2026; fontes secundárias — confirmar na UF): [alíquota interna modal, FCP geral]
+const UF_REF = {AC:[19,0],AL:[20.5,0],AM:[20,0],AP:[18,0],BA:[20.5,0],CE:[20,0],DF:[20,0],ES:[17,0],GO:[19,0],MA:[23,0],
+  MG:[18,0],MS:[17,0],MT:[17,0],PA:[19,0],PB:[20,0],PE:[20.5,0],PI:[22.5,0],PR:[19.5,0],RJ:[20,2],RN:[20,0],RO:[19.5,0],
+  RR:[20,0],SC:[17,0],SE:[19,0],SP:[18,0],TO:[20,0]};
+const SUL_SUDESTE = ["PR","SC","SP","RJ","MG"]; // RS → estas UFs: 12%; demais (N, NE, CO e ES): 7%
+const interRS = uf => SUL_SUDESTE.includes(uf) ? 0.12 : 0.07;
+// FCP máximo por produto específico (referência NCM Brasil, ago/2026) — 0 = UF sem FCP
+const FCP_MAX = {AC:2,AL:1,AM:2,AP:0,BA:2,CE:2,DF:0,ES:2,GO:2,MA:2,MG:2,MS:2,MT:2,PA:2,PB:2,PE:2,PI:2,PR:2,RJ:2,RN:2,RO:2,RR:2,SC:0,SE:1,SP:0,TO:2};
+const UF_NOTAS = {
+  AL:"A alíquota interna passou de 19% para 20,5% em 01/04/2026 (Lei 9.776/2025). Use a vigente na data da saída; FCP de até 1% em produtos específicos.",
+  RJ:"FECP de 2% generalizado, somado aos 20% (carga de 22%). O campo FCP já vem preenchido.",
+  MA:"Maior alíquota modal do país (23%). O DIFAL fica elevado; confira benefícios específicos do produto.",
+  PI:"Alíquota modal de 22,5%. Fontes divergem sobre a data de início (2024 ou 2025).",
+  SE:"Adicional do FECOEP (1 p.p.) só nas hipóteses do art. 2º-A da Lei 4.731/2002; as fontes divergem sobre a cobrança generalizada.",
+  PR:"Alíquota modal de 19,5% (Lei 21.850/2023), própria — não é 17,5% + adicional.",
+  SC:"Sem FCP. Há alíquota interna de 12% em hipóteses específicas (RICMS-SC, art. 26, III); confira a aplicável ao produto.",
+  SP:"Sem FCP. Alíquota modal de 18%.",
+  DF:"Sem FCP. Alíquota modal de 20%.",
+  AP:"Sem FCP. Alíquota modal de 18%.",
+  ES:"Mesmo sendo do Sudeste, recebe do RS a 7% (como N, NE e CO).",
+  MG:"Recebe do RS a 12% (Sul/Sudeste).",
+  RN:"Alíquota modal de 20%; fontes divergem sobre a data de início (2024 ou 2025).",
+  TO:"Alíquota modal de 20% (Lei 4.141/2023)."
+};
+let ctxCalc = null;
+const brl = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+const pct = v => (v*100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:4})+"%";
+const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+// Lê número no padrão brasileiro: "1.234,56", "1234,56", "1.000" (milhar) e "1000.5" (decimal com ponto)
+function parseBR(s){
+  let t = String(s||"").replace(/\s|R\$|%/g,"");
+  if(!t) return null;
+  if(t.includes(",")) t = t.replace(/\./g,"").replace(",",".");
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g,"");
+  const n = Number(t);
+  return isFinite(n) ? n : NaN;
+}
+const num = id => parseBR($(id).value);
+const v0 = id => { const n = num(id); return (n===null||isNaN(n)) ? 0 : n; };
+const ROTULOS = {vProd:"Valor dos produtos",vFrete:"Frete",vSeg:"Seguro",vOutras:"Outras despesas",vDesc:"Desconto",vIPI:"IPI",
+  bcNF:"BC do ICMS da NF",icmsNF:"ICMS destacado",aAmp:"Adicional AMPARA",red:"Redução de BC",mva:"MVA-ST",aIntOutra:"Alíquota interna",
+  stRet:"ICMS-ST retido",stRetAmp:"AMPARA-ST/FCP-ST retido",aDest:"Alíquota interna de destino",fcp:"FCP"};
+const PCT_IDS = ["aAmp","red","aIntOutra","aDest","fcp"];
+// Retorna a primeira mensagem de erro dos campos, ou null
+function validar(ids){
+  for(const id of ids){
+    const n = num(id);
+    if(n===null) continue;
+    if(isNaN(n)) return `“${ROTULOS[id]}”: valor inválido. Use o formato 1.234,56.`;
+    if(n<0) return `“${ROTULOS[id]}” não pode ser negativo.`;
+    if(PCT_IDS.includes(id) && n>=100) return `“${ROTULOS[id]}” deve ser menor que 100%.`;
+  }
+  if(ids.includes("bcNF") && num("bcNF")===0) return "A BC informada é zero: deixe o campo vazio para usar a BC automática.";
+  return null;
+}
+// Núcleo único do DIFAL (compra, venda e comparativo de métodos).
+// aIcms = alíquota interna; aAdic = AMPARA (RS) ou FCP (destino); fRed = 1 − redução de BC.
+function difalCore(bc, io, aIcms, aAdic, met, fRed){
+  const aTot = aIcms + aAdic;
+  const bcD = met==="dupla" ? (bc - io) / (1 - aTot) : bc;
+  const total = r2(Math.max((bcD*aTot - io) * fRed, 0));
+  const adic = r2(Math.min(Math.max(bcD*aAdic*fRed, 0), total));
+  return {bcD, debito: bcD*aTot, icms: r2(total - adic), adic, total};
+}
+const PRAZO_SN = "declare na DeSTDA ou na ASN (alternativa desde 01/11/2026, Decreto 59.045/2026) e recolha por GA (código 379), com vencimento no dia 23 do 2º mês subsequente à entrada (Portal da Receita RS; confirme no Manual da GA — pareceres antigos citam o dia 20)";
+
+let modo = "difal", metodo = "dupla", finalidade = "revenda", adq = "sn", oper = "compra";
+const VENDA = m => m==="vRev"||m==="vUso"||m==="vNC"||m==="vST";
+let ultimo = null;
+
+// UF
+$("uf").innerHTML = '<option value="">—</option>' + UFS.map(u=>`<option>${u}</option>`).join("");
+
+// abas
+function selModo(m){
+  modo = m;
+  const v = VENDA(m);
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x.dataset.modo===m));
+  const tg = (id, mostra) => $(id).classList.toggle("hide", !mostra);
+  tg("optDifal", m==="difal"||m==="difalST"||m==="vUso"||m==="vNC"||m==="vST");
+  tg("optDifST", m==="difalST");
+  tg("optAntec", m==="antec");
+  tg("optST", m==="st");
+  tg("boxAIntRS", !v); tg("boxAmp", !v); tg("boxRemSN", !v);
+  $("boxAIntOutra").style.display = (!v && $("aIntSel").value==="outra") ? "" : "none";
+  tg("boxADest", v && m!=="vRev"); tg("boxFcp", v && m!=="vRev"); tg("hintDest", v && m!=="vRev");
+  tg("boxRed", m!=="vRev"); tg("hintRed", !v); tg("hintMetodoVenda", v);
+  $("lblUF").textContent = v ? "UF de destino" : "UF de origem";
+  $("lblAdq").textContent = v ? "Regime da empresa do RS (vendedor)" : "Adquirente no RS";
+  if(v) aplicaUF(false);
+  calc();
+}
+function aplicaUF(trocouUF){
+  const uf = $("uf").value; if(!VENDA(modo) || !uf) return;
+  if($("aInter").value!=="4") $("aInter").value = String(Math.round(interRS(uf)*100));
+  if(trocouUF || !$("aDest").value){
+    const ref = UF_REF[uf];
+    $("aDest").value = ref[0].toLocaleString("pt-BR");
+    $("fcp").value = ref[1] ? ref[1].toLocaleString("pt-BR") : "";
+  }
+}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>selModo(b.dataset.modo)));
+document.querySelectorAll("#segOper button").forEach(b=>b.addEventListener("click",()=>{
+  oper = b.dataset.v;
+  document.querySelectorAll("#segOper button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  $("tabsCompra").classList.toggle("hide", oper!=="compra");
+  $("tabsVenda").classList.toggle("hide", oper!=="venda");
+  if(oper==="venda"){ if($("aInter").value==="12" || $("aInter").value==="7") $("aInter").value="12"; selModo("vNC"); }
+  else { if($("aInter").value==="7") $("aInter").value="12"; selModo("difal"); }
+}));
+$("uf").addEventListener("change",()=>{ aplicaUF(true); calc(); });
+function seg(id, set){
+  document.querySelectorAll("#"+id+" button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#"+id+" button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+    set(b.dataset.v); calc();
+  }));
+}
+seg("segMetodo", v=>metodo=v);
+seg("segFinal", v=>finalidade=v);
+seg("segAdq", v=>adq=v);
+
+$("aIntSel").addEventListener("change",()=>{ $("boxAIntOutra").style.display = $("aIntSel").value==="outra" ? "" : "none"; calc(); });
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",calc));
+document.querySelectorAll("input.num").forEach(el=>el.addEventListener("blur",()=>{
+  const n = num(el.id); if(n===null||isNaN(n)) return;
+  const casas = ["aAmp","red","mva","aIntOutra","aDest","fcp"].includes(el.id) ? 4 : 2;
+  el.value = n.toLocaleString("pt-BR",{minimumFractionDigits: casas===2?2:0, maximumFractionDigits:casas});
+}));
+
+$("btnLateral").addEventListener("click",()=>{
+  $("wrap").classList.toggle("semlateral");
+  try{ localStorage.setItem("htDifalRS.lateral", $("wrap").classList.contains("semlateral")?"0":"1"); }catch(e){}
+});
+try{ if(localStorage.getItem("htDifalRS.lateral")==="0") $("wrap").classList.add("semlateral"); }catch(e){}
+
+function aliqInterna(){
+  if($("aIntSel").value==="outra"){ const n=num("aIntOutra"); return (n===null||isNaN(n))?NaN:n/100; }
+  return Number($("aIntSel").value)/100;
+}
+
+function calcVenda(){
+  const vProd=v0("vProd"), vFrete=v0("vFrete"), vSeg=v0("vSeg"), vOutras=v0("vOutras"), vDesc=v0("vDesc"), vIPI=v0("vIPI");
+  const uf = $("uf").value;
+  const aInter = Number($("aInter").value)/100;
+  const red = Math.min(Math.max(v0("red"),0),100)/100, fRed = 1 - red;
+  const bcNF = num("bcNF"), icmsNF = num("icmsNF");
+  const sn = adq!=="geral"; // Simples Nacional ou MEI
+  const rows = [], alerts = [];
+  const add = (t,v,f) => rows.push({t,v,f});
+  const nomeFcp = modo==="vST" ? "FCP-ST" : "FCP";
+  const erro = validar(["vProd","vFrete","vSeg","vOutras","vDesc","vIPI","bcNF","icmsNF","red","aDest","fcp"])
+    || ((v0("aDest") + v0("fcp")) >= 100 ? "A soma da alíquota interna de destino com o FCP deve ser menor que 100%." : null);
+  if(erro) return render(null, [], [["e", erro]]);
+  if(!uf) return render(null, [], [["i","Selecione a UF de destino."]]);
+  const vMerc = vProd + vFrete + vSeg + vOutras - vDesc;
+  if(vMerc<=0 && bcNF===null) return render(null, [], (vDesc>0 && vProd>0)
+    ? [["e","O desconto é maior ou igual ao valor da operação."]] : [["i","Informe o valor dos produtos para calcular."]]);
+
+  const incluiIPI = modo!=="vRev";
+  const bc = (bcNF!==null) ? bcNF : vMerc + (incluiIPI ? vIPI : 0);
+  $("hintBC").textContent = incluiIPI
+    ? "BC automática = produtos + frete + seguro + outras − desconto + IPI (destinatário consumidor final: o IPI integra a base)."
+    : "BC automática = produtos + frete + seguro + outras − desconto (revenda/industrialização entre contribuintes: sem IPI).";
+  const icmsCalc = bc * aInter;
+  const icmsProp = (icmsNF!==null) ? icmsNF : icmsCalc;
+  if(icmsNF!==null && Math.abs(icmsNF-icmsCalc) > 0.05)
+    alerts.push(["w",`ICMS informado (${brl.format(icmsNF)}) difere de BC × ${pct(aInter)} (${brl.format(icmsCalc)}).`]);
+  if(aInter!==0.04 && Math.abs(aInter - interRS(uf)) > 1e-9)
+    alerts.push(["w",`Do RS para ${uf} a alíquota interestadual é ${pct(interRS(uf))} (4% para importados).`]);
+
+  add("Valor da operação / BC", bc, (bcNF!==null) ? "informada (BC da NF)" : (incluiIPI ? "produtos + frete + seguro + outras − desconto + IPI" : "produtos + frete + seguro + outras − desconto"));
+  add(`ICMS próprio — RS (${pct(aInter)})`, icmsProp, sn ? "Simples Nacional: imposto recolhido no DAS (sem destaque na NF)" : "BC × alíquota interestadual · débito na apuração do RS");
+
+  let r;
+  const base = { desc: $("desc").value.trim() || "(sem descrição)", tipo: NOMES[modo], uf, aInter };
+  if(modo==="vRev"){
+    const valor = sn ? 0 : r2(icmsProp);
+    r = {...base, base:r2(bc), aInt:aInter, icms:valor, amp:0, total:valor, devido:true, resp: sn ? "Vendedor (no DAS)" : "Vendedor — apuração RS",
+      lbl: sn ? "ICMS próprio — incluído no DAS" : "ICMS próprio — débito no RS",
+      sub: sn ? `Valor de referência: ${brl.format(r2(icmsProp))}` : "Não há DIFAL a cargo do vendedor"};
+    add(sn ? "Valor apurado fora do DAS" : "ICMS próprio da operação", valor, "");
+    alerts.push(["i",`Sem DIFAL para o vendedor. O destinatário pode dever antecipação ou ICMS-ST na entrada em ${uf}, conforme a legislação dessa UF.`]);
+    alerts.push(["w",`Se o produto estiver em convênio ou protocolo de ST com ${uf}, a empresa do RS retém o ICMS-ST pela MVA e alíquota de ${uf} (fora do escopo desta aba).`]);
+  } else {
+    const aDest = v0("aDest")/100, aFcp = v0("fcp")/100;
+    if(!aDest) return render(null, rows, [["i","Informe a alíquota interna da UF de destino."]]);
+    const aTot = aDest + aFcp;
+    ctxCalc = {bc, io: icmsProp, aIcms: aDest, aAdic: aFcp, fRed};
+    const d = difalCore(bc, icmsProp, aDest, aFcp, metodo, fRed);
+    const bcDest = d.bcD;
+    if(metodo==="dupla") add(`BC em ${uf} — base dupla`, bcDest, `(${brl.format(bc)} − ${brl.format(icmsProp)}) ÷ (1 − ${pct(aTot)})`);
+    add(`ICMS em ${uf} (${pct(aDest)})`, bcDest * aDest, (metodo==="dupla" ? `BC em ${uf}` : "BC") + " × alíquota interna");
+    if(red) add(`Redução de BC (${pct(red)})`, null, `diferença e FCP multiplicados por ${pct(fRed)}`);
+    const difal = d.icms, fcpV = d.adic, total = d.total;
+    add(modo==="vST" ? "DIFAL-ST (ICMS-ST)" : "DIFAL (ICMS)", difal, `ICMS em ${uf} − ICMS próprio`);
+    if(fcpV) add(`${nomeFcp} — ${uf} (${pct(aFcp)})`, fcpV, `BC × ${nomeFcp}`);
+    if(modo==="vUso"){
+      add("DIFAL + FCP a cargo do destinatário", total, "estimativa");
+      r = {...base, base:r2(bcDest), aInt:aDest, icms:difal, amp:fcpV, total, devido:true, resp:`Destinatário (${uf}) — estimativa`,
+        lbl:`DIFAL a cargo do destinatário em ${uf}`, sub:`Estimativa · ICMS próprio ao RS: ${brl.format(r2(icmsProp))}${sn?" (no DAS)":""}`};
+      alerts.push(["i",`Quem recolhe o DIFAL é o destinatário contribuinte, para ${uf}, conforme base, prazo e benefícios dessa UF. O vendedor do RS só destaca o ICMS próprio.`]);
+      alerts.push(["w",`Exceção: se houver convênio/protocolo de ST de ${uf} com o RS para o produto, o vendedor retém o DIFAL como substituto.`]);
+    } else if(modo==="vST"){
+      add(`Total a reter e recolher para ${uf}`, total, fcpV ? "DIFAL-ST + FCP-ST" : "DIFAL-ST");
+      r = {...base, base:r2(bcDest), aInt:aDest, icms:difal, amp:fcpV, total, devido:true, resp:"Vendedor substituto — GNRE",
+        lbl:`DIFAL-ST a reter para ${uf}`, sub:`ICMS-ST ${brl.format(difal)}${fcpV?` + FCP-ST ${brl.format(fcpV)}`:""} · ICMS próprio ao RS: ${brl.format(r2(icmsProp))}${sn?" (no DAS)":""}`};
+      alerts.push(["i",`Vendedor do RS como substituto (convênio ou protocolo de ST com ${uf} para o produto): destaca o ICMS-ST na NF-e (vBCST, vICMSST${fcpV?", vBCFCPST, vFCPST":""}) e recolhe por GNRE antes da saída; se tiver inscrição de substituto em ${uf}, até o dia 9 do mês seguinte ao da saída (Conv. ICMS 142/2018, cláusula décima quarta).`]);
+      alerts.push(["i","Uso, consumo ou ativo: sem MVA. A BC do ICMS-ST é o valor da operação com IPI, frete e demais despesas, pelo método de DIFAL da UF de destino (Conv. ICMS 142/2018)."]);
+      if(sn) alerts.push(["i","Simples Nacional também retém o ICMS-ST como substituto, fora do DAS (LC 123/06, art. 13, §1º, XIII, a)."]);
+      alerts.push(["w",`Confirme se o produto (NCM/CEST) está no acordo de ST entre o RS e ${uf} e se ${uf} adota base única ou dupla.`]);
+    } else {
+      add("Total a recolher para " + uf, total, "DIFAL + FCP");
+      if(sn){
+        r = {...base, base:r2(bcDest), aInt:aDest, icms:0, amp:0, total:0, devido:false, resp:"—",
+          motivo:`Vendedor ${adq==="mei"?"MEI":"do Simples Nacional"}: o DIFAL da EC 87 não é devido (STF, ADI 5464 — cláusula 9ª do Conv. ICMS 93/2015).`};
+        alerts.unshift(["w", r.motivo]);
+      } else {
+        r = {...base, base:r2(bcDest), aInt:aDest, icms:difal, amp:fcpV, total, devido:true, resp:"Vendedor — GNRE",
+          lbl:`DIFAL + FCP a recolher para ${uf}`, sub:`DIFAL ${brl.format(difal)}${fcpV?` + FCP ${brl.format(fcpV)}`:""} · ICMS próprio ao RS: ${brl.format(r2(icmsProp))}`};
+        alerts.push(["i",`Recolhimento pelo vendedor do RS por GNRE a favor de ${uf}, antes da saída (a guia acompanha a mercadoria), salvo se tiver inscrição estadual em ${uf}: então, no prazo dessa UF (LC 190/2022; Conv. ICMS 236/2021).`]);
+        alerts.push(["i","Informar na NF-e o grupo ICMSUFDest (vBCUFDest, pFCPUFDest, pICMSUFDest, pICMSInter, vFCPUFDest, vICMSUFDest)."]);
+      }
+    }
+  }
+  ultimo = r;
+  render(r, rows, alerts);
+}
+
+function calc(){ ctxCalc = null; calcCore(); analisar(); resumoPrint(); }
+
+// Resumo dos dados informados (aparece só na impressão)
+function resumoPrint(){
+  const venda = VENDA(modo), txt = el => el.options ? el.options[el.selectedIndex].text : el.value;
+  const segTxt = id => { const b = document.querySelector(`#${id} button[aria-pressed="true"]`); return b ? b.textContent : ""; };
+  const itens = [
+    ["Operação", (venda ? "Venda — saída do RS" : "Compra — entrada no RS") + " · " + NOMES[modo]],
+    [venda ? "UF de destino" : "UF de origem", $("uf").value || "—"],
+    [venda ? "Regime do vendedor" : "Regime do adquirente", segTxt("segAdq")],
+    ["Tributação da mercadoria", txt($("trib"))],
+    ["Produtos / frete / seguro / outras", ["vProd","vFrete","vSeg","vOutras"].map(id=>brl.format(v0(id))).join(" / ")],
+    ["Desconto / IPI", brl.format(v0("vDesc")) + " / " + brl.format(v0("vIPI"))],
+    ["Alíquota interestadual", $("aInter").value + "%"],
+    [venda ? "Alíquota interna / FCP destino" : "Alíquota interna RS / AMPARA", venda ? `${$("aDest").value||"—"}% / ${$("fcp").value||"0"}%` : `${$("aIntSel").value==="outra" ? ($("aIntOutra").value||"—") : $("aIntSel").value}% / ${$("aAmp").value||"0"}%`],
+    ["Redução de BC", ($("red").value || "0") + "%"],
+  ];
+  if(["difal","difalST","vUso","vNC","vST"].includes(modo)) itens.push(["Método do DIFAL", segTxt("segMetodo")]);
+  if($("desc").value.trim()) itens.unshift(["Identificação", $("desc").value.trim()]);
+  $("resumoPrint").innerHTML = '<div class="resumo"><dl>' + itens.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("") + "</dl></div>";
+}
+
+function analisar(){
+  const L = []; const P = (g,t,x) => L.push({g,t,x});
+  const venda = VENDA(modo), uf = $("uf").value, trib = $("trib").value, sn = adq!=="geral", mei = adq==="mei";
+  const aInter = Number($("aInter").value)/100;
+  const red = modo==="vRev" ? 0 : v0("red"), vIPI = v0("vIPI"), vFrete = v0("vFrete"), vDesc = v0("vDesc"), aAmp = v0("aAmp");
+  const aIntRS = aliqInterna();
+  const bcNF = num("bcNF"), icmsNF = num("icmsNF");
+  const vMerc = v0("vProd") + vFrete + v0("vSeg") + v0("vOutras") - vDesc;
+  const consumo = ["difal","difalST","vUso","vNC","vST"].includes(modo);
+  const dest = venda ? (uf || "a UF de destino") : "RS";
+  const pp = x => x.toLocaleString("pt-BR",{maximumFractionDigits:2});
+
+  if(!uf) P("regra", venda ? "Escolha a UF de destino" : "Informe a UF de origem",
+    venda ? "A alíquota interestadual, a alíquota interna, o FCP e as particularidades dependem da UF de destino."
+          : "Sem a UF de origem, a identificação da operação fica incompleta.");
+
+  // ---- tributação da mercadoria
+  if(trib==="isenta") P("atencao","Mercadoria isenta ou não tributada", venda
+    ? `Se a operação interna equivalente em ${dest} for isenta ou não tributada, não há DIFAL; na saída do RS, confira se a isenção alcança a operação interestadual. O valor calculado não considera a isenção.`
+    : "Se a operação interna equivalente no RS for isenta ou não tributada, não há DIFAL nem antecipação. Confirme o dispositivo; o valor calculado não considera a isenção.");
+  if(trib==="reducao" && !red) P("atencao","Redução de BC sem percentual","A mercadoria foi marcada com redução de base, mas o campo “Redução de BC” está vazio.");
+  if(trib!=="reducao" && red) P("possib","Redução de BC informada sem benefício marcado","Há percentual de redução, mas a tributação não está como “Com redução de BC”. Ou o produto tem benefício (ajuste a tributação), ou zere o campo.");
+  if(trib==="reducao" && red){
+    if(modo==="antec") P("regra","Redução de BC na antecipação","O mesmo percentual reduz o ICMS destacado na NF (RICMS-RS, Livro I, art. 23, §2º). A calculadora já aplica.");
+    else if(consumo) P("possib","Alcance do benefício de redução", venda
+      ? `Vale o benefício da legislação de ${dest} para a operação interna equivalente. Confirme se ele alcança o DIFAL da operação interestadual.`
+      : "Confirme se o benefício do RS alcança a entrada para uso, consumo ou ativo: alguns valem só para saídas ou finalidades específicas.");
+  }
+  if(trib==="st"){
+    if(modo==="antec") P("atencao","Mercadoria com ST na aba de antecipação","As mercadorias do Apêndice II, Seções II e III, do RICMS-RS ficam fora da antecipação do art. 46, §4º. Use “ICMS-ST antecipado” (revenda) ou “DIFAL-ST” (uso e consumo).");
+    if(modo==="difal") P("atencao","Mercadoria com ST na aba de DIFAL","No uso, consumo ou ativo com ST, o remetente substituto deve reter o DIFAL-ST. Use a aba “DIFAL-ST” para conferir o retido e a complementação.");
+    if(modo==="vRev") P("atencao","Venda de mercadoria com ST a revendedor",`Se houver convênio ou protocolo entre o RS e ${dest} para o produto, a empresa do RS retém o ICMS-ST com a MVA e a alíquota de ${dest} (cálculo não feito nesta aba). Sem acordo, o destinatário recolhe na entrada.`);
+    if(modo==="vUso") P("atencao","Uso e consumo com ST",`Se houver acordo de ST com ${dest} para o produto, quem retém o DIFAL é a empresa do RS: use a aba “DIFAL-ST”.`);
+    if(modo==="vNC") P("regra","ST e consumidor não contribuinte","Em regra, a ST interestadual não alcança o consumidor final não contribuinte: vale o DIFAL da EC 87. Confirme o acordo do produto.");
+  } else if(modo==="st" || modo==="difalST" || modo==="vST"){
+    P("possib","Aba de ST com mercadoria não marcada como ST", venda
+      ? `Confirme se o NCM/CEST está no convênio ou protocolo de ST entre o RS e ${dest}. Se não estiver, use a aba sem ST.`
+      : "Confirme se o NCM/CEST está no Apêndice II do RICMS-RS. Se não estiver, use DIFAL ou Antecipação.");
+  }
+
+  // ---- alíquota interestadual
+  if(!venda && aInter===0.07) P("atencao","7% numa entrada no RS","Para o RS a alíquota interestadual é 12% (ou 4% para importados). Os 7% só valem do Sul/Sudeste (exceto ES) para N, NE, CO e ES.");
+  if(venda && uf && aInter!==0.04 && Math.abs(aInter-interRS(uf))>1e-9) P("atencao","Alíquota interestadual incompatível com a UF",`Do RS para ${uf} a alíquota é ${pct(interRS(uf))}.`);
+  if(aInter===0.04){
+    P("regra","Alíquota de 4% (Res. SF 13/2012)",`Exige mercadoria importada ou com conteúdo de importação acima de 40%, com o número da FCI na NF-e. Sem isso, a alíquota é ${venda && uf ? pct(interRS(uf)) : "12%"}.`);
+    if(modo==="antec") P("regra","Antecipação a 4%","Com alíquota interestadual de 4%, a diferença passa de 6 p.p. e a antecipação é devida, na revenda e na industrialização.");
+  }
+
+  // ---- compra: remetente, adquirente, AMPARA
+  if(!venda){
+    if($("remSN").checked) P("regra","Remetente do Simples Nacional","Deduz-se o ICMS que seria cobrado se o remetente não fosse optante (Nota 03 do art. 46, §4º), mesmo sem destaque na NF.");
+    else if(icmsNF===0) P("possib","ICMS destacado igual a zero","Se o remetente é do Simples, marque “Remetente optante pelo Simples Nacional”. Se a saída na origem é isenta, confirme se cabe dedução.");
+    if(modo==="difal" || modo==="difalST"){
+      if(sn) P("regra", mei ? "DIFAL no MEI" : "DIFAL no Simples Nacional", (mei ? "O MEI também deve o DIFAL de uso, consumo ou ativo (Portal da Receita RS). " : "Devido fora do DAS (LC 123/06, art. 13, §1º, XIII, h). ") + "Prazo: " + PRAZO_SN + ".");
+      else P("regra","Crédito na categoria geral","Uso e consumo: sem crédito (LC 87/96, art. 33, I). Ativo imobilizado: crédito do ICMS da NF e do DIFAL em 1/48 avos, pelo CIAP. O DIFAL é debitado na apuração mensal.");
+      P("regra","Base de cálculo no RS","Para o DIFAL de uso, consumo e ativo, a Receita RS usa o cálculo por dentro — base dupla (IN DRP 45/98, Título I, Capítulo III, item 10.1).");
+    }
+    if(modo==="antec"){
+      if(mei) P("regra","MEI","A antecipação do art. 46, §4º, não é devida pelo MEI nas compras para revenda ou industrialização (Nota 04; Portal da Receita RS).");
+      else if(sn) P("regra","Antecipação no Simples Nacional","Sem crédito do valor antecipado. Prazo: " + PRAZO_SN + ".");
+      else P("regra","Antecipação na categoria geral","O valor antecipado é compensado na apuração; confira a escrituração no RICMS-RS.");
+      P("regra","Regra dos 6 p.p. (desde 01/04/2021)","A antecipação só é devida quando a diferença entre a alíquota interna e a interestadual passa de 6 p.p., tanto na revenda quanto na industrialização (Nota 05 do art. 46, §4º, red. Decreto 55.693/2020, com base na Lei 15.576/2020). A antiga exclusão da industrialização acima de 4% valeu só até 31/03/2021.");
+      if(!$("disp6").checked) P("atencao","Regra dos 6 p.p. desligada","Sem a regra, o cálculo só vale para fatos geradores até 31/03/2021. Religue a opção para operações atuais.");
+      if(red && !isNaN(aIntRS)){
+        const ef = aIntRS*(1-red/100);
+        P("possib","Dispensa de 6 p.p. e carga efetiva",`A comparação usa a alíquota nominal (${pct(aIntRS)}). Com a redução, a carga efetiva é ${pct(ef)}; se a regra considerar a carga efetiva, a diferença passa a ${pp((ef-aInter)*100)} p.p.`);
+      }
+    }
+    if(modo==="st"){
+      if(!v0("mva")) P("atencao","MVA não informada","Informe a MVA-ST do produto (Apêndice II do RICMS-RS).");
+      if(sn) P("regra","ST no Simples Nacional","O optante recolhe o ICMS-ST e o AMPARA-ST na entrada, fora do DAS. O AMPARA-ST vai em GA própria (código 1514, dia 23 do 2º mês subsequente) e não entra na DeSTDA (na ASN, o AMPARA-ST já vem apurado).");
+      if($("remSN").checked) P("regra","MVA com remetente do Simples","Quando o remetente é optante do Simples Nacional, aplica-se a MVA original, sem ajuste (Conv. ICMS 142/2018). A calculadora já faz isso.");
+      else if(aIntRS<=aInter) P("regra","MVA ajustada","Com alíquota interna igual ou menor que a interestadual, a MVA não é ajustada.");
+    }
+    if(modo==="difalST" && !v0("stRet") && !v0("stRetAmp")) P("atencao","Nada retido pelo remetente","Sem retenção, o adquirente gaúcho responde pelo DIFAL-ST integral. Verifique se o remetente tem inscrição de substituto no RS.");
+    if(aAmp && sn && (modo==="difal" || modo==="antec")) P("atencao","AMPARA e Simples Nacional","Segundo o Portal da Receita RS, o optante não recolhe o AMPARA nas operações próprias nem nas interestaduais sem ST; recolhe só o AMPARA-ST. Avalie zerar o adicional.");
+    if(!aAmp && Math.abs(aIntRS-0.25)<1e-9) P("possib","Alíquota de 25% sem AMPARA","Parte das mercadorias com alíquota majorada (bebidas, fumo, perfumaria, entre outras) tem adicional AMPARA de 2 p.p. Confira se o produto está na lista.");
+    if((modo==="difal" || modo==="difalST") && !vFrete) P("regra","Frete em CT-e separado","Se o frete FOB veio em CT-e próprio, ele não está na BC da NF: o DIFAL do serviço de transporte para uso e consumo é calculado à parte, sobre o CT-e.");
+  }
+
+  // ---- venda: UF de destino e destinatário
+  if(venda){
+    if(uf && UF_NOTAS[uf]) P("uf", `Particularidade de ${uf}`, UF_NOTAS[uf]);
+    if(uf && modo!=="vRev"){
+      const ref = UF_REF[uf], aD = num("aDest");
+      if(aD!==null && !isNaN(aD) && Math.abs(aD-ref[0])>1e-9) P("possib","Alíquota interna diferente da tabela",`Tabela de referência para ${uf}: ${pp(ref[0])}%; informado: ${pp(aD)}%. Mantenha se o produto tem alíquota específica.`);
+      if(FCP_MAX[uf] && !v0("fcp")) P("uf",`FCP em ${uf}`,`Há FCP de até ${pp(FCP_MAX[uf])}% para produtos específicos. Se o NCM estiver alcançado, informe no campo FCP.`);
+    }
+    if(modo==="vRev"){
+      P("regra","Sem DIFAL para o vendedor",`O destinatário pode dever antecipação parcial ou ICMS-ST na entrada em ${dest}, conforme a legislação dessa UF.`);
+      if(vIPI) P("regra","IPI fora da BC","Na venda a contribuinte para revenda ou industrialização, o IPI não integra a BC do ICMS (CF, art. 155, §2º, XI).");
+      if(sn) P("regra","Vendedor do Simples Nacional","A NF não destaca ICMS; quando couber, informe a permissão de crédito (LC 123/06, art. 23).");
+    }
+    if(modo==="vUso"){
+      P("possib","Contribuinte ou não contribuinte?","Se o cliente não tiver inscrição estadual ativa, a operação é com não contribuinte: use a aba “Não contribuinte” — aí o DIFAL passa a ser do vendedor do RS.");
+      P("regra","Cliente do Simples Nacional","O cliente optante também recolhe o DIFAL na UF dele (LC 123/06, art. 13, §1º, XIII, h).");
+    }
+    if(modo==="vNC"){
+      P("possib","Contribuinte ou não contribuinte?","Não contribuinte: pessoa física ou PJ sem inscrição estadual (prestadoras de serviço, construtoras, órgãos públicos). Se o cliente tiver IE ativa e comprar para uso ou consumo, use “Contribuinte — uso/consumo”.");
+      if(sn) P("regra","Vendedor do Simples Nacional","O DIFAL da EC 87 não é devido (STF, ADI 5464). Guarde a fundamentação para eventual exigência na fiscalização de trânsito.");
+      else P("regra","Recolhimento por GNRE",`Uma GNRE por NF, antes da saída, salvo inscrição estadual em ${dest}. Informe o grupo ICMSUFDest na NF-e.`);
+    }
+    if(modo==="vST"){
+      if(sn) P("regra","Simples Nacional retém ST","Como substituto, o optante retém e recolhe o ICMS-ST fora do DAS (LC 123/06, art. 13, §1º, XIII, a).");
+      P("regra","Acordo de ST e prazo",`Confirme se o NCM/CEST está no convênio ou protocolo entre o RS e ${dest}. Sem inscrição de substituto em ${dest}: GNRE antes da saída; com inscrição: até o dia 9 do mês seguinte (Conv. ICMS 142/2018, cláusula décima quarta).`);
+    }
+  }
+
+  // ---- comuns
+  if(vDesc) P("regra","Desconto","Só o desconto incondicional, destacado na NF, reduz a BC. Desconto condicional não reduz.");
+  if(bcNF!==null && !isNaN(bcNF)){
+    const incl = consumo, esperada = vMerc + (incl ? vIPI : 0);
+    if(Math.abs(bcNF-esperada)>0.05) P("atencao","BC informada diferente da esperada",`Informada: ${brl.format(bcNF)}; pelos valores da NF seria ${brl.format(r2(esperada))}${incl && vIPI ? " — com IPI, que integra a BC quando o destinatário é consumidor final (CF, art. 155, §2º, XI)" : ""}.`);
+  }
+  if(ctxCalc){
+    const {bc, io, aIcms, aAdic, fRed} = ctxCalc;
+    const dupla = difalCore(bc, io, aIcms, aAdic, "dupla", fRed).total;
+    const unica = difalCore(bc, io, aIcms, aAdic, "unica", fRed).total;
+    const obs = venda ? `Confirme o método adotado por ${dest}: a LC 190/2022 inclui o ICMS na própria base, e várias UFs usam base dupla.`
+      : modo==="difalST" ? "No DIFAL-ST de entrada no RS, o parecer SEFAZ-RS 15148 (anterior à LC 190/2022) indica diferença simples de alíquotas (base única); para o DIFAL comum, a IN DRP 45/98 usa base dupla. Confirme qual vale para o DIFAL-ST."
+      : "A Receita RS usa base dupla no DIFAL de uso e consumo (IN DRP 45/98, item 10.1). Base única só para conferência.";
+    P("possib","Base dupla × base única",`Base dupla: ${brl.format(dupla)} · base única: ${brl.format(unica)} (diferença de ${brl.format(r2(dupla-unica))}). Em uso: ${metodo==="dupla"?"base dupla":"base única"}. ${obs}`);
+  }
+
+  const ordem = [["atencao","Atenção"],["possib","Mais de uma possibilidade"],["uf","Particularidades da UF"],["regra","Regras a observar"]];
+  $("pAlt").innerHTML = ordem.map(([g,nome])=>{
+    const it = L.filter(a=>a.g===g); if(!it.length) return "";
+    return `<h3 class="ag ag-${g}">${nome} <span>${it.length}</span></h3>` + it.map(a=>`<div class="acard ${g}"><b>${esc(a.t)}</b><p>${esc(a.x)}</p></div>`).join("");
+  }).join("") + '<p class="hint" style="margin-top:10px">Alertas gerados a partir dos dados informados. São pontos de conferência, não substituem a leitura da legislação.</p>';
+  const nAt = L.filter(a=>a.g==="atencao").length;
+  $("badgeAl").textContent = L.length;
+  $("badgeAl").className = "badge" + (nAt ? " red" : "");
+  $("badgeAl").title = nAt ? `${nAt} de atenção` : "";
+}
+
+document.querySelectorAll(".rtabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".rtabs button").forEach(x=>{ x.setAttribute("aria-selected", x===b); $(x.dataset.p).classList.toggle("hide", x!==b); });
+}));
+
+function calcCore(){
+  if(VENDA(modo)) return calcVenda();
+  const vProd=v0("vProd"), vFrete=v0("vFrete"), vSeg=v0("vSeg"), vOutras=v0("vOutras"), vDesc=v0("vDesc"), vIPI=v0("vIPI");
+  const aInter = Number($("aInter").value)/100;
+  const aInt = aliqInterna();
+  const aAmp = v0("aAmp")/100;
+  const red = Math.min(Math.max(v0("red"),0),100)/100;
+  const fRed = 1 - red;
+  const remSN = $("remSN").checked;
+  const bcNF = num("bcNF"), icmsNF = num("icmsNF");
+  const rows = []; const alerts = [];
+  const add = (t,v,f) => rows.push({t,v,f});
+
+  const erro = validar(["vProd","vFrete","vSeg","vOutras","vDesc","vIPI","bcNF","icmsNF","aAmp","red","mva","aIntOutra","stRet","stRetAmp"])
+    || (isNaN(aInt) ? "Informe a alíquota interna." : null)
+    || (aInt + aAmp >= 1 ? "A soma da alíquota interna com o AMPARA deve ser menor que 100%." : null);
+  const snLike = adq!=="geral";
+
+  // base da operação
+  const vMerc = vProd + vFrete + vSeg + vOutras - vDesc;
+  const incluiIPI = (modo==="difal" || modo==="difalST");
+  const bcAuto = vMerc + (incluiIPI ? vIPI : 0);
+  const bc = (bcNF!==null && !isNaN(bcNF)) ? bcNF : bcAuto;
+  $("hintBC").textContent = incluiIPI
+    ? "BC automática = produtos + frete + seguro + outras − desconto + IPI (uso/consumo: o IPI integra a base)."
+    : "BC automática = produtos + frete + seguro + outras − desconto (sem IPI).";
+
+  // ICMS de origem a deduzir
+  const icmsCalc = bc * aInter;
+  let icmsOrig, origemTxt;
+  if(remSN){ icmsOrig = icmsCalc; origemTxt = "calculado como se o remetente não fosse do Simples"; }
+  else if(icmsNF!==null && !isNaN(icmsNF)){ icmsOrig = icmsNF; origemTxt = "valor destacado na NF"; }
+  else { icmsOrig = icmsCalc; origemTxt = "BC × alíquota interestadual"; }
+  if(!remSN && icmsNF!==null && !isNaN(icmsNF) && Math.abs(icmsNF - icmsCalc) > 0.05)
+    alerts.push(["w",`ICMS destacado (${brl.format(icmsNF)}) difere de BC × ${pct(aInter)} (${brl.format(icmsCalc)}). Confira a BC e a alíquota da NF.`]);
+
+  const aDest = aInt + aAmp;
+  let icms = 0, amp = 0, devido = true, motivo = "", baseRes = bc;
+
+  if(erro) return render(null, [], [["e", erro]]);
+  if(vMerc<=0 && bcNF===null) return render(null, [], (vDesc>0 && vProd>0)
+    ? [["e","O desconto é maior ou igual ao valor da operação."]] : [["i","Informe o valor dos produtos para calcular."]]);
+  if(aInter >= aInt) alerts.push(["i","A alíquota interestadual é igual ou maior que a interna: não há diferença a recolher."]);
+
+  add("Valor da operação / BC de origem", bc, (bcNF!==null&&!isNaN(bcNF)) ? "informada (BC da NF)" : (incluiIPI ? "produtos + frete + seguro + outras − desconto + IPI" : "produtos + frete + seguro + outras − desconto"));
+  add(`ICMS de origem (${pct(aInter)})`, icmsOrig, origemTxt);
+
+  if(modo==="difal" || modo==="difalST"){
+    ctxCalc = {bc, io: icmsOrig, aIcms: aInt, aAdic: aAmp, fRed};
+    const d = difalCore(bc, icmsOrig, aInt, aAmp, metodo, fRed);
+    if(metodo==="dupla") add("BC no RS — base dupla", d.bcD, `(${brl.format(bc)} − ${brl.format(icmsOrig)}) ÷ (1 − ${pct(aDest)})`);
+    add(`ICMS no RS (${pct(aDest)})`, d.debito, (metodo==="dupla" ? "BC no RS" : "BC") + " × alíquota interna" + (aAmp ? " + AMPARA" : ""));
+    if(red) add(`Redução de BC (${pct(red)})`, null, `diferença multiplicada por ${pct(fRed)}`);
+    icms = d.icms; amp = d.adic; baseRes = d.bcD;
+    if(snLike) alerts.push(["i", (adq==="mei" ? "MEI também deve o DIFAL de uso e consumo. " : "Simples Nacional: DIFAL fora do DAS (LC 123/06, art. 13, §1º, XIII, h); ") + PRAZO_SN + "."]);
+    else alerts.push(["i","Categoria geral: débito na apuração mensal; sem crédito para uso e consumo; no ativo imobilizado, crédito em 1/48 pelo CIAP."]);
+  }
+
+  if(modo==="antec"){
+    const debito = bc * aDest * fRed;
+    const ded = icmsOrig * fRed;
+    add(`ICMS pela alíquota interna (${pct(aDest)})`, debito, "BC da NF × alíquota interna" + (red?` × ${pct(fRed)}`:""));
+    if(red) add("ICMS de origem com a mesma redução", ded, `${brl.format(icmsOrig)} × ${pct(fRed)} (art. 23, §2º)`);
+    const tot = Math.max(debito - ded, 0);
+    amp = Math.min(bc * aAmp * fRed, tot);
+    icms = tot - amp;
+    const dif = (aInt - aInter) * 100;
+    if(adq==="mei"){ devido=false; motivo="MEI: a antecipação do art. 46, §4º, não é devida nas compras para revenda ou industrialização (Nota 04; Portal da Receita RS)."; }
+    else if($("disp6").checked && dif <= 6 + 1e-9){ devido=false; motivo=`Diferença de alíquotas de ${dif.toLocaleString("pt-BR",{maximumFractionDigits:2})} p.p. (≤ 6 p.p.): sem antecipação desde 01/04/2021, na revenda e na industrialização (Nota 05 do art. 46, §4º, red. Decreto 55.693/2020).`; }
+    if(adq==="sn") alerts.push(["i","Simples Nacional: o valor antecipado não gera crédito; " + PRAZO_SN + "."]);
+    else if(adq==="geral") alerts.push(["i","Categoria geral: o valor antecipado é compensado na apuração, conforme o RICMS-RS."]);
+  }
+
+  if(modo==="st"){
+    const mva = v0("mva")/100;
+    let mvaUsada = mva;
+    if(remSN) add("MVA original — remetente do Simples Nacional", null, `${pct(mva)}, sem ajuste (Conv. ICMS 142/2018)`);
+    else if($("mvaAj").checked && aInter < aInt){
+      mvaUsada = ((1+mva)*(1-aInter)/(1-aInt)) - 1;
+      add("MVA ajustada", null, `[(1 + ${pct(mva)}) × (1 − ${pct(aInter)}) ÷ (1 − ${pct(aInt)})] − 1 = ${pct(mvaUsada)}`);
+    } else add("MVA aplicada", null, pct(mvaUsada));
+    const baseST0 = vMerc + vIPI;
+    const bcST = baseST0 * (1 + mvaUsada) * fRed;
+    add("BC ST", bcST, `${brl.format(baseST0)} (com IPI) × (1 + ${pct(mvaUsada)})` + (red?` × ${pct(fRed)}`:""));
+    const debito = bcST * aInt;
+    add(`ICMS sobre BC ST (${pct(aInt)})`, debito, "BC ST × alíquota interna");
+    icms = Math.max(debito - icmsOrig, 0);
+    amp = bcST * aAmp;
+    if(aAmp) add(`AMPARA-ST (${pct(aAmp)})`, amp, "BC ST × adicional");
+    baseRes = bcST;
+    if(!mva) alerts.push(["w","Informe a MVA-ST do produto (Apêndice II do RICMS-RS)."]);
+    if(snLike) alerts.push(["i","Simples Nacional: recolhe o ICMS-ST e o AMPARA-ST na entrada, fora do DAS" + (aAmp ? "; o AMPARA-ST vai em GA própria (código 1514, dia 23 do 2º mês subsequente), fora da DeSTDA (na ASN, já vem apurado)." : ".")]);
+  }
+
+  icms = r2(icms); amp = r2(amp);
+  let total = r2(icms + amp);
+  if(amp && modo!=="st") add("Parcela AMPARA/RS (incluída acima)", amp, "BC × adicional" + (red?` × ${pct(fRed)}`:""));
+  if(modo==="difalST"){
+    const retI = v0("stRet"), retA = v0("stRetAmp");
+    add("DIFAL-ST devido ao RS", total, amp ? `ICMS ${brl.format(icms)} + AMPARA ${brl.format(amp)}` : "");
+    add("(−) ICMS-ST retido pelo remetente", retI, "informado da NF-e");
+    if(retA || amp) add("(−) AMPARA-ST retido pelo remetente", retA, "informado da NF-e");
+    const cI = r2(Math.max(icms - retI, 0)), cA = r2(Math.max(amp - retA, 0));
+    if(retI + retA > total + 0.05) alerts.unshift(["w",`O valor retido (${brl.format(retI+retA)}) é maior que o calculado (${brl.format(total)}). Confira base, método e alíquota; pode haver crédito a pedir ao remetente.`]);
+    if(!retI && !retA) alerts.unshift(["w","Nada foi retido: o adquirente gaúcho responde pelo DIFAL-ST integral, recolhido na entrada."]);
+    alerts.push(["i","DIFAL-ST na entrada para uso, consumo ou ativo: sem MVA; BC = valor da operação com IPI, frete e despesas (Conv. ICMS 142/2018). Pelo Livro III, art. 37, parágrafo único, a, o débito é a diferença de alíquotas sobre a BC do débito próprio do remetente (parecer SEFAZ-RS 15148): equivale à opção “Base única”."]);
+    const devidoBruto = total;
+    icms = cI; amp = cA; total = r2(cI + cA);
+    if((retI || retA) && total===0 && retI + retA <= devidoBruto + 0.05)
+      alerts.unshift(["i","Retenção suficiente: não há complementação a recolher."]);
+  }
+  add(devido ? (modo==="difalST" ? "Complementação a recolher pelo adquirente" : "Total a recolher") : "Valor (não devido)", total, devido ? "" : "valor informativo");
+  if(!devido) alerts.unshift(["w", motivo]);
+
+  ultimo = { desc: $("desc").value.trim() || "(sem descrição)", tipo: NOMES[modo] + ((modo==="difal"||modo==="difalST") ? (metodo==="dupla"?" — base dupla":" — base única") : modo==="antec" ? (finalidade==="ind"?" — industrialização":" — revenda") : ""),
+    uf: $("uf").value || "—", base: r2(baseRes), aInt, aInter, resp: modo==="difalST" ? "Adquirente (complementação)" : "Adquirente no RS", icms: devido?icms:0, amp: devido?amp:0, total: devido?total:0, devido, motivo };
+  render(ultimo, rows, alerts);
+}
+
+function render(r, rows, alerts){
+  const top = $("resTop");
+  if(!r){ top.className="res-top dev"; $("resLbl").textContent="—"; $("resVal").textContent=brl.format(0); $("resSub").textContent=""; }
+  else{
+    top.className = "res-top " + (r.devido ? "dev" : "disp");
+    $("resLbl").textContent = r.devido ? (r.lbl || NOMES[modo] + " a recolher") : "Não devido";
+    $("resVal").textContent = brl.format(r.devido ? r.total : 0);
+    $("resSub").textContent = r.devido ? (r.sub !== undefined ? r.sub : (r.amp ? `ICMS ${brl.format(r.icms)} + AMPARA ${brl.format(r.amp)}` : "")) : "";
+  }
+  const ic = {w:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>', i:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>', e:'<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'};
+  $("alertas").innerHTML = alerts.map(([k,t])=>`<div class="alert ${k}"><svg viewBox="0 0 24 24">${ic[k]}</svg><div>${esc(t)}</div></div>`).join("");
+  $("memoria").querySelector("tbody").innerHTML = rows.map((x,i)=>`<tr class="${i===rows.length-1?"tot":""}"><td>${esc(x.t)}${x.f?`<span class="f">${esc(x.f)}</span>`:""}</td><td class="v">${x.v===null?"":brl.format(r2(x.v))}</td></tr>`).join("");
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// copiar
+$("btnCopiar").addEventListener("click",()=>{
+  const linhas = [...$("memoria").querySelectorAll("tbody tr")].map(tr=>{
+    const t = tr.cells[0].childNodes[0].textContent, f = tr.cells[0].querySelector(".f");
+    return `${t}${f?" ("+f.textContent+")":""}: ${tr.cells[1].textContent}`;
+  });
+  const cab = `${$("resLbl").textContent}: ${$("resVal").textContent}`;
+  const alertasAba = [...$("pAlt").querySelectorAll(".acard")].map(c=>`- ${c.querySelector("b").textContent}: ${c.querySelector("p").textContent}`);
+  const txt = [cab, ...linhas, ...[...$("alertas").children].map(d=>"Obs.: "+d.textContent),
+    ...(alertasAba.length ? ["", "Alertas:", ...alertasAba] : [])].join("\n");
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(()=>flash("Memória copiada"),()=>{
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); flash("Memória copiada");
+  });
+});
+function flash(t){ const b=$("btnCopiar"); const o=b.innerHTML; b.textContent=t; setTimeout(()=>b.innerHTML=o,1300); }
+
+// lista
+let lista = [];
+try{ lista = JSON.parse(localStorage.getItem("htDifalRS.lista")||"[]"); if(!Array.isArray(lista)) lista=[]; }catch(e){ lista=[]; }
+function salvar(){ try{ localStorage.setItem("htDifalRS.lista", JSON.stringify(lista)); }catch(e){} }
+function desenhaLista(){
+  const tb = $("listaBody");
+  if(!lista.length){ tb.innerHTML='<tr><td colspan="10" class="hint">Nenhum item adicionado.</td></tr>'; return; }
+  const s = k => lista.reduce((a,x)=>a+(Number(x[k])||0),0);
+  tb.innerHTML = lista.map((x,i)=>`<tr><td>${esc(x.desc)}</td><td>${esc(x.tipo)}${x.devido?"":`<span class="f">não devido</span>`}</td><td>${esc(x.uf)}</td><td class="v">${brl.format(x.base)}</td><td class="v">${pct(x.aInt)} / ${pct(x.aInter)}</td><td class="v">${brl.format(x.icms)}</td><td class="v">${brl.format(x.amp)}</td><td class="v">${brl.format(x.total)}</td><td>${esc(x.resp||"—")}</td><td class="acao"><button title="Remover item" aria-label="Remover item" data-i="${i}">×</button></td></tr>`).join("")
+   + `<tr class="tot"><td colspan="5">Total (${lista.length} ${lista.length>1?"itens":"item"}) — somatório de valores de responsáveis diferentes</td><td class="v">${brl.format(r2(s("icms")))}</td><td class="v">${brl.format(r2(s("amp")))}</td><td class="v">${brl.format(r2(s("total")))}</td><td></td><td></td></tr>`;
+  tb.querySelectorAll("button[data-i]").forEach(b=>b.addEventListener("click",()=>{ lista.splice(+b.dataset.i,1); salvar(); desenhaLista(); }));
+}
+$("btnAdd").addEventListener("click",()=>{ if(!ultimo){ return; } lista.push({...ultimo}); salvar(); desenhaLista(); });
+$("btnZerar").addEventListener("click",()=>{ if(lista.length && confirm("Esvaziar a lista de cálculos?")){ lista=[]; salvar(); desenhaLista(); } });
+$("btnLimpar").addEventListener("click",()=>{ ["desc","vProd","vFrete","vSeg","vOutras","vDesc","vIPI","bcNF","icmsNF","aAmp","red","mva","aIntOutra","stRet","stRetAmp"].forEach(id=>$(id).value=""); calc(); });
+$("btnPrint").addEventListener("click",()=>window.print());
+$("btnCSV").addEventListener("click",()=>{
+  if(!lista.length) return;
+  const f = n => n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const linhas = [["Descrição","Tipo","UF","Base","Alíq. interna","Alíq. interestadual","ICMS","AMPARA/FCP","Total","Responsável","Situação"]]
+    .concat(lista.map(x=>[x.desc,x.tipo,x.uf,f(x.base),pct(x.aInt),pct(x.aInter),f(x.icms),f(x.amp),f(x.total),x.resp||"",x.devido?"devido":"não devido: "+(x.motivo||"")]));
+  const csv = "﻿" + linhas.map(l=>l.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download = "calculos-difal-antecipacao-rs.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+
+// evita que o navegador restaure valores antigos ao recarregar (estado da tela x campos desalinhados)
+document.querySelectorAll("input,select").forEach(el=>el.setAttribute("autocomplete","off"));
+desenhaLista(); calc();
+window.__calc = calc; // conferência
+})();
+</script>
+<script src="/apps/hub-app-shell.js" defer></script>
+</body>
+</html>

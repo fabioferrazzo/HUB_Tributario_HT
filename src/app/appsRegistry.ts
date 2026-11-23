@@ -6,7 +6,7 @@
 //   2. acrescente uma entrada em `hubApps` abaixo.
 // O menu lateral, a rota, as permissões e a moldura (tela cheia, nova janela, recarregar) saem daqui.
 import type { LucideIcon } from "lucide-react";
-import { Award, BookUser, Building2, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, ReceiptText, Timer, Truck, UserPlus, UserRoundCog, Wheat } from "lucide-react";
+import { ArrowLeftRight, Award, BookUser, Building2, CalendarRange, ChartPie, FileText, ClipboardCheck, FileSpreadsheet, Gauge, Landmark, ListChecks, Map as MapIcon, NotebookPen, Percent, ReceiptText, Timer, Truck, UserPlus, UserRoundCog, Wheat } from "lucide-react";
 import type { HubRoute, UserRole } from "../types";
 
 export type HubAppGroup = "Principal" | "Ferramentas" | "Escritório" | "Simuladores" | "Sistema";
@@ -189,6 +189,17 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/mapa-icms-rs/index.html",
     mode: "embutido"
+  },
+  {
+    id: "sim-difal-antecipacao-rs",
+    label: "DIFAL e antecipação RS",
+    title: "Calculadora de DIFAL e ICMS antecipado (RS)",
+    icon: ArrowLeftRight,
+    group: "Simuladores",
+    access: "todos",
+    src: "/apps/simuladores/difal-antecipacao-rs/index.html",
+    mode: "embutido",
+    description: "Compras de outras UFs (DIFAL de uso e consumo, antecipação do art. 46, § 4º, ICMS-ST e DIFAL-ST) e vendas do RS (EC 87, contribuinte e DIFAL-ST), com memória de cálculo, alertas e lista exportável."
   },
   {
     id: "sim-ibs-cbs-simples",
