@@ -657,6 +657,42 @@
       body:not(.floating) .crumb-wrap{min-width:0}
       body:not(.floating) .crumb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     }
+    /* Padrão visual do HUB (11/2026): mesmos tokens dos simuladores; menu lateral claro. */
+    body:not(.theme-dark){
+      --bg:#f3f6f9;--bg-soft:#f3f6f9;--bg-deep:#f3f6f9;--panel:#ffffff;--panel-2:#f6f8fb;--text:#14243a;--muted:#5f6f82;
+      --line:#d9e2ec;--line-strong:#c9d5e2;--accent:#123a63;--brand-teal:#2dc9a4;--accent-strong:#0b1f3a;--accent-2:#eaf1f8;
+      --shadow:0 6px 18px rgba(18,58,99,.07);--shadow-soft:0 6px 18px rgba(18,58,99,.07);--radius:14px;--radius-sm:10px;--font:13px;
+      --sidebar-grad:#ffffff;--hero-grad:#ffffff;--accent-grad:linear-gradient(135deg,#123a63,#1d5a8f);
+    }
+    body:not(.theme-dark){font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg)}
+    body:not(.theme-dark) .sidebar{color:var(--text);border-right:1px solid var(--line)}
+    body:not(.theme-dark) .sidebar:before,body:not(.theme-dark) .sidebar:after{display:none}
+    body:not(.theme-dark) .brand{border-bottom-color:var(--line)}
+    body:not(.theme-dark) .brand-title{color:#0b1f3a;font-weight:800}
+    body:not(.theme-dark) .brand-sub,body:not(.theme-dark) .side-footer{color:var(--muted)}
+    body:not(.theme-dark) .side-footer{border-top-color:var(--line);background:none}
+    body:not(.theme-dark) .brand-badge,body:not(.theme-dark) .app-signature{background:var(--panel-2);border-color:var(--line);color:var(--muted)}
+    body:not(.theme-dark) .brand-logo{background:var(--panel-2);border-color:var(--line);box-shadow:none}
+    body:not(.theme-dark) .nav-tab{background:var(--panel-2);border-color:var(--line);color:var(--muted);backdrop-filter:none}
+    body:not(.theme-dark) .nav-tab.active{background:#123a63;border-color:#123a63;color:#fff;box-shadow:none}
+    body:not(.theme-dark) .badge-count{background:#e3ebf4;color:var(--text)}
+    body:not(.theme-dark) .nav-tab.active .badge-count{background:rgba(255,255,255,.2);color:#fff}
+    body:not(.theme-dark) .search-shell{background:#fff;border-color:var(--line);color:var(--text)}
+    body:not(.theme-dark) .search{color:var(--text)}
+    body:not(.theme-dark) .search::placeholder{color:var(--muted)}
+    body:not(.theme-dark) .list-card{color:var(--text);background:transparent}
+    body:not(.theme-dark) .list-card:hover{background:var(--panel-2);transform:none}
+    body:not(.theme-dark) .list-card.active{background:#eaf1f8;color:#0b1f3a;border-color:#c9d9ea;box-shadow:none}
+    body:not(.theme-dark) .list-card-meta,body:not(.theme-dark) .list-card-share{color:var(--muted)}
+    body:not(.theme-dark) .list-card-progress{background:#e3ebf4}
+    body:not(.theme-dark) .list-card-progress>div,body:not(.theme-dark) .list-card.active .list-card-progress>div{background:#2dc9a4}
+    body:not(.theme-dark) .list-card.active:before{background:#123a63}
+    body:not(.theme-dark) .btn{border-radius:9px;font-weight:600}
+    body:not(.theme-dark) .btn.primary{background:#123a63;border-color:#123a63;box-shadow:none}
+    body:not(.theme-dark) .btn.primary:hover{box-shadow:none;filter:brightness(1.08)}
+    body:not(.theme-dark) .topbar{background:#fff;backdrop-filter:none}
+    body:not(.theme-dark) .empty h2,body:not(.theme-dark) .title-input{color:#0b1f3a;font-weight:800}
+    body:not(.theme-dark) .title-input-icon{background:#eaf1f8;color:#123a63}
   </style>
   <script>document.documentElement.classList.add("in-hub");</script>
 </head>

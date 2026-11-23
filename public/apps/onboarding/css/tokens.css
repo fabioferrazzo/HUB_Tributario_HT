@@ -1,19 +1,19 @@
 :root {
-  --navy-950: #11163b;
-  --navy-900: #1b2252;
-  --navy-800: #252c62;
-  --navy-700: #34417b;
-  --brand-turquoise: #4ab1a6;
-  --cyan-600: #0b7f79;
-  --cyan-500: #4ab1a6;
-  --cyan-100: #dff3f1;
+  --navy-950: #0b1f3a;
+  --navy-900: #0e2d4d;
+  --navy-800: #123a63;
+  --navy-700: #1d5a8f;
+  --brand-turquoise: #2dc9a4;
+  --cyan-600: #18917a;
+  --cyan-500: #2dc9a4;
+  --cyan-100: #e7f8f3;
   --cyan-50: #f0faf8;
-  --ink-900: #202736;
-  --ink-700: #445064;
-  --ink-500: #707b8d;
-  --line: #dce4ea;
+  --ink-900: #14243a;
+  --ink-700: #2c3e55;
+  --ink-500: #5f6f82;
+  --line: #d9e2ec;
   --line-soft: #e9eef2;
-  --canvas: #f2f5f7;
+  --canvas: #f3f6f9;
   --paper: #ffffff;
   --success: #197a62;
   --success-soft: #e8f6f1;
@@ -21,7 +21,7 @@
   --warning-soft: #fff5df;
   --danger: #b23c4f;
   --danger-soft: #fff0f2;
-  --shadow-sm: 0 4px 18px rgba(18, 28, 63, .06);
+  --shadow-sm: 0 6px 18px rgba(18, 58, 99, .07);
   --shadow-md: 0 16px 42px rgba(18, 28, 63, .10);
   --shadow-lg: 0 30px 90px rgba(8, 16, 41, .24);
   --radius-sm: 9px;
@@ -30,5 +30,5 @@
   --sidebar-width: 272px;
   --sidebar-collapsed-width: 84px;
   --topbar-height: 92px;
-  --font-sans: "Segoe UI", Aptos, Arial, sans-serif;
+  --font-sans: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
 }

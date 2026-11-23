@@ -547,6 +547,24 @@ body.is-fullscreen{background:var(--bg)}
   .topbar{position:static;box-shadow:none}.window-tools{display:none!important}
 }
 
+
+/* Padrão visual do HUB (11/2026): tokens dos simuladores, cabeçalho claro, títulos em azul quase preto. */
+:root{--navy:#123a63;--navy2:#0e2d4d;--navy3:#0b1f3a;--teal:#18917a;--teal-d:#127463;--teal-soft:#e7f8f3;
+  --bg:#f3f6f9;--card:#fff;--line:#d9e2ec;--line-strong:#c9d5e2;--text:#14243a;--muted:#5f6f82;--soft:#f6f8fb;--soft-blue:#eaf1f8;
+  --radius:14px;--radius-sm:10px;--shadow-sm:0 6px 18px rgba(18,58,99,.07);--shadow-md:0 6px 18px rgba(18,58,99,.09);--ring:0 0 0 3px rgba(29,90,143,.18)}
+body{font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;font-size:13px;background:var(--bg)}
+.topbar{background:#fff;color:var(--text);border-bottom:1px solid var(--line);box-shadow:none}
+.logo{color:var(--navy);border-right-color:var(--line)}
+.logo span{color:var(--navy)}
+.brand h1,.brand-text h1{color:#0b1f3a;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.brand p,.brand-text p{color:var(--muted)}
+.topbar .base-chip{background:#fff;border-color:var(--line);color:var(--muted)}
+.topbar .version,.topbar-meta{color:var(--muted)}
+.win-btn{background:#fff;border-color:var(--line);color:var(--navy)}
+.win-btn:hover,.win-btn[aria-pressed="true"]{background:var(--soft-blue);border-color:var(--line-strong)}
+.app-tab.active .ico{color:#fff}
+.card h3,.section-card-head h3,.wizard-head h3{color:#0b1f3a;font-weight:700}
+.btn{font-weight:600;border-radius:9px}
 </style>
 </head>
 <body>

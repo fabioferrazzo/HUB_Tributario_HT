@@ -3,20 +3,20 @@
    Tema: <html data-tema="claro|escuro"> força; sem o atributo segue o Windows (prefers-color-scheme).
    Os tokens escuros aparecem 2x (forçado e automático) porque CSS não reaproveita blocos. */
 :root {
-  --fundo: #f6f7f9;
+  --fundo: #f3f6f9;
   --painel: #ffffff;
   --painel-2: #fbfbfc;
-  --texto: #14161f;
-  --texto-2: #3b3f4d;
-  --muted: #6c7180;
-  --borda: rgba(20, 24, 45, .08);
-  --borda-forte: rgba(20, 24, 45, .15);
-  --suave: #f1f2f5;
+  --texto: #14243a;
+  --texto-2: #2c3e55;
+  --muted: #5f6f82;
+  --borda: #d9e2ec;
+  --borda-forte: #c9d5e2;
+  --suave: #f6f8fb;
   --fds: #f8f9fb;
-  --primario: #1d2150;
+  --primario: #123a63;
   --primario-txt: #ffffff;
-  --acento: #0eb1a2;
-  --acento-t: #0a8a7e;
+  --acento: #2dc9a4;
+  --acento-t: #18917a;
   --feriado: #fdf6ea;
   --feriado-t: #a3640d;
   --ausencia: #8a5cc7;
@@ -24,10 +24,10 @@
   --ok: #188a5a;
   --alerta: #c27c12;
   --anel: color-mix(in srgb, var(--acento) 28%, transparent);
-  --sombra: 0 1px 2px rgba(16, 18, 32, .04), 0 10px 30px -18px rgba(16, 18, 32, .18);
+  --sombra: 0 6px 18px rgba(18, 58, 99, .07);
   --sombra-alta: 0 24px 60px -20px rgba(16, 18, 40, .35);
   --r: 12px;
-  --r-grande: 16px;
+  --r-grande: 14px;
   color-scheme: light;
 }
 :root[data-tema="escuro"] {
@@ -84,7 +84,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  font: 13.5px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font: 13px/1.45 Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   background: var(--fundo); color: var(--texto);
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
@@ -495,3 +495,9 @@ td.acoes .btn + .btn { margin-left: 6px; }
 /* ---- HUB: dentro do HUB a moldura já tem o título; o topo do app fica mais baixo. */
 #telaLogin, #telaSenha { display: none !important; }
 #hubFeriasAviso .erro { min-height: 0; }
+
+/* Padrão visual do HUB (11/2026): títulos em azul quase preto e mais peso. */
+:root:not([data-tema="escuro"]) .login-titulo h1,:root:not([data-tema="escuro"]) .cabecalho-view h2,:root:not([data-tema="escuro"]) .barra-cal .titulo-mes{color:#0b1f3a}
+@media (prefers-color-scheme: dark){:root:not([data-tema="claro"]) .login-titulo h1,:root:not([data-tema="claro"]) .cabecalho-view h2,:root:not([data-tema="claro"]) .barra-cal .titulo-mes{color:inherit}}
+.login-titulo h1,.cabecalho-view h2,.barra-cal .titulo-mes{font-weight:800;letter-spacing:-.015em}
+.cabecalho-view h2{font-size:22px}

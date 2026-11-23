@@ -656,3 +656,10 @@ body.hub-embedded .header-center-brand{display:none!important}
   .workspace-lower .toolbar-buttons{flex-wrap:wrap!important;overflow:visible!important}
   .month-nav input{min-width:9.5em}
 }
+
+/* Padrão visual do HUB (11/2026): tokens dos simuladores e títulos em azul quase preto. */
+:root{--bg:#f3f6f9;--panel:#fff;--ink:#14243a;--muted:#5f6f82;--line:#d9e2ec;--brand:#123a63;--brand2:#1d5a8f;--ok:#0f5f56;--warn:#73520f;--danger:#8f2018;--shadow:0 6px 18px rgba(18,58,99,.07)}
+body{font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+h1,h2{color:#0b1f3a;font-weight:800}
+.brand strong,.brand b{color:#0b1f3a}
+button{border-radius:9px}

@@ -200,3 +200,21 @@
   body{background:#fff!important}.sidebar,.topbar,.portal-preview-adminbar,.portal-client-header,.portal-client-nav,.portal-nav-scrim,.page-head,.library-summary{display:none!important}
   .workspace,.portal-client-body{margin:0!important}.main-view,.portal-content{padding:0!important}.contract-workspace{border:0;box-shadow:none}.contract-workspace-header{background:#fff!important;color:#111e53;padding:0 0 12px}.contract-workspace-header h2{color:#111e53}.contract-workspace-header p{color:#536277}.contract-workspace-tools,.contract-workspace-tabs,.contract-workspace-footer{display:none!important}.contract-workspace-body{background:#fff;padding:0}.contract-workspace-panel[hidden]{display:none!important}.contract-document,.contract-reading-card,.contract-checklist,.contract-identification{border:0;box-shadow:none;max-width:none;padding:0}.contract-reference-scroll{overflow:visible}.contract-reference table{min-width:0}.contract-reference-toolbar,.contract-reference>footer,.contract-checklist-toolbar{display:none!important}.contract-reference tr[hidden],.contract-checklist-items>article[hidden]{display:none!important}.contract-checklist-group{break-inside:avoid}.contract-checklist-group:not([open])>.contract-checklist-items,.contract-checklist-detail[hidden]{display:block!important}.contract-checklist-expand,.contract-checklist-drag{display:none!important}
 }
+
+/* Padrão visual do HUB (11/2026): títulos em azul quase preto, tamanhos dos simuladores e cabeçalho do contrato claro. */
+.page-head h2{color:#0b1f3a;font-size:22px;font-weight:800;letter-spacing:-.015em}
+.topbar h1{color:#0b1f3a;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.auth-card h2{color:#0b1f3a;font-weight:800;font-size:24px}
+.contract-workspace{border-radius:14px;box-shadow:0 6px 18px rgba(18,58,99,.07)}
+.contract-workspace-header{background:#fff;color:#14243a;border-bottom:1px solid #d9e2ec}
+.contract-workspace-header span,.contract-reading-kicker{color:#5f6f82}
+.contract-workspace-header h2{color:#0b1f3a;font-family:inherit;font-weight:800;font-size:20px}
+.contract-workspace-header p{color:#5f6f82;font-size:11px}
+.contract-font-controls{background:#fff;border-color:#d9e2ec}
+.contract-font-controls button{color:#123a63}
+.contract-font-controls button+button{border-left-color:#d9e2ec}
+.contract-font-controls button:hover{background:#eaf1f8}
+.contract-tool-button{border-color:#d9e2ec;color:#123a63;font-size:10.5px}
+.contract-tool-button:hover{border-color:#c9d5e2;color:#0b1f3a;background:#eaf1f8}
+.contract-tool-button--primary{background:#123a63;border-color:#123a63;color:#fff}
+.contract-tool-button--primary:hover{background:#123a63;color:#fff;filter:brightness(1.08)}
