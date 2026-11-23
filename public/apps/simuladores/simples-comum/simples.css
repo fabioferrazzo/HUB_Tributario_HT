@@ -1,14 +1,14 @@
 /* Padrão visual dos simuladores do HUB (H. Teixeira): tokens, cabeçalho, painéis, campos, abas, indicadores e tabelas. */
 :root {
   --bg: #f3f6f9; --surface: #ffffff; --soft: #f6f8fb; --ink: #14243a; --muted: #5f6f82; --line: #d9e2ec;
-  --brand: #123a63; --brand-2: #1d5a8f; --accent: #2dc9a4; --accent-soft: #e7f8f3;
+  --title: #0b1f3a; --brand: #123a63; --brand-2: #1d5a8f; --accent: #2dc9a4; --accent-soft: #e7f8f3;
   --warn-bg: #fff8e6; --warn-line: #f0d698; --warn-ink: #73520f; --err-bg: #fdf1f0; --err-line: #f5c6c2; --err-ink: #8f2018;
   --radius: 14px; --shadow: 0 6px 18px rgba(18, 58, 99, .07);
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f1722; --surface: #162232; --soft: #1b2a3d; --ink: #e8eef6; --muted: #9db0c4; --line: #2b3d53;
-    --brand: #7fb2e5; --brand-2: #9cc6ee; --accent: #3fd7b2; --accent-soft: #163a37;
+    --title: #f3f7fc; --brand: #7fb2e5; --brand-2: #9cc6ee; --accent: #3fd7b2; --accent-soft: #163a37;
     --warn-bg: #2d2615; --warn-line: #6b5520; --warn-ink: #f0d79c; --err-bg: #331a1a; --err-line: #6d2c2c; --err-ink: #f4b8b2;
     --shadow: none;
   }
@@ -17,7 +17,7 @@
 body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 Inter, "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
 .app { max-width: 1320px; margin: 0 auto; padding: 14px 16px 24px; display: grid; gap: 12px; }
 .topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.topo h1 { margin: 0; font-size: 20px; letter-spacing: -.01em; color: var(--brand); }
+.topo h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.015em; color: var(--title); }
 .topo p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .selo { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 11px; white-space: nowrap; }
 .grade { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 12px; align-items: start; }
@@ -29,7 +29,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 Inte
 .painel > summary::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); transition: transform .15s; margin-right: 4px; }
 .painel:not([open]) > summary { border-bottom: 0; }
 .painel:not([open]) > summary::after { transform: rotate(-45deg); }
-.painel h2 { margin: 0; font-size: 13px; color: var(--brand); }
+.painel h2 { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--title); }
 .corpo { padding: 12px 14px 14px; display: grid; gap: 10px; }
 .campos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .campo { display: grid; gap: 4px; min-width: 0; }
