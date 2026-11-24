@@ -1,0 +1,201 @@
+/* Lembretes, Histórico e Administração no visual premium. A base comum está em src/premium.css. */
+
+/* Cartões/registros: vidro */
+.hub-premium .hp-migrada :is(.lembrete-record, .admin-user, .operational-health, .operational-console, .operational-homologation, .queue-preview-list article, .homologation-item) {
+  border-color: var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 8px);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .hp-migrada :is(.health-card, .operation-card, .homologation-block, .homologation-summary article, .admin-summary article, .confidential-field) {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .hp-migrada .admin-summary {
+  border-bottom-color: var(--hp-linha);
+}
+
+/* Títulos e textos */
+.hub-premium .hp-migrada :is(.lembrete-record-main strong, .admin-user-main strong, .section-title-row h3, .health-card strong, .operation-card strong, .queue-preview-title strong, .homologation-block > strong, .homologation-item b, .operational-guide-list b, .historico-title h2, .toggle-row) {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .hp-migrada :is(.section-title-row h3, .historico-title h2) {
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 700;
+}
+
+.hub-premium .hp-migrada :is(.lembrete-record-main span, .admin-user-main span, .section-title-row small, .health-card p, .health-footnote, .operation-card p, .queue-preview p, .operational-guide-list li, .queue-preview-list span, .queue-preview-list small, .homologation-item small, .confidential-field small, .form-hint, .historico-title p, .historico-resumo, .historico-modulo, .operation-card label) {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .hp-migrada :is(.lembrete-record-main em, .admin-user-main small, .operation-card code, .historico-title) {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .hp-migrada :is(.admin-summary strong, .homologation-summary strong) {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 300;
+}
+
+.hub-premium .hp-migrada :is(.admin-summary span, .homologation-summary span) {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hub-premium .hp-migrada :is(.health-card span, .queue-preview-title span) {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-acento-texto);
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.hub-premium .hp-migrada .admin-user-avatar {
+  border: 1px solid var(--hp-linha);
+  background: #232f6b;
+  color: #ffffff;
+}
+
+.hub-premium .hp-migrada .lembrete-tags .attachments {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .hp-migrada .secondary-button {
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .hp-migrada :is(.operation-card, .manual-email-form) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border: 1px solid rgba(40, 44, 56, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1c2a3a;
+  color-scheme: light;
+}
+
+.hub-premium .hp-migrada :is(.queue-preview, .admin-summary) {
+  border-color: var(--hp-linha);
+}
+
+/* Histórico */
+.hub-premium .historico-page .historico-panel {
+  padding: calc(18px * var(--hp-esc));
+}
+
+.hub-premium .historico-page .hist-btn {
+  border-color: var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .historico-page .hist-btn--primary {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+}
+
+.hub-premium .historico-page .hist-btn--ghost {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .historico-page .historico-filtros {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro);
+}
+
+.hub-premium .historico-page .historico-filtros label,
+.hub-premium .historico-page .historico-busca-campo svg {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .historico-page .historico-filtros :is(input, select) {
+  border-color: rgba(40, 44, 56, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1c2a3a;
+  color-scheme: light;
+}
+
+.hub-premium .historico-page .historico-aviso {
+  border: 1px solid color-mix(in srgb, var(--hp-acento) 40%, transparent);
+  border-radius: 12px;
+  background: var(--hp-brilho);
+  color: var(--hp-texto);
+}
+
+.hub-premium .historico-page .historico-lista {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hub-premium .historico-page .historico-linha {
+  color: var(--hp-texto);
+}
+
+.hub-premium .historico-page .historico-linha--cab {
+  background: var(--hp-vidro-2);
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hub-premium .historico-page :is(.historico-registro + .historico-registro, .historico-linha--cab + .historico-registro) {
+  border-top-color: var(--hp-linha);
+}
+
+.hub-premium .historico-page .historico-registro--aberto {
+  background: var(--hp-vidro);
+}
+
+.hub-premium .historico-page .historico-quando {
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.hub-premium .historico-page :is(.historico-toggle, .historico-detalhes) {
+  color: var(--hp-texto);
+}
+
+.hub-premium .historico-page :is(.historico-toggle svg, .historico-detalhes li::before) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .historico-page .historico-acao {
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.hub-premium .historico-page .historico-acao--criar {
+  border-color: color-mix(in srgb, var(--hp-ok) 40%, transparent);
+  background: var(--hp-ok-fundo);
+  color: var(--hp-ok);
+}
+
+.hub-premium .historico-page .historico-acao--excluir {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--hp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .historico-page .historico-acao--concluir {
+  border-color: color-mix(in srgb, var(--hp-acento) 40%, transparent);
+  background: var(--hp-brilho);
+  color: var(--hp-acento-texto);
+}

@@ -11,6 +11,7 @@ import {
   type HistoricoItem,
   type HistoricoPagina
 } from "../lib/historicoRepository";
+import "./escritorioPremium.css";
 
 // Histórico e auditoria (só administradores): quem fez o quê em Pautas, Avisos, Tarefas, Férias e Apuração.
 
@@ -126,7 +127,7 @@ export function HistoricoModule() {
   const filtroMudou = useMemo(() => JSON.stringify(filtro) !== JSON.stringify(aplicado), [filtro, aplicado]);
 
   return (
-    <div className="historico-page">
+    <div className="historico-page hp-migrada">
       <section className="panel historico-panel">
         <header className="historico-head">
           <div className="historico-title">

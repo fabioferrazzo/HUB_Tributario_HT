@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { HubProfile, HubUser, Lembrete } from "../types";
 import { canUserManageLembrete, deleteAppLembrete, getLembretesSource, listAppLembretes, saveAppLembrete } from "../lib/lembretesRepository";
 import { confirmDeletion, formatDateTime, formatResponsaveis, getActiveProfiles, getErrorMessage, getInitials } from "../lib/formatters";
+import "./escritorioPremium.css";
 
 export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; user: HubUser }) {
   const [lembretes, setLembretes] = useState<Lembrete[]>([]);
@@ -223,7 +224,7 @@ export function LembretesModule({ hubUsers, user }: { hubUsers: HubProfile[]; us
   }
 
   return (
-    <div className="split-page lembretes-page">
+    <div className="split-page lembretes-page hp-migrada">
       <section className="panel lembretes-list-panel">
         <PanelHeader title="Lembretes" icon={<Clock3 size={18} />} action={loading ? "Carregando" : source} />
         <div className="panel-toolbar">

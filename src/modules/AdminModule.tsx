@@ -8,6 +8,7 @@ import { buildOperationalHealthChecks, readHomologationStatuses } from "../lib/h
 import { formatDateTime, formatRole, getActiveProfiles, getErrorMessage, getInitials, getProfileKey } from "../lib/formatters";
 import { getSupabaseAccessToken } from "../lib/auth";
 import { getUsersSource, listAppUsers, resetAppUserPassword, saveAppUserWithOptions, setAppUserActive } from "../lib/usersRepository";
+import "./escritorioPremium.css";
 
 export function AdminModule({ currentUser }: { currentUser: HubUser }) {
   const [users, setUsers] = useState<HubProfile[]>([]);
@@ -229,7 +230,7 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
   }
 
   return (
-    <div className="split-page admin-page">
+    <div className="split-page admin-page hp-migrada">
       <section className="panel admin-users-panel">
         <PanelHeader
           title="Usuários e perfis"
