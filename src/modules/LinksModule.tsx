@@ -119,7 +119,7 @@ export function LinksModule({ user }: { user: HubUser }) {
   }
 
   return (
-    <div className="split-page">
+    <div className="split-page links-page hp-migrada">
       <section className="panel">
         <PanelHeader title="Links úteis" icon={<Link2 size={18} />} action={loading ? "carregando" : source} />
         <div className="file-summary link-summary">

@@ -21,7 +21,7 @@ const DEFAULT_LINKS_CREATED_AT = "2026-06-01T00:00:00.000Z";
 const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   {
     id: "11111111-1111-4111-8111-111111111001",
-    titulo: "Dominio Sistemas",
+    titulo: "Domínio Sistemas",
     url: "https://www.dominiosistemas.com.br/",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -39,7 +39,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111003",
-    titulo: "Central de Solucoes ONVIO",
+    titulo: "Central de Soluções ONVIO",
     url: "https://suporte.dominioatendimento.com/",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -111,7 +111,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111011",
-    titulo: "Comite Gestor do IBS",
+    titulo: "Comitê Gestor do IBS",
     url: "https://www.cgibs.gov.br/",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -138,7 +138,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111014",
-    titulo: "Camara dos Deputados",
+    titulo: "Câmara dos Deputados",
     url: "https://www.camara.leg.br/",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -165,7 +165,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111017",
-    titulo: "Zappy Contabil",
+    titulo: "Zappy Contábil",
     url: "https://www.zappycontabil.com.br/",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,
@@ -183,7 +183,7 @@ const DEFAULT_USEFUL_LINKS: UsefulLink[] = [
   },
   {
     id: "11111111-1111-4111-8111-111111111019",
-    titulo: "Portal Contabeis",
+    titulo: "Portal Contábeis",
     url: "https://www.contabeis.com.br/",
     scope: "global",
     createdBy: DEFAULT_LINK_OWNER,

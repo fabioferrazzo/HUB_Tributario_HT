@@ -30,6 +30,12 @@
   --hp-acento-texto: hsl(var(--ht-h, 179) calc(var(--ht-s, 75%) * 0.85) var(--ht-l-texto, 61%));
   --hp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 42%) / 0.28);
   --hp-urgente: #ff7a6b;
+  --hp-sobre-acento: #04121a;
+  --hp-ambar: #f0c46a;
+  --hp-ambar-fundo: rgba(224, 160, 48, 0.14);
+  --hp-urgente-fundo: rgba(255, 122, 107, 0.14);
+  --hp-ok: #7fd6b0;
+  --hp-ok-fundo: rgba(127, 214, 176, 0.12);
   --hp-sombra: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 calc(24px * var(--ht-sombra-k, 1)) calc(60px * var(--ht-sombra-k, 1)) -30px rgba(0, 0, 0, calc(0.8 * var(--ht-sombra-k, 1)));
   --hp-orbe-1: #2b3aa8;
   --hp-orbe-2: hsl(var(--ht-h, 179) var(--ht-s, 75%) 42%);
@@ -57,6 +63,12 @@
   --hp-acento-texto: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-texto, 24%));
   --hp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 28%) / 0.14);
   --hp-urgente: #b93e0e;
+  --hp-sobre-acento: #ffffff;
+  --hp-ambar: #8a5300;
+  --hp-ambar-fundo: rgba(224, 160, 48, 0.14);
+  --hp-urgente-fundo: rgba(185, 62, 14, 0.08);
+  --hp-ok: #2f7d4f;
+  --hp-ok-fundo: rgba(47, 125, 79, 0.1);
   --hp-sombra: 0 1px 2px rgba(40, 44, 56, calc(0.05 * var(--ht-sombra-k, 1))), 0 calc(14px * var(--ht-sombra-k, 1)) calc(34px * var(--ht-sombra-k, 1)) -24px rgba(40, 44, 56, calc(0.22 * var(--ht-sombra-k, 1)));
   --hp-orbe-1: #cdd8e8;
   --hp-orbe-2: #d8e4e2;
@@ -698,4 +710,310 @@ body[data-hub-premium="claro"] {
   .hub-premium--ampliado .topbar-brand-strip span {
     display: none;
   }
+}
+
+/* ================================================================ Telas migradas: base comum
+   Componentes clássicos do HUB (painel, cabeçalho, filtros, busca, botões, etiquetas, formulários)
+   no padrão premium. Vale para toda tela com .hp-migrada; cada tela ajusta o que for só dela. */
+.hub-premium .hp-migrada {
+  --surface: var(--hp-vidro);
+  --surface-muted: var(--hp-vidro-2);
+  --bg: transparent;
+  --bg-soft: var(--hp-vidro-2);
+  --ink: var(--hp-texto);
+  --muted: var(--hp-mudo);
+  --line: var(--hp-linha);
+  --line-soft: var(--hp-linha);
+  --accent: var(--hp-acento);
+  --accent-deep: var(--hp-acento);
+  --danger: var(--hp-urgente);
+  --warning: var(--hp-ambar);
+  --ok: var(--hp-ok);
+  --shadow: var(--hp-sombra);
+  color: var(--hp-texto);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium .hp-migrada .panel {
+  border: 1px solid var(--hp-linha);
+  border-radius: var(--ht-raio, 24px);
+  background: var(--hp-vidro);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  overflow: hidden;
+}
+
+.hub-premium .hp-migrada :is(.panel-head, .panel-header) {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .hp-migrada :is(.panel-head, .panel-header) h2 {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(20px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .hp-migrada :is(.panel-head, .panel-header) :is(h2 svg, > svg) {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .hp-migrada :is(.panel-head, .panel-header) :where(small, p) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .hp-migrada .panel-header span,
+.hub-premium .hp-migrada .panel-chip {
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  letter-spacing: 0.12em;
+}
+
+.hub-premium .hp-migrada :is(.btn-mini, .record-actions button, .record-actions a, .form-actions-inline button:not(.primary-action), .panel-export-actions button) {
+  min-height: calc(34px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+  transition: border-color 0.25s ease;
+}
+
+.hub-premium .hp-migrada :is(.btn-mini, .record-actions button, .record-actions a, .form-actions-inline button, .panel-export-actions button):hover {
+  border-color: var(--hp-acento);
+}
+
+.hub-premium .hp-migrada :is(.btn-mini.primary, .primary-action) {
+  border: 1px solid var(--hp-acento);
+  border-radius: 12px;
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+  font-weight: 600;
+}
+
+.hub-premium .hp-migrada :is(.danger-action, .record-actions .danger-action, .record-actions button.danger-action) {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .hp-migrada .record-actions--readonly {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .hp-migrada .panel-toolbar {
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .hp-migrada .filter-pill {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hp-texto-2);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .hp-migrada .filter-pill:hover {
+  border-color: var(--hp-linha);
+}
+
+.hub-premium .hp-migrada .filter-pill.active {
+  border-color: var(--hp-acento);
+  background: var(--hp-brilho);
+  color: var(--hp-titulo);
+  box-shadow: none;
+}
+
+.hub-premium .hp-migrada .panel-search {
+  border: 1px solid var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-mudo);
+}
+
+.hub-premium .hp-migrada .panel-search input {
+  color: var(--hp-texto);
+}
+
+.hub-premium .hp-migrada .panel-search input::placeholder {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .hp-migrada :is(.empty-state, .readonly-note) {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .hp-migrada .module-notice {
+  border-color: color-mix(in srgb, var(--hp-acento) 40%, transparent);
+  border-radius: 12px;
+  background: var(--hp-brilho);
+  color: var(--hp-texto);
+}
+
+.hub-premium .hp-migrada :is(.form-error, .module-error) {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .hp-migrada :is(.field-note, .muted-note) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .hp-migrada .status-pill {
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.hub-premium .hp-migrada .status-pill--danger {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--hp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .hp-migrada .status-pill--warning {
+  border-color: color-mix(in srgb, var(--hp-ambar) 40%, transparent);
+  background: var(--hp-ambar-fundo);
+  color: var(--hp-ambar);
+}
+
+.hub-premium .hp-migrada .status-pill--ok {
+  border-color: color-mix(in srgb, var(--hp-ok) 40%, transparent);
+  background: var(--hp-ok-fundo);
+  color: var(--hp-ok);
+}
+
+/* Formulários: rótulos no tema; campos como folha clara (leitura e digitação confortáveis). */
+.hub-premium .hp-migrada :is(.stack-form, .task-form) label,
+.hub-premium .hp-migrada :is(.stack-form, .task-form) legend {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .hp-migrada :is(.stack-form, .task-form) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  border: 1px solid rgba(40, 44, 56, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1c2a3a;
+  color-scheme: light;
+}
+
+.hub-premium .hp-migrada :is(.stack-form, .task-form) input[type="file"] {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .hp-migrada :is(.stack-form, .task-form) :is(input, select, textarea):focus {
+  border-color: var(--hp-acento);
+  outline: 2px solid color-mix(in srgb, var(--hp-acento) 35%, transparent);
+  outline-offset: 1px;
+}
+
+.hub-premium .hp-migrada :is(.stack-form, .task-form) {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .hp-migrada .member-picker {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+}
+
+.hub-premium .hp-migrada .member-picker label {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .hp-migrada .member-picker label span {
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+}
+
+/* Resumos (contadores no topo das listas) */
+.hub-premium .hp-migrada .file-summary {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .hp-migrada .file-summary article {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .hp-migrada .file-summary strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-weight: 300;
+}
+
+.hub-premium .hp-migrada .file-summary span {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Links úteis */
+.hub-premium .hp-migrada :is(.link-record, .link-list > a) {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+  transition: border-color 0.25s ease;
+}
+
+.hub-premium .hp-migrada :is(.link-record, .link-list > a):hover {
+  border-color: var(--hp-linha-forte);
+}
+
+.hub-premium .hp-migrada .link-record strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .hp-migrada :is(.link-record small, .link-list span) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .hp-migrada .link-record a {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .hp-migrada :focus-visible {
+  outline: 2px solid var(--hp-acento);
+  outline-offset: 2px;
+}
+
+/* "Folha clara" dos editores e formulários (pauta, aviso, tarefa, visualizador de documentos):
+   dentro dela os tokens --hp-* viram os do tema claro, então tudo o que usa o padrão fica legível. */
+.hub-premium :is(.pauta-editor-panel, .avisos-side-panel, .task-sidebar--form, .document-viewer-panel, .qg-aviso-editor, .hp-folha) {
+  --hp-vidro: #ffffff;
+  --hp-vidro-2: #f7f6f2;
+  --hp-linha: rgba(40, 44, 56, 0.12);
+  --hp-linha-forte: rgba(40, 44, 56, 0.28);
+  --hp-texto: #1a2033;
+  --hp-texto-2: #3d4456;
+  --hp-mudo: #5b6274;
+  --hp-titulo: #111830;
+  --hp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) 28%);
+  --hp-acento-texto: hsl(var(--ht-h, 179) var(--ht-s, 75%) 24%);
+  --hp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) 28% / 0.12);
+  --hp-sobre-acento: #ffffff;
+  --hp-urgente: #b93e0e;
+  --hp-urgente-fundo: rgba(185, 62, 14, 0.08);
+  --hp-ambar: #8a5300;
+  --hp-ok: #2f7d4f;
+  --hp-ok-fundo: rgba(47, 125, 79, 0.1);
+  color-scheme: light;
 }

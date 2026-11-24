@@ -8,6 +8,7 @@ import { confirmDeletion, formatDate, formatFileCategory, getErrorMessage, norma
 import { deleteAppFileAnnotation, deleteAppFileFolder, deleteAppFileResource, getArquivosSource, listAppFileAnnotations, listAppFileFolders, listAppFileResources, saveAppFileAnnotation, saveAppFileFolder, saveAppFileResource } from "../lib/arquivosRepository";
 import { downloadBlob } from "../lib/reportExport";
 import { fileCategoryOptions, OCR_ENABLED } from "../app/appConfig";
+import "./arquivosPremium.css";
 
 export function ArquivosModule({ user }: { user: HubUser }) {
   const [resources, setResources] = useState<FileResource[]>([]);
@@ -549,7 +550,7 @@ export function ArquivosModule({ user }: { user: HubUser }) {
   }
 
   return (
-    <div className="split-page arquivos-page">
+    <div className="split-page arquivos-page hp-migrada">
       <section className="panel arquivos-panel">
         <PanelHeader title="Arquivos" icon={<FileArchive size={18} />} action={loading ? "carregando" : source} />
 

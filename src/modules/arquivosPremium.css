@@ -1,0 +1,163 @@
+/* Arquivos no visual premium (padrão H. Teixeira Premium). A base comum está em src/premium.css. */
+
+.hub-premium .arquivos-page .folder-strip,
+.hub-premium .arquivos-page .ocr-runner-bar {
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .arquivos-page .folder-chip {
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+  font-size: calc(12.5px * var(--hp-esc));
+}
+
+.hub-premium .arquivos-page .folder-chip.active {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+  font-weight: 600;
+}
+
+.hub-premium .arquivos-page .ocr-runner-bar strong {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .arquivos-page .ocr-runner-bar span {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .arquivos-page .ocr-runner-bar button {
+  border-color: var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .arquivos-page .drop-zone {
+  border: 1px dashed var(--hp-linha-forte);
+  border-radius: 16px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .arquivos-page .drop-zone--active {
+  border-color: var(--hp-acento);
+  background: var(--hp-brilho);
+}
+
+.hub-premium .arquivos-page .drop-zone small {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .arquivos-page .drop-zone svg {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .arquivos-page .file-resource {
+  border: 1px solid var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 8px);
+  background: var(--hp-vidro);
+  transition: border-color 0.25s ease;
+}
+
+.hub-premium .arquivos-page .file-resource:hover {
+  border-color: var(--hp-linha-forte);
+}
+
+.hub-premium .arquivos-page .file-resource__label {
+  color: var(--hp-acento-texto);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hub-premium .arquivos-page .file-resource strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(15px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .arquivos-page .file-resource p {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .arquivos-page .file-resource__meta {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(11px * var(--hp-esc));
+}
+
+.hub-premium .arquivos-page .file-resource__meta :where(span, small) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .arquivos-page .processing-badge {
+  border-radius: 999px;
+  font-family: "DM Mono", ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+.hub-premium .arquivos-page :is(.processing-badge--pending, .processing-badge--processing) {
+  border-color: color-mix(in srgb, var(--hp-ambar) 40%, transparent);
+  background: var(--hp-ambar-fundo);
+  color: var(--hp-ambar);
+}
+
+.hub-premium .arquivos-page .processing-badge--ready {
+  border-color: color-mix(in srgb, var(--hp-ok) 40%, transparent);
+  background: var(--hp-ok-fundo);
+  color: var(--hp-ok);
+}
+
+.hub-premium .arquivos-page .processing-badge--error {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--hp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .arquivos-page .folder-form {
+  border-top-color: var(--hp-linha);
+}
+
+.hub-premium .arquivos-page .folder-form > strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .arquivos-page .folder-manage-list span {
+  border-color: var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .arquivos-page .folder-manage-list button {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .arquivos-page .attachment-list :is(a, button, span) {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+/* Visualizador de documentos: continua claro (leitura de PDF/imagem); só a moldura acompanha o tema. */
+.hub-premium .arquivos-page .document-viewer-panel {
+  --surface: #ffffff;
+  --surface-muted: #eef2ed;
+  --bg-soft: #ebe6db;
+  --ink: #1c2a3a;
+  --muted: #5e6d82;
+  --line: #e2dccc;
+  --line-soft: #efeae0;
+  --accent: #1e3a5f;
+  --danger: #b73e3e;
+  color-scheme: light;
+  border-radius: var(--ht-raio, 24px);
+  color: #1c2a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
