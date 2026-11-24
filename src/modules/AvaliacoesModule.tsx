@@ -6,6 +6,7 @@ import { isCoordenacao } from "../lib/avaliacoes";
 import { AreaColaborador } from "./avaliacoes/AreaColaborador";
 import { AreaCoordenacao } from "./avaliacoes/AreaCoordenacao";
 import "./avaliacoes/avaliacoes.css";
+import "./avaliacoes/avaliacoesPremium.css";
 
 export function AvaliacoesModule({ user }: { user: HubUser }) {
   return isCoordenacao(user) ? <AreaCoordenacao user={user} /> : <AreaColaborador user={user} />;

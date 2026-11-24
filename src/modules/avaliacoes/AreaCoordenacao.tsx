@@ -330,7 +330,7 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
         </div>
       ) : null;
     return (
-      <div className="avd">
+      <div className="avd hp-migrada">
         <section className="panel" aria-label="Correção da avaliação">
           <div className="avd-topo">
             <button className="avd-btn" type="button" onClick={voltar}>
@@ -452,7 +452,7 @@ export function AreaCoordenacao({ user }: { user: HubUser }) {
   // ------------------------------------------------------------------ painel
   const outras = (painel?.competencias || []).filter((c) => c !== comp).sort().reverse().slice(0, 6);
   return (
-    <div className="avd">
+    <div className="avd hp-migrada">
       <section className="panel" aria-label="Painel da coordenação">
         <div className="avd-topo">
           <Award size={18} strokeWidth={1.6} />

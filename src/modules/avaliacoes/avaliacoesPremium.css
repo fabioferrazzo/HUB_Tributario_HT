@@ -1,0 +1,276 @@
+/* Avaliações no visual premium (padrão H. Teixeira Premium). A base comum está em src/premium.css.
+   As seções da planilha (notas, justificativas, feedback) e o diálogo de e-mail ficam em folha clara. */
+
+.hub-premium .avd {
+  --avd-ink: var(--hp-titulo);
+}
+
+.hub-premium .avd .avd-topo h2 {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(20px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .avd .avd-topo .avd-sub-tit {
+  color: var(--hp-texto-2);
+  font-size: calc(12.5px * var(--hp-esc));
+}
+
+.hub-premium .avd .avd-comp input {
+  border-color: rgba(40, 44, 56, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1c2a3a;
+  color-scheme: light;
+}
+
+/* Botões */
+.hub-premium .avd .avd-btn {
+  height: calc(34px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .avd .avd-btn:hover:not(:disabled) {
+  border-color: var(--hp-acento);
+  color: var(--hp-titulo);
+}
+
+.hub-premium .avd .avd-btn--icone {
+  width: calc(34px * var(--hp-esc));
+}
+
+.hub-premium .avd .avd-btn--pri {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+  font-weight: 600;
+}
+
+.hub-premium .avd .avd-btn--pri:hover:not(:disabled) {
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+  filter: brightness(1.08);
+}
+
+.hub-premium .avd .avd-btn--perigo {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .avd .avd-btn--perigo:hover:not(:disabled) {
+  border-color: var(--hp-urgente);
+  background: var(--hp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+/* Avisos */
+.hub-premium .avd .avd-aviso {
+  border-color: color-mix(in srgb, var(--hp-ok) 40%, transparent);
+  border-radius: 12px;
+  background: var(--hp-ok-fundo);
+  color: var(--hp-ok);
+}
+
+.hub-premium .avd .avd-aviso--erro {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--hp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .avd .avd-aviso--neutro {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .avd .avd-aviso--alerta {
+  border-color: color-mix(in srgb, var(--hp-ambar) 40%, transparent);
+  background: var(--hp-ambar-fundo);
+  color: var(--hp-ambar);
+}
+
+/* Situação da avaliação: frios para o fluxo normal; âmbar quando espera a coordenação */
+.hub-premium .avd .avd-pill {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hub-premium .avd .avd-pill--enviada {
+  border-color: color-mix(in srgb, var(--hp-ambar) 40%, transparent);
+  background: var(--hp-ambar-fundo);
+  color: var(--hp-ambar);
+}
+
+.hub-premium .avd :is(.avd-pill--em_correcao, .avd-pill--replica) {
+  border-color: color-mix(in srgb, var(--hp-acento) 45%, transparent);
+  background: var(--hp-brilho);
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .avd .avd-pill--finalizada {
+  border-color: color-mix(in srgb, var(--hp-ok) 40%, transparent);
+  background: var(--hp-ok-fundo);
+  color: var(--hp-ok);
+}
+
+.hub-premium .avd .avd-pill--pendente {
+  color: var(--hp-mudo);
+}
+
+/* Colaborador: lista lateral */
+.hub-premium .avd .avd-lista li button {
+  border-radius: 12px;
+  color: var(--hp-texto);
+}
+
+.hub-premium .avd .avd-lista li button:hover {
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .avd .avd-lista li button.ativo {
+  border-color: var(--hp-acento);
+  background: var(--hp-brilho);
+}
+
+.hub-premium .avd .avd-lista li strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .avd .avd-lista li small,
+.hub-premium .avd .avd-lista .avd-vazio {
+  color: var(--hp-mudo);
+}
+
+/* Coordenação: colunas por situação */
+.hub-premium .avd .avd-coluna {
+  border-color: var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 8px);
+  background: var(--hp-vidro);
+}
+
+.hub-premium .avd .avd-coluna h3 {
+  border-bottom-color: var(--hp-linha);
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(14px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .avd .avd-coluna h3 .avd-cont {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.hub-premium .avd .avd-card {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .avd .avd-card:hover {
+  border-color: var(--hp-acento);
+  box-shadow: 0 0 18px var(--hp-brilho);
+}
+
+.hub-premium .avd .avd-card strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .avd :is(.avd-card small, .avd-coluna .avd-vazio, .avd-dica, .avd-resumo-comp) {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .avd .avd-resumo-comp b,
+.hub-premium .avd .avd-pendentes strong {
+  color: var(--hp-titulo);
+}
+
+.hub-premium .avd .avd-pendentes {
+  border-color: var(--hp-linha-forte);
+  border-radius: 14px;
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .avd .avd-toggle {
+  color: var(--hp-texto);
+}
+
+/* Médias (resumo das notas): vidro com faixa de cor por quem avaliou */
+.hub-premium .avd .avd-media {
+  border: 1px solid var(--hp-linha);
+  border-top: 3px solid var(--avd-media-cor, var(--hp-acento));
+  border-radius: 14px;
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .avd .avd-media--colab { --avd-media-cor: #5b8fd6; }
+.hub-premium .avd .avd-media--coord { --avd-media-cor: var(--hp-acento); }
+.hub-premium .avd .avd-media--sub { --avd-media-cor: #8a9ab5; }
+
+.hub-premium .avd .avd-media small {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+.hub-premium .avd .avd-media strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(26px * var(--hp-esc));
+  font-weight: 300;
+}
+
+.hub-premium .avd .avd-media em {
+  color: var(--hp-texto-2);
+}
+
+/* Seções da planilha: folha clara arredondada */
+.hub-premium .avd .avd-sec {
+  border-color: var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 8px);
+  background: #ffffff;
+  color: #1c2a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium .avd .avd-sec > summary {
+  --avd-ink: #1b2a41;
+  color: #1b2a41;
+}
+
+.hub-premium .avd .avd-sec .avd-btn {
+  border-color: #e2dccc;
+  background: #ffffff;
+  color: #1b365d;
+}
+
+.hub-premium .avd .avd-sec {
+  --avd-ink: #1b2a41;
+}
+
+.hub-premium .avd-dlg {
+  --avd-ink: #1b2a41;
+  border-radius: var(--ht-raio, 24px);
+}
+
+/* Escala de referência (0 a 10): neutra; vermelho fica só para alerta */
+.hub-premium .avd .avd-escala b {
+  background: #eef2f7;
+  color: #2c3e57;
+}

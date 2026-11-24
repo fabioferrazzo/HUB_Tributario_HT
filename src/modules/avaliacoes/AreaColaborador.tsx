@@ -206,7 +206,7 @@ export function AreaColaborador({ user }: { user: HubUser }) {
     ) : null;
 
   return (
-    <div className="avd avd-grade">
+    <div className="avd avd-grade hp-migrada">
       <aside className="panel avd-lista" aria-label="Minhas avaliações">
         <header className="panel-header">
           <div>

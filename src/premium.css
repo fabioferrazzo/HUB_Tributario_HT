@@ -67,7 +67,7 @@
   --hp-ambar: #8a5300;
   --hp-ambar-fundo: rgba(224, 160, 48, 0.14);
   --hp-urgente-fundo: rgba(185, 62, 14, 0.08);
-  --hp-ok: #2f7d4f;
+  --hp-ok: #26693f;
   --hp-ok-fundo: rgba(47, 125, 79, 0.1);
   --hp-sombra: 0 1px 2px rgba(40, 44, 56, calc(0.05 * var(--ht-sombra-k, 1))), 0 calc(14px * var(--ht-sombra-k, 1)) calc(34px * var(--ht-sombra-k, 1)) -24px rgba(40, 44, 56, calc(0.22 * var(--ht-sombra-k, 1)));
   --hp-orbe-1: #cdd8e8;
@@ -997,7 +997,21 @@ body[data-hub-premium="claro"] {
 
 /* "Folha clara" dos editores e formulários (pauta, aviso, tarefa, visualizador de documentos):
    dentro dela os tokens --hp-* viram os do tema claro, então tudo o que usa o padrão fica legível. */
-.hub-premium :is(.pauta-editor-panel, .avisos-side-panel, .task-sidebar--form, .document-viewer-panel, .qg-aviso-editor, .hp-folha) {
+.hub-premium :is(.pauta-editor-panel, .avisos-side-panel, .task-sidebar--form, .document-viewer-panel, .qg-aviso-editor, .avd-sec, .avd-dlg, .hp-folha) {
+  /* tokens antigos do HUB (as telas migradas os apontam para o vidro; aqui voltam ao claro) */
+  --surface: #ffffff;
+  --surface-muted: #eef2ed;
+  --bg: #f4f1ea;
+  --bg-soft: #ebe6db;
+  --ink: #1c2a3a;
+  --muted: #5e6d82;
+  --line: #e2dccc;
+  --line-soft: #efeae0;
+  --accent: #1e3a5f;
+  --accent-deep: #15263f;
+  --danger: #b73e3e;
+  --warning: #8a6400;
+  --ok: #2f7d4f;
   --hp-vidro: #ffffff;
   --hp-vidro-2: #f7f6f2;
   --hp-linha: rgba(40, 44, 56, 0.12);
@@ -1013,7 +1027,7 @@ body[data-hub-premium="claro"] {
   --hp-urgente: #b93e0e;
   --hp-urgente-fundo: rgba(185, 62, 14, 0.08);
   --hp-ambar: #8a5300;
-  --hp-ok: #2f7d4f;
+  --hp-ok: #26693f;
   --hp-ok-fundo: rgba(47, 125, 79, 0.1);
   color-scheme: light;
 }
