@@ -1,0 +1,380 @@
+/* Chat no visual premium (padrão H. Teixeira Premium): página e janela flutuante.
+   Só vale com o visual premium ligado (.hub-premium). */
+
+.hub-premium--escuro .chat,
+.hub-premium--escuro .chat-minimizado {
+  --cp-sobre-acento: #04121a;
+  --cp-ambar: #f0c46a;
+  --cp-ambar-fundo: rgba(224, 160, 48, 0.14);
+  --cp-urgente-fundo: rgba(255, 122, 107, 0.14);
+  --cp-ok: #7fd6b0;
+  --cp-ok-fundo: rgba(127, 214, 176, 0.12);
+  --cp-janela: rgba(12, 17, 36, 0.95);
+}
+
+.hub-premium--claro .chat,
+.hub-premium--claro .chat-minimizado {
+  --cp-sobre-acento: #ffffff;
+  --cp-ambar: #8a5300;
+  --cp-ambar-fundo: rgba(224, 160, 48, 0.14);
+  --cp-urgente-fundo: rgba(185, 62, 14, 0.08);
+  --cp-ok: #2f7d4f;
+  --cp-ok-fundo: rgba(47, 125, 79, 0.1);
+  --cp-janela: rgba(251, 250, 247, 0.97);
+}
+
+.hub-premium .chat {
+  --ink: var(--hp-texto);
+  --muted: var(--hp-mudo);
+  --line: var(--hp-linha);
+  --accent: var(--hp-acento);
+  color: var(--hp-texto);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  font-size: calc(13.5px * var(--hp-esc));
+}
+
+.hub-premium .chat--pagina {
+  border: 1px solid var(--hp-linha);
+  border-radius: var(--ht-raio, 24px);
+  background: var(--hp-vidro);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  overflow: hidden;
+}
+
+/* Janela flutuante: vidro quase opaco (fica por cima de qualquer tela) */
+.hub-premium .chat--janela {
+  border: 1px solid var(--hp-linha-forte);
+  border-radius: var(--ht-raio, 24px);
+  background: var(--cp-janela);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  overflow: hidden;
+}
+
+/* Topo */
+.hub-premium .chat-topo {
+  border-bottom: 1px solid var(--hp-linha);
+  background: transparent;
+  color: var(--hp-titulo);
+}
+
+.hub-premium .chat-topo > svg {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .chat-topo strong {
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(16px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .chat-topo-acoes button {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .chat-topo-acoes button:hover {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+}
+
+.hub-premium .chat-permissao {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .chat-contagem {
+  background: var(--hp-urgente);
+  color: var(--cp-sobre-acento);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.hub-premium--claro .chat-contagem {
+  color: #ffffff;
+}
+
+/* Avisos */
+.hub-premium .chat-erro {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--cp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .chat-aviso {
+  border-color: color-mix(in srgb, var(--cp-ok) 40%, transparent);
+  background: var(--cp-ok-fundo);
+  color: var(--cp-ok);
+}
+
+.hub-premium .chat-backup-pergunta {
+  border-color: color-mix(in srgb, var(--cp-ambar) 40%, transparent);
+  background: var(--cp-ambar-fundo);
+  color: var(--hp-texto);
+}
+
+/* Botões */
+.hub-premium .chat-btn {
+  min-height: calc(34px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .chat-btn:hover {
+  border-color: var(--hp-acento);
+}
+
+.hub-premium .chat-btn--pri {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--cp-sobre-acento);
+  font-weight: 600;
+}
+
+.hub-premium .chat-btn--pri:disabled {
+  opacity: 0.45;
+}
+
+.hub-premium .chat-btn--perigo {
+  color: var(--hp-urgente);
+}
+
+/* "Chamar atenção": âmbar (é um alerta) */
+.hub-premium .chat-atencao {
+  min-height: calc(34px * var(--hp-esc));
+  border: 1px solid color-mix(in srgb, var(--cp-ambar) 45%, transparent);
+  border-radius: 10px;
+  background: var(--cp-ambar-fundo);
+  color: var(--cp-ambar);
+  font-weight: 600;
+}
+
+.hub-premium .chat-icone {
+  border-radius: 10px;
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .chat-icone:hover {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+}
+
+/* Busca e lista de conversas */
+.hub-premium .chat-busca {
+  border: 1px solid var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-mudo);
+}
+
+.hub-premium .chat-busca input {
+  color: var(--hp-texto);
+}
+
+.hub-premium .chat-busca input::placeholder {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .chat-item {
+  border-radius: 14px;
+  transition: background 0.25s ease;
+}
+
+.hub-premium .chat-item:hover {
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .chat-item-texto strong,
+.hub-premium .chat-item--nova strong {
+  color: var(--hp-titulo);
+  font-size: calc(13.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-item-texto small,
+.hub-premium .chat-vazio,
+.hub-premium .chat-subtopo-nome small {
+  color: var(--hp-texto-2);
+  font-size: calc(12.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-item-meta {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-avatar {
+  border: 1px solid var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-titulo);
+  font-weight: 600;
+}
+
+.hub-premium .chat-avatar--grupo {
+  border-color: color-mix(in srgb, var(--hp-acento) 45%, transparent);
+  color: var(--hp-acento-texto);
+}
+
+/* Conversa aberta */
+.hub-premium .chat-subtopo {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .chat-subtopo-nome strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(15px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .chat-campo {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .chat-campo input {
+  border-color: var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .chat-membros {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+}
+
+.hub-premium .chat-membros legend {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .chat-mensagens {
+  background: transparent;
+}
+
+.hub-premium .chat-msg {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .chat-msg--minha {
+  border-color: color-mix(in srgb, var(--hp-acento) 40%, transparent);
+  background: color-mix(in srgb, var(--hp-acento) 16%, transparent);
+}
+
+.hub-premium .chat-msg-autor {
+  color: var(--hp-acento-texto);
+  font-size: calc(11.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-msg-texto {
+  color: var(--hp-texto);
+  font-size: calc(13.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-msg-meta,
+.hub-premium .chat-msg-anexos small,
+.hub-premium .chat-arquivos small {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-msg-anexos button {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .chat-msg-apagar {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .chat-msg-apagar:hover {
+  color: var(--hp-urgente);
+}
+
+.hub-premium .chat-msg-sistema {
+  color: var(--hp-texto-2);
+  font-size: calc(11.5px * var(--hp-esc));
+}
+
+.hub-premium .chat-msg-sistema time {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .chat-msg-atencao {
+  color: var(--cp-ambar);
+}
+
+.hub-premium .chat-msg-texto mark {
+  background: rgba(240, 196, 106, 0.35);
+  color: inherit;
+}
+
+/* Composição: barra de vidro; o campo de texto é uma folha clara (como os demais editores) */
+.hub-premium .chat-composer {
+  border-top-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .chat-composer .rich-editor-field {
+  --surface: #ffffff;
+  --ink: #1c2a3a;
+  --muted: #5e6d82;
+  --line: #e2dccc;
+  --accent: #1e3a5f;
+  color-scheme: light;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #1c2a3a;
+  overflow: hidden;
+}
+
+.hub-premium .chat-dica {
+  color: var(--hp-mudo);
+  font-size: calc(11px * var(--hp-esc));
+}
+
+.hub-premium .chat-arquivos span {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+}
+
+.hub-premium .chat-arquivos button {
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+/* Botão minimizado (pílula) */
+.hub-premium .chat-minimizado {
+  border: 1px solid var(--hp-linha-forte);
+  background: var(--cp-janela);
+  color: var(--hp-titulo);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.5), 0 0 24px var(--hp-brilho);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.hub-premium .chat :focus-visible,
+.hub-premium .chat-minimizado:focus-visible {
+  outline: 2px solid var(--hp-acento);
+  outline-offset: 2px;
+}
+
+.hub-premium .chat-msg--minha .chat-msg-meta {
+  color: var(--hp-texto-2);
+}

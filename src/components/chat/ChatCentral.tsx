@@ -47,6 +47,7 @@ import {
 import { baixarBackupChat } from "./chatBackup";
 import { alertaSonoro, mostrarNotificacao, piscarTitulo, tremerTela } from "./chatAlertas";
 import { hubDesktop } from "../../lib/desktop";
+import "./chatPremium.css";
 
 export type ChatJanela = "fechado" | "aberto" | "minimizado";
 
@@ -347,7 +348,7 @@ export function ChatCentral({
 
   if (modo === "pagina") {
     return (
-      <section className={`chat chat--pagina${tremendo ? " chat--tremer" : ""}`} aria-label="Chat do HUB">
+      <section className={`chat chat--pagina hp-migrada${tremendo ? " chat--tremer" : ""}`} aria-label="Chat do HUB">
         <header className="chat-topo">
           <MessagesSquare size={17} strokeWidth={1.6} />
           <strong>Chat</strong>
