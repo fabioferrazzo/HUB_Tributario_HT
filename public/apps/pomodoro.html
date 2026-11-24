@@ -45,6 +45,40 @@
             word-break: break-word;
         }
     </style>
+<script src="/apps/hub-premium-app.js"></script>
+<style id="ht-premium-pomodoro">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js) e só na tela. */
+@media screen {
+html.ht-premium--escuro{--p-texto:#EEF2FA;--p-texto-2:#B9C3DA;--p-mudo:#A3AECB;--p-titulo:#FFFFFF;--p-linha:rgba(255,255,255,.10);--p-vidro:rgba(255,255,255,calc(.05*var(--ht-vidro-k,1)));--p-vidro-2:rgba(255,255,255,calc(.08*var(--ht-vidro-k,1)));--p-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--p-acento-texto:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));--p-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .24);--p-sobre-acento:#04121A;--p-sombra:0 1px 0 rgba(255,255,255,.04) inset,0 calc(30px*var(--ht-sombra-k,1)) calc(70px*var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8*var(--ht-sombra-k,1)));color-scheme:dark}
+html.ht-premium--claro{--p-texto:#1A2033;--p-texto-2:#3D4456;--p-mudo:#5B6274;--p-titulo:#111830;--p-linha:rgba(40,44,56,.11);--p-vidro:rgba(255,255,255,min(.95,calc(.66*var(--ht-vidro-k,1))));--p-vidro-2:rgba(255,255,255,min(.97,calc(.85*var(--ht-vidro-k,1))));--p-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--p-acento-texto:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));--p-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .12);--p-sobre-acento:#FFFFFF;--p-sombra:0 1px 2px rgba(40,44,56,.05),0 calc(18px*var(--ht-sombra-k,1)) calc(44px*var(--ht-sombra-k,1)) -26px rgba(40,44,56,calc(.26*var(--ht-sombra-k,1)));color-scheme:light}
+html.ht-premium,html.ht-premium body#app-body{background:transparent!important}
+html.ht-premium body#app-body{color:var(--p-texto);font-family:"DM Sans","Segoe UI",system-ui,sans-serif}
+html.ht-premium #main-card{background:var(--p-vidro)!important;border-color:var(--p-linha);box-shadow:var(--p-sombra);backdrop-filter:blur(24px) saturate(140%);border-radius:calc(var(--ht-raio,24px) + 16px)}
+html.ht-premium--ampliado #main-card{zoom:1.16}
+html.ht-premium #main-card header h1{color:var(--p-titulo);font-family:Nunito,"Segoe UI",sans-serif;font-weight:700}
+/* as cores do fundo, do cartão e do timer vêm da paleta do HUB (Personalizar visual) */
+html.ht-premium #main-card header .relative:has(input[type=color]){display:none}
+html.ht-premium #main-card header button{background:var(--p-vidro-2);color:var(--p-texto-2);border:1px solid var(--p-linha)}
+html.ht-premium #main-card header button:hover{color:var(--p-titulo);border-color:var(--p-acento)}
+html.ht-premium #main-card .bg-stone-100{background:var(--p-vidro-2)}
+html.ht-premium #mode-indicator{background:var(--p-vidro-2);box-shadow:0 0 0 1px var(--p-acento) inset,0 0 18px var(--p-brilho)}
+html.ht-premium .mode-btn{color:var(--p-texto)!important}
+html.ht-premium #task-input{color:var(--p-texto);opacity:1}
+html.ht-premium #task-input::placeholder{color:var(--p-mudo)}
+html.ht-premium #task-input.title-active{color:var(--p-titulo)!important;font-family:Nunito,"Segoe UI",sans-serif}
+html.ht-premium #time-display{color:var(--p-titulo)!important;font-family:Nunito,"Segoe UI",sans-serif;font-weight:200}
+html.ht-premium #reset-btn{background:var(--p-vidro-2);color:var(--p-texto-2);border:1px solid var(--p-linha)}
+html.ht-premium #main-btn{background:var(--p-acento);color:var(--p-sobre-acento);box-shadow:0 12px 30px -12px var(--p-brilho),0 0 24px var(--p-brilho)}
+html.ht-premium #open-reminder-btn{background:var(--p-brilho);color:var(--p-acento-texto);border:1px solid var(--p-linha)}
+html.ht-premium #pip-toggle{color:var(--p-mudo)}
+html.ht-premium #pip-toggle:hover{color:var(--p-titulo)}
+html.ht-premium :is(#main-card button,#pip-toggle):focus-visible{outline:2px solid var(--p-acento);outline-offset:2px}
+/* Anotações e janelas de ajuste continuam como folhas claras (padrão dos editores) */
+html.ht-premium :is(#notes-sidebar,#settings-modal>div,#create-reminder-modal>div){color:#1c1917;color-scheme:light}
+html.ht-premium :is(#settings-modal,#create-reminder-modal){background:rgba(7,11,26,.55)}
+html.ht-premium #notes-sidebar.translate-x-full{box-shadow:none}
+}
+</style>
 </head>
 <body class="bg-stone-100 min-h-screen flex items-center justify-center text-stone-800 transition-colors duration-500" id="app-body">
 

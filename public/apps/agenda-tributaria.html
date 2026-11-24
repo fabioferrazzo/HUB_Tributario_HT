@@ -503,6 +503,100 @@ header.page-header{border-top:0}
 .brand-eyebrow,.toolbar-label,.panel-eyebrow,.crit-label{color:#5f6f82}
 .info-block{border-radius:10px;border:1px solid #d9e2ec;border-left:3px solid #18917a}
 </style>
+<script src="/apps/hub-premium-app.js"></script>
+<style id="ht-premium-agenda">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js) e só na tela. */
+@media screen {
+html.ht-premium--escuro{
+  --a-texto:#EEF2FA;--a-texto-2:#B9C3DA;--a-mudo:#A3AECB;--a-titulo:#FFFFFF;--a-linha:rgba(255,255,255,.10);--a-linha-suave:rgba(255,255,255,.06);
+  --a-vidro:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--a-vidro-2:rgba(255,255,255,calc(.075*var(--ht-vidro-k,1)));--a-solido:#121A30;
+  --a-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--a-acento-texto:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));
+  --a-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .22);--a-sobre-acento:#04121A;
+  --a-sombra:0 1px 0 rgba(255,255,255,.04) inset,0 calc(24px*var(--ht-sombra-k,1)) calc(60px*var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8*var(--ht-sombra-k,1)));
+  /* categorias: tons claros sobre véus translúcidos */
+  --crimson:#FF9A8D;--crimson-soft:#FF9A8D;--crimson-tint:rgba(255,122,107,.16);
+  --indigo:#AFBDF2;--indigo-tint:rgba(120,140,230,.18);--terracotta:#F2AE88;--terracotta-tint:rgba(230,140,90,.16);
+  --olive:#D9D58F;--olive-tint:rgba(200,196,100,.15);--gold:#F0C46A;--gold-soft:#F0C46A;--gold-tint:rgba(240,196,106,.15);
+  --azure:#A3C6F2;--azure-tint:rgba(110,160,230,.17);--plum:#E6AECB;--plum-tint:rgba(200,110,160,.17);
+  color-scheme:dark}
+html.ht-premium--claro{
+  --a-texto:#1A2033;--a-texto-2:#3D4456;--a-mudo:#5B6274;--a-titulo:#111830;--a-linha:rgba(40,44,56,.11);--a-linha-suave:rgba(40,44,56,.07);
+  --a-vidro:rgba(255,255,255,min(.95,calc(.62*var(--ht-vidro-k,1))));--a-vidro-2:rgba(255,255,255,min(.97,calc(.82*var(--ht-vidro-k,1))));--a-solido:#FFFFFF;
+  --a-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--a-acento-texto:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));
+  --a-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10);--a-sobre-acento:#FFFFFF;
+  --a-sombra:0 1px 2px rgba(40,44,56,.05),0 calc(14px*var(--ht-sombra-k,1)) calc(34px*var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22*var(--ht-sombra-k,1)));
+  --gold:#8A5300;--gold-soft:#8A5300;--gold-tint:#FBF4E4;--crimson:#B93E0E;--crimson-soft:#B93E0E;--crimson-tint:#FBEDE8;
+  color-scheme:light}
+html.ht-premium{
+  --bg:transparent;--bg-elev:var(--a-vidro-2);--paper:var(--a-vidro);--ink:var(--a-texto);--ink-soft:var(--a-texto-2);--ink-mute:var(--a-mudo);
+  --line:var(--a-linha);--line-soft:var(--a-linha-suave);--primary:var(--a-acento-texto);--primary-soft:var(--a-acento-texto);--primary-tint:var(--a-brilho);
+  --shadow:var(--a-sombra);--shadow-lg:var(--a-sombra)}
+html.ht-premium,html.ht-premium body{background:transparent!important;background-image:none!important}
+html.ht-premium body{color:var(--a-texto);font-family:"DM Sans","Segoe UI",system-ui,sans-serif}
+html.ht-premium--ampliado body{zoom:1.15}
+/* a grade do mês nunca passa da largura (as etiquetas encolhem com reticências) */
+html.ht-premium :is(.days,.weekdays){grid-template-columns:repeat(7,minmax(0,1fr))}
+html.ht-premium .day{min-width:0;overflow:hidden}
+html.ht-premium .day-tags .pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:900px){html.ht-premium--ampliado .layout{grid-template-columns:minmax(0,1fr) 340px}}
+html.ht-premium :is(h1,h2,h3,.brand-title,.cal-month-display,.month-pill,.panel-day,.modal-title,.month-empty-title){color:var(--a-titulo);font-family:Nunito,"Segoe UI",sans-serif}
+html.ht-premium :is(.brand-title em,.month-empty-title em,.modal-title em,.panel-day em){color:var(--a-acento-texto)}
+html.ht-premium :is(.brand-eyebrow,.toolbar-label,.panel-eyebrow,.weekday,.legend-key,.cal-stats,.panel-counter .lbl,.ob-meta-grid dt,.modal-body h4){color:var(--a-mudo);font-family:"DM Mono",ui-monospace,monospace;font-weight:400}
+html.ht-premium .weekday.weekend{color:var(--crimson)}
+html.ht-premium .panel-counter .num{color:var(--a-acento-texto);font-family:Nunito,"Segoe UI",sans-serif;font-weight:300}
+/* cartões de vidro */
+html.ht-premium :is(.status-bar,.toolbar,.calendar,.panel){background:var(--a-vidro);border-color:var(--a-linha);box-shadow:var(--a-sombra);border-radius:calc(var(--ht-raio,24px)*.75);backdrop-filter:blur(24px) saturate(140%)}
+html.ht-premium :is(.cal-header,.panel-head,.weekdays){background:transparent}
+html.ht-premium .day{background:transparent}
+html.ht-premium .day.weekend{background:var(--a-vidro)}
+html.ht-premium .day.has-events:not(.selected):hover{background:var(--a-vidro-2);box-shadow:none}
+html.ht-premium .day.selected{background:var(--a-brilho);color:var(--a-titulo);box-shadow:inset 0 0 0 1px var(--a-acento),0 0 24px var(--a-brilho)}
+html.ht-premium .day.selected .daynum{color:var(--a-titulo)}
+html.ht-premium .day.selected .day-tags .pill{background:var(--a-vidro-2);color:var(--a-titulo)}
+html.ht-premium .daycount,html.ht-premium .day.selected .daycount{background:var(--a-acento);color:var(--a-sobre-acento)}
+html.ht-premium .day.today:not(.selected){box-shadow:inset 0 0 0 2px var(--gold)}
+html.ht-premium .daynum{color:var(--a-texto);font-family:Nunito,"Segoe UI",sans-serif}
+/* botões */
+html.ht-premium :is(.nav-btn,.icon-btn,.month-pill,.modal-close){background:var(--a-vidro-2);border-color:var(--a-linha);color:var(--a-texto)}
+html.ht-premium :is(.nav-btn:hover:not(:disabled),.icon-btn:hover,.modal-close:hover,.month-pill:hover){background:var(--a-vidro-2);border-color:var(--a-acento);color:var(--a-titulo)}
+html.ht-premium .icon-btn .badge{background:var(--crimson);color:#FFFFFF}
+html.ht-premium--escuro .icon-btn .badge{color:#2A0A06}
+html.ht-premium .btn{background:var(--a-acento);border-color:var(--a-acento);color:var(--a-sobre-acento)}
+html.ht-premium .btn:hover{background:var(--a-acento);border-color:var(--a-acento);filter:brightness(1.08)}
+html.ht-premium .btn.btn-ghost{background:var(--a-vidro-2);border-color:var(--a-linha);color:var(--a-texto)}
+html.ht-premium .btn.btn-ghost:hover{background:var(--a-vidro-2);border-color:var(--a-acento);color:var(--a-titulo);filter:none}
+html.ht-premium .chip{background:var(--a-vidro-2);border-color:var(--a-linha);color:var(--a-texto-2)}
+html.ht-premium .chip.active{background:var(--a-acento);border-color:var(--a-acento);color:var(--a-sobre-acento)}
+html.ht-premium .chip[data-cat="pj-fed"] .dot,html.ht-premium .status-led{background:var(--a-acento)}
+html.ht-premium .status-led{box-shadow:0 0 0 2px var(--a-brilho)}
+html.ht-premium .status-update{color:var(--a-acento-texto);border-color:var(--a-brilho)}
+html.ht-premium .status-bar strong,html.ht-premium .ob-name{color:var(--a-titulo)}
+html.ht-premium .status-bar .sep{color:var(--a-mudo)}
+/* faixa de dia crítico: única área quente */
+html.ht-premium .critical-strip{background:linear-gradient(140deg,var(--crimson-tint),transparent 85%),var(--a-vidro);border:1px solid color-mix(in srgb,var(--crimson) 35%,transparent);color:var(--a-texto)}
+html.ht-premium .critical-strip::before{background:radial-gradient(circle at top right,color-mix(in srgb,var(--crimson) 18%,transparent),transparent 70%)}
+html.ht-premium .crit-text{color:var(--a-texto)}
+html.ht-premium .crit-text strong,html.ht-premium .crit-label{color:var(--crimson)}
+html.ht-premium .crit-label{border-color:color-mix(in srgb,var(--crimson) 40%,transparent)}
+html.ht-premium .crit-button{background:var(--gold);color:#1F1300}
+html.ht-premium--claro .crit-button{color:#FFFFFF}
+/* lista de obrigações */
+html.ht-premium :is(.obligation:hover,.obligation.expanded){background:var(--a-vidro-2)}
+html.ht-premium .obligation.expanded .ob-toggle{background:var(--a-acento);color:var(--a-sobre-acento);border-color:var(--a-acento)}
+html.ht-premium .ob-detail{background:var(--a-vidro);border-color:var(--a-linha)}
+html.ht-premium .ob-name strong{color:var(--a-acento-texto)}
+html.ht-premium .info-block{background:var(--gold-tint);border-color:var(--a-linha);border-left-color:var(--gold);color:var(--a-texto)}
+/* menus e janelas: fundo sólido, para nada transparecer por baixo */
+html.ht-premium :is(.month-dropdown,.modal){background:var(--a-solido);border-color:var(--a-linha)}
+html.ht-premium .modal-head{background:transparent}
+html.ht-premium .md-item.current{background:var(--a-acento);color:var(--a-sobre-acento)}
+html.ht-premium .md-item:hover{background:var(--a-vidro-2);color:var(--a-titulo)}
+html.ht-premium .modal-backdrop{background:rgba(7,11,26,.6)}
+html.ht-premium .install-toast{background:var(--a-solido);color:var(--a-texto);border:1px solid var(--a-linha)}
+html.ht-premium .install-toast .close{color:var(--a-texto)}
+html.ht-premium :is(.nav-btn,.icon-btn,.month-pill,.chip,.btn,.obligation,.md-item,.modal-close,.day):focus-visible{outline:2px solid var(--a-acento);outline-offset:2px}
+}
+</style>
 </head>
 <body>
 <div class="wrap">

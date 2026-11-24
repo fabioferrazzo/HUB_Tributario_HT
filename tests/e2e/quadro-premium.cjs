@@ -78,7 +78,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.screenshot({ path: path.join(OUT, "hp-app-escuro.png") });
 
   // Outra tela (ainda no visual atual) fica numa folha clara dentro do tema escuro.
-  await page.click(".side-nav button[title='Pomodoro']");
+  await page.click(".side-nav button[title='Informativos']");
   await page.waitForTimeout(900);
   const folha = await page.locator(".workspace-body").evaluate((el) => getComputedStyle(el).backgroundColor);
   check("telas ainda não migradas ficam em folha clara", folha === "rgb(244, 241, 234)", folha);

@@ -695,6 +695,109 @@
     body:not(.theme-dark) .title-input-icon{background:#eaf1f8;color:#123a63}
   </style>
   <script>document.documentElement.classList.add("in-hub");</script>
+<script src="/apps/hub-premium-app.js"></script>
+<style id="ht-premium-checklist">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js) e só na tela.
+   No premium, o modo escuro/claro do próprio Checklist acompanha o tema do HUB. */
+@media screen {
+html.ht-premium--escuro body,html.ht-premium--escuro body.theme-dark{
+  --c-titulo:#FFFFFF;--c-texto-2:#B9C3DA;--c-solido:#121A30;
+  --bg:transparent;--bg-soft:transparent;--bg-deep:transparent;
+  --panel:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--panel-2:rgba(255,255,255,calc(.075*var(--ht-vidro-k,1)));
+  --text:#EEF2FA;--muted:#A3AECB;--line:rgba(255,255,255,.10);--line-strong:rgba(255,255,255,.22);
+  --accent:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--brand-teal:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));
+  --accent-strong:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));--accent-2:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20);
+  --c-sobre-acento:#04121A;
+  --danger:#FF8A7C;--danger-bg:rgba(255,122,107,.12);--ok:#7FD6B0;--ok-bg:rgba(127,214,176,.10);--warning:#F0C46A;--warning-bg:rgba(240,196,106,.10);
+  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 calc(24px*var(--ht-sombra-k,1)) calc(60px*var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8*var(--ht-sombra-k,1)));--shadow-soft:var(--shadow);
+  --sidebar-grad:rgba(255,255,255,calc(.04*var(--ht-vidro-k,1)));--hero-grad:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--accent-grad:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));
+  --radius:calc(var(--ht-raio,24px)*.75);color-scheme:dark}
+html.ht-premium--claro body,html.ht-premium--claro body.theme-dark{
+  --c-titulo:#111830;--c-texto-2:#3D4456;--c-solido:#FFFFFF;
+  --bg:transparent;--bg-soft:transparent;--bg-deep:transparent;
+  --panel:rgba(255,255,255,min(.95,calc(.66*var(--ht-vidro-k,1))));--panel-2:rgba(255,255,255,min(.97,calc(.85*var(--ht-vidro-k,1))));
+  --text:#1A2033;--muted:#5B6274;--line:rgba(40,44,56,.11);--line-strong:rgba(40,44,56,.24);
+  --accent:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--brand-teal:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));
+  --accent-strong:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));--accent-2:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10);
+  --c-sobre-acento:#FFFFFF;
+  --danger:#B93E0E;--danger-bg:#FBEDE8;--ok:#26693F;--ok-bg:#EEF5F0;--warning:#8A5300;--warning-bg:#FBF4E4;
+  --shadow:0 1px 2px rgba(40,44,56,.05),0 calc(14px*var(--ht-sombra-k,1)) calc(34px*var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22*var(--ht-sombra-k,1)));--shadow-soft:var(--shadow);
+  --sidebar-grad:rgba(251,250,247,.72);--hero-grad:rgba(255,255,255,min(.95,calc(.66*var(--ht-vidro-k,1))));--accent-grad:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));
+  --radius:calc(var(--ht-raio,24px)*.75);color-scheme:light}
+html.ht-premium--escuro{color-scheme:dark}
+html.ht-premium--claro{color-scheme:light}
+html.ht-premium,html.ht-premium body{background:transparent!important}
+html.ht-premium body{color:var(--text);font-family:"DM Sans","Segoe UI",system-ui,sans-serif}
+html.ht-premium--ampliado body{zoom:1.12}
+html.ht-premium #themeToggleBtn{display:none!important}
+/* o nome do checklist sempre aparece inteiro: as ações descem para a linha de baixo quando falta espaço */
+html.ht-premium .title-row{flex-wrap:wrap}
+html.ht-premium .title-wrap{flex:1 1 340px;min-width:min(340px,100%)}
+html.ht-premium .head-actions{flex-wrap:wrap}
+html.ht-premium :is(.brand-title,.empty h2,.title-input,.detail-head h2,.section-title,.stat-value,.profile-name){color:var(--c-titulo);font-family:Nunito,"Segoe UI",sans-serif}
+html.ht-premium :is(.crumb-label,.stat-label,.title-caption,.task-order,.stat-sub,.list-card-meta,.list-card-share,.side-footer,.brand-sub,.profile-role,.attach-hint,.share-help,.share-empty,.share-head p,.share-all small){color:var(--muted)}
+html.ht-premium :is(.crumb-label,.stat-label,.title-caption){font-family:"DM Mono",ui-monospace,monospace;font-weight:400;letter-spacing:.12em}
+html.ht-premium .crumb{color:var(--text)}
+/* menu lateral do app: vidro */
+html.ht-premium .sidebar{background:var(--sidebar-grad);border-right:1px solid var(--line);color:var(--text);backdrop-filter:blur(24px) saturate(140%)}
+html.ht-premium .sidebar:before,html.ht-premium .sidebar:after{display:none}
+html.ht-premium :is(.brand-badge,.app-signature,.brand-logo){background:var(--panel-2);border-color:var(--line);color:var(--muted);box-shadow:none}
+html.ht-premium .nav-tab{background:var(--panel-2);border-color:var(--line);color:var(--c-texto-2)}
+html.ht-premium .nav-tab.active{background:var(--accent);border-color:var(--accent);color:var(--c-sobre-acento);box-shadow:0 0 18px var(--accent-2)}
+html.ht-premium .badge-count{background:var(--panel-2);color:var(--text)}
+html.ht-premium .nav-tab.active .badge-count{background:rgba(0,0,0,.14);color:var(--c-sobre-acento)}
+html.ht-premium .search-shell{background:#FFFFFF;border-color:rgba(40,44,56,.18);color:#1A2033}
+html.ht-premium .search{color:#1A2033;font-family:"DM Sans","Segoe UI",sans-serif}
+html.ht-premium .search::placeholder{color:#5B6274}
+html.ht-premium .list-card{color:var(--text);background:transparent}
+html.ht-premium .list-card:hover{background:var(--panel-2)}
+html.ht-premium .list-card.active{background:var(--accent-2);color:var(--c-titulo);border-color:var(--accent);box-shadow:0 0 22px var(--accent-2)}
+html.ht-premium .list-card.active:before{background:var(--accent)}
+html.ht-premium .list-card.active :is(.list-card-meta,.list-card-share){color:var(--c-texto-2)}
+html.ht-premium .list-card-progress,html.ht-premium .list-card.active .list-card-progress,html.ht-premium .progress{background:var(--panel-2)}
+html.ht-premium :is(.list-card-progress>div,.list-card.active .list-card-progress>div,.progress>div){background:var(--accent)}
+/* cabeçalho, cartões e botões */
+html.ht-premium :is(.topbar,.profile-chip,.shell-btn,.institution-chip){background:var(--panel-2);border-color:var(--line);color:var(--text);backdrop-filter:blur(18px)}
+html.ht-premium :is(.empty,.detail-head,.section,.task-card,.title-input-shell,.stat-card,.task,.add-task,.attach-hint,.file-chip){background:var(--panel);border-color:var(--line);color:var(--text)}
+html.ht-premium .detail-head:before{background:var(--accent)}
+html.ht-premium .stat-card:before,html.ht-premium .stat-card:nth-child(4):before{background:var(--accent)}
+html.ht-premium .stat-card:nth-child(3):before{background:var(--warning)}
+html.ht-premium .btn:not(.primary):not(.danger){background:var(--panel-2);border-color:var(--line);color:var(--text)}
+html.ht-premium .btn:not(.primary):hover{border-color:var(--accent)}
+html.ht-premium .btn.primary,html.ht-premium :is(.view-switch-btn.active,.details-task.has-details){background:var(--accent);border-color:var(--accent);color:var(--c-sobre-acento);box-shadow:0 0 18px var(--accent-2)}
+html.ht-premium .btn.danger{background:var(--danger-bg);border-color:color-mix(in srgb,var(--danger) 35%,transparent);color:var(--danger)}
+html.ht-premium :is(.icon-btn,.fmt,.font-size){background:var(--panel-2);border-color:var(--line);color:var(--text)}
+html.ht-premium :is(.pill,.updated-pill){background:var(--panel-2);border-color:var(--line);color:var(--c-texto-2)}
+html.ht-premium .pill.archive{border-color:color-mix(in srgb,var(--warning) 40%,transparent)}
+html.ht-premium :is(.title-input-icon,.file-icon){background:var(--accent-2);color:var(--accent-strong)}
+html.ht-premium .task-order-badge{background:var(--accent-2);color:var(--accent-strong)}
+html.ht-premium .task-state{background:var(--panel-2);border-color:var(--line);color:var(--c-texto-2)}
+html.ht-premium .task.done{background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+html.ht-premium .task.done :is(.task-state,.task-order-badge){background:var(--ok-bg);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+html.ht-premium .task-tools{background:var(--panel-2);border-color:var(--line)}
+/* editor das tarefas: folha clara, como nos outros editores do HUB */
+html.ht-premium .task-editor,html.ht-premium .task.done .task-editor{background:#FFFFFF;color:#1A2033;color-scheme:light}
+html.ht-premium .task.done .task-editor{opacity:.75}
+html.ht-premium .archive-note{background:var(--warning-bg);border-color:color-mix(in srgb,var(--warning) 40%,transparent);color:var(--warning)}
+html.ht-premium .backup-help{background:var(--accent-2);border-color:var(--line)}
+/* janelas e menus: fundo sólido */
+html.ht-premium :is(.modal,.detalhes-modal,.floating-checklist-menu){background:var(--c-solido);border-color:var(--line);color:var(--text)}
+html.ht-premium .modal-backdrop{background:rgba(7,11,26,.55)}
+html.ht-premium .modal-close{background:var(--panel-2);border-color:var(--line);color:var(--muted)}
+html.ht-premium .board{background:var(--panel);border-color:var(--line)}
+/* Quadro semanal: cores de cada dia trocadas por tons frios (quentes ficam só para avisos) */
+html.ht-premium--claro .board{--b-lilas:#E2E6EE;--b-azul:#DCE2F0;--b-pessego:#ECE6DC;--b-seg:#DCE4F2;--b-ter:#D6E8F2;--b-qua:#D8EDE2;--b-qui:#E4EBE0;--b-sex:#E9E5DE;--b-obs:#E6E8EE;--b-semana:#D3EAE5;--b-tinta:#1A2033}
+html.ht-premium--escuro .board{--b-lilas:#2A3350;--b-azul:#26355A;--b-pessego:#35343A;--b-seg:#27335A;--b-ter:#1F3A52;--b-qua:#1F3F3A;--b-qui:#273B3F;--b-sex:#33323E;--b-obs:#2D3148;--b-semana:#17454A;--b-tinta:#EEF2FA}
+html.ht-premium .board-sec{color:var(--muted);font-family:"DM Mono",ui-monospace,monospace;font-weight:400}
+html.ht-premium--escuro .board-check{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.08)}
+html.ht-premium--escuro .board-task.done .board-check{background:rgba(255,255,255,.18)}
+html.ht-premium--escuro .board-check svg{stroke:#EEF2FA}
+html.ht-premium--escuro .board-obs-text{background:rgba(255,255,255,.06)}
+html.ht-premium--escuro .board-obs-text:focus{background:rgba(255,255,255,.1);outline-color:var(--accent)}
+html.ht-premium .board-day.hoje{outline-color:var(--accent)}
+html.ht-premium :is(.btn,.nav-tab,.list-card,.icon-btn,.fmt,.add-task):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+}
+</style>
 </head>
 <body>
   <div class="app">
@@ -2583,6 +2686,29 @@
 })();
 </script>
 
+<script>
+/* Visual premium: com o premium ligado, o modo escuro do Checklist acompanha o tema do HUB (o botão de lua some). */
+(function () {
+  var forcado = false;
+  function sinc() {
+    var r = document.documentElement, b = document.body;
+    if (!b) return;
+    if (r.classList.contains("ht-premium")) {
+      forcado = true;
+      var escuro = r.classList.contains("ht-premium--escuro");
+      if (b.classList.contains("theme-dark") !== escuro) b.classList.toggle("theme-dark", escuro);
+    } else if (forcado) {
+      forcado = false;
+      var pref = false;
+      try { pref = !!(JSON.parse(localStorage.getItem("ht_checklist_ui_prefs_v15") || "{}").darkMode); } catch (e) { pref = false; }
+      b.classList.toggle("theme-dark", pref);
+    }
+  }
+  window.addEventListener("ht-premium-change", sinc);
+  new MutationObserver(sinc).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  sinc();
+})();
+</script>
 <script src="/apps/hub-app-shell.js" defer></script>
 </body>
 </html>

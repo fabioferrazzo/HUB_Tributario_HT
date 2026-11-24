@@ -566,6 +566,101 @@ body{font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-seri
 .card h3,.section-card-head h3,.wizard-head h3{color:#0b1f3a;font-weight:700}
 .btn{font-weight:600;border-radius:9px}
 </style>
+<script src="/apps/hub-premium-app.js"></script>
+<style id="ht-premium-consultor">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js) e só na tela.
+   A ficha do relatório e a janela de exemplos continuam como folhas claras (são documentos). */
+@media screen {
+html.ht-premium--escuro{
+  --x-texto:#EEF2FA;--x-texto-2:#B9C3DA;--x-mudo:#A3AECB;--x-titulo:#FFFFFF;--x-linha:rgba(255,255,255,.10);--x-linha-forte:rgba(255,255,255,.22);
+  --x-vidro:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--x-vidro-2:rgba(255,255,255,calc(.075*var(--ht-vidro-k,1)));--x-solido:#121A30;
+  --x-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--x-acento-texto:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));
+  --x-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20);--x-sobre-acento:#04121A;
+  --x-urgente:#FF8A7C;--x-ambar:#F0C46A;--x-ok:#7FD6B0;
+  --x-urgente-fundo:rgba(255,122,107,.11);--x-ambar-fundo:rgba(240,196,106,.10);--x-ok-fundo:rgba(127,214,176,.10);
+  --x-sombra:0 1px 0 rgba(255,255,255,.04) inset,0 calc(24px*var(--ht-sombra-k,1)) calc(60px*var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8*var(--ht-sombra-k,1)));
+  --x-fixo:rgba(14,19,38,.84);
+  color-scheme:dark}
+html.ht-premium--claro{
+  --x-fixo:rgba(250,250,248,.88);
+  --x-texto:#1A2033;--x-texto-2:#3D4456;--x-mudo:#5B6274;--x-titulo:#111830;--x-linha:rgba(40,44,56,.11);--x-linha-forte:rgba(40,44,56,.24);
+  --x-vidro:rgba(255,255,255,min(.95,calc(.62*var(--ht-vidro-k,1))));--x-vidro-2:rgba(255,255,255,min(.97,calc(.82*var(--ht-vidro-k,1))));--x-solido:#FFFFFF;
+  --x-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--x-acento-texto:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));
+  --x-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10);--x-sobre-acento:#FFFFFF;
+  --x-urgente:#B93E0E;--x-ambar:#8A5300;--x-ok:#26693F;
+  --x-urgente-fundo:#FBEDE8;--x-ambar-fundo:#FBF4E4;--x-ok-fundo:#EEF5F0;
+  --x-sombra:0 1px 2px rgba(40,44,56,.05),0 calc(14px*var(--ht-sombra-k,1)) calc(34px*var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22*var(--ht-sombra-k,1)));
+  color-scheme:light}
+html.ht-premium{
+  --navy:var(--x-acento-texto);--navy2:var(--x-acento-texto);--navy3:var(--x-acento-texto);--teal:var(--x-acento);--teal-d:var(--x-acento);--teal-soft:var(--x-brilho);
+  --green:var(--x-ok);--amber:var(--x-ambar);--red:var(--x-urgente);--purple:var(--x-acento-texto);
+  --bg:transparent;--card:var(--x-vidro);--line:var(--x-linha);--line-strong:var(--x-linha-forte);--text:var(--x-texto);--muted:var(--x-mudo);--soft:var(--x-vidro-2);--soft-blue:var(--x-vidro-2);
+  --shadow-sm:var(--x-sombra);--shadow-md:var(--x-sombra);--ring:0 0 0 3px var(--x-brilho);--radius:calc(var(--ht-raio,24px)*.75)}
+/* folhas claras: ficha do relatório, janela de exemplos e ajuda dos botões de janela */
+html.ht-premium :is(.report-preview,.example-viewer-dialog,.win-pop){
+  --navy:#123a63;--navy2:#0e2d4d;--navy3:#0b1f3a;--teal:#18917a;--teal-d:#127463;--teal-soft:#e7f8f3;--card:#fff;--line:#d9e2ec;--line-strong:#c9d5e2;--text:#14243a;--muted:#5f6f82;--soft:#f6f8fb;--soft-blue:#eaf1f8;
+  --x-texto:#1A2033;--x-texto-2:#3D4456;--x-mudo:#5B6274;--x-titulo:#111830;--x-linha:rgba(40,44,56,.12);--x-vidro:#FFFFFF;--x-vidro-2:#F6F7F9;
+  color:#14243a;color-scheme:light}
+html.ht-premium,html.ht-premium body,html.ht-premium body.is-fullscreen{background:transparent!important}
+html.ht-premium body{color:var(--x-texto);font-family:"DM Sans","Segoe UI",system-ui,sans-serif}
+html.ht-premium--ampliado body{zoom:1.12}
+html.ht-premium :is(.brand h1,.brand-text h1,.card h3,.section-card-head h3,.wizard-head h3,.example-card-body h4,.release-row b,.trace-item b){color:var(--x-titulo);font-family:Nunito,"Segoe UI",sans-serif}
+html.ht-premium :is(.brand p,.brand-text p,.version,.version span,.topbar-meta,.footer,.field-meta span,.trace-item small,.sources-card li span,.example-note,.examples-search-wrap label,.example-nav span,.example-zoom span){color:var(--x-mudo)}
+html.ht-premium :is(.field label,.alert p,.mini-row span,.rationale,.field-meta small,.obs-card p,.trace-item p,.hard-list p,.wizard-tip,.review-strip,.btn-ghost,.example-subtitle,.examples-safety p,.analysis-mode-actions .btn){color:var(--x-texto-2)}
+html.ht-premium .version strong{color:var(--x-texto-2)}
+html.ht-premium :is(.logo,.logo span){color:var(--x-acento-texto);border-right-color:var(--x-linha)}
+/* cabeçalho, abas e cartões de vidro */
+html.ht-premium .app-tabs{background:var(--x-fixo);border-color:var(--x-linha);backdrop-filter:blur(18px) saturate(140%)}
+html.ht-premium .topbar{background:var(--x-fixo);border-bottom-color:var(--x-linha);color:var(--x-texto);backdrop-filter:blur(18px) saturate(140%)}
+html.ht-premium :is(.topbar .base-chip,.win-btn,.icon-btn,.copy-btn){background:var(--x-vidro-2);border-color:var(--x-linha);color:var(--x-texto)}
+html.ht-premium :is(.win-btn:hover,.win-btn[aria-pressed="true"],.icon-btn:hover){background:var(--x-vidro-2);border-color:var(--x-acento)}
+html.ht-premium .app-tab{background:transparent;color:var(--x-texto-2)}
+html.ht-premium .app-tab:hover:not(.active){background:var(--x-vidro-2)}
+html.ht-premium :is(.app-tab.active,.future-nav .active,.example-filter.active,.analysis-mode-actions .btn.active,.wizard-dot.active,.trace-num,.wizard-dot.active span,.wizard-dot.done span){background:var(--x-acento);border-color:var(--x-acento);color:var(--x-sobre-acento)}
+html.ht-premium .app-tab.active .ico{color:var(--x-sobre-acento)}
+html.ht-premium :is(.card,.wizard-shell,.section-title,.result-placeholder,.alert,.field-line,.restore-banner,.example-card,.report-empty,.rv-panel,.obs-card,.actions,.report-options,.report-source,.examples-source,.example-filter-group,.empty-box,.hard-list>div,.section-kicker,.rv-grid>div){background:var(--x-vidro);border-color:var(--x-linha);color:var(--x-texto)}
+html.ht-premium .card{box-shadow:var(--x-sombra)}
+html.ht-premium :is(.wizard-dot,.wizard-dot.done,.check-grid>.check,.report-options .check,.subpanel .check,.example-filter,.example-tags span,.future-nav span,.wizard-tip,.review-strip,.analysis-mode-actions,.example-thumb){background:var(--x-vidro-2);border-color:var(--x-linha);color:var(--x-texto-2)}
+html.ht-premium :is(.check-grid>.check:hover,.report-options .check:hover,.example-filter:hover){background:var(--x-vidro-2);border-color:var(--x-acento)}
+html.ht-premium :is(.check-grid>.check:has(input:checked),.report-options .check:has(input:checked)){background:var(--x-brilho);border-color:var(--x-acento);color:var(--x-titulo)}
+html.ht-premium .wizard-dot span{background:var(--x-vidro-2);color:var(--x-texto)}
+html.ht-premium .subpanel{background:var(--x-brilho);border-color:var(--x-linha)}
+/* campos: folhas brancas */
+html.ht-premium :is(.field input,.field select,input[type=search],input[type=text],input[type=date],select){background:#FFFFFF;color:#1A2033;border-color:rgba(40,44,56,.18);color-scheme:light}
+/* botões */
+html.ht-premium .btn-primary,html.ht-premium .btn-success{background:var(--x-acento);border-color:var(--x-acento);color:var(--x-sobre-acento)}
+html.ht-premium :is(.btn-primary,.btn-success):hover:not(:disabled){background:var(--x-acento);filter:brightness(1.08)}
+html.ht-premium :is(.btn-secondary,.btn-ghost){background:var(--x-vidro-2);border-color:var(--x-linha);color:var(--x-texto)}
+html.ht-premium :is(.btn-secondary,.btn-ghost,.btn-ghost-danger):hover:not(:disabled){background:var(--x-vidro-2);border-color:var(--x-acento)}
+html.ht-premium .btn-warning{background:var(--x-ambar-fundo);border-color:color-mix(in srgb,var(--x-ambar) 40%,transparent);color:var(--x-ambar)}
+html.ht-premium :is(.btn-danger-soft,.btn-ghost-danger){background:var(--x-urgente-fundo);border-color:color-mix(in srgb,var(--x-urgente) 35%,transparent);color:var(--x-urgente)}
+/* situações: verde = determinado/ok; âmbar = condicional/atenção; coral = pare; neutro = informativo */
+html.ht-premium :is(.badge-DETERMINADO,.badge-OK,.badge-RECOMENDADO,.rv-ok){background:var(--x-ok-fundo);color:var(--x-ok)}
+html.ht-premium :is(.badge-CONDICIONAL,.badge-ATENCAO,.badge-OBRIGATÓRIO_CONDICIONAL,.tag-CONDICIONAL,.rv-warn){background:var(--x-ambar-fundo);color:var(--x-ambar)}
+html.ht-premium [class*="badge-CONDICIONAL"]{background:var(--x-ambar-fundo);color:var(--x-ambar)}
+html.ht-premium :is(.badge-PARE_CONSULTE,.badge-PARE,.rv-err){background:var(--x-urgente-fundo);color:var(--x-urgente)}
+html.ht-premium :is(.badge-INFO,.badge-NÃO_ACIONADO,.badge-INFORMATIVO,.tag-OBRIGATÓRIO){background:var(--x-vidro-2);color:var(--x-texto-2)}
+html.ht-premium [class*="badge-OBRIGATÓRIO"]:not(.badge-OBRIGATÓRIO_CONDICIONAL){background:var(--x-brilho);color:var(--x-acento-texto)}
+html.ht-premium .alert-PARE{background:var(--x-urgente-fundo);border-color:color-mix(in srgb,var(--x-urgente) 35%,transparent)}
+html.ht-premium :is(.alert-CONDICIONAL,.alert-ATENCAO){background:var(--x-ambar-fundo);border-color:color-mix(in srgb,var(--x-ambar) 35%,transparent)}
+html.ht-premium .alert-OK{background:var(--x-ok-fundo);border-color:color-mix(in srgb,var(--x-ok) 30%,transparent)}
+html.ht-premium .alert-INFO{background:var(--x-vidro);border-color:var(--x-linha)}
+html.ht-premium :is(.disclaimer,.stale-analysis-banner,.examples-safety,.rv-note){background:var(--x-ambar-fundo);border-color:color-mix(in srgb,var(--x-ambar) 35%,transparent);color:var(--x-ambar)}
+html.ht-premium :is(.stale-analysis-banner span,.restore-banner b,.restore-banner span){color:var(--x-texto-2)}
+html.ht-premium .wizard-inline-error{background:var(--x-urgente-fundo);color:var(--x-urgente)}
+html.ht-premium .subpanel.danger{background:var(--x-urgente-fundo)}
+html.ht-premium .note{background:var(--x-vidro-2);color:var(--x-texto-2)}
+html.ht-premium .stage4-toast{background:var(--x-solido);color:var(--x-texto);border:1px solid var(--x-linha)}
+html.ht-premium .stage4-toast.warn{background:var(--x-solido);color:var(--x-ambar)}
+/* relatório: a área em volta da ficha fica no tema; a ficha continua branca */
+html.ht-premium .report-preview{background:var(--x-vidro)}
+html.ht-premium .report-export-note{background:var(--x-vidro-2);border-left-color:var(--x-acento);color:var(--x-texto-2)}
+html.ht-premium .report-preview .rpt-footer>div{color:#5f6f82}
+html.ht-premium .example-viewer-dialog{background:#FFFFFF}
+html.ht-premium .win-pop{background:#FFFFFF;color:#14243a}
+html.ht-premium :is(.app-tab,.btn,.win-btn,.icon-btn,.example-filter,.wizard-dot,.check):focus-visible{outline:2px solid var(--x-acento);outline-offset:2px}
+}
+</style>
 </head>
 <body>
   <header class="topbar">

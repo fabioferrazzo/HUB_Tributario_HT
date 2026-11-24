@@ -46,7 +46,8 @@ export const hubApps: HubApp[] = [
     group: "Ferramentas",
     access: "todos",
     src: "/apps/agenda-tributaria.html",
-    mode: "embutido"
+    mode: "embutido",
+    premium: true
   },
   {
     id: "pomodoro",
@@ -57,7 +58,8 @@ export const hubApps: HubApp[] = [
     group: "Ferramentas",
     access: "todos",
     src: "/apps/pomodoro.html",
-    mode: "embutido"
+    mode: "embutido",
+    premium: true
   },
   {
     id: "coord",
@@ -81,6 +83,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/checklist/index.html",
     mode: "embutido",
+    premium: true,
     description: "Checklists pessoais guardados no HUB (abrem de qualquer computador). Só você vê, a menos que compartilhe com colegas ou com a equipe."
   },
   {
@@ -91,7 +94,8 @@ export const hubApps: HubApp[] = [
     group: "Ferramentas",
     access: "todos",
     src: "/apps/consultor-cte-mdfe.html",
-    mode: "embutido"
+    mode: "embutido",
+    premium: true
   },
   // Controle de Apuração reconstruído no HUB: mesma tela do app do servidor, dados no Supabase.
   // A versão do HTSERVER segue em uso à parte, fora do HUB.
