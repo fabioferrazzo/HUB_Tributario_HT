@@ -180,6 +180,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/aplicacoes-financeiras/index.html",
     mode: "embutido",
+    premium: true,
     description: "Rendimentos, resgates, IR retido e simulação de IRPJ/CSLL e PIS/Cofins sobre aplicações financeiras. Os projetos ficam guardados neste navegador; use backup .htaf para levar a outro computador."
   },
   {

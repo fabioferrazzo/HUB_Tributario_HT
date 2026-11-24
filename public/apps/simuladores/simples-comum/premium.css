@@ -5,74 +5,9 @@
  * Cobre as quatro famílias de estilo dos simuladores: simples.css, IBS/CBS do Simples,
  * Mapa ICMS e DIFAL/antecipação. Cores quentes só para avisos, erros e atenção.
  */
+@import url("premium-tokens.css?v=1") screen;
 
 @media screen {
-
-/* ---------- Escala ---------- */
-html.ht-premium { --esc: 1.06; }
-html.ht-premium--ampliado { --esc: 1.22; }
-
-/* ---------- Tokens por tema ---------- */
-html.ht-premium--escuro {
-  --sp-texto: #EEF2FA; --sp-texto-2: #B9C3DA; --sp-mudo: #A3AECB; --sp-titulo: #FFFFFF;
-  --sp-linha: rgba(255,255,255,.10); --sp-linha-forte: rgba(255,255,255,.24);
-  --sp-vidro: rgba(255,255,255,calc(.045 * var(--ht-vidro-k, 1)));
-  --sp-vidro-2: rgba(255,255,255,calc(.075 * var(--ht-vidro-k, 1)));
-  --sp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 42%));
-  --sp-acento-texto: hsl(var(--ht-h, 179) calc(var(--ht-s, 75%) * .85) var(--ht-l-texto, 61%));
-  --sp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 42%) / .20);
-  --sp-sobre-acento: #04121A;
-  --sp-destaque: linear-gradient(140deg, hsl(var(--ht-h, 179) var(--ht-s, 75%) 42% / .34), hsl(var(--ht-h, 179) var(--ht-s, 75%) 42% / .10));
-  --sp-destaque-borda: hsl(var(--ht-h, 179) var(--ht-s, 75%) 55% / .40);
-  --sp-urgente: #FF8A7C; --sp-ambar: #F0C46A; --sp-ok: #7FD6B0;
-  --sp-aviso-fundo: rgba(240,196,106,.10); --sp-aviso-linha: rgba(240,196,106,.34);
-  --sp-erro-fundo: rgba(255,122,107,.11); --sp-erro-linha: rgba(255,122,107,.36);
-  --sp-ok-fundo: rgba(127,214,176,.10); --sp-ok-linha: rgba(127,214,176,.32);
-  --sp-sombra: 0 1px 0 rgba(255,255,255,.04) inset, 0 calc(24px * var(--ht-sombra-k, 1)) calc(60px * var(--ht-sombra-k, 1)) -30px rgba(0,0,0,calc(.8 * var(--ht-sombra-k, 1)));
-  --sp-traco-mapa: #121C36;
-  --sp-mapa-7: #2FA88D; --sp-mapa-12: #4F86C0; --sp-mapa-4: #7D72C4; --sp-mapa-origem: #3B4C8F;
-  color-scheme: dark;
-}
-html.ht-premium--claro {
-  --sp-texto: #1A2033; --sp-texto-2: #3D4456; --sp-mudo: #5B6274; --sp-titulo: #111830;
-  --sp-linha: rgba(40,44,56,.11); --sp-linha-forte: rgba(40,44,56,.26);
-  --sp-vidro: rgba(255,255,255,min(.95, calc(.62 * var(--ht-vidro-k, 1))));
-  --sp-vidro-2: rgba(255,255,255,min(.97, calc(.82 * var(--ht-vidro-k, 1))));
-  --sp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 28%));
-  --sp-acento-texto: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-texto, 24%));
-  --sp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 28%) / .10);
-  --sp-sobre-acento: #FFFFFF;
-  --sp-destaque: linear-gradient(140deg, hsl(var(--ht-h, 179) 40% 92%), #FFFFFF 70%);
-  --sp-destaque-borda: hsl(var(--ht-h, 179) var(--ht-s, 75%) 28% / .26);
-  --sp-urgente: #B93E0E; --sp-ambar: #8A5300; --sp-ok: #26693F;
-  --sp-aviso-fundo: #FBF4E4; --sp-aviso-linha: #E8D3A2;
-  --sp-erro-fundo: #FBEDE8; --sp-erro-linha: #EBC0B2;
-  --sp-ok-fundo: #EEF5F0; --sp-ok-linha: #C4DDCB;
-  --sp-sombra: 0 1px 2px rgba(40,44,56,.05), 0 calc(14px * var(--ht-sombra-k, 1)) calc(34px * var(--ht-sombra-k, 1)) -24px rgba(40,44,56,calc(.22 * var(--ht-sombra-k, 1)));
-  --sp-traco-mapa: #FFFFFF;
-  --sp-mapa-7: #1F8F78; --sp-mapa-12: #3F78B5; --sp-mapa-4: #6E7A8C; --sp-mapa-origem: #232F6B;
-  color-scheme: light;
-}
-
-/* ---------- Tokens antigos das quatro famílias, apontando para os premium ---------- */
-html.ht-premium {
-  /* simples.css */
-  --bg: transparent; --surface: var(--sp-vidro); --soft: var(--sp-vidro-2); --ink: var(--sp-texto); --muted: var(--sp-mudo);
-  --line: var(--sp-linha); --title: var(--sp-titulo); --brand: var(--sp-acento-texto); --brand-2: var(--sp-acento-texto);
-  --accent: var(--sp-acento); --accent-soft: var(--sp-brilho);
-  --warn-bg: var(--sp-aviso-fundo); --warn-line: var(--sp-aviso-linha); --warn-ink: var(--sp-ambar);
-  --err-bg: var(--sp-erro-fundo); --err-line: var(--sp-erro-linha); --err-ink: var(--sp-urgente);
-  --radius: calc(var(--ht-raio, 24px) * .75); --shadow: var(--sp-sombra);
-  /* IBS/CBS do Simples */
-  --surface-soft: var(--sp-vidro-2); --brand-soft: var(--sp-brilho); --danger: var(--sp-urgente); --warn: var(--sp-ambar); --ok: var(--sp-ok);
-  /* Mapa ICMS */
-  --panel: var(--sp-vidro); --text: var(--sp-texto); --blue: var(--sp-acento-texto);
-  --green: var(--sp-mapa-7); --orange: var(--sp-mapa-12); --purple: var(--sp-mapa-4); --rs: var(--sp-mapa-origem);
-  /* DIFAL e antecipação */
-  --navy: var(--sp-acento-texto); --navy2: var(--sp-texto); --turq: var(--sp-acento); --turq-l: var(--sp-brilho);
-  --card: var(--sp-vidro); --tx: var(--sp-texto); --mut: var(--sp-mudo);
-  --warn-l: var(--sp-aviso-fundo); --err: var(--sp-urgente); --err-l: var(--sp-erro-fundo); --ok-l: var(--sp-ok-fundo);
-}
 
 /* ---------- Base ---------- */
 html.ht-premium, html.ht-premium body { background: transparent; }

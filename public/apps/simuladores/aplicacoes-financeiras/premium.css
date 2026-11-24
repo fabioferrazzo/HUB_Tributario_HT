@@ -1,0 +1,153 @@
+/*
+ * Visual premium (padrão H. Teixeira Premium) do Analista de Aplicações Financeiras no HUB.
+ * Carrega depois de ../simples-comum/premium.css (tokens --sp-* e base comum dos simuladores)
+ * e só vale com html.ht-premium (ponte /apps/hub-premium-app.js). Na impressão vale o visual original.
+ */
+@media screen {
+
+/* ---------- Tokens próprios deste app ---------- */
+html.ht-premium { --good: var(--sp-ok); --panel-soft: var(--sp-vidro-2); --af-cabecalho: rgba(14,19,38,.74); --af-th: #151E35; }
+html.ht-premium--claro { --af-cabecalho: rgba(250,250,248,.84); --af-th: #F8F7F4; }
+
+/* Diálogos e cartão de espera: folhas claras (padrão dos editores), com os tokens do tema claro */
+html.ht-premium :is(dialog, .busy-card) {
+  --sp-texto: #1A2033; --sp-texto-2: #3D4456; --sp-mudo: #5B6274; --sp-titulo: #111830;
+  --sp-linha: rgba(40,44,56,.12); --sp-linha-forte: rgba(40,44,56,.26);
+  --sp-vidro: #FFFFFF; --sp-vidro-2: #F6F7F9;
+  --sp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) 28%); --sp-acento-texto: hsl(var(--ht-h, 179) var(--ht-s, 75%) 24%);
+  --sp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) 28% / .10); --sp-sobre-acento: #FFFFFF;
+  --sp-urgente: #B93E0E; --sp-ambar: #8A5300; --sp-ok: #26693F;
+  --sp-aviso-fundo: #FBF4E4; --sp-aviso-linha: #E8D3A2; --sp-erro-fundo: #FBEDE8; --sp-erro-linha: #EBC0B2; --sp-ok-fundo: #EEF5F0; --sp-ok-linha: #C4DDCB;
+  --sp-sombra: 0 1px 2px rgba(40,44,56,.05);
+  --surface: #FFFFFF; --soft: #F6F7F9; --ink: #1A2033; --muted: #5B6274; --line: rgba(40,44,56,.12); --title: #111830;
+  --brand: var(--sp-acento-texto); --brand-2: var(--sp-acento-texto); --good: #26693F; --warn: #8A5300; --danger: #B93E0E; --panel-soft: #F6F7F9;
+  --af-th: #F8F7F4;
+  color: #1A2033; color-scheme: light;
+}
+html.ht-premium dialog { background: #FFFFFF; border-radius: calc(var(--ht-raio, 24px) * .75); box-shadow: 0 30px 80px -20px rgba(7,11,26,.55); }
+html.ht-premium dialog::backdrop, html.ht-premium .busy-overlay { background: rgba(7,11,26,.55); backdrop-filter: blur(4px); }
+html.ht-premium .busy-card { background: #FFFFFF; border-radius: calc(var(--ht-raio, 24px) * .75); }
+html.ht-premium :is(dialog h2, .busy-card strong) { color: #111830; font-family: Nunito, "Segoe UI", system-ui, sans-serif; }
+html.ht-premium .dialog-copy { background: #F6F7F9; color: #5B6274; }
+html.ht-premium .spinner { border-color: rgba(40,44,56,.14); border-top-color: var(--sp-acento); }
+
+/* ---------- Base e tipografia ---------- */
+html.ht-premium { background: transparent; color: var(--sp-texto); font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; }
+html.ht-premium body { font-size: 13px; }
+/* Ampliado: o app é denso (rótulos de 8 a 12 px); cresce por inteiro para manter as proporções */
+html.ht-premium--ampliado body { zoom: 1.18; }
+html.ht-premium--ampliado .sidebar { height: calc(100vh / 1.18); }
+html.ht-premium--ampliado .auth-screen { min-height: calc(100vh / 1.18); }
+
+html.ht-premium .page-heading h1 { color: var(--sp-titulo); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-weight: 700; letter-spacing: -.015em; }
+html.ht-premium .page-heading p { color: var(--sp-mudo); }
+html.ht-premium .eyebrow { color: var(--sp-acento-texto) !important; font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .2em; }
+html.ht-premium :is(.panel-heading h2, .settings-panel h2, .issue h3, .project-card h3, .template-card h3, .template-card strong) { color: var(--sp-titulo); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-weight: 700; }
+html.ht-premium :is(.panel-heading p, .muted, .table-hint, .user-badge) { color: var(--sp-mudo); }
+html.ht-premium .user-badge strong { color: var(--sp-texto); }
+html.ht-premium :is(.link-button, .timeline-amount, td.position-code, .product-cell small.position-code) { color: var(--sp-acento-texto); }
+
+/* ---------- Menu lateral do app: vidro, item ativo com brilho ---------- */
+html.ht-premium .sidebar { background: var(--sp-vidro); border-right: 1px solid var(--sp-linha); color: var(--sp-texto-2); backdrop-filter: blur(24px) saturate(140%); }
+html.ht-premium .app-name { color: var(--sp-mudo); }
+html.ht-premium .app-name strong { color: var(--sp-titulo); }
+html.ht-premium .nav button { color: var(--sp-texto-2); transition: background-color .25s ease, color .25s ease; }
+html.ht-premium .nav button span { color: var(--sp-mudo); }
+html.ht-premium .nav button:hover { background: var(--sp-vidro-2); color: var(--sp-titulo); }
+html.ht-premium .nav button.active { background: var(--sp-brilho); color: var(--sp-titulo); box-shadow: 0 0 0 1px var(--sp-linha) inset, 0 0 22px var(--sp-brilho); }
+html.ht-premium .nav button.active span { color: var(--sp-acento-texto); }
+html.ht-premium .sidebar-foot { border-top-color: var(--sp-linha); color: var(--sp-mudo); }
+
+/* ---------- Cabeçalho do app ---------- */
+html.ht-premium .topbar { background: var(--af-cabecalho); border-bottom-color: var(--sp-linha); backdrop-filter: blur(18px) saturate(140%); }
+html.ht-premium .icon-button { color: var(--sp-texto); }
+/* O seletor de projeto cede espaço para os botões nunca saírem da tela (principalmente no ampliado) */
+html.ht-premium .topbar .project-select { min-width: 0; flex: 1 1 240px; max-width: 520px; text-overflow: ellipsis; }
+html.ht-premium .topbar .topbar-spacer { flex: 0 1 auto; }
+html.ht-premium .topbar .user-badge { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html.ht-premium .topbar .button { flex: none; white-space: nowrap; }
+
+/* ---------- Campos: folhas brancas ---------- */
+html.ht-premium :is(.project-select, .filter-bar input, .filter-bar select, .inline-select select, .settings-grid input, .settings-grid select, .uat-toolbar input, .uat-toolbar select, .stage18-uat-table select, .review-toolbar select, .review-toolbar input, .template-form-grid input, .template-form-grid select, .template-form-grid textarea, .template-test-panel select, .review-edit-fields input, .review-edit-fields select, .review-edit-fields textarea, .link-form select, .link-form input, .auth-form input, .user-form input, .user-form select, .owner-select, dialog input, dialog select, dialog textarea) {
+  background: #FFFFFF; color: #1A2033; border-color: rgba(40,44,56,.18); color-scheme: light; min-height: 0;
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; font-size: 12px; letter-spacing: 0; text-transform: none;
+}
+html.ht-premium :is(.filter-bar label, .settings-grid label, .review-toolbar label, .template-form-grid label, .template-test-panel label, .uat-toolbar label, .inline-select) {
+  color: var(--sp-mudo); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .12em;
+}
+html.ht-premium :is(.auth-form label, .user-form label, dialog label) { color: var(--sp-texto-2); font-size: 11.5px; }
+
+/* ---------- Botões ---------- */
+html.ht-premium .button { background: var(--sp-acento); border-color: var(--sp-acento); color: var(--sp-sobre-acento); border-radius: 10px; transition: border-color .25s ease, filter .25s ease; }
+html.ht-premium .button:hover { filter: brightness(1.08); }
+html.ht-premium .button.secondary { background: var(--sp-vidro-2); border-color: var(--sp-linha); color: var(--sp-texto); }
+html.ht-premium .button.secondary:hover { border-color: var(--sp-acento); filter: none; }
+html.ht-premium .button.danger { background: var(--sp-vidro-2); border-color: var(--sp-erro-linha); color: var(--sp-urgente); }
+
+/* ---------- Painéis e cartões de vidro ---------- */
+html.ht-premium :is(.filter-bar, .dashboard-filter-shell, .kpi, .panel, .issue, .project-card, .storage-card, .template-card, .document-viewer, .review-data-panel, .auth-card) {
+  background: var(--sp-vidro); border-color: var(--sp-linha); box-shadow: var(--sp-sombra); border-radius: calc(var(--ht-raio, 24px) * .62);
+}
+html.ht-premium :is(.panel-heading, .review-data-panel .panel-heading, .document-row, .snapshot-row, .processing-run, .reported-row, .document-link-row, .review-decision-row, .link-form, .process-actions, .template-test-panel, .template-editor-shell .inline-heading, .fiscal-source-row, .benchmark-history-row, .bank-breakdown-row, .closure-summary-row, .global-search-row) { border-color: var(--sp-linha); }
+html.ht-premium :is(.tax-box article, .delta-item, .drilldown-summary > div, .timeline-header > div, .closure-detail-grid > div, .benchmark-gate, .benchmark-metric, .release-checklist li, .performance-row, .release-policy-item, .uat-summary-card, .template-test-result, .reported-row.header, .timeline-content, .integrity-box) {
+  background: var(--sp-vidro-2); border-color: var(--sp-linha);
+}
+html.ht-premium .project-card.active, html.ht-premium .template-card.active { border-color: var(--sp-acento); box-shadow: 0 0 0 2px var(--sp-brilho), var(--sp-sombra); }
+html.ht-premium .issue { border-left-color: var(--sp-ambar); }
+html.ht-premium .issue.blocking { border-left-color: var(--sp-urgente); }
+html.ht-premium .issue p, html.ht-premium .issue .issue-meta { color: var(--sp-mudo); }
+
+/* ---------- Indicadores ---------- */
+html.ht-premium .kpi span { color: var(--sp-mudo); font-family: "DM Mono", ui-monospace, monospace; letter-spacing: .12em; }
+html.ht-premium .kpi strong { color: var(--sp-titulo); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-weight: 600; letter-spacing: -.01em; }
+html.ht-premium .kpi small { color: var(--sp-mudo); }
+html.ht-premium .compact-kpis .kpi { border-color: var(--sp-linha); }
+html.ht-premium .kpi.accent { border-top-color: var(--sp-acento); }
+html.ht-premium :is(.kpi.warn, #observability .kpi.health-yellow) { border-top-color: var(--sp-ambar); }
+html.ht-premium #observability .kpi.health-green { border-top-color: var(--sp-ok); }
+html.ht-premium #observability .kpi.health-red { border-top-color: var(--sp-urgente); }
+html.ht-premium :is(.stage18-uat-panel, .stage17-privacy-note) { border-color: var(--sp-acento); }
+
+/* ---------- Tabelas ---------- */
+html.ht-premium :is(th, td) { border-bottom-color: var(--sp-linha); }
+html.ht-premium td { font-size: 12px; }
+html.ht-premium th { background: var(--af-th); color: var(--sp-mudo); font-size: 9.5px; letter-spacing: .1em; }
+html.ht-premium :is(tbody tr:hover td, .drill-row:hover td, .bank-breakdown-row:hover, .closure-summary-row:hover, .global-search-row:hover) { background: var(--sp-vidro-2); }
+html.ht-premium .open-quarter-row td { background: var(--sp-brilho); }
+html.ht-premium :is(.bank-breakdown-row, .closure-summary-row, .global-search-row) { color: var(--sp-texto); }
+html.ht-premium .field-status-row-pending td:first-child { border-left-color: var(--sp-ambar); }
+
+/* ---------- Etiquetas e barras ---------- */
+html.ht-premium :is(.badge, .pill, .local-badge, .filter-chip, .search-kind) {
+  background: var(--sp-vidro-2); border: 1px solid var(--sp-linha); color: var(--sp-texto-2); font-family: "DM Mono", ui-monospace, monospace; font-weight: 500; letter-spacing: .06em;
+}
+html.ht-premium :is(.local-badge, .pill, .filter-chip, .search-kind) { background: var(--sp-brilho); color: var(--sp-acento-texto); }
+html.ht-premium :is(.badge.good, .pill.good) { background: var(--sp-ok-fundo); border-color: var(--sp-ok-linha); color: var(--sp-ok); }
+html.ht-premium :is(.badge.warn, .pill.warn) { background: var(--sp-aviso-fundo); border-color: var(--sp-aviso-linha); color: var(--sp-ambar); }
+html.ht-premium .badge.bad { background: var(--sp-erro-fundo); border-color: var(--sp-erro-linha); color: var(--sp-urgente); }
+html.ht-premium :is(.progress, .mini-bar) { background: var(--sp-vidro-2); }
+html.ht-premium :is(.progress i, .mini-bar i) { background: var(--sp-acento); }
+html.ht-premium .timeline-dot { border-color: transparent; }
+html.ht-premium .timeline-entry::before { background: var(--sp-linha); }
+html.ht-premium :is(.status-line.good, .good-text, .dialog-status.good, .auth-message.ok) { color: var(--sp-ok); }
+html.ht-premium .status-line.warn, html.ht-premium .tax-warnings { color: var(--sp-ambar); }
+html.ht-premium :is(.status-line.bad, .bad-text, .dialog-status.bad, .auth-message) { color: var(--sp-urgente); }
+html.ht-premium .release-checklist li::before { background: var(--sp-ok-fundo); color: var(--sp-ok); }
+html.ht-premium .release-checklist li.warn::before { background: var(--sp-aviso-fundo); color: var(--sp-ambar); }
+
+/* ---------- Importação e avisos ---------- */
+html.ht-premium .drop-zone { background: var(--sp-vidro); border-color: var(--sp-linha-forte); color: var(--sp-texto); }
+html.ht-premium .drop-zone.drag { background: var(--sp-brilho); border-color: var(--sp-acento); }
+html.ht-premium .drop-zone span { color: var(--sp-mudo); }
+html.ht-premium .notice { background: var(--sp-aviso-fundo); border-color: var(--sp-aviso-linha); color: var(--sp-ambar); }
+html.ht-premium #pilot .notice strong { color: var(--sp-ambar); }
+html.ht-premium .recovery-key { background: var(--sp-vidro-2); border-color: var(--sp-acento); color: var(--sp-titulo); }
+
+/* ---------- Tela de acesso (aparece só enquanto o HUB confirma o usuário) ---------- */
+html.ht-premium .auth-screen { background: transparent; }
+html.ht-premium .auth-sub { color: var(--sp-mudo); }
+
+/* ---------- Acessibilidade ---------- */
+html.ht-premium :is(.nav button, .button, .link-button, .bank-breakdown-row, .closure-summary-row, .global-search-row):focus-visible { outline: 2px solid var(--sp-acento); outline-offset: 2px; }
+
+} /* fim de @media screen */
