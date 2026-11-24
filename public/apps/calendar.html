@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Calendar App</title>
+<title>Calendário de tarefas</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#fff;color:#1a1a1a;height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -115,6 +115,50 @@ button,input,textarea,select{font-family:inherit}
 #img-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:none;align-items:center;justify-content:center;cursor:pointer}
 #img-modal img{max-width:90vw;max-height:90vh;border-radius:8px}
 </style>
+<style id="ht-premium-calendario">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js). */
+html.ht-premium{--esc:1.06}
+html.ht-premium--ampliado{--esc:1.22}
+html.ht-premium--escuro{--c-texto:#EEF2FA;--c-texto-2:#B9C3DA;--c-mudo:#A3AECB;--c-titulo:#FFFFFF;--c-linha:rgba(255,255,255,.09);--c-linha-forte:rgba(255,255,255,.22);--c-vidro:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--c-vidro-2:rgba(255,255,255,calc(.07*var(--ht-vidro-k,1)));--c-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--c-acento-texto:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));--c-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .22);--c-sobre-acento:#04121A;--c-urgente:#FF7A6B;--c-ambar:#F0C46A;--c-ok:#7FD6B0;color-scheme:dark}
+html.ht-premium--claro{--c-texto:#1A2033;--c-texto-2:#3D4456;--c-mudo:#5B6274;--c-titulo:#111830;--c-linha:rgba(40,44,56,.10);--c-linha-forte:rgba(40,44,56,.26);--c-vidro:rgba(255,255,255,min(.95,calc(.62*var(--ht-vidro-k,1))));--c-vidro-2:rgba(255,255,255,min(.97,calc(.8*var(--ht-vidro-k,1))));--c-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--c-acento-texto:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));--c-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .12);--c-sobre-acento:#FFFFFF;--c-urgente:#B93E0E;--c-ambar:#8A5300;--c-ok:#2F7D4F;color-scheme:light}
+html.ht-premium,html.ht-premium body{background:transparent}
+html.ht-premium body{color:var(--c-texto);font-family:"DM Sans","Segoe UI",system-ui,sans-serif;font-size:calc(14px*var(--esc))}
+html.ht-premium #header{border-bottom-color:var(--c-linha);padding:12px 16px}
+html.ht-premium #month-label{color:var(--c-titulo);font-family:Nunito,"Segoe UI",sans-serif;font-size:calc(21px*var(--esc));font-weight:300;min-width:170px}
+html.ht-premium #nav button,html.ht-premium #btn-ico,html.ht-premium #day-panel-actions button,html.ht-premium .ev-actions button,html.ht-premium #list-view button{min-height:calc(32px*var(--esc));padding:4px 12px!important;border:1px solid var(--c-linha)!important;border-radius:10px!important;background:var(--c-vidro-2)!important;color:var(--c-texto)!important;font-size:calc(12.5px*var(--esc))!important;transition:border-color .25s ease}
+html.ht-premium #nav button:hover,html.ht-premium #btn-ico:hover,html.ht-premium #day-panel-actions button:hover,html.ht-premium .ev-actions button:hover{border-color:var(--c-acento)!important}
+html.ht-premium .ev-actions button.danger{border-color:color-mix(in srgb,var(--c-urgente) 40%,transparent)!important;color:var(--c-urgente)!important}
+html.ht-premium #notif-btn{border-radius:999px!important;font-size:calc(11.5px*var(--esc))!important;background:var(--c-vidro-2)!important;border:1px solid var(--c-linha)!important;color:var(--c-texto-2)!important}
+html.ht-premium #view-toggle{border-color:var(--c-linha);border-radius:12px;background:var(--c-vidro);padding:3px;gap:3px}
+html.ht-premium #view-toggle button{border-radius:9px;color:var(--c-texto-2);font-size:calc(12.5px*var(--esc));padding:5px 12px}
+html.ht-premium #view-toggle button.active{background:var(--c-acento);color:var(--c-sobre-acento);font-weight:600}
+html.ht-premium #day-names{border-bottom-color:var(--c-linha)}
+html.ht-premium #day-names div{color:var(--c-mudo);font-family:"DM Mono",ui-monospace,monospace;font-size:calc(10.5px*var(--esc));font-weight:400;letter-spacing:.18em;text-transform:uppercase}
+html.ht-premium .day-cell{border-color:var(--c-linha)}
+html.ht-premium .day-cell:hover{background:var(--c-vidro-2)}
+html.ht-premium .day-cell.selected{background:var(--c-brilho);box-shadow:0 0 0 1px var(--c-acento) inset}
+html.ht-premium .day-cell.other-month{opacity:.38}
+html.ht-premium .add-hint{color:var(--c-acento-texto);font-size:calc(9.5px*var(--esc))}
+html.ht-premium .day-num{width:calc(24px*var(--esc));height:calc(24px*var(--esc));color:var(--c-texto);font-family:Nunito,"Segoe UI",sans-serif;font-size:calc(13px*var(--esc))}
+html.ht-premium .day-num.today{background:var(--c-acento);color:var(--c-sobre-acento);box-shadow:0 0 16px var(--c-brilho)}
+html.ht-premium .ev-chip{font-size:calc(10.5px*var(--esc));border-radius:5px;padding:1px 5px}
+html.ht-premium--escuro .ev-chip{filter:brightness(1.55) saturate(.9)}
+html.ht-premium #day-panel{border-top-color:var(--c-linha)}
+html.ht-premium #day-panel-title{color:var(--c-titulo);font-family:Nunito,"Segoe UI",sans-serif;font-size:calc(15px*var(--esc));font-weight:700}
+html.ht-premium #day-panel-title::first-letter{text-transform:uppercase}
+html.ht-premium .section-label{color:var(--c-mudo);font-family:"DM Mono",ui-monospace,monospace;font-weight:400;letter-spacing:.18em}
+html.ht-premium .ev-card{border-bottom-color:var(--c-linha)}
+html.ht-premium .ev-title{color:var(--c-titulo);font-size:calc(13.5px*var(--esc))}
+html.ht-premium .ev-meta{color:var(--c-mudo);font-size:calc(11.5px*var(--esc))}
+html.ht-premium--escuro .ev-badge{filter:brightness(1.55) saturate(.9)}
+html.ht-premium .att-chip{border-color:var(--c-linha);background:var(--c-vidro-2);color:var(--c-texto)}
+html.ht-premium body>:not(#panel-screen):not(#reminder-popup) [style*="color:#888"]{color:var(--c-mudo)!important}
+html.ht-premium #nav button:focus-visible,html.ht-premium #view-toggle button:focus-visible,html.ht-premium .day-cell:focus-visible{outline:2px solid var(--c-acento);outline-offset:2px}
+/* Formulário e lembrete continuam como folha clara (padrão para editores). */
+html.ht-premium #panel-screen{color-scheme:light;background:#fff;color:#1a1a1a}
+@media (prefers-reduced-motion:reduce){html.ht-premium *{transition:none!important}}
+</style>
+<script src="/apps/hub-premium-app.js"></script>
 </head>
 <body>
 <div id="header">
@@ -384,7 +428,7 @@ function renderMonth(){
   getCalDays(curYear,curMonth).forEach(({date,cur})=>{
     const div=document.createElement("div");
     div.className="day-cell"+(cur?"":" other-month")+(sameDay(date,selDate)?" selected":"");
-    const hint=document.createElement("div");hint.className="add-hint";hint.textContent="+ add";div.appendChild(hint);
+    const hint=document.createElement("div");hint.className="add-hint";hint.textContent="+ nova";div.appendChild(hint);
     const num=document.createElement("div");num.className="day-num"+(sameDay(date,today)?" today":"");num.textContent=date.getDate();div.appendChild(num);
     dayEvs(date).slice(0,2).forEach(ev=>{
       const chip=document.createElement("div");chip.className="ev-chip";
@@ -406,7 +450,7 @@ function renderDayPanel(){
   document.getElementById("day-panel-title").textContent=selDate.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
   const container=document.getElementById("day-events");container.innerHTML="";
   const evs=getSelEvs();
-  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa neste dia. Use duplo clique no calendário ou + Nova tarefa na sidebar.</div>';return;}
+  if(!evs.length){container.innerHTML='<div style="font-size:13px;color:#888;padding:4px 0">Nenhuma tarefa neste dia. Use duplo clique no calendário ou + Nova tarefa na barra lateral.</div>';return;}
   evs.forEach(ev=>container.appendChild(makeEvCard(ev,false)));
 }
 

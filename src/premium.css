@@ -678,3 +678,24 @@ body[data-hub-premium="claro"] {
   outline: 2px solid var(--hp-acento);
   outline-offset: 2px;
 }
+
+/* Cabeçalho: a assinatura "Depto Tributário" sai quando falta espaço (nunca aparece cortada). */
+.hub-premium .topbar {
+  container-type: inline-size;
+}
+
+.hub-premium .topbar-brand-strip span {
+  white-space: nowrap;
+}
+
+@container (max-width: 1000px) {
+  .hub-premium .topbar-brand-strip span {
+    display: none;
+  }
+}
+
+@container (max-width: 1200px) {
+  .hub-premium--ampliado .topbar-brand-strip span {
+    display: none;
+  }
+}

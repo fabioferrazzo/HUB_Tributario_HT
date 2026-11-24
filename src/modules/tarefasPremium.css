@@ -1,0 +1,289 @@
+/* Calendário de Tarefas no visual premium (padrão H. Teixeira Premium).
+   O calendário em si é o app /apps/calendar.html, que segue o tema pela ponte hub-premium-app.js. */
+
+.hub-premium .tasks-layout {
+  --surface: var(--hp-vidro);
+  --bg-soft: var(--hp-vidro-2);
+  --ink: var(--hp-texto);
+  --muted: var(--hp-mudo);
+  --line: var(--hp-linha);
+  --line-soft: var(--hp-linha);
+  --accent: var(--hp-acento);
+  gap: 18px;
+  color: var(--hp-texto);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium--escuro .tasks-layout {
+  --tp-ambar: #f0c46a;
+  --tp-sobre-acento: #04121a;
+  --tp-urgente-fundo: rgba(255, 122, 107, 0.14);
+  --tp-ambar-fundo: rgba(224, 160, 48, 0.14);
+}
+
+.hub-premium--claro .tasks-layout {
+  --tp-ambar: #8a5300;
+  --tp-sobre-acento: #ffffff;
+  --tp-urgente-fundo: rgba(185, 62, 14, 0.08);
+  --tp-ambar-fundo: rgba(224, 160, 48, 0.14);
+}
+
+@media (min-width: 821px) {
+  .hub-premium .tasks-layout {
+    grid-template-columns: minmax(0, 1fr) calc(400px * var(--hp-esc));
+  }
+}
+
+/* Moldura do calendário e da barra lateral: vidro */
+.hub-premium .tasks-layout .calendar-shell,
+.hub-premium .tasks-layout .task-sidebar {
+  border: 1px solid var(--hp-linha);
+  border-radius: var(--ht-raio, 24px);
+  background: var(--hp-vidro);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  overflow: hidden;
+}
+
+.hub-premium .tasks-layout .calendar-shell iframe {
+  background: transparent;
+  color-scheme: normal;
+}
+
+.hub-premium--escuro .tasks-layout .calendar-shell iframe {
+  color-scheme: dark;
+}
+
+.hub-premium--claro .tasks-layout .calendar-shell iframe {
+  color-scheme: light;
+}
+
+/* Cabeçalho da barra lateral */
+.hub-premium .tasks-layout .task-sidebar header {
+  padding: calc(16px * var(--hp-esc)) calc(18px * var(--hp-esc));
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .tasks-layout .task-sidebar-title h2 {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(20px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .tasks-layout .task-sidebar header small,
+.hub-premium .tasks-layout .task-sidebar header span {
+  color: var(--hp-mudo);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(11px * var(--hp-esc));
+  letter-spacing: 0.06em;
+}
+
+.hub-premium .tasks-layout .task-sidebar-summary {
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .tasks-layout .task-sidebar-summary span {
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Botões */
+.hub-premium .tasks-layout :is(.btn-mini, .task-export-actions button, .task-form-head button, .record-actions button) {
+  min-height: calc(34px * var(--hp-esc));
+  border: 1px solid var(--hp-linha);
+  border-radius: 10px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .tasks-layout :is(.btn-mini, .task-export-actions button, .record-actions button):hover {
+  border-color: var(--hp-acento);
+}
+
+.hub-premium .tasks-layout .btn-mini.primary {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--tp-sobre-acento);
+  font-weight: 600;
+}
+
+.hub-premium .tasks-layout .record-actions .danger-action {
+  color: var(--hp-urgente);
+}
+
+/* Filtros e busca */
+.hub-premium .tasks-layout .panel-toolbar {
+  border-bottom-color: var(--hp-linha);
+  background: transparent;
+}
+
+.hub-premium .tasks-layout .filter-pill {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hp-texto-2);
+  font-size: calc(12.5px * var(--hp-esc));
+  font-weight: 500;
+}
+
+.hub-premium .tasks-layout .filter-pill.active {
+  border-color: var(--hp-acento);
+  background: var(--hp-brilho);
+  color: var(--hp-titulo);
+}
+
+.hub-premium .tasks-layout .panel-search {
+  border: 1px solid var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-mudo);
+}
+
+.hub-premium .tasks-layout .panel-search input {
+  color: var(--hp-texto);
+}
+
+.hub-premium .tasks-layout .panel-search input::placeholder {
+  color: var(--hp-mudo);
+}
+
+/* Lista de tarefas */
+.hub-premium .tasks-layout .task-item {
+  border: 1px solid var(--hp-linha);
+  border-radius: calc(var(--ht-raio, 24px) - 8px);
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+  transition: border-color 0.25s ease;
+}
+
+.hub-premium .tasks-layout .task-item:hover {
+  border-color: var(--hp-linha-forte);
+}
+
+.hub-premium .tasks-layout .task-item > svg {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .tasks-layout .task-item--featured {
+  border-color: color-mix(in srgb, var(--hp-acento) 55%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hp-acento) 14%, transparent), transparent 60%), var(--hp-vidro);
+}
+
+.hub-premium .tasks-layout .task-item--history,
+.hub-premium .tasks-layout .task-item--history.task-item--featured {
+  background: var(--hp-vidro);
+  opacity: 0.78;
+}
+
+.hub-premium .tasks-layout .task-item strong {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", sans-serif;
+  font-size: calc(15px * var(--hp-esc));
+  font-weight: 700;
+}
+
+.hub-premium .tasks-layout .task-item :where(span, small, em) {
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .tasks-layout .task-item small {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(11px * var(--hp-esc));
+  letter-spacing: 0.04em;
+}
+
+.hub-premium .tasks-layout .status-pill {
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc));
+  font-weight: 500;
+  letter-spacing: 0.14em;
+}
+
+.hub-premium .tasks-layout .status-pill--danger {
+  border-color: color-mix(in srgb, var(--hp-urgente) 40%, transparent);
+  background: var(--tp-urgente-fundo);
+  color: var(--hp-urgente);
+}
+
+.hub-premium .tasks-layout .status-pill--warning {
+  border-color: color-mix(in srgb, var(--tp-ambar) 40%, transparent);
+  background: var(--tp-ambar-fundo);
+  color: var(--tp-ambar);
+}
+
+.hub-premium .tasks-layout :is(.empty-state, .readonly-note, .task-lembretes-panel) {
+  border-color: var(--hp-linha);
+  border-radius: 14px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .tasks-layout .task-lembretes-panel > header {
+  border-bottom-color: var(--hp-linha);
+}
+
+.hub-premium .tasks-layout .task-lembrete-item--clickable:hover {
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .tasks-layout .module-notice {
+  border-color: color-mix(in srgb, var(--hp-acento) 40%, transparent);
+  border-radius: 12px;
+  background: var(--hp-brilho);
+  color: var(--hp-texto);
+}
+
+/* Formulário da tarefa (nova/editar): folha clara, como os demais editores */
+.hub-premium .tasks-layout .task-sidebar--form {
+  --surface: #ffffff;
+  --bg-soft: #ebe6db;
+  --ink: #1c2a3a;
+  --muted: #5e6d82;
+  --line: #e2dccc;
+  --line-soft: #efeae0;
+  --accent: #1e3a5f;
+  color-scheme: light;
+  background: #ffffff;
+  color: #1c2a3a;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium .tasks-layout .task-sidebar--form :is(.btn-mini, .task-form-head button) {
+  border-color: #e2dccc;
+  background: #ffffff;
+  color: #1b365d;
+}
+
+.hub-premium .tasks-layout .task-sidebar--form .btn-mini.primary {
+  border-color: #1e3a5f;
+  background: #1e3a5f;
+  color: #ffffff;
+}
+
+.hub-premium .tasks-layout .task-sidebar--form header h2,
+.hub-premium .tasks-layout .task-sidebar--form .task-form-head strong {
+  color: #1c2a3a;
+}
+
+.hub-premium .tasks-layout .task-sidebar--form header :is(small, span) {
+  color: #5e6d82;
+}
+
+.hub-premium .tasks-layout :focus-visible {
+  outline: 2px solid var(--hp-acento);
+  outline-offset: 2px;
+}

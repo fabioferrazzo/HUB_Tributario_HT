@@ -10,6 +10,7 @@ import { escapeHtmlText, exportReport } from "../lib/reportExport";
 import { getSupabaseAccessToken } from "../lib/auth";
 import { isTaskAssignedToUser, isTaskAtrasada, isTaskSidebarHistoryRecord, shouldKeepTaskInSidebarHistory, taskToCalendarFrameEvent } from "../lib/hubRules";
 import { lembreteToReportRow, taskToReportRow } from "../lib/reportRows";
+import "./tarefasPremium.css";
 
 export function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; onNavigate: (route: HubRoute) => void; user: HubUser }) {
   const [calendarVersion, setCalendarVersion] = useState(0);
@@ -62,7 +63,7 @@ export function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
   }, [syncCalendarFrame]);
 
   return (
-    <div className="tasks-layout">
+    <div className="tasks-layout hp-migrada">
       <div className="calendar-shell">
         <iframe
           ref={calendarFrameRef}
@@ -522,7 +523,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
       <header className="task-sidebar-head">
         <div className="task-sidebar-title">
           <h2>Minhas tarefas</h2>
-          <small>{loading ? "Carregando..." : `${source} - ${sidebarTasks.length} item(ns)`}</small>
+          <small>{loading ? "Carregando..." : `${source === "calendario" ? "calendário" : source} - ${sidebarTasks.length} item(ns)`}</small>
         </div>
         <button className="btn-mini primary task-new-button" disabled={saving || loading} type="button" onClick={() => startNewTask()}>
           <Plus size={14} />
