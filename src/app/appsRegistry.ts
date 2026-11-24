@@ -28,6 +28,8 @@ export type HubApp = {
   src: string;
   mode: HubAppMode;
   description?: string;
+  // Segue o visual premium do HUB (o app inclui /apps/hub-premium-app.js e estiliza a partir de html.ht-premium).
+  premium?: boolean;
   // Rotas antigas mantidas por compatibilidade (notificações apontam para elas).
   route?: HubRoute;
 };
@@ -188,7 +190,8 @@ export const hubApps: HubApp[] = [
     group: "Simuladores",
     access: "todos",
     src: "/apps/simuladores/mapa-icms-rs/index.html",
-    mode: "embutido"
+    mode: "embutido",
+    premium: true
   },
   {
     id: "sim-difal-antecipacao-rs",
@@ -199,6 +202,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/difal-antecipacao-rs/index.html",
     mode: "embutido",
+    premium: true,
     description: "Compras de outras UFs (DIFAL de uso e consumo, antecipação do art. 46, § 4º, ICMS-ST e DIFAL-ST) e vendas do RS (EC 87, contribuinte e DIFAL-ST), com memória de cálculo, alertas e lista exportável."
   },
   {
@@ -209,7 +213,8 @@ export const hubApps: HubApp[] = [
     group: "Simuladores",
     access: "todos",
     src: "/apps/simuladores/calculadora-ibs-cbs-simples/index.html",
-    mode: "embutido"
+    mode: "embutido",
+    premium: true
   },
   {
     id: "sim-aliquota-efetiva-simples",
@@ -220,6 +225,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/aliquota-efetiva-simples/index.html",
     mode: "embutido",
+    premium: true,
     description: "Alíquota efetiva, partilha por tributo e percentuais de ICMS (crédito na NF-e) e ISS (retenção na NFS-e)."
   },
   {
@@ -231,6 +237,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/fator-r/index.html",
     mode: "embutido",
+    premium: true,
     description: "Calculadora (folha ÷ receita dos 12 meses, anexo, DAS e folha necessária para 28%) e monitoramento mês a mês por empresa, com registro no Controle de Apuração."
   },
   {
@@ -242,6 +249,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/retencoes-nfse/index.html",
     mode: "embutido",
+    premium: true,
     description: "IR, PIS/Cofins/CSLL, INSS 11% e ISS retidos pelo tomador: entre empresas, órgãos federais (IN 1.234) e estados/municípios."
   },
   {
@@ -253,6 +261,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/cbs-ibs-imobiliario/index.html",
     mode: "embutido",
+    premium: true,
     description: "Venda, locação, incorporação e loteamento com redutores, reduções de 50% e 70%, opções transitórias e comparativo 2026–2033."
   },
   {
@@ -264,6 +273,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/simuladores/rural/index.html",
     mode: "embutido",
+    premium: true,
     description: "Produtor rural contribuinte ou não (R$ 3,6 milhões), crédito presumido de equilíbrio e carga na venda com redução de 60% ou alíquota zero."
   }
 ];

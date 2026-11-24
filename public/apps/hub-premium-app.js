@@ -80,6 +80,17 @@
     };
   }
 
+  // Aberto sozinho (janela própria), o app não tem o fundo do HUB atrás: a ponte coloca o fundo do tema.
+  function fundoAvulso() {
+    if (embutido || document.getElementById("ht-premium-avulso")) return;
+    var estilo = document.createElement("style");
+    estilo.id = "ht-premium-avulso";
+    estilo.textContent =
+      "html.ht-premium--escuro{background:linear-gradient(180deg,#070B1A 0%,#0B1227 58%,#121C36 78%,#182640 100%) fixed!important}" +
+      "html.ht-premium--claro{background:linear-gradient(160deg,#F3F4F6 0%,#F7F5F0 38%,#F2F1ED 68%,#EEF1F4 100%) fixed!important}";
+    (document.head || raiz).appendChild(estilo);
+  }
+
   function carregarFontes() {
     if (document.getElementById("ht-premium-fontes")) return;
     var link = document.createElement("link");
@@ -101,6 +112,7 @@
       raiz.classList.add("ht-premium", "ht-premium--" + e.tema, "ht-premium--" + e.tamanho);
       for (var k in e.vars) raiz.style.setProperty(k, e.vars[k]);
       carregarFontes();
+      fundoAvulso();
     }
     try {
       window.dispatchEvent(new CustomEvent("ht-premium-change", { detail: e }));

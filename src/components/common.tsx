@@ -168,7 +168,7 @@ export function ModuleFrame({ app }: { app: HubApp }) {
   });
 
   return (
-    <section className={`frame-page ${embedded ? "frame-page--app" : "frame-page--external"} ${isFullscreen ? "frame-page--fullscreen" : ""}`} ref={pageRef}>
+    <section className={`frame-page ${embedded ? "frame-page--app" : "frame-page--external"} ${isFullscreen ? "frame-page--fullscreen" : ""} ${embedded && app.premium ? "frame-page--premium hp-migrada" : ""}`} ref={pageRef}>
       <h2 className="sr-only">{app.title}</h2>
       {embedded ? (
         <iframe

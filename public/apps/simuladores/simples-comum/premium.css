@@ -1,0 +1,262 @@
+/*
+ * Visual premium (padrão H. Teixeira Premium) dos simuladores do HUB.
+ * Só vale com  html.ht-premium  (classe colocada pela ponte /apps/hub-premium-app.js).
+ * Sem a classe, cada simulador continua exatamente como sempre foi. Na impressão também.
+ * Cobre as quatro famílias de estilo dos simuladores: simples.css, IBS/CBS do Simples,
+ * Mapa ICMS e DIFAL/antecipação. Cores quentes só para avisos, erros e atenção.
+ */
+
+@media screen {
+
+/* ---------- Escala ---------- */
+html.ht-premium { --esc: 1.06; }
+html.ht-premium--ampliado { --esc: 1.22; }
+
+/* ---------- Tokens por tema ---------- */
+html.ht-premium--escuro {
+  --sp-texto: #EEF2FA; --sp-texto-2: #B9C3DA; --sp-mudo: #A3AECB; --sp-titulo: #FFFFFF;
+  --sp-linha: rgba(255,255,255,.10); --sp-linha-forte: rgba(255,255,255,.24);
+  --sp-vidro: rgba(255,255,255,calc(.045 * var(--ht-vidro-k, 1)));
+  --sp-vidro-2: rgba(255,255,255,calc(.075 * var(--ht-vidro-k, 1)));
+  --sp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 42%));
+  --sp-acento-texto: hsl(var(--ht-h, 179) calc(var(--ht-s, 75%) * .85) var(--ht-l-texto, 61%));
+  --sp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 42%) / .20);
+  --sp-sobre-acento: #04121A;
+  --sp-destaque: linear-gradient(140deg, hsl(var(--ht-h, 179) var(--ht-s, 75%) 42% / .34), hsl(var(--ht-h, 179) var(--ht-s, 75%) 42% / .10));
+  --sp-destaque-borda: hsl(var(--ht-h, 179) var(--ht-s, 75%) 55% / .40);
+  --sp-urgente: #FF8A7C; --sp-ambar: #F0C46A; --sp-ok: #7FD6B0;
+  --sp-aviso-fundo: rgba(240,196,106,.10); --sp-aviso-linha: rgba(240,196,106,.34);
+  --sp-erro-fundo: rgba(255,122,107,.11); --sp-erro-linha: rgba(255,122,107,.36);
+  --sp-ok-fundo: rgba(127,214,176,.10); --sp-ok-linha: rgba(127,214,176,.32);
+  --sp-sombra: 0 1px 0 rgba(255,255,255,.04) inset, 0 calc(24px * var(--ht-sombra-k, 1)) calc(60px * var(--ht-sombra-k, 1)) -30px rgba(0,0,0,calc(.8 * var(--ht-sombra-k, 1)));
+  --sp-traco-mapa: #121C36;
+  --sp-mapa-7: #2FA88D; --sp-mapa-12: #4F86C0; --sp-mapa-4: #7D72C4; --sp-mapa-origem: #3B4C8F;
+  color-scheme: dark;
+}
+html.ht-premium--claro {
+  --sp-texto: #1A2033; --sp-texto-2: #3D4456; --sp-mudo: #5B6274; --sp-titulo: #111830;
+  --sp-linha: rgba(40,44,56,.11); --sp-linha-forte: rgba(40,44,56,.26);
+  --sp-vidro: rgba(255,255,255,min(.95, calc(.62 * var(--ht-vidro-k, 1))));
+  --sp-vidro-2: rgba(255,255,255,min(.97, calc(.82 * var(--ht-vidro-k, 1))));
+  --sp-acento: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 28%));
+  --sp-acento-texto: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-texto, 24%));
+  --sp-brilho: hsl(var(--ht-h, 179) var(--ht-s, 75%) var(--ht-l-acento, 28%) / .10);
+  --sp-sobre-acento: #FFFFFF;
+  --sp-destaque: linear-gradient(140deg, hsl(var(--ht-h, 179) 40% 92%), #FFFFFF 70%);
+  --sp-destaque-borda: hsl(var(--ht-h, 179) var(--ht-s, 75%) 28% / .26);
+  --sp-urgente: #B93E0E; --sp-ambar: #8A5300; --sp-ok: #26693F;
+  --sp-aviso-fundo: #FBF4E4; --sp-aviso-linha: #E8D3A2;
+  --sp-erro-fundo: #FBEDE8; --sp-erro-linha: #EBC0B2;
+  --sp-ok-fundo: #EEF5F0; --sp-ok-linha: #C4DDCB;
+  --sp-sombra: 0 1px 2px rgba(40,44,56,.05), 0 calc(14px * var(--ht-sombra-k, 1)) calc(34px * var(--ht-sombra-k, 1)) -24px rgba(40,44,56,calc(.22 * var(--ht-sombra-k, 1)));
+  --sp-traco-mapa: #FFFFFF;
+  --sp-mapa-7: #1F8F78; --sp-mapa-12: #3F78B5; --sp-mapa-4: #6E7A8C; --sp-mapa-origem: #232F6B;
+  color-scheme: light;
+}
+
+/* ---------- Tokens antigos das quatro famílias, apontando para os premium ---------- */
+html.ht-premium {
+  /* simples.css */
+  --bg: transparent; --surface: var(--sp-vidro); --soft: var(--sp-vidro-2); --ink: var(--sp-texto); --muted: var(--sp-mudo);
+  --line: var(--sp-linha); --title: var(--sp-titulo); --brand: var(--sp-acento-texto); --brand-2: var(--sp-acento-texto);
+  --accent: var(--sp-acento); --accent-soft: var(--sp-brilho);
+  --warn-bg: var(--sp-aviso-fundo); --warn-line: var(--sp-aviso-linha); --warn-ink: var(--sp-ambar);
+  --err-bg: var(--sp-erro-fundo); --err-line: var(--sp-erro-linha); --err-ink: var(--sp-urgente);
+  --radius: calc(var(--ht-raio, 24px) * .75); --shadow: var(--sp-sombra);
+  /* IBS/CBS do Simples */
+  --surface-soft: var(--sp-vidro-2); --brand-soft: var(--sp-brilho); --danger: var(--sp-urgente); --warn: var(--sp-ambar); --ok: var(--sp-ok);
+  /* Mapa ICMS */
+  --panel: var(--sp-vidro); --text: var(--sp-texto); --blue: var(--sp-acento-texto);
+  --green: var(--sp-mapa-7); --orange: var(--sp-mapa-12); --purple: var(--sp-mapa-4); --rs: var(--sp-mapa-origem);
+  /* DIFAL e antecipação */
+  --navy: var(--sp-acento-texto); --navy2: var(--sp-texto); --turq: var(--sp-acento); --turq-l: var(--sp-brilho);
+  --card: var(--sp-vidro); --tx: var(--sp-texto); --mut: var(--sp-mudo);
+  --warn-l: var(--sp-aviso-fundo); --err: var(--sp-urgente); --err-l: var(--sp-erro-fundo); --ok-l: var(--sp-ok-fundo);
+}
+
+/* ---------- Base ---------- */
+html.ht-premium, html.ht-premium body { background: transparent; }
+html.ht-premium body {
+  color: var(--sp-texto);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  font-size: calc(13px * var(--esc));
+}
+html.ht-premium :is(h1, h2, h3) { font-family: Nunito, "Segoe UI", system-ui, sans-serif; }
+html.ht-premium :is(.topo h1, .heading h1, header h1, main > header h1) {
+  color: var(--sp-titulo); font-size: calc(24px * var(--esc)); font-weight: 700; letter-spacing: -.01em;
+}
+html.ht-premium :is(.panel-head p, .painel > summary p) { color: var(--sp-mudo); font-size: calc(11.5px * var(--esc)); }
+html.ht-premium :is(.topo p, .subtitle, header small, header p) { color: var(--sp-mudo); font-size: calc(12.5px * var(--esc)); }
+html.ht-premium :is(.painel h2, .panel-head h2, .card h2, .card h3, .card .head strong, aside h3, .emp-tit h2) {
+  color: var(--sp-titulo); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-weight: 700; font-size: calc(15px * var(--esc));
+}
+html.ht-premium :is(.selo, .pill, .pill.gold, .badge) {
+  border: 1px solid var(--sp-linha); background: var(--sp-vidro-2); color: var(--sp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace; font-size: calc(10.5px * var(--esc)); font-weight: 400; letter-spacing: .06em;
+}
+html.ht-premium a { color: var(--sp-acento-texto); }
+
+/* ---------- Painéis de vidro ---------- */
+html.ht-premium :is(.painel, .panel, .card, .stat, .controls, details.calc-details, details.legal, .cartao-op, .veredito, .tax, .resumo) {
+  background: var(--sp-vidro); border-color: var(--sp-linha); box-shadow: var(--sp-sombra);
+  border-radius: calc(var(--ht-raio, 24px) * .75);
+}
+html.ht-premium :is(.painel:hover, .panel:hover, .card:hover) { border-color: var(--sp-linha-forte); }
+html.ht-premium :is(.painel > summary, .painel > .cab, .panel-head) { background: transparent; border-bottom-color: var(--sp-linha); padding: calc(11px * var(--esc)) calc(16px * var(--esc)); }
+html.ht-premium :is(.corpo, .panel-body) { padding: calc(13px * var(--esc)) calc(16px * var(--esc)) calc(15px * var(--esc)); }
+html.ht-premium .card h2 { border-bottom-color: var(--sp-linha); }
+html.ht-premium .card h2 svg { stroke: var(--sp-acento-texto); }
+html.ht-premium :is(details.calc-details summary, details.legal summary) { color: var(--sp-titulo); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-size: calc(14.5px * var(--esc)); }
+
+/* ---------- Rótulos, dicas e textos secundários ---------- */
+html.ht-premium label, html.ht-premium label.f { color: var(--sp-texto-2); font-size: calc(11.5px * var(--esc)); }
+html.ht-premium :is(.dica, .hint, .formula, .fontes, .sources, .legal-body, .detail, .groups span, td .f, .lista .sb, footer) { color: var(--sp-mudo); }
+html.ht-premium :is(.dica, .hint) { font-size: calc(11px * var(--esc)); }
+html.ht-premium .formula strong, html.ht-premium .groups strong { color: var(--sp-texto); }
+html.ht-premium legend { color: var(--sp-mudo); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .14em; font-size: calc(10.5px * var(--esc)); }
+html.ht-premium :is(aside p, aside li, .acard p) { color: var(--sp-texto-2); font-size: calc(12px * var(--esc)); }
+
+/* ---------- Campos: folhas brancas, como no restante do HUB ---------- */
+html.ht-premium :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea) {
+  background: #FFFFFF; color: #1A2033; border-color: rgba(40,44,56,.18); color-scheme: light;
+  font-size: calc(13px * var(--esc)); min-height: calc(34px * var(--esc));
+}
+html.ht-premium :is(input, select, textarea):focus { outline: none; border-color: var(--sp-acento); box-shadow: 0 0 0 3px var(--sp-brilho); }
+html.ht-premium :is(input[type=checkbox], input[type=radio]) { accent-color: var(--sp-acento); }
+html.ht-premium .grade-lanc input { width: calc(102px * var(--esc)); min-height: calc(28px * var(--esc)); }
+html.ht-premium .grade-lanc input.sujo { background: #E4F5F3; border-color: var(--sp-acento); }
+html.ht-premium .grade-lanc input.invalido { background: #FBE9E4; border-color: #B93E0E; }
+html.ht-premium .valor-modo select { min-height: calc(34px * var(--esc)); }
+
+/* ---------- Seletores segmentados, abas e botões ---------- */
+html.ht-premium :is(.segmento, .mode, .seg) { background: var(--sp-vidro); border-color: var(--sp-linha); }
+html.ht-premium :is(.segmento button, .mode button, .seg button) { background: transparent; color: var(--sp-texto-2); font-size: calc(12px * var(--esc)); }
+html.ht-premium :is(.segmento button.ativo, .mode button.active, .seg button[aria-pressed="true"]) {
+  background: var(--sp-acento); color: var(--sp-sobre-acento); box-shadow: 0 0 18px var(--sp-brilho);
+}
+html.ht-premium .abas button { background: var(--sp-vidro-2); border-color: var(--sp-linha); color: var(--sp-texto-2); font-size: calc(12.5px * var(--esc)); transition: border-color .25s ease; }
+html.ht-premium .abas button:hover { border-color: var(--sp-acento); }
+html.ht-premium .abas button.ativo { background: var(--sp-acento); border-color: var(--sp-acento); color: var(--sp-sobre-acento); }
+html.ht-premium .tab { background: var(--sp-vidro-2); border-color: var(--sp-linha); color: var(--sp-texto); }
+html.ht-premium .tab b { color: var(--sp-titulo); font-size: calc(13px * var(--esc)); }
+html.ht-premium .tab span { color: var(--sp-mudo); font-size: calc(11px * var(--esc)); }
+html.ht-premium .tab[aria-selected="true"] { background: var(--sp-brilho); border-color: var(--sp-acento); box-shadow: inset 0 0 0 1px var(--sp-acento); }
+html.ht-premium .rtabs { border-bottom-color: var(--sp-linha); }
+html.ht-premium .rtabs button { color: var(--sp-mudo); font-size: calc(12.5px * var(--esc)); }
+html.ht-premium .rtabs button[aria-selected="true"] { color: var(--sp-titulo); border-bottom-color: var(--sp-acento); }
+html.ht-premium .btn {
+  background: var(--sp-vidro-2); border-color: var(--sp-linha); color: var(--sp-texto);
+  border-radius: 10px; font-size: calc(12px * var(--esc)); min-height: calc(32px * var(--esc)); transition: border-color .25s ease;
+}
+html.ht-premium .btn:hover { border-color: var(--sp-acento); filter: none; }
+html.ht-premium :is(.btn.primario, .btn.primary, .btn.pri) { background: var(--sp-acento); border-color: var(--sp-acento); color: var(--sp-sobre-acento); }
+html.ht-premium :is(.btn.primario, .btn.primary, .btn.pri):hover { background: var(--sp-acento); filter: brightness(1.08); }
+html.ht-premium :is(.btn.secondary, .btn.ghost) { background: var(--sp-vidro-2); color: var(--sp-texto); }
+html.ht-premium .btn.perigo { color: var(--sp-urgente); border-color: var(--sp-erro-linha); }
+html.ht-premium .btn svg { stroke: currentColor; }
+
+/* ---------- Indicadores ---------- */
+html.ht-premium--ampliado .results { grid-template-columns: 1fr 1fr; }
+html.ht-premium--ampliado .results .kpi.hero { grid-column: 1 / -1; }
+html.ht-premium .kpis { grid-template-columns: repeat(auto-fit, minmax(calc(170px * var(--esc)), 1fr)); }
+html.ht-premium .kpi { background: var(--sp-vidro); border-color: var(--sp-linha); border-radius: calc(var(--ht-raio, 24px) * .6); }
+/* valores sempre cabem no cartão: a fonte acompanha a largura real (container query) */
+html.ht-premium :is(.kpi, .stat, .res-top, .tax, .cartao-op) { container-type: inline-size; }
+html.ht-premium :is(.kpi .rot, .kpi .label, .res-top .lbl, .stat small:first-child) {
+  color: var(--sp-mudo); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .12em; font-size: calc(10px * var(--esc));
+}
+html.ht-premium :is(.kpi .val, .kpi .value, .stat strong, .tax .rate, .rate, .cartao-op .val) {
+  color: var(--sp-titulo); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-weight: 600; font-size: min(calc(22px * var(--esc)), 12.5cqi);
+}
+html.ht-premium .tax .rate, html.ht-premium .card .rate { color: var(--sp-acento-texto); }
+html.ht-premium :is(.kpi .sub, .kpi .subline, .res-top .sub, .stat small) { color: var(--sp-mudo); font-size: calc(11px * var(--esc)); }
+html.ht-premium .tax strong { color: var(--sp-texto-2); }
+html.ht-premium .tax small { color: var(--sp-mudo); }
+/* Destaque máximo (resultado principal): vidro tingido pelo acento, nunca gradiente azul-marinho */
+html.ht-premium :is(.kpi.destaque, .kpi.hero, .res-top.dev, .stat:first-child) {
+  background: var(--sp-destaque); border: 1px solid var(--sp-destaque-borda); color: var(--sp-titulo);
+}
+html.ht-premium :is(.kpi.destaque .rot, .kpi.destaque .sub, .kpi.hero .label, .kpi.hero .subline, .res-top.dev .lbl, .res-top.dev .sub, .stat:first-child small) { color: var(--sp-texto-2); opacity: 1; }
+html.ht-premium :is(.kpi.destaque .val, .kpi.hero .value, .res-top.dev .val, .stat:first-child strong) {
+  color: var(--sp-titulo); font-weight: 300; font-size: min(calc(26px * var(--esc)), 13cqi);
+}
+html.ht-premium .res-top.disp { background: var(--sp-ok-fundo); border-color: var(--sp-ok-linha); color: var(--sp-ok); }
+html.ht-premium .res-top.disp :is(.lbl, .sub) { color: var(--sp-ok); }
+html.ht-premium .res-top.disp .val { color: var(--sp-ok); font-family: Nunito, "Segoe UI", system-ui, sans-serif; font-weight: 300; }
+
+/* ---------- Tabelas e linhas ---------- */
+html.ht-premium :is(th, td) { border-bottom-color: var(--sp-linha); }
+html.ht-premium td { font-size: calc(12.5px * var(--esc)); }
+html.ht-premium th { background: transparent; color: var(--sp-mudo); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .1em; text-transform: uppercase; font-size: calc(10px * var(--esc)); }
+html.ht-premium .grade-lanc th { background: var(--sp-vidro-2); backdrop-filter: blur(14px); }
+html.ht-premium--escuro .grade-lanc th { background: #18223A; }
+html.ht-premium--claro .grade-lanc th { background: #F7F6F2; }
+html.ht-premium :is(tr.total td, tr.tot td) { color: var(--sp-titulo); border-bottom-color: var(--sp-linha-forte); }
+html.ht-premium tr.local td { color: var(--sp-acento-texto); }
+html.ht-premium :is(tr.atual td, .grade-lanc tr.atual td) { background: var(--sp-brilho); }
+html.ht-premium .grade-lanc tbody tr:hover td { background: var(--sp-vidro-2); }
+html.ht-premium :is(.line, .details-grid, .groups div, .sub-bloco) { border-color: var(--sp-linha); }
+html.ht-premium .line span:first-child { color: var(--sp-mudo); }
+html.ht-premium .line span:last-child { color: var(--sp-texto); }
+
+html.ht-premium :is(.line, .aviso, .quicknote, .note, .alert, .tax strong, .acard, .resumo, .formula, .fontes, .sources, .legal-body, .legend, .texto-nota, .window) { font-size: calc(12px * var(--esc)); }
+html.ht-premium :is(.tax small, .fontes, .sources, .legal-body) { font-size: calc(11px * var(--esc)); }
+
+/* ---------- Avisos: únicas áreas quentes ---------- */
+html.ht-premium :is(.aviso, .quicknote, .note, .alert.warn, .alert.w) { background: var(--sp-aviso-fundo); border: 1px solid var(--sp-aviso-linha); color: var(--sp-ambar); }
+html.ht-premium :is(.aviso.erro, .alert.err, .alert.e) { background: var(--sp-erro-fundo); border: 1px solid var(--sp-erro-linha); color: var(--sp-urgente); }
+html.ht-premium :is(.aviso.neutro, .alert.i, .window, .texto-nota, code.fx, .formula:is(details *)) { background: var(--sp-vidro-2); border-color: var(--sp-linha); color: var(--sp-texto-2); }
+html.ht-premium .alert.ok { background: var(--sp-ok-fundo); border: 1px solid var(--sp-ok-linha); color: var(--sp-ok); }
+html.ht-premium .veredito.sim { background: var(--sp-brilho); border-color: var(--sp-acento); color: var(--sp-titulo); }
+html.ht-premium .cartao-op.melhor { border-color: var(--sp-acento); box-shadow: 0 0 0 2px var(--sp-brilho), var(--sp-sombra); }
+
+/* ---------- Fator R: lista de empresas, selos e gráfico ---------- */
+html.ht-premium .lista button { color: var(--sp-texto); }
+html.ht-premium .lista button:hover { background: var(--sp-vidro-2); }
+html.ht-premium .lista button.sel { background: var(--sp-brilho); border-color: var(--sp-acento); }
+html.ht-premium .chip { background: var(--sp-vidro-2); border-color: var(--sp-linha); color: var(--sp-texto); }
+html.ht-premium .chip.ok { background: var(--sp-brilho); border-color: var(--sp-acento); color: var(--sp-titulo); }
+html.ht-premium .chip.perto { background: var(--sp-aviso-fundo); border-color: var(--sp-aviso-linha); color: var(--sp-ambar); }
+html.ht-premium .chip.abaixo { background: var(--sp-erro-fundo); border-color: var(--sp-erro-linha); color: var(--sp-urgente); }
+html.ht-premium .grafico text { fill: var(--sp-mudo); }
+html.ht-premium .grafico .pt { stroke: transparent; }
+html.ht-premium .grafico .pt.falta { fill: transparent; }
+html.ht-premium .grafico .pt.perto { fill: var(--sp-ambar); }
+html.ht-premium .barra { background: var(--sp-vidro-2); border-color: var(--sp-linha); }
+
+/* ---------- Mapa ICMS ---------- */
+html.ht-premium .state { stroke: var(--sp-traco-mapa); }
+html.ht-premium .selected { stroke: var(--sp-acento-texto); }
+html.ht-premium .legend { color: var(--sp-mudo); }
+html.ht-premium .ricms { border-top-color: var(--sp-linha); color: var(--sp-acento-texto); }
+
+/* ---------- DIFAL: cartões de alerta da lateral ---------- */
+html.ht-premium .acard { background: var(--sp-vidro-2); border-color: var(--sp-linha); border-left-color: var(--sp-acento); }
+html.ht-premium .acard b { color: var(--sp-titulo); }
+html.ht-premium .acard.atencao { background: var(--sp-erro-fundo); border-left-color: var(--sp-urgente); }
+html.ht-premium .acard.possib { background: var(--sp-vidro-2); border-left-color: var(--sp-acento-texto); }
+html.ht-premium .acard.uf { background: var(--sp-vidro-2); border-left-color: var(--sp-acento); }
+html.ht-premium .ag-atencao { color: var(--sp-urgente); }
+html.ht-premium :is(.ag-possib, .ag-uf, .ag-regra) { color: var(--sp-acento-texto); }
+html.ht-premium .ag span { background: var(--sp-vidro-2); color: var(--sp-texto); }
+html.ht-premium .badge.red { background: var(--sp-urgente); color: #FFFFFF; border-color: transparent; }
+html.ht-premium--escuro .badge.red { color: #2A0A06; }
+html.ht-premium .lista td.acao button:hover { color: var(--sp-urgente); }
+html.ht-premium .resumo dt { color: var(--sp-mudo); }
+
+/* ---------- Diálogos: folha clara (padrão dos editores) ---------- */
+html.ht-premium .dlg {
+  --surface: #FFFFFF; --soft: #F6F7F9; --ink: #1A2033; --muted: #5B6274; --line: rgba(40,44,56,.14); --title: #111830;
+  --brand: #0A6E6D; --accent: #0F8F8E; --accent-soft: #E4F5F3; --err-ink: #B93E0E; --err-line: #EBC0B2; --err-bg: #FBEDE8;
+  --sp-texto: #1A2033; --sp-texto-2: #3D4456; --sp-mudo: #5B6274; --sp-titulo: #111830; --sp-linha: rgba(40,44,56,.14);
+  --sp-vidro-2: #F6F7F9; --sp-acento: #0F8F8E; --sp-sobre-acento: #FFFFFF; --sp-brilho: rgba(15,143,142,.14);
+  --sp-urgente: #B93E0E; --sp-erro-linha: #EBC0B2;
+  background: #FFFFFF; color: #1A2033; color-scheme: light; border-radius: calc(var(--ht-raio, 24px) * .75);
+}
+html.ht-premium .dlg::backdrop { background: rgba(7,11,26,.55); backdrop-filter: blur(4px); }
+
+/* ---------- Acessibilidade ---------- */
+html.ht-premium :is(button, a, summary):focus-visible { outline: 2px solid var(--sp-acento); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { html.ht-premium * { transition: none !important; } }
+
+} /* fim de @media screen: na impressão vale o visual original */

@@ -712,6 +712,68 @@ body[data-hub-premium="claro"] {
   }
 }
 
+/* Título comprido (ex.: nome de app) com as ações da moldura: a assinatura também sai quando a faixa central encolhe. */
+.hub-premium .topbar-brand-strip {
+  container: marca / inline-size;
+}
+
+@container marca (max-width: 320px) {
+  .hub-premium .topbar-brand-strip span {
+    display: none;
+  }
+}
+
+@container marca (max-width: 380px) {
+  .hub-premium--ampliado .topbar-brand-strip span {
+    display: none;
+  }
+}
+
+/* Com espaço, o título da página fica numa linha só (a faixa da assinatura cede o espaço). */
+.hub-premium .topbar-brand-strip {
+  min-width: 100px;
+}
+
+@container (min-width: 1100px) {
+  .hub-premium .topbar-left {
+    flex-shrink: 0;
+  }
+
+  .hub-premium .topbar h1 {
+    white-space: nowrap;
+  }
+}
+
+/* ================================================================ Apps embutidos que seguem o visual premium
+   (cadastro com premium: true). O app desenha os próprios painéis de vidro; a moldura fica transparente. */
+.hub-premium .frame-page--premium {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hub-premium .frame-page--premium iframe {
+  background: transparent;
+}
+
+/* o esquema de cores da moldura precisa ser o mesmo do app, senão o navegador pinta o fundo do iframe */
+.hub-premium--escuro .frame-page--premium iframe {
+  color-scheme: dark;
+}
+
+.hub-premium--claro .frame-page--premium iframe {
+  color-scheme: light;
+}
+
+.hub-premium--escuro .frame-page--premium:fullscreen {
+  background: linear-gradient(180deg, #070b1a 0%, #0b1227 58%, #121c36 78%, #182640 100%);
+}
+
+.hub-premium--claro .frame-page--premium:fullscreen {
+  background: linear-gradient(160deg, #f3f4f6 0%, #f7f5f0 38%, #f2f1ed 68%, #eef1f4 100%);
+}
+
 /* ================================================================ Telas migradas: base comum
    Componentes clássicos do HUB (painel, cabeçalho, filtros, busca, botões, etiquetas, formulários)
    no padrão premium. Vale para toda tela com .hp-migrada; cada tela ajusta o que for só dela. */
