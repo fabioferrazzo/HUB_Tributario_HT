@@ -141,6 +141,18 @@ export function sanitizePautaRichHtml(value: string) {
 
     const tagName = node.tagName.toLowerCase();
 
+    // Grifo aplicado sobre negrito, itálico ou tamanho vem como estilo no próprio elemento:
+    // vira <mark> por fora, sem perder a outra formatação.
+    if (tagName !== "mark" && hasYellowBackground(node)) {
+      const mark = document.createElement("mark");
+      const semFundo = node.cloneNode(true) as HTMLElement;
+      semFundo.style.removeProperty("background-color");
+      semFundo.style.removeProperty("background");
+      appendCleanNode(semFundo, mark);
+      parent.appendChild(mark);
+      return;
+    }
+
     if (tagName === "br") {
       parent.appendChild(document.createElement("br"));
       return;
@@ -281,4 +293,19 @@ export function renderPautaRichHtmlForEmail(value: string) {
     .replace(/<span class="pauta-text-xlarge">/g, '<span style="font-size:20pt;">')
     .replace(/<span class="pauta-text-title">/g, '<span style="font-size:24pt;">')
     .replace(/<mark>/g, '<mark style="background:#fff3a3;padding:0 2px;border-radius:3px;">');
+}
+
+// Descrição de tarefa: guarda HTML só quando há formatação (negrito, grifo, tamanho, listas);
+// sem formatação, guarda texto simples, como antes, para não mudar o que já existe.
+export function normalizarDescricaoTarefa(value: string) {
+  const limpo = sanitizePautaRichHtml(value);
+  if (!limpo) return "";
+  if (/<(strong|em|u|mark|span|ul|ol)\b/i.test(limpo)) return limpo;
+  return pautaRichTextToPlain(limpo);
+}
+
+// Texto simples da descrição, para relatórios, e-mails e exportações.
+export function descricaoTarefaEmTexto(value: string) {
+  const source = String(value || "");
+  return /<\/?[a-z][\s\S]*>/i.test(source) ? pautaRichTextToPlain(source) : source.trim();
 }

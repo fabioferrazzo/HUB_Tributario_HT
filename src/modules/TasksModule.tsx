@@ -10,6 +10,8 @@ import { escapeHtmlText, exportReport } from "../lib/reportExport";
 import { getSupabaseAccessToken } from "../lib/auth";
 import { isTaskAssignedToUser, isTaskAtrasada, isTaskSidebarHistoryRecord, shouldKeepTaskInSidebarHistory, taskToCalendarFrameEvent } from "../lib/hubRules";
 import { lembreteToReportRow, taskToReportRow } from "../lib/reportRows";
+import { RichTextEditor } from "../components/RichTextEditor";
+import { descricaoTarefaEmTexto, normalizarDescricaoTarefa, sanitizePautaRichHtml } from "../lib/richText";
 import "./tarefasPremium.css";
 
 export function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfile[]; onNavigate: (route: HubRoute) => void; user: HubUser }) {
@@ -68,7 +70,7 @@ export function TasksModule({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
         <iframe
           ref={calendarFrameRef}
           key={calendarVersion}
-          src={`/apps/calendar.html?v=tasks-unified-20260625-${calendarVersion}`}
+          src={`/apps/calendar.html?v=tasks-rich-20261125-${calendarVersion}`}
           title="Calendário de tarefas"
           onLoad={() => {
             void syncCalendarFrame();
@@ -91,6 +93,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
   const [filter, setFilter] = useState<TaskFilter>("minhas");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [formSeq, setFormSeq] = useState(0);
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState<TaskItem["prioridade"]>("normal");
   const [destaque, setDestaque] = useState(false);
@@ -197,7 +200,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
         if (!normalizedQuery) return true;
         return [
           task.titulo,
-          task.descricao,
+          descricaoTarefaEmTexto(task.descricao),
           task.prioridade,
           task.status,
           formatResponsaveis(task.responsaveis, hubUsers),
@@ -213,6 +216,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
   const abertasCount = sidebarTasks.filter((task) => task.status === "aberta").length;
 
   function clearFormFields() {
+    setFormSeq((seq) => seq + 1);
     setEditingId(null);
     setTitulo("");
     setDescricao("");
@@ -269,6 +273,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
     }
 
     setError("");
+    setFormSeq((seq) => seq + 1);
     setEditingId(task.id);
     setTitulo(task.titulo);
     setDescricao(task.descricao);
@@ -297,7 +302,7 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
     const nextTask: TaskItem = {
       id: existing?.id || crypto.randomUUID(),
       titulo: titulo.trim(),
-      descricao: descricao.trim(),
+      descricao: normalizarDescricaoTarefa(descricao),
       prazo,
       prioridade,
       status: existing?.status || "aberta",
@@ -456,10 +461,16 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
             Título
             <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
           </label>
-          <label>
-            Notas / descrição
-            <textarea value={descricao} onChange={(event) => setDescricao(event.target.value)} />
-          </label>
+          <div className="task-form-descricao">
+            <RichTextEditor
+              ariaLabel="Notas / descrição da tarefa"
+              label="Notas / descrição"
+              onChange={setDescricao}
+              placeholder="Detalhes da tarefa (opcional)"
+              resetKey={`${editingId || "nova"}-${formSeq}`}
+              value={descricao}
+            />
+          </div>
           <div className="form-row">
             <label>
               Prazo
@@ -583,7 +594,11 @@ export function TaskSidebar({ hubUsers, onNavigate, user }: { hubUsers: HubProfi
               <CheckCircle2 size={17} />
               <div>
                 <strong>{task.titulo}</strong>
-                <span className="task-note-preview">{task.descricao || "Sem notas registradas"}</span>
+                {task.descricao ? (
+                  <span className="task-note-preview pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(task.descricao) }} />
+                ) : (
+                  <span className="task-note-preview">Sem notas registradas</span>
+                )}
                 <small>{task.prazo ? formatDateTime(task.prazo) : "Sem prazo"} - {formatResponsaveis(task.responsaveis, hubUsers)}</small>
                 <div className="lembrete-tags">
                   {isHistoryTask ? <StatusPill label="histórico" /> : null}

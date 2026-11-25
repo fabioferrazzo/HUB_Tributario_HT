@@ -456,6 +456,15 @@ function renderDayPanel(){
 
 // Textos vindos do banco (título, descrição, anexos) entram como texto, nunca como HTML.
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+// Descrição pode vir formatada do HUB (negrito, grifo, listas): aqui vira texto simples.
+function plainDesc(v){
+  const src=String(v==null?"":v);
+  if(!/<\/?[a-z][\s\S]*>/i.test(src))return src.trim();
+  try{
+    const doc=new DOMParser().parseFromString(src.replace(/<br\s*\/?>/gi,"\n").replace(/<\/(p|div|li)>/gi,"\n"),"text/html");
+    return (doc.body.textContent||"").replace(/[ \t]+\n/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+  }catch(e){return src.replace(/<[^>]+>/g,"").trim();}
+}
 function jsArg(v){return esc(JSON.stringify(String(v==null?"":v)));}
 function makeEvCard(ev,showDate){
   const past=new Date(ev.date)<new Date();
@@ -466,7 +475,7 @@ function makeEvCard(ev,showDate){
     return"<div class='att-chip' onclick='downloadAtt("+jsArg(att.dataUrl)+","+jsArg(att.name)+")'><span>"+fileIcon(att.name)+"</span>"+esc(att.name)+"</div>";
   }).join("");
   const manageHtml=HUB_EMBEDDED?"":"<button onclick='openForm(\""+ev.id+"\")'>\u270F Editar</button><button class='danger' onclick='deleteEv(\""+ev.id+"\")'>\uD83D\uDDD1 Excluir</button>";
-  wrap.innerHTML="<div class='ev-bar' style='background:"+col+"'></div><div class='ev-body'><div class='ev-title'>"+esc(ev.title)+"<span class='ev-badge' style='background:"+col+"22;color:"+col+"'>"+(CATS[ev.category]?.label||"Outro")+"</span></div><div class='ev-meta'>"+(showDate?fDateShort(ev.date)+" · ":"")+fTime(ev.date)+(ev.description?" · "+esc(ev.description):"")+"</div>"+(attHtml?"<div class='att-list'>"+attHtml+"</div>":"")+"<div class='ev-actions'>"+((!past)?"<button onclick='openRemind(\""+ev.id+"\")'>\uD83D\uDD14 Lembrar</button>":"")+"<button onclick='openGCal(\""+ev.id+"\")'>\u2197 Google Cal</button>"+manageHtml+"</div></div>";
+  wrap.innerHTML="<div class='ev-bar' style='background:"+col+"'></div><div class='ev-body'><div class='ev-title'>"+esc(ev.title)+"<span class='ev-badge' style='background:"+col+"22;color:"+col+"'>"+(CATS[ev.category]?.label||"Outro")+"</span></div><div class='ev-meta'>"+(showDate?fDateShort(ev.date)+" · ":"")+fTime(ev.date)+(ev.description?" · "+esc(plainDesc(ev.description)):"")+"</div>"+(attHtml?"<div class='att-list'>"+attHtml+"</div>":"")+"<div class='ev-actions'>"+((!past)?"<button onclick='openRemind(\""+ev.id+"\")'>\uD83D\uDD14 Lembrar</button>":"")+"<button onclick='openGCal(\""+ev.id+"\")'>\u2197 Google Cal</button>"+manageHtml+"</div></div>";
   return wrap;
 }
 
@@ -524,7 +533,7 @@ async function openForm(evId,defaultDate){
   if(ev&&ev.attachments)pendingFiles=[...ev.attachments];
   const cat=ev?.category||"personal";window._formCat=cat;
   const ps=document.getElementById("panel-screen");ps.style.display="flex";ps.style.flexDirection="column";
-  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>"+(ev?"Editar tarefa":"Nova tarefa")+"</h2><span class='form-label'>Título *</span><input class='form-input' id='f-title' value='"+esc(ev?.title||"")+"' placeholder='Nome da tarefa'/><span class='form-label'>Data e hora *</span><input class='form-input' id='f-date' type='datetime-local' value='"+(ev?.date?ev.date.slice(0,16):(defaultDate||""))+"'/><span class='form-label'>Categoria</span><div id='cat-btns'>"+Object.entries(CATS).map(([k,v])=>"<button class='cat-btn"+(k===cat?" active":"")+"' style='color:"+(k===cat?v.col:"#666")+";background:"+(k===cat?v.col+"22":"none")+";border-color:"+(k===cat?v.col:"#ddd")+"' onclick='selectCat(\""+k+"\")'>"+ v.label+"</button>").join("")+"</div><span class='form-label'>Descrição</span><textarea class='form-input' id='f-desc' rows='2' placeholder='Detalhes opcionais...'>"+esc(ev?.description||"")+"</textarea><span class='form-label'>Anexos</span><div id='drop-zone' onclick='document.getElementById(\"file-input\").click()' ondragover='event.preventDefault();this.classList.add(\"dragover\")' ondragleave='this.classList.remove(\"dragover\")' ondrop='handleDrop(event)'><p>Clique ou arraste arquivos aqui</p><span>PDF, Word, Excel, imagens, etc.</span></div><input type='file' id='file-input' multiple style='display:none' onchange='handleFiles(this.files)'/><div id='file-list'></div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='saveEv()'>Salvar tarefa</button></div>";
+  document.getElementById("panel-inner").innerHTML="<button class='back-btn' onclick='closePanel()'>← Voltar</button><h2>"+(ev?"Editar tarefa":"Nova tarefa")+"</h2><span class='form-label'>Título *</span><input class='form-input' id='f-title' value='"+esc(ev?.title||"")+"' placeholder='Nome da tarefa'/><span class='form-label'>Data e hora *</span><input class='form-input' id='f-date' type='datetime-local' value='"+(ev?.date?ev.date.slice(0,16):(defaultDate||""))+"'/><span class='form-label'>Categoria</span><div id='cat-btns'>"+Object.entries(CATS).map(([k,v])=>"<button class='cat-btn"+(k===cat?" active":"")+"' style='color:"+(k===cat?v.col:"#666")+";background:"+(k===cat?v.col+"22":"none")+";border-color:"+(k===cat?v.col:"#ddd")+"' onclick='selectCat(\""+k+"\")'>"+ v.label+"</button>").join("")+"</div><span class='form-label'>Descrição</span><textarea class='form-input' id='f-desc' rows='2' placeholder='Detalhes opcionais...'>"+esc(plainDesc(ev?.description))+"</textarea><span class='form-label'>Anexos</span><div id='drop-zone' onclick='document.getElementById(\"file-input\").click()' ondragover='event.preventDefault();this.classList.add(\"dragover\")' ondragleave='this.classList.remove(\"dragover\")' ondrop='handleDrop(event)'><p>Clique ou arraste arquivos aqui</p><span>PDF, Word, Excel, imagens, etc.</span></div><input type='file' id='file-input' multiple style='display:none' onchange='handleFiles(this.files)'/><div id='file-list'></div><div class='form-actions'><button class='btn-cancel' onclick='closePanel()'>Cancelar</button><button class='btn-save' onclick='saveEv()'>Salvar tarefa</button></div>";
   renderFileList();
 }
 function selectCat(k){
@@ -633,7 +642,7 @@ function showReminderPopup(ev,type){
   document.getElementById("rp-title").textContent=ev.title;
   document.getElementById("rp-time").textContent=fDateLong(ev.date)+" às "+fTime(ev.date);
   const desc=document.getElementById("rp-desc");
-  desc.textContent=ev.description||"";desc.style.display=ev.description?"block":"none";
+  desc.textContent=plainDesc(ev.description);desc.style.display=ev.description?"block":"none";
   popup.style.display="flex";
   if(type==="large")playAlarm();
   const bar=document.getElementById("rp-progress-bar");
@@ -683,7 +692,7 @@ function openGCal(evId){
   const ev=events.find(e=>e.id===evId);if(!ev)return;
   const s=new Date(ev.date),e2=new Date(s.getTime()+3600000);
   const fmt=d=>d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
-  window.open("https://calendar.google.com/calendar/r/eventedit?text="+encodeURIComponent(ev.title)+"&dates="+fmt(s)+"/"+fmt(e2)+"&details="+encodeURIComponent(ev.description||""),"_blank");
+  window.open("https://calendar.google.com/calendar/r/eventedit?text="+encodeURIComponent(ev.title)+"&dates="+fmt(s)+"/"+fmt(e2)+"&details="+encodeURIComponent(plainDesc(ev.description)),"_blank");
 }
 function exportICS(evList){
   if(!evList||!evList.length){alert("Nenhum evento.");return;}
@@ -691,7 +700,7 @@ function exportICS(evList){
   const rows=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//CalApp//PT//","CALSCALE:GREGORIAN"];
   evList.forEach(ev=>{
     rows.push("BEGIN:VEVENT","UID:"+ev.id+"@calapp","DTSTART:"+fmt(ev.date),"DTEND:"+fmt(new Date(new Date(ev.date).getTime()+3600000)),"SUMMARY:"+ev.title);
-    if(ev.description)rows.push("DESCRIPTION:"+ev.description);
+    if(ev.description)rows.push("DESCRIPTION:"+plainDesc(ev.description).replace(/\r?\n/g,"\\n"));
     rows.push("END:VEVENT");
   });
   rows.push("END:VCALENDAR");

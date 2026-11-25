@@ -1,3 +1,4 @@
+import { descricaoTarefaEmTexto } from "./richText";
 import type { HubNotification, HubProfile, HubUser, Lembrete, Noticia, Pauta, TaskItem } from "../types";
 import type { ReportRow } from "../app/appTypes";
 import { escapeHtmlText } from "./reportExport";
@@ -80,7 +81,7 @@ export function lembreteToReportRow(lembrete: Lembrete, profiles: HubProfile[]):
 export function taskToReportRow(task: TaskItem): ReportRow {
   return {
     Titulo: task.titulo,
-    Descricao: task.descricao || "Sem descrição",
+    Descricao: descricaoTarefaEmTexto(task.descricao) || "Sem descrição",
     Prazo: formatDateTime(task.prazo),
     Prioridade: task.prioridade,
     Status: task.status,
