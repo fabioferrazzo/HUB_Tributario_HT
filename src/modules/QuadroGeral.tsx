@@ -351,7 +351,7 @@ export function QuadroGeral({
             acoesPauta={acoesPauta}
             acoesTarefa={acoesTarefa}
             agenda={agenda}
-            avisoCoordenacao={<AvisoCoordenacaoPainel user={user} />}
+            avisoCoordenacao={<AvisoCoordenacaoPainel noTopo user={user} />}
             avisosGerais={avisosGerais}
             carregando={carregando}
             dias={dias}
@@ -702,7 +702,9 @@ function formatarDataCurta(valor: string) {
 // ------------------------------------------------------------------------------------------------
 // Aviso da Coordenação
 
-function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
+// noTopo: no Quadro geral premium o aviso fica em faixa de destaque no alto da página; sem aviso publicado,
+// só quem pode publicar vê a faixa (para escrever um novo).
+function AvisoCoordenacaoPainel({ user, noTopo = false }: { user: HubUser; noTopo?: boolean }) {
   const [estado, setEstado] = useState<AvisoCoordenacaoEstado>({ aviso: null, podeEditar: false, guardaEstilo: true });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -799,6 +801,7 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
 
   const aviso = estado.aviso;
   const importante = aviso?.nivel === "importante";
+  if (noTopo && !carregando && !aviso && !estado.podeEditar && !editando && !erro) return null;
   const publicado = aviso ? lerData(aviso.publicadoEm) : null;
   const validadeData = aviso?.validade ? lerData(aviso.validade) : null;
   // Na edição, o quadro já mostra a cor e o tamanho escolhidos (prévia).
@@ -807,7 +810,7 @@ function AvisoCoordenacaoPainel({ user }: { user: HubUser }) {
 
   return (
     <section
-      className={`panel qg-aviso${importante && !editando ? " qg-aviso--importante" : ""}`}
+      className={`panel qg-aviso${importante && !editando ? " qg-aviso--importante" : ""}${noTopo ? " qg-aviso--topo" : ""}${noTopo && aviso && !editando ? " qg-aviso--publicado" : ""}`}
       data-cor={corAtiva}
       data-fonte={fonteAtiva}
       aria-labelledby="qg-aviso-titulo"

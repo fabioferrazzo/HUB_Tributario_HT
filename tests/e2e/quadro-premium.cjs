@@ -86,8 +86,8 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.click(".side-nav button[title='Quadro geral']");
   await page.waitForSelector(".qp", { timeout: 8000 });
   await page.waitForTimeout(500);
-  const blocos = await page.evaluate(() => ["A", "B", "C", "D", "E", "F", "G"].filter((l) => document.querySelector(`.qp-${l}`)));
-  check("os sete blocos estão na grade", blocos.length === 7, blocos.join(","));
+  const blocos = await page.evaluate(() => ["A", "B", "D", "E", "F", "G"].filter((l) => document.querySelector(`.qp-${l}`)));
+  check("os seis blocos estão na grade (aviso saiu para o topo)", blocos.length === 6, blocos.join(","));
   const saudacao = await page.locator(".qp h1").innerText();
   check("saudação com o nome", /^(Bom dia|Boa tarde|Boa noite), \S+/.test(saudacao), saudacao);
   const numero = await page.locator(".qp-numero-gigante").innerText();
@@ -100,7 +100,13 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("tarefa atrasada marcada como atrasada", (await page.locator(".qp-E .qp-linha--atrasada", { hasText: "Premium atrasada" }).count()) === 1);
   const numeros = (await page.locator(".qp-F").innerText()).replace(/\s+/g, " ");
   check("semana em números traz atrasadas, semana e vencimentos", /Tarefas atrasadas \d+/i.test(numeros) && /Tarefas na semana \d+/i.test(numeros) && /Vencimentos na agenda \d+/i.test(numeros), numeros);
-  check("Aviso da Coordenação dentro da grade", (await page.locator(".qp-C .qg-aviso").count()) === 1);
+  check("Aviso da Coordenação no topo, acima da grade", (await page.locator(".qp-aviso-topo .qg-aviso--topo").count()) === 1 && (await page.locator(".qp-bento .qg-aviso").count()) === 0);
+  const topoAviso = await page.locator(".qp-aviso-topo").evaluate((el) => el.getBoundingClientRect().top);
+  const topoGrade = await page.locator(".qp-bento").evaluate((el) => el.getBoundingClientRect().top);
+  check("aviso aparece antes dos blocos", topoAviso < topoGrade, `${topoAviso} x ${topoGrade}`);
+  const itensA = await page.locator(".qp-A-lista .qp-A-item").count();
+  const numeroA = Number((await page.locator(".qp-A .qp-A-numero").innerText()).match(/\d+/)?.[0] || -1);
+  check("bloco de pautas lista as pautas abertas (não só o número)", itensA > 0 && itensA === numeroA, `${itensA} itens / ${numeroA}`);
 
   // Fundo escuro nunca chega ao preto no fim da página.
   const fundo = await page.locator(".hp-fundo").evaluate((el) => getComputedStyle(el).backgroundImage);

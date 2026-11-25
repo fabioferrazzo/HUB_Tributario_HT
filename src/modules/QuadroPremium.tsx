@@ -18,7 +18,7 @@ import {
 import type { HubProfile, HubRoute, HubUser, Pauta, QuadroAviso, TaskItem } from "../types";
 import type { AgendaSemana } from "../lib/agendaSemana";
 import { AGENDA_CATEGORIA_ROTULO } from "../lib/agendaSemana";
-import { formatResponsaveis } from "../lib/formatters";
+import { formatResponsaveis, parseBrazilianDate } from "../lib/formatters";
 import { isPautaAlta } from "../lib/hubRules";
 import { pautaRichTextToPlain } from "../lib/richText";
 import { abrirPersonalizarVisual, salvarVisualPremium, type TamanhoPremium, type TemaPremium } from "../lib/visualPremium";
@@ -101,6 +101,18 @@ function horaCurta(data: Date) {
   return `${String(data.getHours()).padStart(2, "0")}:${String(data.getMinutes()).padStart(2, "0")}`;
 }
 
+function lerPrazo(valor: string) {
+  if (!valor) return null;
+  const data = parseBrazilianDate(valor) || new Date(valor);
+  return Number.isNaN(data.getTime()) ? null : data;
+}
+
+function prazoCurto(valor: string) {
+  const data = lerPrazo(valor);
+  if (!data || Number.isNaN(data.getTime())) return "sem prazo";
+  return `${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function plural(n: number, um: string, varios: string) {
   return n === 1 ? um : varios;
 }
@@ -145,6 +157,17 @@ export function QuadroPremium(props: QuadroPremiumProps) {
 
   // ---- Pautas
   const pautasAltas = pautasAbertas.filter((pauta) => isPautaAlta(pauta)).length;
+  const idsAtrasadas = new Set(pautasAtrasadas.map((item) => item.pauta.id));
+  const ehPautaAtrasada = (pauta: Pauta) => idsAtrasadas.has(pauta.id);
+  // Ordem da lista: destaques, atrasadas, prioridade alta e, por fim, prazo mais próximo (sem prazo no fim).
+  const pautasOrdenadas = [...pautasAbertas].sort((a, b) => {
+    const peso = (p: Pauta) => (p.destaque ? 0 : 4) + (ehPautaAtrasada(p) ? 0 : 2) + (isPautaAlta(p) ? 0 : 1);
+    const diferenca = peso(a) - peso(b);
+    if (diferenca) return diferenca;
+    const prazoA = lerPrazo(a.prazo)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    const prazoB = lerPrazo(b.prazo)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    return prazoA - prazoB;
+  });
   const listaPautas = [...pautasAtrasadas.map((item) => ({ ...item, atrasada: true })), ...pautasSemana.map((item) => ({ ...item, atrasada: false }))];
 
   // ---- Agenda tributária (dias úteis sempre; sábado e domingo só se tiverem vencimento)
@@ -241,6 +264,9 @@ export function QuadroPremium(props: QuadroPremiumProps) {
           </div>
         </header>
 
+        {/* Aviso da Coordenação: faixa de destaque no alto, para toda a equipe ver primeiro */}
+        <div className="qp-aviso-topo">{avisoCoordenacao}</div>
+
         <div className="qp-bento">
           {/* ------------------------------------------------------------ A · Pautas abertas */}
           <section className="qp-cartao qp-A" aria-labelledby="qp-pautas-num">
@@ -255,6 +281,32 @@ export function QuadroPremium(props: QuadroPremiumProps) {
               <span className="qp-numero-gigante">{carregando.pautas ? "…" : pautasAbertas.length}</span>
               <span className="qp-numero-legenda">{plural(pautasAbertas.length, "pauta aberta", "pautas abertas")}</span>
             </div>
+            {erros.pautas ? <p className="qp-erro">{erros.pautas}</p> : null}
+            {!carregando.pautas && !pautasAbertas.length && !erros.pautas ? <p className="qp-vazio">Nenhuma pauta aberta.</p> : null}
+            {pautasAbertas.length ? (
+              <ol className="qp-A-lista" aria-label="Pautas abertas">
+                {pautasOrdenadas.map((pauta) => {
+                  const atrasada = ehPautaAtrasada(pauta);
+                  const alta = isPautaAlta(pauta);
+                  return (
+                    <li
+                      className={`qp-A-item${pauta.destaque ? " qp-A-item--destaque" : ""}${atrasada ? " qp-A-item--atrasada" : ""}`}
+                      key={pauta.id}
+                    >
+                      <button type="button" onClick={() => onNavigate("pautas")} title="Abrir em Pautas">
+                        <span className="qp-A-item-titulo">{pauta.tema || "(sem título)"}</span>
+                        <span className="qp-A-item-meta">
+                          {pauta.destaque ? <span className="qp-A-selo qp-A-selo--destaque">Destaque</span> : null}
+                          {alta ? <span className="qp-A-selo qp-A-selo--alta">Alta</span> : null}
+                          {atrasada ? <span className="qp-A-selo qp-A-selo--atrasada">Atrasada</span> : null}
+                          <span className="qp-A-prazo">{prazoCurto(pauta.prazo)}</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : null}
             <dl className="qp-A-linhas">
               <div>
                 <dt>{ehSemanaAtual ? "Vencem nesta semana" : "Vencem na semana exibida"}</dt>
@@ -327,8 +379,6 @@ export function QuadroPremium(props: QuadroPremiumProps) {
             ) : null}
           </section>
 
-          {/* ------------------------------------------------------------ C · Aviso da Coordenação */}
-          <div className="qp-C">{avisoCoordenacao}</div>
 
           {/* ------------------------------------------------------------ D · Quadro de Avisos */}
           <section className="qp-cartao qp-D qp-tinta-verde" aria-labelledby="qp-avisos-titulo">
