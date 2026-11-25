@@ -275,6 +275,7 @@ function escapeHtml(value) {
 
 function avisoLembreteHtml(item) {
   const partes = [
+    `<strong>${escapeHtml(item.title)}</strong>`,
     `<strong>Prazo:</strong> ${escapeHtml(formatarPrazo(item.due))}`,
     `<strong>Prioridade:</strong> ${escapeHtml(PRIORIDADE_ROTULO[item.priority] || "Média")}`
   ];

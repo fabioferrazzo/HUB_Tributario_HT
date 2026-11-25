@@ -44,7 +44,7 @@ ok("descrição escapada no e-mail", /Trazer &lt;b&gt;planilha&lt;\/b&gt;<br>lin
 ok("e-mail cita calendário e link do HUB", /Calendário de Tarefas/.test(fila?.body.p_html_body) && /href="https:\/\/hub-depto-tributario-ht.netlify.app"/.test(fila?.body.p_html_body));
 const aviso = chamadas.find((c) => c.u.includes("/quadro_avisos?select=id"));
 ok("aviso particular gravado com a sessão do coordenador", aviso?.auth === "Bearer tok-user" && aviso.body.visibility === "particular" && aviso.body.created_by === "u-coord" && aviso.body.created_by_email === "coord@teste.com");
-ok("aviso com título e conteúdo", aviso?.body.title === "Lembrete de avaliação: [TESTE] Avaliação trimestral" && /Prazo:<\/strong> 28\/11\/2026 09:30/.test(aviso.body.content), aviso?.body.content);
+ok("aviso com título e conteúdo", aviso?.body.title === "Lembrete de avaliação: [TESTE] Avaliação trimestral" && /^<strong>\[TESTE\] Avaliação trimestral<\/strong><br><strong>Prazo:<\/strong> 28\/11\/2026 09:30/.test(aviso.body.content), aviso?.body.content);
 const dest = chamadas.find((c) => c.u.endsWith("/quadro_aviso_usuarios"));
 ok("destinatário do aviso = colaborador", dest?.body.email === "colab@teste.com" && dest.body.user_id === "u-colab" && dest.auth === "Bearer tok-user");
 ok("notificação (sino) disparada", chamadas.some((c) => c.u.endsWith("/rpc/notify_quadro_aviso_particular") && c.auth === "Bearer tok-user"));
