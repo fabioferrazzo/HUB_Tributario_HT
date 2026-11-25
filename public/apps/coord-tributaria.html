@@ -778,6 +778,81 @@
       }
     }
   </style>
+<script src="/apps/hub-premium-app.js"></script>
+<style id="ht-premium-coord">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js) e só na tela.
+   Prioridade alta e média continuam em coral e âmbar (são alertas); o resto segue os tons frios do padrão. */
+@media screen {
+html.ht-premium--escuro{--k-texto:#EEF2FA;--k-texto-2:#B9C3DA;--k-mudo:#A3AECB;--k-titulo:#FFFFFF;--k-linha:rgba(255,255,255,.10);
+  --k-vidro:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--k-vidro-2:rgba(255,255,255,calc(.075*var(--ht-vidro-k,1)));--k-solido:#121A30;--k-fixo:#151E35;
+  --k-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--k-acento-texto:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));
+  --k-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20);--k-sobre-acento:#04121A;
+  --k-sombra:0 1px 0 rgba(255,255,255,.04) inset,0 calc(24px*var(--ht-sombra-k,1)) calc(60px*var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8*var(--ht-sombra-k,1)));
+  --danger:#FF8A7C;--warning:#F0C46A;--ok:#7FD6B0;color-scheme:dark}
+html.ht-premium--claro{--k-texto:#1A2033;--k-texto-2:#3D4456;--k-mudo:#5B6274;--k-titulo:#111830;--k-linha:rgba(40,44,56,.11);
+  --k-vidro:rgba(255,255,255,min(.95,calc(.62*var(--ht-vidro-k,1))));--k-vidro-2:rgba(255,255,255,min(.97,calc(.82*var(--ht-vidro-k,1))));--k-solido:#FFFFFF;--k-fixo:#F4F3EE;
+  --k-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--k-acento-texto:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));
+  --k-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10);--k-sobre-acento:#FFFFFF;
+  --k-sombra:0 1px 2px rgba(40,44,56,.05),0 calc(14px*var(--ht-sombra-k,1)) calc(34px*var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22*var(--ht-sombra-k,1)));
+  --danger:#B93E0E;--warning:#B07A12;--ok:#26693F;color-scheme:light}
+html.ht-premium{--ink:var(--k-texto);--muted:var(--k-mudo);--line:var(--k-linha);--paper:transparent;--panel:var(--k-vidro);--brand:var(--k-acento-texto);--brand-2:var(--warning);--shadow:var(--k-sombra)}
+html.ht-premium,html.ht-premium body{background:transparent!important}
+html.ht-premium body{color:var(--k-texto);font-family:"DM Sans","Segoe UI",system-ui,sans-serif}
+html.ht-premium--ampliado body{zoom:1.14}
+html.ht-premium :is(h1,h2,h3,.panel-header h2,.panel-header h3,.reminder-title,.modal-header h2){color:var(--k-titulo);font-family:Nunito,"Segoe UI",sans-serif}
+html.ht-premium :is(.subtitle,.reminder-meta,.reminder-description,.priority-line,.bonus-meta,.metric span){color:var(--k-mudo)}
+html.ht-premium label{color:var(--k-texto-2)}
+/* cabeçalho e abas */
+html.ht-premium .topbar{background:var(--k-vidro-2);border-bottom-color:var(--k-linha);backdrop-filter:blur(18px)}
+html.ht-premium :is(.title-mark,.avatar){background:var(--k-acento);color:var(--k-sobre-acento)}
+/* filtros e ações do cabeçalho: quebram de linha em vez de se sobrepor (principalmente no ampliado) */
+html.ht-premium .top-controls{display:flex;flex-wrap:wrap;align-items:end;justify-content:flex-end}
+html.ht-premium .top-controls>label{flex:1 1 170px;min-width:140px;max-width:300px}
+html.ht-premium .top-controls .top-actions{flex-wrap:wrap}
+html.ht-premium .tab-button{background:var(--k-vidro-2);border-color:var(--k-linha);color:var(--k-texto-2)}
+html.ht-premium .tab-button.active{background:var(--k-acento);border-color:var(--k-acento);color:var(--k-sobre-acento)}
+/* botões */
+html.ht-premium button:not(.primary):not(.tab-button){background:var(--k-vidro-2);border-color:var(--k-linha);color:var(--k-texto)}
+html.ht-premium button:not(.primary):not(.tab-button):hover{border-color:var(--k-acento);background:var(--k-vidro-2)}
+html.ht-premium button.ghost{background:transparent}
+html.ht-premium button.danger:not(.primary):not(.tab-button){color:var(--danger)}
+html.ht-premium button.primary{background:var(--k-acento);border-color:var(--k-acento);color:var(--k-sobre-acento)}
+/* campos: folhas brancas */
+html.ht-premium :is(input,select,textarea){background:#FFFFFF;color:#1A2033;border-color:rgba(40,44,56,.18);color-scheme:light}
+/* cartões */
+html.ht-premium :is(.metric,.panel,.collab-card,.reminder-card,.report-box,.empty-state,.attachment-list,.file-button){background:var(--k-vidro);border-color:var(--k-linha);color:var(--k-texto)}
+html.ht-premium .panel{box-shadow:var(--k-sombra);backdrop-filter:blur(24px) saturate(140%)}
+html.ht-premium .panel-header{background:transparent;border-bottom-color:var(--k-linha)}
+html.ht-premium .metric strong{color:var(--k-titulo);font-family:Nunito,"Segoe UI",sans-serif;font-weight:600}
+html.ht-premium .reminder-card{border-left-color:var(--k-linha)}
+/* cartão de lembrete: data à esquerda, texto ao lado, ações embaixo (layout fixo, também no ampliado) */
+html.ht-premium .reminder-card{grid-template-columns:58px minmax(0,1fr)}
+html.ht-premium .reminder-card>.date-badge{grid-column:1;grid-row:1 / span 2}
+html.ht-premium .reminder-card>.reminder-main{grid-column:2}
+html.ht-premium .reminder-card>.reminder-actions{grid-column:1 / -1;max-width:none;justify-content:start}
+html.ht-premium .reminder-card.priority-baixa{border-left-color:var(--k-acento)}
+html.ht-premium .priority-dot{border-color:transparent;box-shadow:0 0 0 1px var(--k-linha)}
+html.ht-premium .priority-dot.priority-baixa{background:var(--k-acento)}
+html.ht-premium .date-badge{background:var(--k-vidro-2);border-color:var(--k-linha);color:var(--k-titulo)}
+html.ht-premium .date-badge small{background:var(--k-acento);color:var(--k-sobre-acento)}
+html.ht-premium :is(.chip,.attachment-pill){background:var(--k-brilho);color:var(--k-acento-texto);border-color:var(--k-linha)}
+html.ht-premium .sync-pill{background:var(--k-vidro-2);color:var(--k-texto-2)}
+html.ht-premium .sync-pill.supabase{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+html.ht-premium .sync-pill.error{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
+html.ht-premium .notice{background:color-mix(in srgb,var(--ok) 12%,transparent);border-color:color-mix(in srgb,var(--ok) 35%,transparent);color:var(--ok)}
+html.ht-premium .notice.error{background:color-mix(in srgb,var(--danger) 12%,transparent);border-color:color-mix(in srgb,var(--danger) 35%,transparent);color:var(--danger)}
+/* tabela de bônus */
+html.ht-premium .bonus-table-wrap{background:var(--k-vidro);border-color:var(--k-linha)}
+html.ht-premium :is(.bonus-table th,.bonus-table td){border-color:var(--k-linha)}
+html.ht-premium .bonus-table th{background:var(--k-fixo);color:var(--k-titulo)}
+html.ht-premium .bonus-table td[contenteditable="true"]{background:transparent}
+html.ht-premium .bonus-table td[contenteditable="true"]:focus{background:#FFFFFF;color:#1A2033;box-shadow:inset 0 0 0 2px var(--k-acento)}
+/* janelas: fundo sólido */
+html.ht-premium .modal,html.ht-premium .modal-header{background:var(--k-solido);border-color:var(--k-linha)}
+html.ht-premium .modal-backdrop{background:rgba(7,11,26,.6)}
+html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px solid var(--k-acento);outline-offset:2px}
+}
+</style>
 </head>
 <body>
   <div class="app-shell">

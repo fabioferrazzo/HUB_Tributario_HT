@@ -70,7 +70,8 @@ export const hubApps: HubApp[] = [
     group: "Sistema",
     access: "gestores",
     src: `/apps/coord-tributaria.html?v=${coordStandaloneVersion}`,
-    mode: "embutido"
+    mode: "embutido",
+    premium: true
   },
   // Checklist no HUB: cada usuário tem os seus (no banco do HUB) e pode compartilhar com colegas.
   // Começa sem histórico; o Checklist pessoal do Fábio segue em uso à parte, fora do HUB.

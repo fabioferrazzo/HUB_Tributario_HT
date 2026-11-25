@@ -1,5 +1,5 @@
-// Apps do Escritório no visual premium: Controle de Apuração, Controle de Férias, Onboarding, Carteira de clientes e
-// Informativos seguindo tema, tamanho e paleta do HUB (ponte hub-premium-app.js). Apuração e Férias têm modo escuro
+// Apps do Escritório no visual premium: Controle de Apuração, Controle de Férias, Onboarding, Carteira de clientes,
+// Informativos e Coordenação tributária seguindo tema, tamanho e paleta do HUB (ponte hub-premium-app.js). Apuração e Férias têm modo escuro
 // próprio, que acompanha o do HUB (hub-premium-tema.js) e volta à escolha do usuário ao desligar o premium.
 // Contraste nos dois temas, esquema de cores igual ao do HUB, nada transbordando no ampliado (modo local, localhost).
 // Dados "[TESTE]" servidos por rota interceptada: nada sai da máquina.
@@ -15,7 +15,8 @@ const APPS = [
   { label: "Controle de Férias", url: /\/apps\/ferias\// },
   { label: "Onboarding", url: /\/apps\/onboarding\// },
   { label: "Carteira de clientes", url: /\/apps\/carteira\// },
-  { label: "Informativos", url: /\/apps\/informativos\// }
+  { label: "Informativos", url: /\/apps\/informativos\// },
+  { label: "Coordenação", url: /\/apps\/coord-tributaria/ }
 ];
 
 const ID = "00000000-0000-0000-0000-000000000001";

@@ -77,11 +77,12 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("rodapé de notícias em vidro", /rgba\(255, 255, 255, 0\.04/.test(rodape), rodape);
   await page.screenshot({ path: path.join(OUT, "hp-app-escuro.png") });
 
-  // Outra tela (ainda no visual atual) fica numa folha clara dentro do tema escuro.
-  await page.click(".side-nav button[title='Coordenação']");
+  // Todas as telas já foram migradas: a página de abertura do Pautas (app) também segue o tema (sem folha clara).
+  await page.click(".side-nav button[title='Pautas (app)']");
   await page.waitForTimeout(900);
   const folha = await page.locator(".workspace-body").evaluate((el) => getComputedStyle(el).backgroundColor);
-  check("telas ainda não migradas ficam em folha clara", folha === "rgb(244, 241, 234)", folha);
+  const abertura = await page.locator(".frame-external").evaluate((el) => getComputedStyle(el).backgroundColor);
+  check("Pautas (app): página de abertura no tema, sem folha clara", folha !== "rgb(244, 241, 234)" && /^rgba\(255, 255, 255, 0\.0/.test(abertura), `${folha} ${abertura}`);
   await page.screenshot({ path: path.join(OUT, "hp-pautas-escuro.png") });
   await page.click(".side-nav button[title='Quadro geral']");
   await page.waitForSelector(".qp", { timeout: 8000 });

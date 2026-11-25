@@ -766,6 +766,30 @@ body[data-hub-premium="claro"] {
   color-scheme: light;
 }
 
+/* Página de abertura dos apps que só abrem em janela própria (ex.: Pautas (app)) */
+.hub-premium .frame-page--external .frame-external {
+  border: 1px solid var(--hp-linha);
+  border-radius: var(--ht-raio, 24px);
+  background: var(--hp-vidro);
+  box-shadow: var(--hp-sombra);
+  color: var(--hp-mudo);
+}
+
+.hub-premium .frame-page--external .frame-external h3 {
+  color: var(--hp-titulo);
+  font-family: Nunito, "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium .frame-page--external .frame-external svg {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .frame-page--external .frame-external .primary-action {
+  border-color: var(--hp-acento);
+  background: var(--hp-acento);
+  color: var(--hp-sobre-acento);
+}
+
 .hub-premium--escuro .frame-page--premium:fullscreen {
   background: linear-gradient(180deg, #070b1a 0%, #0b1227 58%, #121c36 78%, #182640 100%);
 }
