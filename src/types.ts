@@ -236,6 +236,7 @@ export type HubNotification = {
 
 export type HubRoute =
   | "home"
+  | "registros"
   | "pautas"
   | "tarefas"
   | "lembretes"
@@ -249,3 +250,78 @@ export type HubRoute =
   | "historico"
   | "chat"
   | `app:${string}`;
+
+// Aba Registros: aberturas, alterações contratuais e clientes novos.
+export type RegistroTipo = "abertura" | "alteracao" | "cliente_novo" | "outro";
+export type RegistroStatus = "revisao" | "ativo" | "arquivado";
+export type RegistroCnae = { codigo: string; descricao: string };
+export type RegistroSocio = { nome: string; qualificacao: string; desde: string };
+
+export type DadosReceita = {
+  fonte: string;
+  cnpj: string;
+  razaoSocial: string;
+  nomeFantasia: string;
+  dataInicio: string;
+  situacao: string;
+  naturezaJuridica: string;
+  municipio: string;
+  uf: string;
+  cnaePrincipal: RegistroCnae | null;
+  cnaesSecundarios: RegistroCnae[];
+  socios: RegistroSocio[];
+  regimeSugerido: string;
+  consultadoEm: string;
+};
+
+export type RegistroEmpresa = {
+  id: string;
+  cnpj: string;
+  razaoSocial: string;
+  nomeFantasia: string;
+  ie: string;
+  codigoDominio: string;
+  regime: string;
+  dataInicio: string;
+  situacao: string;
+  naturezaJuridica: string;
+  municipio: string;
+  uf: string;
+  socios: RegistroSocio[];
+  cnaePrincipal: RegistroCnae | null;
+  cnaesSecundarios: RegistroCnae[];
+  receitaAtualizadaEm: string;
+  observacoes: string;
+  tipo: RegistroTipo;
+  status: RegistroStatus;
+  origem: "manual" | "email";
+  responsavelId: string;
+  responsavelDefinidoEm: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RegistroEvento = {
+  id: string;
+  registroId: string;
+  tipo: RegistroTipo | "receita" | "responsavel" | "nota";
+  resumo: string;
+  assunto: string;
+  remetente: string;
+  createdBy: string;
+  createdAt: string;
+};
+
+export type RegistroAnexo = {
+  id: string;
+  registroId: string;
+  fileName: string;
+  storagePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdBy: string;
+  createdAt: string;
+  /** Só no modo demonstração (sem Supabase): conteúdo do arquivo em data URL. */
+  dataUrl?: string;
+};

@@ -317,16 +317,20 @@ async function tratarMudancasDeLembretes({ supabaseUrl, serviceRoleKey, mudancas
   return resultados;
 }
 
-// Avisos de lembrete vencidos (30 dias, ou 5 dias depois de concluídos) saem do quadro.
+// Avisos vencidos saem do quadro: lembretes da Coordenação (30 dias, ou 5 dias depois de concluídos)
+// e avisos de responsável da aba Registros (30 dias).
+const MARCA_COM_PRAZO_RE = /<!--hub:(?:coord-lembrete|registro) ([^>]*?)-->/;
+
 async function limparAvisosVencidos(supabaseUrl, serviceRoleKey) {
   try {
-    const filtro = encodeURIComponent("*hub:coord-lembrete id=*");
+    const filtro = encodeURIComponent("*<!--hub:*id=*expira=*");
     const rows = await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_avisos?content=like.${filtro}&select=id,content`, {
       headers: serviceHeaders(serviceRoleKey)
     });
     const agora = Date.now();
     for (const row of Array.isArray(rows) ? rows : []) {
-      const expira = Date.parse(lerMarca(row.content)?.expira || "");
+      const campos = String(row.content || "").match(MARCA_COM_PRAZO_RE)?.[1] || "";
+      const expira = Date.parse(campos.match(/(?:^|\s)expira=(\S+)/)?.[1] || "");
       if (Number.isFinite(expira) && expira <= agora) await apagarAviso(supabaseUrl, serviceRoleKey, row.id);
     }
   } catch (error) {

@@ -130,7 +130,8 @@ export async function uploadQuadroAvisoFile(
 
 // Avisos de lembrete da Coordenação: a marca oculta no fim do conteúdo guarda o lembrete e os prazos
 // (30 dias no quadro; depois de concluído, 5 dias "concluído pela coordenação").
-const MARCA_COORD_RE = /<!--hub:coord-lembrete ([^>]*?)-->/;
+// Avisos de responsável da aba Registros usam a mesma marca, com "hub:registro".
+const MARCA_COORD_RE = /<!--hub:(?:coord-lembrete|registro) ([^>]*?)-->/;
 
 export function lerMarcaCoordLembrete(content: string): QuadroAviso["coordLembrete"] {
   const match = String(content || "").match(MARCA_COORD_RE);

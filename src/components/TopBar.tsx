@@ -182,6 +182,7 @@ export function TopBar({
                           onNotificationRead(item.id);
                           if (item.targetType === "quadro_aviso") abrirAbaPautas(/particular/i.test(`${item.title} ${item.meta}`) ? "particular" : "geral");
                           else if (item.targetType === "pauta") abrirAbaPautas("lista");
+                          else if (item.targetType === "registro" && item.targetRef) abrirRegistro(item.targetRef);
                           onNavigate(item.route);
                           setNotificationsOpen(false);
                         }}
@@ -219,6 +220,16 @@ export function TopBar({
 }
 
 // Notificação de aviso abre Pautas já no "Quadro de Avisos"; de pauta, na lista de pautas.
+// Aba Registros: abre direto o registro da notificação.
+function abrirRegistro(id: string) {
+  try {
+    window.sessionStorage.setItem("hub_registros_abrir", id);
+    window.dispatchEvent(new Event("hub:registros-abrir"));
+  } catch {
+    // sessionStorage indisponível: a aba abre sem seleção.
+  }
+}
+
 function abrirAbaPautas(quadro: "geral" | "particular" | "lista") {
   try {
     window.sessionStorage.setItem("hub_pautas_aba", quadro);

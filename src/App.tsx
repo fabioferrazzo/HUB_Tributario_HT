@@ -35,6 +35,7 @@ const HistoricoModule = lazy(() => import("./modules/HistoricoModule").then((m) 
 const Dashboard = lazy(() => import("./modules/Dashboard").then((m) => ({ default: m.Dashboard })));
 const LembretesModule = lazy(() => import("./modules/LembretesModule").then((m) => ({ default: m.LembretesModule })));
 const LinksModule = lazy(() => import("./modules/LinksModule").then((m) => ({ default: m.LinksModule })));
+const RegistrosModule = lazy(() => import("./modules/RegistrosModule").then((m) => ({ default: m.RegistrosModule })));
 const TasksModule = lazy(() => import("./modules/TasksModule").then((m) => ({ default: m.TasksModule })));
 
 // A rota fica no endereço (#/rota) para abrir qualquer menu em nova janela ou por link.
@@ -596,6 +597,7 @@ function renderRouteConteudo(route: HubRoute, user: HubUser, hubUsers: HubProfil
   if (route === "lembretes") return <LembretesModule hubUsers={hubUsers} user={user} />;
   if (route === "arquivos") return <ArquivosModule user={user} />;
   if (route === "links") return <LinksModule user={user} />;
+  if (route === "registros") return <RegistrosModule hubUsers={hubUsers} user={user} />;
   if (route === "avaliacoes") return <AvaliacoesModule user={user} />;
   if (route === "historico") return user.role === "admin" ? <HistoricoModule /> : <QuadroGeral hubUsers={hubUsers} onNavigate={onNavigate} user={user} />;
   if (route === "admin") return <AdminModule currentUser={user} />;
