@@ -1066,7 +1066,7 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
               <input id="reminderCalendarSync" type="checkbox" />
               Integrar/repetir no Calendário de Tarefas
             </label>
-            <p id="reminderAutoSendInfo" class="subtitle wide">Ao criar o lembrete, o colaborador recebe automaticamente um e-mail e um aviso no Quadro de Avisos particular dele.</p>
+            <p id="reminderAutoSendInfo" class="subtitle wide">Ao criar o lembrete, o colaborador recebe automaticamente um e-mail e um aviso no Quadro de Avisos particular dele (por 30 dias). Ao concluir, ele é notificado no sino e o aviso fica esmaecido por 5 dias.</p>
             <label class="wide">Anexos<input id="reminderAttachments" type="file" multiple /></label>
             <div id="reminderAttachmentList" class="attachment-list wide">Nenhum anexo salvo.</div>
           </div>
@@ -1310,7 +1310,7 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
           if (!response.ok) throw new Error(data.error || response.statusText);
           syncState.remoteReady = true;
           setSyncStatus("supabase", "supabase");
-          informarEnvios(data.envios);
+          informarEnvios(data.envios, data.conclusoes);
         } catch (error) {
           syncState.remoteReady = false;
           setSyncStatus("local", "error");
@@ -1321,8 +1321,17 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
       }
 
       // Lembrete de avaliação novo: o servidor envia e-mail ao colaborador e cria o aviso particular dele.
-      function informarEnvios(envios) {
-        if (!Array.isArray(envios) || !envios.length) return;
+      function informarEnvios(envios, conclusoes) {
+        envios = Array.isArray(envios) ? envios : [];
+        conclusoes = Array.isArray(conclusoes) ? conclusoes : [];
+        if (!envios.length && !conclusoes.length) return;
+        const partesConclusao = conclusoes.map((item) => {
+          const feitos = [item.notificado ? "notificação no sino" : "", item.avisoAtualizado ? "aviso marcado como concluído (sai do quadro em 5 dias)" : ""].filter(Boolean);
+          const base = feitos.length
+            ? `Conclusão de "${item.titulo}" comunicada a ${item.colaborador}: ${feitos.join(" e ")}.`
+            : `Conclusão de "${item.titulo}": nada foi comunicado a ${item.colaborador || "o colaborador"}.`;
+          return item.erros && item.erros.length ? `${base} Atenção: ${item.erros.join(" ")}` : base;
+        });
         const partes = envios.map((envio) => {
           const feitos = [envio.emailEnviado ? "e-mail" : "", envio.avisoCriado ? "aviso no Quadro de Avisos particular" : ""].filter(Boolean);
           const base = feitos.length
@@ -1330,8 +1339,10 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
             : `Lembrete "${envio.titulo}": nada foi enviado a ${envio.colaborador || "o colaborador"}.`;
           return envio.erros && envio.erros.length ? `${base} Atenção: ${envio.erros.join(" ")}` : base;
         });
-        const comErro = envios.some((envio) => (envio.erros && envio.erros.length) || !envio.emailEnviado || !envio.avisoCriado);
-        showNotice(partes.join(" "), comErro);
+        const comErro =
+          envios.some((envio) => (envio.erros && envio.erros.length) || !envio.emailEnviado || !envio.avisoCriado) ||
+          conclusoes.some((item) => (item.erros && item.erros.length) || !item.notificado);
+        showNotice([...partes, ...partesConclusao].join(" "), comErro);
       }
 
       function cryptoId() {
@@ -1791,7 +1802,7 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
         window.clearTimeout(showNotice.timer);
         showNotice.timer = window.setTimeout(() => {
           refs.notice.className = "notice";
-        }, 4200);
+        }, Math.max(4200, String(message || "").length * 60));
       }
 
       function openReminderModal(id, preset = {}) {

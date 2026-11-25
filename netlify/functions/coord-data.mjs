@@ -43,13 +43,14 @@ export default async function handler(request) {
     }
 
     if (request.method === "GET") {
+      await limparAvisosVencidos(supabaseUrl, serviceRoleKey);
       const state = await loadState(supabaseUrl, serviceRoleKey);
       return json(200, { source: "supabase", state });
     }
 
     const payload = await parseJsonBody(request);
     const state = normalizeState(payload?.state, authUser.id);
-    const novos = await saveState(supabaseUrl, serviceRoleKey, state);
+    const { novos, mudancas } = await saveState(supabaseUrl, serviceRoleKey, state);
     const envios = novos.length
       ? await avisarColaboradores({
           supabaseUrl,
@@ -62,7 +63,9 @@ export default async function handler(request) {
           hubUrl: originOf(request)
         })
       : [];
-    return json(200, { ok: true, source: "supabase", state, envios });
+    const conclusoes = await tratarMudancasDeLembretes({ supabaseUrl, serviceRoleKey, mudancas, collaborators: state.collaborators });
+    await limparAvisosVencidos(supabaseUrl, serviceRoleKey);
+    return json(200, { ok: true, source: "supabase", state, envios, conclusoes });
   } catch (error) {
     const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 400;
     return json(statusCode, { error: error?.message || "Não foi possível sincronizar a Coordenação Tributária." });
@@ -113,6 +116,9 @@ async function saveState(supabaseUrl, serviceRoleKey, state) {
   // Lembretes de colaborador que ainda não existem no banco: inseridos primeiro, sem sobrescrever,
   // para saber com segurança quais são novos (a resposta traz só as linhas realmente inseridas).
   const novos = await reservarNovosLembretesColaborador(supabaseUrl, serviceRoleKey, state.reminders);
+  // Exclusão, conclusão e reabertura: mudança aplicada só se o banco ainda estava no estado anterior,
+  // e a resposta traz as linhas que mudaram de fato (assim cada evento é tratado uma única vez).
+  const mudancas = await registrarMudancasDeLembretes(supabaseUrl, serviceRoleKey, state.reminders);
 
   if (state.reminders.length) {
     await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/coord_itens?on_conflict=id`, {
@@ -128,7 +134,204 @@ async function saveState(supabaseUrl, serviceRoleKey, state) {
 
   await syncCalendarTasksFromCoord(supabaseUrl, serviceRoleKey, state.reminders, state.collaborators);
   await saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, state.reminders);
-  return novos;
+  return { novos, mudancas };
+}
+
+async function patchCondicional(supabaseUrl, serviceRoleKey, ids, filtro, corpo) {
+  if (!ids.length) return [];
+  const linhas = await supabaseRequest(
+    `${trimUrl(supabaseUrl)}/rest/v1/coord_itens?id=in.(${ids.map(encodeURIComponent).join(",")})&${filtro}&select=id`,
+    {
+      method: "PATCH",
+      headers: { ...serviceHeaders(serviceRoleKey), "content-type": "application/json", prefer: "return=representation" },
+      body: JSON.stringify(corpo)
+    }
+  );
+  const mudaram = new Set((Array.isArray(linhas) ? linhas : []).map((row) => row.id));
+  return ids.filter((id) => mudaram.has(id));
+}
+
+async function registrarMudancasDeLembretes(supabaseUrl, serviceRoleKey, reminders) {
+  const colaborador = reminders.filter((item) => item.type === "colaborador");
+  const agora = new Date().toISOString();
+  const excluidos = await patchCondicional(
+    supabaseUrl,
+    serviceRoleKey,
+    colaborador.filter((item) => item.deletedAt).map((item) => item.id),
+    "deleted_at=is.null",
+    { deleted_at: agora }
+  );
+  const concluidos = await patchCondicional(
+    supabaseUrl,
+    serviceRoleKey,
+    colaborador.filter((item) => !item.deletedAt && item.status === "concluido").map((item) => item.id),
+    "status=eq.aberto&deleted_at=is.null",
+    { status: "concluido", completed_at: agora }
+  );
+  const reabertos = await patchCondicional(
+    supabaseUrl,
+    serviceRoleKey,
+    colaborador.filter((item) => !item.deletedAt && item.status === "aberto").map((item) => item.id),
+    "status=eq.concluido&deleted_at=is.null",
+    { status: "aberto", completed_at: null }
+  );
+  const porId = new Map(colaborador.map((item) => [item.id, item]));
+  const pegar = (ids) => ids.map((id) => porId.get(id)).filter(Boolean);
+  return { excluidos: pegar(excluidos), concluidos: pegar(concluidos), reabertos: pegar(reabertos) };
+}
+
+// ---- Aviso particular ligado ao lembrete ----
+// O vínculo e os prazos ficam num comentário no fim do conteúdo (não aparece na tela):
+// <!--hub:coord-lembrete id=<id> criado=<ISO> expira=<ISO> concluido=<ISO>-->
+const DIA_MS = 24 * 60 * 60 * 1000;
+const PRAZO_AVISO_DIAS = 30;
+const PRAZO_CONCLUIDO_DIAS = 5;
+const MARCA_RE = /<!--hub:coord-lembrete ([^>]*?)-->/;
+
+function marcaAviso({ id, criado, expira, concluido }) {
+  return `<!--hub:coord-lembrete id=${id} criado=${criado} expira=${expira}${concluido ? ` concluido=${concluido}` : ""}-->`;
+}
+
+function lerMarca(content) {
+  const m = String(content || "").match(MARCA_RE);
+  if (!m) return null;
+  const campos = Object.fromEntries(m[1].trim().split(/\s+/).map((par) => par.split("=")).filter((par) => par.length === 2));
+  return campos.id ? campos : null;
+}
+
+function trocarMarca(content, campos) {
+  const semMarca = String(content || "").replace(MARCA_RE, "");
+  return `${semMarca}${marcaAviso(campos)}`;
+}
+
+async function avisosDoLembrete(supabaseUrl, serviceRoleKey, itemId) {
+  const filtro = encodeURIComponent(`*hub:coord-lembrete id=${itemId} *`);
+  const rows = await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_avisos?content=like.${filtro}&select=id,content`, {
+    headers: serviceHeaders(serviceRoleKey)
+  });
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function atualizarConteudoAviso(supabaseUrl, serviceRoleKey, avisoId, content) {
+  await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_avisos?id=eq.${encodeURIComponent(avisoId)}`, {
+    method: "PATCH",
+    headers: { ...serviceHeaders(serviceRoleKey), "content-type": "application/json" },
+    body: JSON.stringify({ content })
+  });
+}
+
+async function apagarAviso(supabaseUrl, serviceRoleKey, avisoId) {
+  await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_avisos?id=eq.${encodeURIComponent(avisoId)}`, {
+    method: "DELETE",
+    headers: serviceHeaders(serviceRoleKey)
+  });
+}
+
+async function tratarMudancasDeLembretes({ supabaseUrl, serviceRoleKey, mudancas, collaborators }) {
+  const resultados = [];
+  const porId = new Map(collaborators.map((item) => [item.id, item]));
+  const agora = Date.now();
+
+  for (const item of mudancas.excluidos) {
+    try {
+      for (const aviso of await avisosDoLembrete(supabaseUrl, serviceRoleKey, item.id)) await apagarAviso(supabaseUrl, serviceRoleKey, aviso.id);
+    } catch (error) {
+      console.warn("Não foi possível retirar o aviso do lembrete excluído.", error?.message || error);
+    }
+  }
+
+  for (const item of mudancas.reabertos) {
+    try {
+      for (const aviso of await avisosDoLembrete(supabaseUrl, serviceRoleKey, item.id)) {
+        const marca = lerMarca(aviso.content);
+        const criado = marca?.criado || new Date(agora).toISOString();
+        const expira = new Date(Math.max(Date.parse(criado) + PRAZO_AVISO_DIAS * DIA_MS, agora + DIA_MS)).toISOString();
+        await atualizarConteudoAviso(supabaseUrl, serviceRoleKey, aviso.id, trocarMarca(aviso.content, { id: item.id, criado, expira }));
+      }
+    } catch (error) {
+      console.warn("Não foi possível reabrir o aviso do lembrete.", error?.message || error);
+    }
+  }
+
+  for (const item of mudancas.concluidos) {
+    const colaborador = porId.get(item.collaboratorId);
+    const email = String(colaborador?.email || "").trim().toLowerCase();
+    const resultado = { id: item.id, titulo: item.title, colaborador: colaborador?.name || email, avisoAtualizado: false, notificado: false, erros: [] };
+    resultados.push(resultado);
+    const concluido = new Date(agora).toISOString();
+    let avisoId = null;
+
+    try {
+      for (const aviso of await avisosDoLembrete(supabaseUrl, serviceRoleKey, item.id)) {
+        const marca = lerMarca(aviso.content);
+        const expira = new Date(agora + PRAZO_CONCLUIDO_DIAS * DIA_MS).toISOString();
+        await atualizarConteudoAviso(
+          supabaseUrl,
+          serviceRoleKey,
+          aviso.id,
+          trocarMarca(aviso.content, { id: item.id, criado: marca?.criado || concluido, expira, concluido })
+        );
+        avisoId = aviso.id;
+        resultado.avisoAtualizado = true;
+      }
+      if (!avisoId) resultado.erros.push("O aviso do quadro particular não existe mais (excluído ou vencido).");
+    } catch (error) {
+      resultado.erros.push(`Quadro de Avisos: ${error?.message || "não foi possível marcar como concluído."}`);
+    }
+
+    try {
+      const perfis = email
+        ? await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id&limit=1`, {
+            headers: serviceHeaders(serviceRoleKey)
+          })
+        : [];
+      const perfil = Array.isArray(perfis) ? perfis[0] : null;
+      if (!perfil?.id) {
+        resultado.erros.push("Colaborador sem usuário no HUB: não há sino para notificar.");
+      } else {
+        await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/notificacoes?on_conflict=user_id,dedupe_key`, {
+          method: "POST",
+          headers: { ...serviceHeaders(serviceRoleKey), "content-type": "application/json", prefer: "resolution=ignore-duplicates" },
+          body: JSON.stringify({
+            user_id: perfil.id,
+            tipo: "quadro_aviso",
+            titulo: "Lembrete concluído pela coordenação",
+            body: `A Coordenação Tributária concluiu o lembrete: ${item.title}`,
+            meta: JSON.stringify({ avisoId, route: "pautas", tab: "avisos", board: "particular", title: item.title }),
+            target_type: "quadro_aviso",
+            target_id: avisoId,
+            target_ref: item.id,
+            dedupe_key: `coord_lembrete_concluido:${item.id}:${concluido}`,
+            route: "pautas",
+            tone: "info",
+            active: true
+          })
+        });
+        resultado.notificado = true;
+      }
+    } catch (error) {
+      resultado.erros.push(`Sino: ${error?.message || "não foi possível notificar."}`);
+    }
+  }
+
+  return resultados;
+}
+
+// Avisos de lembrete vencidos (30 dias, ou 5 dias depois de concluídos) saem do quadro.
+async function limparAvisosVencidos(supabaseUrl, serviceRoleKey) {
+  try {
+    const filtro = encodeURIComponent("*hub:coord-lembrete id=*");
+    const rows = await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_avisos?content=like.${filtro}&select=id,content`, {
+      headers: serviceHeaders(serviceRoleKey)
+    });
+    const agora = Date.now();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const expira = Date.parse(lerMarca(row.content)?.expira || "");
+      if (Number.isFinite(expira) && expira <= agora) await apagarAviso(supabaseUrl, serviceRoleKey, row.id);
+    }
+  } catch (error) {
+    console.warn("Não foi possível limpar avisos vencidos.", error?.message || error);
+  }
 }
 
 const NOVO_LEMBRETE_JANELA_MS = 7 * 24 * 60 * 60 * 1000;
@@ -211,7 +414,11 @@ async function avisarColaboradores({ supabaseUrl, supabaseAnonKey, serviceRoleKe
           kind: "texto",
           visibility: "particular",
           title: `Lembrete de avaliação: ${item.title}`.slice(0, 200),
-          content: avisoLembreteHtml(item),
+          content: `${avisoLembreteHtml(item)}${marcaAviso({
+            id: item.id,
+            criado: new Date().toISOString(),
+            expira: new Date(Date.now() + PRAZO_AVISO_DIAS * DIA_MS).toISOString()
+          })}`,
           color: "#ffffff",
           created_by: autor.id,
           created_by_email: String(autor.email || "").trim().toLowerCase()

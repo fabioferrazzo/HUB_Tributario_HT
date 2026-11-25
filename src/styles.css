@@ -7388,3 +7388,29 @@ a.aviso-card__file:hover {
   background: var(--accent);
   color: #fff;
 }
+
+/* Aviso de lembrete da Coordenação: concluído fica esmaecido até sair do quadro (5 dias). */
+.aviso-card--concluido {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+.aviso-card--concluido:hover,
+.aviso-card--concluido:focus-within {
+  opacity: 0.8;
+}
+.aviso-card__concluido {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(15, 143, 142, 0.12);
+  color: #0a6e6d;
+  font-size: 11px;
+  font-weight: 700;
+}
+.aviso-card__validade {
+  color: #6b7a90;
+  font-size: 11px;
+}

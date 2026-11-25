@@ -868,10 +868,12 @@ export function Dashboard({
     const caption = aviso.content && aviso.content !== aviso.fileName ? aviso.content : "";
     const text = aviso.kind === "texto" || isPostit ? aviso.content : caption;
     const stopCellClick = (event: { stopPropagation: () => void }) => event.stopPropagation();
+    const lembrete = aviso.coordLembrete;
+    const dataCurta = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : "");
 
     return (
       <article
-        className={`aviso-card aviso-card--${aviso.kind} aviso-card--${mode}`}
+        className={`aviso-card aviso-card--${aviso.kind} aviso-card--${mode}${lembrete?.concluidoEm ? " aviso-card--concluido" : ""}`}
         key={aviso.id}
         style={isPostit ? { background: aviso.color || "#fff4b8" } : undefined}
       >
@@ -914,9 +916,16 @@ export function Dashboard({
             </span>
           )
         ) : null}
+        {lembrete?.concluidoEm ? (
+          <span className="aviso-card__concluido">
+            <CheckCircle2 aria-hidden="true" size={13} strokeWidth={1.8} />
+            Concluído pela coordenação em {dataCurta(lembrete.concluidoEm)}
+          </span>
+        ) : null}
         {hasPautaRichContent(text) ? (
           <div className="aviso-card__text pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(text) }} />
         ) : null}
+        {lembrete ? <small className="aviso-card__validade">No quadro até {dataCurta(lembrete.expiraEm)}</small> : null}
         <footer className="aviso-card__meta">
           <span>{mode === "quadro" ? getAvisoAuthorName(aviso).split(" ")[0] : getAvisoAuthorName(aviso)}</span>
           <span>{formatDate(aviso.updatedAt)}</span>

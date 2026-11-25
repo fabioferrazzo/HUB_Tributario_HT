@@ -701,3 +701,15 @@
   outline: 2px solid var(--hp-acento);
   outline-offset: 2px;
 }
+
+/* Aviso de lembrete concluído pela coordenação */
+.hub-premium .pautas-page .aviso-card__concluido {
+  background: var(--hp-brilho-acento, rgba(27, 188, 187, 0.2));
+  color: var(--hp-acento-texto, #5fd8d6);
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+.hub-premium .pautas-page .aviso-card__validade {
+  color: var(--hp-mudo, #93a0bf);
+}

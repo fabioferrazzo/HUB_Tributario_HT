@@ -200,6 +200,8 @@ export type QuadroAviso = {
   createdByEmail: string;
   createdAt: string;
   updatedAt: string;
+  /** Aviso criado por um lembrete de avaliação da Coordenação (prazos lidos da marca oculta no conteúdo). */
+  coordLembrete?: { id: string; expiraEm: string; concluidoEm?: string };
 };
 
 export type Noticia = {

@@ -128,7 +128,27 @@ export async function uploadQuadroAvisoFile(
   return { fileName: file.name, filePath: path, fileUrl: URL.createObjectURL(file) };
 }
 
+// Avisos de lembrete da Coordenação: a marca oculta no fim do conteúdo guarda o lembrete e os prazos
+// (30 dias no quadro; depois de concluído, 5 dias "concluído pela coordenação").
+const MARCA_COORD_RE = /<!--hub:coord-lembrete ([^>]*?)-->/;
+
+export function lerMarcaCoordLembrete(content: string): QuadroAviso["coordLembrete"] {
+  const match = String(content || "").match(MARCA_COORD_RE);
+  if (!match) return undefined;
+  const campos = Object.fromEntries(
+    match[1].trim().split(/\s+/).map((par) => par.split("=")).filter((par) => par.length === 2)
+  ) as Record<string, string>;
+  if (!campos.id || !campos.expira) return undefined;
+  return { id: campos.id, expiraEm: campos.expira, concluidoEm: campos.concluido || undefined };
+}
+
+function avisoVencido(aviso: QuadroAviso, agora = Date.now()) {
+  const expira = Date.parse(aviso.coordLembrete?.expiraEm || "");
+  return Number.isFinite(expira) && expira <= agora;
+}
+
 function canUserViewAviso(aviso: QuadroAviso, user?: HubUser | null) {
+  if (avisoVencido(aviso)) return false;
   if (aviso.visibility === "geral") return true;
   const userEmail = normalizeEmail(user?.email);
   if (!userEmail) return false;
@@ -164,7 +184,8 @@ function normalizeAviso(
     createdBy: row.created_by || "",
     createdByEmail: normalizeEmail(row.created_by_email || ""),
     createdAt: row.created_at,
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
+    coordLembrete: lerMarcaCoordLembrete(row.content || "")
   };
 }
 
@@ -233,6 +254,13 @@ async function upsertSupabaseAviso(
     file_url: aviso.filePath ? null : aviso.fileUrl || null
   };
 
+  // Na edição, a marca oculta do lembrete da Coordenação é mantida (o editor de texto a removeria).
+  if (aviso.id && !MARCA_COORD_RE.test(String(payload.content || ""))) {
+    const { data: atual } = await client.from("quadro_avisos").select("content").eq("id", aviso.id).maybeSingle();
+    const marca = String((atual as { content?: string } | null)?.content || "").match(MARCA_COORD_RE)?.[0];
+    if (marca) payload.content = `${payload.content || ""}${marca}`;
+  }
+
   // Na edicao o autor original e mantido (o administrador pode editar avisos de outros).
   const { data, error } = aviso.id
     ? await client.from("quadro_avisos").update(payload).eq("id", aviso.id).select("id").single()
@@ -287,7 +315,9 @@ export async function listQuadroAvisos(user?: HubUser | null): Promise<QuadroAvi
   if (getAvisosSource(user) === "supabase") return loadSupabaseAvisos(user);
 
   const local = readStorage<QuadroAviso[]>(QUADRO_AVISOS_STORAGE_KEY, []);
-  return local.filter((aviso) => canUserViewAviso(aviso, user));
+  return local
+    .map((aviso) => ({ ...aviso, coordLembrete: lerMarcaCoordLembrete(aviso.content) }))
+    .filter((aviso) => canUserViewAviso(aviso, user));
 }
 
 export async function saveQuadroAviso({
