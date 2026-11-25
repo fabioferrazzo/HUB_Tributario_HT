@@ -1,3 +1,5 @@
+import { processDueEmails } from "./email-outbox.mjs";
+
 const JSON_HEADERS = {
   "content-type": "application/json",
   "cache-control": "no-store"
@@ -47,8 +49,20 @@ export default async function handler(request) {
 
     const payload = await parseJsonBody(request);
     const state = normalizeState(payload?.state, authUser.id);
-    await saveState(supabaseUrl, serviceRoleKey, state);
-    return json(200, { ok: true, source: "supabase", state });
+    const novos = await saveState(supabaseUrl, serviceRoleKey, state);
+    const envios = novos.length
+      ? await avisarColaboradores({
+          supabaseUrl,
+          supabaseAnonKey,
+          serviceRoleKey,
+          token,
+          autor: authUser,
+          itens: novos,
+          collaborators: state.collaborators,
+          hubUrl: originOf(request)
+        })
+      : [];
+    return json(200, { ok: true, source: "supabase", state, envios });
   } catch (error) {
     const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 400;
     return json(statusCode, { error: error?.message || "Não foi possível sincronizar a Coordenação Tributária." });
@@ -96,6 +110,10 @@ async function saveState(supabaseUrl, serviceRoleKey, state) {
     });
   }
 
+  // Lembretes de colaborador que ainda não existem no banco: inseridos primeiro, sem sobrescrever,
+  // para saber com segurança quais são novos (a resposta traz só as linhas realmente inseridas).
+  const novos = await reservarNovosLembretesColaborador(supabaseUrl, serviceRoleKey, state.reminders);
+
   if (state.reminders.length) {
     await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/coord_itens?on_conflict=id`, {
       method: "POST",
@@ -110,6 +128,205 @@ async function saveState(supabaseUrl, serviceRoleKey, state) {
 
   await syncCalendarTasksFromCoord(supabaseUrl, serviceRoleKey, state.reminders, state.collaborators);
   await saveNativePautasFromCoord(supabaseUrl, serviceRoleKey, state.reminders);
+  return novos;
+}
+
+const NOVO_LEMBRETE_JANELA_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function reservarNovosLembretesColaborador(supabaseUrl, serviceRoleKey, reminders) {
+  const agora = Date.now();
+  const candidatos = reminders.filter(
+    (item) =>
+      item.type === "colaborador" &&
+      item.collaboratorId &&
+      !item.deletedAt &&
+      item.status === "aberto" &&
+      agora - Date.parse(item.createdAt || "") < NOVO_LEMBRETE_JANELA_MS
+  );
+  if (!candidatos.length) return [];
+
+  const inseridos = await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/coord_itens?on_conflict=id&select=id`, {
+    method: "POST",
+    headers: {
+      ...serviceHeaders(serviceRoleKey),
+      "content-type": "application/json",
+      prefer: "resolution=ignore-duplicates,return=representation"
+    },
+    body: JSON.stringify(candidatos.map(toItemRow))
+  });
+  const ids = new Set((Array.isArray(inseridos) ? inseridos : []).map((row) => row.id));
+  return candidatos.filter((item) => ids.has(item.id));
+}
+
+// Lembrete de avaliação novo: e-mail ao colaborador e aviso no Quadro de Avisos particular dele.
+// O aviso é gravado com a sessão de quem criou o lembrete (mesmas permissões e histórico do HUB).
+async function avisarColaboradores({ supabaseUrl, supabaseAnonKey, serviceRoleKey, token, autor, itens, collaborators, hubUrl }) {
+  const porId = new Map(collaborators.map((item) => [item.id, item]));
+  const envios = [];
+  let emailsNaFila = 0;
+
+  for (const item of itens) {
+    const colaborador = porId.get(item.collaboratorId);
+    const email = String(colaborador?.email || "").trim().toLowerCase();
+    const nome = colaborador?.name || email;
+    const envio = { id: item.id, titulo: item.title, colaborador: nome, email, emailEnviado: false, avisoCriado: false, erros: [] };
+    envios.push(envio);
+
+    if (!email) {
+      envio.erros.push("Colaborador sem e-mail cadastrado.");
+      continue;
+    }
+
+    try {
+      await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/rpc/queue_email`, {
+        method: "POST",
+        headers: { ...serviceHeaders(serviceRoleKey), "content-type": "application/json" },
+        body: JSON.stringify({
+          p_to_email: email,
+          p_to_name: nome,
+          p_subject: `Lembrete de avaliação: ${item.title}`,
+          p_html_body: emailLembreteHtml(item, nome, hubUrl),
+          p_text_body: emailLembreteTexto(item, nome, hubUrl),
+          p_category: "coord_avaliacoes",
+          p_target_type: "coordenacao",
+          p_target_ref: item.id,
+          p_scheduled_for: new Date().toISOString(),
+          p_dedupe_key: `coord_lembrete:${item.id}:${email}`,
+          p_created_by: autor.id || null
+        })
+      });
+      emailsNaFila += 1;
+      envio.emailEnviado = true;
+    } catch (error) {
+      envio.erros.push(`E-mail: ${error?.message || "não foi possível enfileirar."}`);
+    }
+
+    try {
+      const userHeaders = { apikey: supabaseAnonKey, authorization: `Bearer ${token}`, "content-type": "application/json" };
+      const criados = await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_avisos?select=id`, {
+        method: "POST",
+        headers: { ...userHeaders, prefer: "return=representation" },
+        body: JSON.stringify({
+          cell: 1,
+          kind: "texto",
+          visibility: "particular",
+          title: `Lembrete de avaliação: ${item.title}`.slice(0, 200),
+          content: avisoLembreteHtml(item),
+          color: "#ffffff",
+          created_by: autor.id,
+          created_by_email: String(autor.email || "").trim().toLowerCase()
+        })
+      });
+      const avisoId = Array.isArray(criados) ? criados[0]?.id : criados?.id;
+      if (!avisoId) throw new Error("aviso não retornado.");
+
+      const perfis = await supabaseRequest(
+        `${trimUrl(supabaseUrl)}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,nome&limit=1`,
+        { headers: serviceHeaders(serviceRoleKey) }
+      );
+      const perfil = Array.isArray(perfis) ? perfis[0] : null;
+      await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/quadro_aviso_usuarios`, {
+        method: "POST",
+        headers: userHeaders,
+        body: JSON.stringify({ aviso_id: avisoId, user_id: perfil?.id || null, email, nome: perfil?.nome || nome })
+      });
+      await supabaseRequest(`${trimUrl(supabaseUrl)}/rest/v1/rpc/notify_quadro_aviso_particular`, {
+        method: "POST",
+        headers: userHeaders,
+        body: JSON.stringify({ p_aviso_id: avisoId })
+      }).catch(() => null);
+      envio.avisoCriado = true;
+      if (!perfil?.id) envio.erros.push("Aviso criado, mas o e-mail do colaborador não corresponde a um usuário do HUB.");
+    } catch (error) {
+      envio.erros.push(`Quadro de Avisos: ${error?.message || "não foi possível criar o aviso."}`);
+    }
+  }
+
+  if (emailsNaFila) {
+    try {
+      await processDueEmails(supabaseUrl, serviceRoleKey, emailsNaFila);
+    } catch (error) {
+      envios.forEach((envio) => envio.emailEnviado && envio.erros.push(`E-mail na fila; envio imediato falhou: ${error?.message || error}`));
+    }
+  }
+
+  return envios;
+}
+
+const PRIORIDADE_ROTULO = { alta: "Alta", media: "Média", baixa: "Baixa" };
+
+function formatarPrazo(value) {
+  // Prazo digitado no navegador (sem fuso): já está no horário de Brasília.
+  const local = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?(?::\d{2}(?:\.\d+)?)?$/);
+  if (local) return `${local[3]}/${local[2]}/${local[1]}${local[4] ? ` ${local[4]}:${local[5]}` : ""}`;
+  const data = new Date(value);
+  if (!value || Number.isNaN(data.getTime())) return "Sem prazo";
+  return data.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function avisoLembreteHtml(item) {
+  const partes = [
+    `<strong>Prazo:</strong> ${escapeHtml(formatarPrazo(item.due))}`,
+    `<strong>Prioridade:</strong> ${escapeHtml(PRIORIDADE_ROTULO[item.priority] || "Média")}`
+  ];
+  if (item.description) partes.push(escapeHtml(item.description).replace(/\n/g, "<br>"));
+  partes.push("<em>Enviado pela Coordenação Tributária.</em>");
+  return partes.join("<br>");
+}
+
+function emailLembreteHtml(item, nome, hubUrl) {
+  const celula = "border:1px solid #c9d1dc;padding:6px 10px;text-align:left;vertical-align:top";
+  const cabeca = `${celula};background:#eef1f6;width:120px`;
+  const linhas = [
+    ["Lembrete", escapeHtml(item.title)],
+    ["Prazo", escapeHtml(formatarPrazo(item.due))],
+    ["Prioridade", escapeHtml(PRIORIDADE_ROTULO[item.priority] || "Média")]
+  ];
+  if (item.description) linhas.push(["Detalhes", escapeHtml(item.description).replace(/\n/g, "<br>")]);
+  return [
+    `<p>Olá, ${escapeHtml(nome)}.</p>`,
+    "<p>A Coordenação Tributária registrou um lembrete de avaliação para você:</p>",
+    `<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">${linhas
+      .map(([rotulo, valor]) => `<tr><th style="${cabeca}">${rotulo}</th><td style="${celula}">${valor}</td></tr>`)
+      .join("")}</table>`,
+    `<p>O lembrete também está no seu Quadro de Avisos particular no HUB${item.calendarSync ? " e no seu Calendário de Tarefas" : ""}.</p>`,
+    hubUrl ? `<p><a href="${escapeHtml(hubUrl)}">Abrir o HUB Depto Tributário</a></p>` : "",
+    "<p>H. Teixeira Contabilidade · Departamento Tributário</p>"
+  ].join("");
+}
+
+function emailLembreteTexto(item, nome, hubUrl) {
+  return [
+    `Olá, ${nome}.`,
+    "",
+    "A Coordenação Tributária registrou um lembrete de avaliação para você:",
+    `Lembrete: ${item.title}`,
+    `Prazo: ${formatarPrazo(item.due)}`,
+    `Prioridade: ${PRIORIDADE_ROTULO[item.priority] || "Média"}`,
+    item.description ? `Detalhes: ${item.description}` : "",
+    "",
+    `O lembrete também está no seu Quadro de Avisos particular no HUB${item.calendarSync ? " e no seu Calendário de Tarefas" : ""}.`,
+    hubUrl ? `HUB: ${hubUrl}` : ""
+  ]
+    .filter((linha, indice, lista) => linha !== "" || lista[indice - 1] !== "")
+    .join("\n");
+}
+
+function originOf(request) {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return "";
+  }
 }
 
 async function loadNativePautasForCoord(supabaseUrl, serviceRoleKey, rows) {

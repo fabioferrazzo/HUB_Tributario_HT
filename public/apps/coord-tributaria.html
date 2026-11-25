@@ -1066,6 +1066,7 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
               <input id="reminderCalendarSync" type="checkbox" />
               Integrar/repetir no Calendário de Tarefas
             </label>
+            <p id="reminderAutoSendInfo" class="subtitle wide">Ao criar o lembrete, o colaborador recebe automaticamente um e-mail e um aviso no Quadro de Avisos particular dele.</p>
             <label class="wide">Anexos<input id="reminderAttachments" type="file" multiple /></label>
             <div id="reminderAttachmentList" class="attachment-list wide">Nenhum anexo salvo.</div>
           </div>
@@ -1309,6 +1310,7 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
           if (!response.ok) throw new Error(data.error || response.statusText);
           syncState.remoteReady = true;
           setSyncStatus("supabase", "supabase");
+          informarEnvios(data.envios);
         } catch (error) {
           syncState.remoteReady = false;
           setSyncStatus("local", "error");
@@ -1316,6 +1318,20 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
         } finally {
           syncState.saving = false;
         }
+      }
+
+      // Lembrete de avaliação novo: o servidor envia e-mail ao colaborador e cria o aviso particular dele.
+      function informarEnvios(envios) {
+        if (!Array.isArray(envios) || !envios.length) return;
+        const partes = envios.map((envio) => {
+          const feitos = [envio.emailEnviado ? "e-mail" : "", envio.avisoCriado ? "aviso no Quadro de Avisos particular" : ""].filter(Boolean);
+          const base = feitos.length
+            ? `Lembrete "${envio.titulo}" enviado a ${envio.colaborador}: ${feitos.join(" e ")}.`
+            : `Lembrete "${envio.titulo}": nada foi enviado a ${envio.colaborador || "o colaborador"}.`;
+          return envio.erros && envio.erros.length ? `${base} Atenção: ${envio.erros.join(" ")}` : base;
+        });
+        const comErro = envios.some((envio) => (envio.erros && envio.erros.length) || !envio.emailEnviado || !envio.avisoCriado);
+        showNotice(partes.join(" "), comErro);
       }
 
       function cryptoId() {
@@ -1802,6 +1818,8 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
         refs.reminderCollaborator.disabled = !needsCollaborator;
         if (!needsCollaborator) refs.reminderCollaborator.value = "";
         refs.reminderCalendarSync.closest("label").style.display = needsCollaborator ? "inline-flex" : "none";
+        const autoInfo = document.getElementById("reminderAutoSendInfo");
+        if (autoInfo) autoInfo.style.display = needsCollaborator && !refs.reminderId.value ? "" : "none";
         if (!needsCollaborator) refs.reminderCalendarSync.checked = false;
       }
 
