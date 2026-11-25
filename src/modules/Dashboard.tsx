@@ -1,9 +1,9 @@
 import { CSSProperties, type ChangeEvent, FormEvent, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Edit3, FileText, Image as ImageIcon, ListChecks, Paperclip, Plus, RefreshCw, Search, StickyNote, Tag, Trash2, Type as TypeIcon, X } from "lucide-react";
+import { Bold as BoldIcon, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Edit3, FileText, Image as ImageIcon, ListChecks, Paperclip, Plus, RefreshCw, Search, StickyNote, Tag, Trash2, Type as TypeIcon, X } from "lucide-react";
 import { DashboardPanelHeader, PanelHeader, StatusPill } from "../components/common";
 import { FooterUpdates } from "../components/Updates";
 import "./pautasPremium.css";
-import type { HubProfile, HubUser, Pauta, QuadroAviso, QuadroAvisoKind } from "../types";
+import type { HubProfile, HubUser, Pauta, PautaTituloTamanho, QuadroAviso, QuadroAvisoKind } from "../types";
 import type { PautaFilter, ReportFormat } from "../app/appTypes";
 import { RichTextEditor } from "../components/RichTextEditor";
 import { buildPautasEmailHtml, pautaToReportRow } from "../lib/reportRows";
@@ -40,6 +40,8 @@ export function Dashboard({
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [titulo, setTitulo] = useState("");
+  const [tituloTamanho, setTituloTamanho] = useState<PautaTituloTamanho>("normal");
+  const [tituloNegrito, setTituloNegrito] = useState(false);
   const [descricao, setDescricao] = useState("");
   const [prazo, setPrazo] = useState("");
   const [prioridade, setPrioridade] = useState("normal");
@@ -327,6 +329,8 @@ export function Dashboard({
   function clearForm() {
     setEditingId(null);
     setTitulo("");
+    setTituloTamanho("normal");
+    setTituloNegrito(false);
     setDescricao("");
     setPrazo("");
     setPrioridade("normal");
@@ -353,6 +357,8 @@ export function Dashboard({
 
     setEditingId(pauta.id);
     setTitulo(pauta.tema);
+    setTituloTamanho(pauta.tituloTamanho || "normal");
+    setTituloNegrito(Boolean(pauta.tituloNegrito));
     setDescricao(convertLegacyPautaFormatting(pauta));
     setPrazo(toDatetimeLocalValue(pauta.prazo));
     setPrioridade(pauta.prioridade || "normal");
@@ -400,6 +406,8 @@ export function Dashboard({
       textBold: false,
       textItalic: false,
       textHighlight: false,
+      tituloTamanho,
+      tituloNegrito,
       responsaveis: scope === "usuarios" ? responsaveis : [],
       anexos: existing?.anexos || [],
       conclusoes: existing?.conclusoes || [],
@@ -530,7 +538,10 @@ export function Dashboard({
           data-font-italic={pauta.textItalic ? "true" : "false"}
           style={pautaContentStyle}
         >
-          <strong style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}>
+          <strong
+            className={`pauta-titulo pauta-titulo--${pauta.tituloTamanho || "normal"} ${pauta.tituloNegrito ? "pauta-titulo--negrito" : ""}`}
+            style={{ fontStyle: pautaContentStyle.fontStyle, fontWeight: pautaContentStyle.fontWeight }}
+          >
             {pauta.tema}
           </strong>
           <span
@@ -558,7 +569,7 @@ export function Dashboard({
           ) : null}
         </div>
         <div className="pauta-row-badges">
-          {pauta.destaque ? <StatusPill label="Destaque" /> : null}
+          {pauta.destaque ? <span className="status-pill status-pill--destaque">Destaque</span> : null}
           <StatusPill label={pauta.status || "Sem status"} />
           {pauta.prioridade ? <StatusPill label={pauta.prioridade} /> : null}
         </div>
@@ -1412,10 +1423,40 @@ export function Dashboard({
         <section className="panel pauta-editor-panel" ref={pautaEditorRef}>
           <PanelHeader title={editingId ? "Editar pauta" : "Nova pauta"} icon={<ListChecks size={18} />} action={source} />
           <form className="stack-form" onSubmit={submitPauta}>
-            <label>
-              Título
-              <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
-            </label>
+            <div className="pauta-titulo-campo">
+              <label>
+                Título
+                <input value={titulo} onChange={(event) => setTitulo(event.target.value)} />
+              </label>
+              <div className="pauta-titulo-formato" role="group" aria-label="Formatação do título">
+                {([
+                  ["normal", "A", "Título em tamanho normal"],
+                  ["grande", "A+", "Título grande"],
+                  ["muito-grande", "A++", "Título muito grande"]
+                ] as Array<[PautaTituloTamanho, string, string]>).map(([valor, rotulo, dica]) => (
+                  <button
+                    aria-pressed={tituloTamanho === valor}
+                    className={tituloTamanho === valor ? "active" : ""}
+                    key={valor}
+                    title={dica}
+                    type="button"
+                    onClick={() => setTituloTamanho(valor)}
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+                <button
+                  aria-label="Título em negrito"
+                  aria-pressed={tituloNegrito}
+                  className={tituloNegrito ? "active" : ""}
+                  title="Título em negrito"
+                  type="button"
+                  onClick={() => setTituloNegrito((atual) => !atual)}
+                >
+                  <BoldIcon size={14} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
             <RichTextEditor
               ariaLabel="Descrição / orientação"
               label="Descrição / orientação"
@@ -1427,7 +1468,9 @@ export function Dashboard({
             {titulo.trim() || hasPautaRichContent(descricao) ? (
               <div className="pauta-format-preview">
                 <span>Prévia da formatação</span>
-                {titulo.trim() ? <strong>{titulo}</strong> : null}
+                {titulo.trim() ? (
+                  <strong className={`pauta-titulo pauta-titulo--${tituloTamanho} ${tituloNegrito ? "pauta-titulo--negrito" : ""}`}>{titulo}</strong>
+                ) : null}
                 {hasPautaRichContent(descricao) ? (
                   <div className="pauta-rich-text" dangerouslySetInnerHTML={{ __html: sanitizePautaRichHtml(descricao) }} />
                 ) : null}

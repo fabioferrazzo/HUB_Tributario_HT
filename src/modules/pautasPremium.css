@@ -216,24 +216,88 @@
   background: var(--hp-vidro-2);
 }
 
-/* Destaque: brilho da cor de destaque (frio); vermelho fica só para atraso e prioridade alta */
-.hub-premium .pautas-page .list-row--pauta-featured {
-  border-color: color-mix(in srgb, var(--hp-acento) 55%, transparent);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--hp-acento) 14%, transparent), transparent 60%), var(--hp-vidro);
-  box-shadow: 0 0 28px color-mix(in srgb, var(--hp-acento) 18%, transparent);
+/* Destaque: faixa e véu dourados, título maior e etiqueta "Destaque" em ouro (item crucial = tom quente).
+   Vermelho continua só para atraso e prioridade alta. */
+.hub-premium--escuro .pautas-page {
+  --pp-ouro: #f0c46a;
+  --pp-ouro-veu: rgba(240, 196, 106, 0.2);
+  --pp-ouro-borda: rgba(240, 196, 106, 0.6);
+  --pp-ouro-titulo: #ffe3a3;
+}
+
+.hub-premium--claro .pautas-page {
+  --pp-ouro: #b8860b;
+  --pp-ouro-veu: #fff3cf;
+  --pp-ouro-borda: #e2c26a;
+  --pp-ouro-titulo: #5c3b00;
+}
+
+.hub-premium .pautas-page .list-row--pauta.list-row--pauta-featured {
+  border-color: var(--pp-ouro-borda);
+  border-left: 5px solid var(--pp-ouro);
+  background: linear-gradient(140deg, var(--pp-ouro-veu), transparent 75%), var(--hp-vidro);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--pp-ouro) 22%, transparent);
+}
+
+.hub-premium .pautas-page .list-row--pauta.list-row--pauta-featured:hover {
+  border-color: var(--pp-ouro);
+}
+
+.hub-premium .pautas-page .list-row--pauta.list-row--pauta-featured .pauta-content > strong {
+  color: var(--pp-ouro-titulo);
+  font-weight: 800;
+}
+
+.hub-premium .pautas-page .list-row--pauta.list-row--pauta-featured .pauta-content > strong:not(.pauta-titulo--grande):not(.pauta-titulo--muito-grande) {
+  font-size: calc(19px * var(--hp-esc));
+}
+
+.hub-premium .pautas-page .status-pill.status-pill--destaque {
+  border-color: var(--pp-ouro);
+  background: var(--pp-ouro);
+  color: #1f1300;
+  font-weight: 700;
 }
 
 .hub-premium .pautas-page .pauta-content {
   color: var(--hp-texto);
 }
 
-.hub-premium .pautas-page .list-row--pauta .pauta-content strong,
-.hub-premium .pautas-page .list-row--pauta-featured strong {
+.hub-premium .pautas-page .list-row--pauta .pauta-content > strong {
   color: var(--hp-titulo);
   font-family: Nunito, "Segoe UI", sans-serif;
   font-size: calc(17px * var(--hp-esc));
-  font-weight: 700;
+  font-weight: 600;
 }
+
+/* Título da pauta: tamanho e negrito escolhidos no editor */
+.hub-premium .pautas-page .list-row--pauta .pauta-content > strong.pauta-titulo--grande {
+  font-size: calc(21px * var(--hp-esc));
+  line-height: 1.25;
+}
+
+.hub-premium .pautas-page .list-row--pauta .pauta-content > strong.pauta-titulo--muito-grande {
+  font-size: calc(26px * var(--hp-esc));
+  line-height: 1.2;
+}
+
+.hub-premium .pautas-page .list-row--pauta .pauta-content > strong.pauta-titulo--negrito {
+  font-weight: 800;
+}
+
+/* Formatação por trecho na descrição: negrito fica na linha (não vira título) e os tamanhos são proporcionais. */
+.hub-premium .pauta-rich-text strong {
+  display: inline;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+}
+
+.hub-premium .pauta-rich-text .pauta-text-small { font-size: 0.86em; }
+.hub-premium .pauta-rich-text .pauta-text-normal { font-size: 1em; }
+.hub-premium .pauta-rich-text .pauta-text-large { font-size: 1.22em; line-height: 1.35; }
+.hub-premium .pauta-rich-text .pauta-text-xlarge { font-size: 1.5em; line-height: 1.3; }
+.hub-premium .pauta-rich-text .pauta-text-title { font-size: 1.8em; line-height: 1.25; font-family: Nunito, "Segoe UI", sans-serif; }
 
 .hub-premium .pautas-page .list-row--pauta .pauta-description,
 .hub-premium .pautas-page .list-row--pauta-featured .pauta-description {
@@ -273,9 +337,10 @@
   color: var(--pp-ok);
 }
 
-.hub-premium .pautas-page .pauta-rich-text mark {
-  background: rgba(240, 196, 106, 0.35);
-  color: inherit;
+/* Grifo: marca-texto amarelo de verdade, nos dois temas (texto escuro sobre o amarelo) */
+.hub-premium .pauta-rich-text mark {
+  background: #fff3a3;
+  color: #1a2033;
 }
 
 /* Etiquetas (destaque, aberta, alta…) */

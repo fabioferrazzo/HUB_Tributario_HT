@@ -1,10 +1,31 @@
-import { Bell, CalendarDays, CheckCircle2, ExternalLink, Link2, Maximize2, Menu, MessagesSquare, Minimize2, RotateCw, X } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, Clock3, ExternalLink, Maximize2, Menu, MessagesSquare, Minimize2, RotateCw, X } from "lucide-react";
 import type { HubNotification, HubRoute, HubUser } from "../types";
 import { downloadDocxReport } from "../lib/reportExport";
 import { getErrorMessage, getInitials } from "../lib/formatters";
 import { notificationToReportRow, sendNotificationsByEmail } from "../lib/reportRows";
 import { routes } from "../app/appConfig";
 import { useEffect, useState } from "react";
+
+// Relógio do cabeçalho: atualiza na virada de cada minuto (e a data, à meia-noite).
+function useAgora() {
+  const [agora, setAgora] = useState(() => new Date());
+  useEffect(() => {
+    let intervalo: number | undefined;
+    const tique = () => setAgora(new Date());
+    const espera = window.setTimeout(() => {
+      tique();
+      intervalo = window.setInterval(tique, 60_000);
+    }, 60_000 - (Date.now() % 60_000) + 50);
+    const aoVoltar = () => { if (document.visibilityState === "visible") tique(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      window.clearTimeout(espera);
+      if (intervalo) window.clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  }, []);
+  return agora;
+}
 
 export function TopBar({
   route,
@@ -38,6 +59,7 @@ export function TopBar({
   onChat?: () => void;
 }) {
   const label = routes.find((item) => item.id === route)?.label || "Inicio";
+  const agora = useAgora();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationAction, setNotificationAction] = useState("");
 
@@ -98,13 +120,11 @@ export function TopBar({
         ) : null}
         <div className="top-chip">
           <CalendarDays size={14} />
-          <span>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" })}</span>
+          <span>{agora.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" })}</span>
         </div>
-        <div className="top-chip">
-          <Link2 size={14} />
-          <span>
-            Pautas HUB <strong>app</strong>
-          </span>
+        <div className="top-chip top-chip--relogio" title="Horário de Brasília">
+          <Clock3 size={14} />
+          <time dateTime={agora.toISOString()}>{agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</time>
         </div>
         {onChat ? (
           <button aria-label={chatNaoLidas ? `Chat: ${chatNaoLidas} mensagem(ns) não lida(s)` : "Chat"} className="notification-button" title="Chat" type="button" onClick={onChat}>

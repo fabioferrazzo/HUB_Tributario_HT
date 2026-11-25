@@ -161,3 +161,7 @@
   color: #1c2a3a;
   font-family: "Segoe UI", system-ui, sans-serif;
 }
+
+.hub-premium .arquivos-page .file-resource {
+  padding: calc(10px * var(--hp-esc)) calc(14px * var(--hp-esc));
+}

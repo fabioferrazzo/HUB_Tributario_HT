@@ -21,6 +21,8 @@ export type HubProfile = TeamMember & {
   updatedAt?: string;
 };
 
+export type PautaTituloTamanho = "normal" | "grande" | "muito-grande";
+
 export type PautaTextSize = "pequena" | "normal" | "grande";
 
 export type Pauta = {
@@ -44,6 +46,9 @@ export type Pauta = {
   textBold?: boolean;
   textItalic?: boolean;
   textHighlight?: boolean;
+  // Formatação do título da pauta (tamanho e negrito), guardada junto com a da descrição.
+  tituloTamanho?: PautaTituloTamanho;
+  tituloNegrito?: boolean;
   responsaveis?: string[];
   anexos?: PautaAttachment[];
   conclusoes?: PautaCompletion[];

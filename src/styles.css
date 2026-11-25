@@ -7277,3 +7277,114 @@ a.aviso-card__file:hover {
 .qg-visual-premium {
   margin-left: auto;
 }
+
+/* Relógio do cabeçalho (substitui o atalho "Pautas HUB app") */
+.top-chip--relogio time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* Arquivos: nome do arquivo sempre inteiro (sem reticências). O conteúdo ocupa a linha toda quando falta
+   espaço e os botões descem para a linha de baixo. */
+.file-resource {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.file-resource__content {
+  flex: 1 1 300px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "label"
+    "body"
+    "meta";
+  gap: 3px;
+}
+
+.file-resource strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.file-resource p {
+  -webkit-line-clamp: 3;
+  line-height: 1.3;
+}
+
+.file-resource__meta > span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.file-resource .record-actions {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+/* Título da pauta: tamanho e negrito escolhidos no editor (visual atual) */
+.list-row--pauta .pauta-content > strong.pauta-titulo--grande,
+.pauta-format-preview .pauta-titulo--grande {
+  font-size: 1.25em;
+}
+
+.list-row--pauta .pauta-content > strong.pauta-titulo--muito-grande,
+.pauta-format-preview .pauta-titulo--muito-grande {
+  font-size: 1.5em;
+}
+
+.list-row--pauta .pauta-content > strong.pauta-titulo--negrito,
+.pauta-format-preview .pauta-titulo--negrito {
+  font-weight: 900;
+}
+
+/* Negrito dentro da descrição fica na mesma linha (a regra geral .list-row strong o tornava bloco). */
+.pauta-rich-text strong {
+  display: inline;
+  font-size: inherit;
+}
+
+.status-pill--destaque {
+  border-color: #d9a12f;
+  background: #fff3cf;
+  color: #6b4500;
+}
+
+/* Botões de formatação do título no editor de pautas */
+.pauta-titulo-campo {
+  display: grid;
+  gap: 6px;
+}
+
+.pauta-titulo-formato {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pauta-titulo-formato button {
+  min-width: 36px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pauta-titulo-formato button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}

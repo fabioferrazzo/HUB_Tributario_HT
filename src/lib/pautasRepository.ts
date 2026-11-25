@@ -1,4 +1,4 @@
-import type { HubProfile, HubUser, Pauta, PautaAttachment, PautaCompletion, PautaTextSize } from "../types";
+import type { HubProfile, HubUser, Pauta, PautaAttachment, PautaCompletion, PautaTextSize, PautaTituloTamanho } from "../types";
 import { readStorage, writeStorage } from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
@@ -370,6 +370,8 @@ function mapPautaRow(
     textBold: descricao.textBold,
     textItalic: descricao.textItalic,
     textHighlight: descricao.textHighlight,
+    tituloTamanho: descricao.tituloTamanho,
+    tituloNegrito: descricao.tituloNegrito,
     responsaveis,
     anexos: anexos.map((anexo) => mapPautaAnexoRow(anexo, signedUrls)),
     conclusoes: conclusoes.map(mapPautaConclusaoRow),
@@ -427,6 +429,8 @@ function normalizePauta(value: Partial<Pauta>): Pauta {
     textBold: Boolean(value.textBold),
     textItalic: Boolean(value.textItalic),
     textHighlight: Boolean(value.textHighlight),
+    tituloTamanho: normalizeTituloTamanho(value.tituloTamanho),
+    tituloNegrito: Boolean(value.tituloNegrito),
     responsaveis,
     anexos: Array.isArray(value.anexos) ? value.anexos : [],
     conclusoes: Array.isArray(value.conclusoes) ? value.conclusoes : [],
@@ -441,7 +445,9 @@ function encodePautaDescricao(pauta: Pauta) {
     textSize: normalizePautaTextSize(pauta.textSize),
     textBold: Boolean(pauta.textBold),
     textItalic: Boolean(pauta.textItalic),
-    textHighlight: Boolean(pauta.textHighlight)
+    textHighlight: Boolean(pauta.textHighlight),
+    tituloTamanho: normalizeTituloTamanho(pauta.tituloTamanho),
+    tituloNegrito: Boolean(pauta.tituloNegrito)
   };
 
   return `<!--hub:pauta-style:${JSON.stringify(meta)}-->\n${pauta.acoes || ""}`;
@@ -453,6 +459,8 @@ function decodePautaDescricao(value: string): {
   textBold: boolean;
   textItalic: boolean;
   textHighlight: boolean;
+  tituloTamanho: PautaTituloTamanho;
+  tituloNegrito: boolean;
 } {
   const match = value.match(PAUTA_STYLE_META_RE);
   if (!match) {
@@ -461,18 +469,22 @@ function decodePautaDescricao(value: string): {
       textSize: "normal",
       textBold: false,
       textItalic: false,
-      textHighlight: false
+      textHighlight: false,
+      tituloTamanho: "normal",
+      tituloNegrito: false
     };
   }
 
   try {
-    const meta = JSON.parse(match[1] || "{}") as Partial<Pick<Pauta, "textSize" | "textBold" | "textItalic" | "textHighlight">>;
+    const meta = JSON.parse(match[1] || "{}") as Partial<Pick<Pauta, "textSize" | "textBold" | "textItalic" | "textHighlight" | "tituloTamanho" | "tituloNegrito">>;
     return {
       text: value.replace(PAUTA_STYLE_META_RE, ""),
       textSize: normalizePautaTextSize(meta.textSize),
       textBold: Boolean(meta.textBold),
       textItalic: Boolean(meta.textItalic),
-      textHighlight: Boolean(meta.textHighlight)
+      textHighlight: Boolean(meta.textHighlight),
+      tituloTamanho: normalizeTituloTamanho(meta.tituloTamanho),
+      tituloNegrito: Boolean(meta.tituloNegrito)
     };
   } catch {
     return {
@@ -480,9 +492,15 @@ function decodePautaDescricao(value: string): {
       textSize: "normal",
       textBold: false,
       textItalic: false,
-      textHighlight: false
+      textHighlight: false,
+      tituloTamanho: "normal",
+      tituloNegrito: false
     };
   }
+}
+
+function normalizeTituloTamanho(value?: string): PautaTituloTamanho {
+  return value === "grande" || value === "muito-grande" ? value : "normal";
 }
 
 function normalizePautaTextSize(value?: string): PautaTextSize {

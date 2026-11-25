@@ -156,17 +156,6 @@ export const hubApps: HubApp[] = [
     premium: true,
     description: "Consulta da relação de empresas por competência mensal, sempre atualizada com o app Carteira de Clientes, onde o ADM faz inclusões e alterações."
   },
-  {
-    id: "pautas-app",
-    label: "Pautas (app)",
-    title: "Pautas (app)",
-    icon: NotebookPen,
-    group: "Escritório",
-    access: "todos",
-    src: "https://pautas-hteixeira.netlify.app/",
-    mode: "janela",
-    description: "Abre em janela própria (o site não permite ser exibido dentro de outro). Funciona de qualquer lugar, com o login do próprio app."
-  },
   // Informativos: recriação do Infos HT no HUB (dados no Supabase). O Infos HT do computador do Fábio segue à parte.
   {
     id: "informativos",

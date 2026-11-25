@@ -77,12 +77,11 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("rodapé de notícias em vidro", /rgba\(255, 255, 255, 0\.04/.test(rodape), rodape);
   await page.screenshot({ path: path.join(OUT, "hp-app-escuro.png") });
 
-  // Todas as telas já foram migradas: a página de abertura do Pautas (app) também segue o tema (sem folha clara).
-  await page.click(".side-nav button[title='Pautas (app)']");
-  await page.waitForTimeout(900);
-  const folha = await page.locator(".workspace-body").evaluate((el) => getComputedStyle(el).backgroundColor);
-  const abertura = await page.locator(".frame-external").evaluate((el) => getComputedStyle(el).backgroundColor);
-  check("Pautas (app): página de abertura no tema, sem folha clara", folha !== "rgb(244, 241, 234)" && /^rgba\(255, 255, 255, 0\.0/.test(abertura), `${folha} ${abertura}`);
+  // Cabeçalho: relógio no lugar do atalho "Pautas HUB app"; a aba Pautas (app) saiu do menu.
+  const relogio = await page.locator(".top-chip--relogio time").textContent();
+  check("cabeçalho: relógio com hora e minuto", /^\d{2}:\d{2}$/.test((relogio || "").trim()), relogio);
+  check("cabeçalho: sem o atalho Pautas HUB app", (await page.locator(".topbar", { hasText: "Pautas HUB" }).count()) === 0);
+  check("menu: sem a aba Pautas (app)", (await page.locator(".side-nav button[title='Pautas (app)']").count()) === 0);
   await page.screenshot({ path: path.join(OUT, "hp-pautas-escuro.png") });
   await page.click(".side-nav button[title='Quadro geral']");
   await page.waitForSelector(".qp", { timeout: 8000 });
