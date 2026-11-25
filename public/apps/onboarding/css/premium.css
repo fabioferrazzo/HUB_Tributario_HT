@@ -1,0 +1,70 @@
+/*
+ * Visual premium (padrão H. Teixeira Premium) do Onboarding no HUB.
+ * Só vale com html.ht-premium (ponte /apps/hub-premium-app.js) e só na tela.
+ * A moldura (cabeçalho da página, barra de ferramentas e abas) segue o tema; o contrato, o adendo,
+ * a matriz e os demais conteúdos continuam como folhas brancas de documento.
+ */
+@media screen {
+html.ht-premium--escuro {
+  --o-texto: #EEF2FA; --o-texto-2: #B9C3DA; --o-mudo: #A3AECB; --o-titulo: #FFFFFF; --o-linha: rgba(255,255,255,.10);
+  --o-vidro: rgba(255,255,255,calc(.045 * var(--ht-vidro-k, 1))); --o-vidro-2: rgba(255,255,255,calc(.075 * var(--ht-vidro-k, 1))); --o-solido: #121A30;
+  --o-acento: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%)); --o-acento-texto: hsl(var(--ht-h,179) calc(var(--ht-s,75%) * .85) var(--ht-l-texto,61%));
+  --o-brilho: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20); --o-sobre-acento: #04121A;
+  --o-sombra: 0 1px 0 rgba(255,255,255,.04) inset, 0 calc(24px * var(--ht-sombra-k,1)) calc(60px * var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8 * var(--ht-sombra-k,1)));
+  --o-fundo-cheio: linear-gradient(180deg, #070B1A 0%, #0B1227 58%, #121C36 78%, #182640 100%);
+  color-scheme: dark;
+}
+html.ht-premium--claro {
+  --o-texto: #1A2033; --o-texto-2: #3D4456; --o-mudo: #5B6274; --o-titulo: #111830; --o-linha: rgba(40,44,56,.11);
+  --o-vidro: rgba(255,255,255,min(.95, calc(.62 * var(--ht-vidro-k, 1)))); --o-vidro-2: rgba(255,255,255,min(.97, calc(.82 * var(--ht-vidro-k, 1)))); --o-solido: #FFFFFF;
+  --o-acento: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%)); --o-acento-texto: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));
+  --o-brilho: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10); --o-sobre-acento: #FFFFFF;
+  --o-sombra: 0 1px 2px rgba(40,44,56,.05), 0 calc(14px * var(--ht-sombra-k,1)) calc(34px * var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22 * var(--ht-sombra-k,1)));
+  --o-fundo-cheio: linear-gradient(160deg, #F3F4F6 0%, #F7F5F0 38%, #F2F1ED 68%, #EEF1F4 100%);
+  color-scheme: light;
+}
+html.ht-premium, html.ht-premium body { background: transparent !important; }
+html.ht-premium body { font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; }
+html.ht-premium--ampliado body { zoom: 1.12; }
+html.ht-premium .loading-state { color: var(--o-mudo); }
+
+/* cabeçalho da página */
+html.ht-premium .page-kicker { color: var(--o-acento-texto); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .2em; }
+html.ht-premium .page-head h2 { color: var(--o-titulo); font-family: Nunito, "Segoe UI", sans-serif; }
+html.ht-premium .page-head p { color: var(--o-mudo); }
+html.ht-premium .button--soft { background: var(--o-vidro-2); border-color: var(--o-linha); color: var(--o-acento-texto); }
+html.ht-premium .onb-hub-aviso { background: color-mix(in srgb, #F0C46A 12%, transparent); border-color: color-mix(in srgb, #F0C46A 40%, transparent); color: var(--o-texto); }
+
+/* ambiente do documento: moldura de vidro */
+html.ht-premium .contract-workspace { background: var(--o-vidro); border-color: var(--o-linha); box-shadow: var(--o-sombra); border-radius: calc(var(--ht-raio, 24px) * .75); }
+html.ht-premium .contract-workspace:fullscreen { background: var(--o-fundo-cheio); }
+html.ht-premium .contract-workspace-header { background: transparent; border-bottom: 1px solid var(--o-linha); color: var(--o-texto); }
+html.ht-premium .contract-workspace-header span { color: var(--o-acento-texto); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; }
+html.ht-premium .contract-workspace-header h2 { color: var(--o-titulo); font-family: Nunito, "Segoe UI", sans-serif; }
+html.ht-premium .contract-workspace-header p { color: var(--o-mudo); }
+html.ht-premium .contract-tool-button { background: var(--o-vidro-2); border-color: var(--o-linha); color: var(--o-texto); }
+html.ht-premium .contract-tool-button:hover { border-color: var(--o-acento); color: var(--o-titulo); }
+html.ht-premium .contract-tool-button > span { color: inherit; }
+html.ht-premium .contract-tool-button--primary { background: var(--o-acento); border-color: var(--o-acento); color: var(--o-sobre-acento); }
+html.ht-premium .contract-tool-button--primary:hover { color: var(--o-sobre-acento); filter: brightness(1.08); }
+html.ht-premium .contract-font-controls { background: var(--o-vidro-2); border-color: var(--o-linha); }
+html.ht-premium .contract-font-controls button { color: var(--o-texto); }
+html.ht-premium .contract-font-controls button + button { border-left-color: var(--o-linha); }
+html.ht-premium .contract-export-menu > div { background: var(--o-solido); border-color: var(--o-linha); }
+html.ht-premium .contract-export-menu > div button { background: transparent; color: var(--o-texto); }
+html.ht-premium .contract-export-menu > div button + button { border-top-color: var(--o-linha); }
+html.ht-premium .contract-export-menu > div button:hover { background: var(--o-vidro-2); color: var(--o-titulo); }
+html.ht-premium .contract-workspace-tabs { background: transparent; border-bottom-color: var(--o-linha); }
+html.ht-premium .contract-workspace-tabs button { color: var(--o-texto-2); }
+html.ht-premium .contract-workspace-tabs button:hover { background: var(--o-vidro-2); color: var(--o-titulo); }
+html.ht-premium .contract-workspace-tabs button.is-active { background: var(--o-brilho); color: var(--o-titulo); box-shadow: inset 0 0 0 1px var(--o-acento); }
+html.ht-premium :is(.contract-workspace-body, .contract-workspace-footer) { background: transparent; border-color: var(--o-linha); }
+html.ht-premium .contract-workspace-footer :is(p, span, small) { color: var(--o-mudo); }
+html.ht-premium .contract-workspace-footer strong { color: var(--o-acento-texto); }
+html.ht-premium .contract-panel-intro > span { color: var(--o-acento-texto); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; }
+html.ht-premium .contract-panel-intro :is(h3, h2) { color: var(--o-titulo); font-family: Nunito, "Segoe UI", sans-serif; }
+html.ht-premium .contract-panel-intro p { color: var(--o-mudo); }
+/* folhas de documento: continuam brancas, com as cores originais */
+html.ht-premium .contract-workspace-panel > :not(.contract-panel-intro) { color-scheme: light; color: var(--ink-900, #14243a); }
+html.ht-premium :is(button, a, summary):focus-visible { outline: 2px solid var(--o-acento); outline-offset: 2px; }
+}

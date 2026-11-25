@@ -1,0 +1,83 @@
+/*
+ * Visual premium (padrão H. Teixeira Premium) do Controle de Apuração no HUB.
+ * Só vale com html.ht-premium (ponte /apps/hub-premium-app.js) e só na tela. O modo claro/escuro do app
+ * acompanha o do HUB (hub-premium-tema.js); as cores de situação da grade (amarelo, laranja, verde) continuam.
+ */
+@media screen {
+html.ht-premium--escuro:root, html.ht-premium--escuro[data-theme] {
+  --a-texto: #EEF2FA; --a-texto-2: #B9C3DA; --a-mudo: #A3AECB; --a-titulo: #FFFFFF; --a-linha: rgba(255,255,255,.10);
+  --a-vidro: rgba(255,255,255,calc(.045 * var(--ht-vidro-k, 1))); --a-vidro-2: rgba(255,255,255,calc(.075 * var(--ht-vidro-k, 1))); --a-solido: #121A30;
+  --a-acento: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%)); --a-acento-texto: hsl(var(--ht-h,179) calc(var(--ht-s,75%) * .85) var(--ht-l-texto,61%));
+  --a-brilho: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20); --a-sobre-acento: #04121A;
+  --a-sombra: 0 1px 0 rgba(255,255,255,.04) inset, 0 calc(24px * var(--ht-sombra-k,1)) calc(60px * var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8 * var(--ht-sombra-k,1)));
+  --bg: transparent; --panel: var(--a-vidro); --ink: var(--a-texto); --muted: var(--a-mudo); --line: var(--a-linha);
+  --brand2: var(--a-acento); --ok: #7FD6B0; --warn: #F0C46A; --danger: #FF8A7C;
+  --input-bg: #FFFFFF; --table-head: #151E35; --row-bg: #131B31; --row-hover: rgba(255,255,255,.04); --shadow: var(--a-sombra);
+  color-scheme: dark;
+}
+html.ht-premium--claro:root, html.ht-premium--claro[data-theme] {
+  --a-texto: #1A2033; --a-texto-2: #3D4456; --a-mudo: #5B6274; --a-titulo: #111830; --a-linha: rgba(40,44,56,.11);
+  --a-vidro: rgba(255,255,255,min(.95, calc(.62 * var(--ht-vidro-k, 1)))); --a-vidro-2: rgba(255,255,255,min(.97, calc(.82 * var(--ht-vidro-k, 1)))); --a-solido: #FFFFFF;
+  --a-acento: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%)); --a-acento-texto: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));
+  --a-brilho: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10); --a-sobre-acento: #FFFFFF;
+  --a-sombra: 0 1px 2px rgba(40,44,56,.05), 0 calc(14px * var(--ht-sombra-k,1)) calc(34px * var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22 * var(--ht-sombra-k,1)));
+  --bg: transparent; --panel: var(--a-vidro); --ink: var(--a-texto); --muted: var(--a-mudo); --line: var(--a-linha);
+  --brand2: var(--a-acento); --ok: #26693F; --warn: #8A5300; --danger: #B93E0E;
+  --input-bg: #FFFFFF; --table-head: #F4F3EE; --row-bg: #FFFFFF; --row-hover: rgba(40,44,56,.03); --shadow: var(--a-sombra);
+  color-scheme: light;
+}
+html.ht-premium, html.ht-premium body { background: transparent !important; }
+html.ht-premium body { color: var(--a-texto); font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; }
+html.ht-premium--ampliado body { zoom: 1.12; }
+/* o tema vem do HUB: o botão de modo escuro do app sai */
+html.ht-premium #themeBtn { display: none !important; }
+html.ht-premium :is(h1, h2, h3, .brand strong) { color: var(--a-titulo); font-family: Nunito, "Segoe UI", sans-serif; }
+/* campos: folhas brancas */
+html.ht-premium :is(input:not([type=checkbox]):not([type=radio]):not([type=color]), select, textarea) { background: #FFFFFF; color: #1A2033; border-color: rgba(40,44,56,.18); color-scheme: light; }
+/* botões */
+html.ht-premium button:not(.primary):not(.danger):not(.text-link):not(.status-dot):not([class*="status"]):not([data-item-highlight]):not([data-row-highlight]) { background: var(--a-vidro-2); border-color: var(--a-linha); color: var(--a-texto); }
+html.ht-premium button:not(.primary):not(.danger):not(.text-link):hover { border-color: var(--a-acento); }
+html.ht-premium .primary { background: var(--a-acento); border-color: var(--a-acento); color: var(--a-sobre-acento); }
+html.ht-premium .text-link { color: var(--a-acento-texto); }
+/* barra da competência: vidro (antes, degradê azul-petróleo) */
+html.ht-premium .workspace-bar { background: var(--a-vidro); border-color: var(--a-linha); color: var(--a-texto); box-shadow: var(--a-sombra); backdrop-filter: blur(24px) saturate(140%); }
+html.ht-premium .workspace-bar .field label { color: var(--a-mudo); font-family: "DM Mono", ui-monospace, monospace; font-weight: 400; letter-spacing: .12em; }
+html.ht-premium .workspace-bar :is(.month-nav button, .toolbar-buttons button, .toolbar-buttons .ghost, .month-nav .ghost) { background: var(--a-vidro-2); border-color: var(--a-linha); color: var(--a-texto); }
+html.ht-premium .workspace-bar .toolbar-buttons button:hover:not(:disabled) { border-color: var(--a-acento); }
+html.ht-premium .workspace-bar .toolbar-buttons button.primary { background: var(--a-acento); border-color: var(--a-acento); color: var(--a-sobre-acento); }
+html.ht-premium .workspace-bar .toolbar-buttons button.danger, html.ht-premium .danger { background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: color-mix(in srgb, var(--danger) 40%, transparent); color: var(--danger); }
+html.ht-premium .workspace-bar .toolbar-buttons button:disabled { opacity: .55; }
+html.ht-premium .workspace-bar .metric { background: var(--a-vidro-2); border-color: var(--a-linha); color: var(--a-texto); }
+html.ht-premium .workspace-bar .metric span { color: var(--a-mudo); }
+html.ht-premium .workspace-bar .metric-filter.active { box-shadow: inset 0 0 0 2px var(--a-acento); }
+html.ht-premium :is(.workspace-row-tools, .workspace-font-tools) { background: var(--a-vidro-2); border-color: var(--a-linha); color: var(--a-mudo); }
+html.ht-premium :is(.workspace-row-tools .mini-grid-btn, .workspace-row-tools .mini-grid-reset, .workspace-font-tools .mini-font-btn) { background: var(--a-vidro-2) !important; color: var(--a-texto) !important; border-color: var(--a-linha) !important; }
+/* selos: tons translúcidos; quentes só para pendência */
+html.ht-premium :is(.badge, .competence-badge, .workspace-bar .competence-badge, .workspace-bar .competence-badge.neutral, .competence-badge.neutral, .user-badge, .owner-badge) { background: var(--a-vidro-2); color: var(--a-texto-2); border-color: var(--a-linha); }
+html.ht-premium :is(.badge.ok, .competence-badge.done, .competence-badge.saved, .workspace-bar .competence-badge.done, .user-badge.active) { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+html.ht-premium :is(.badge.offline, .competence-badge.pending, .workspace-bar .competence-badge.pending, .user-badge.inactive) { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+html.ht-premium :is(.competence-badge.partial, .workspace-bar .competence-badge.partial, .user-badge.admin, .user-badge.companies) { background: var(--a-brilho); color: var(--a-acento-texto); }
+/* cabeçalho do app */
+html.ht-premium .topbar { background: var(--a-vidro-2); border-bottom-color: var(--a-linha); color: var(--a-texto); backdrop-filter: blur(18px); }
+html.ht-premium .top-actions button { background: var(--a-vidro-2); color: var(--a-texto); border-color: var(--a-linha); }
+html.ht-premium .header-center-mark { background: var(--a-acento); color: var(--a-sobre-acento); }
+/* grade: colunas fixas e linhas de situação sempre opacas (o texto não some ao rolar) */
+html.ht-premium .control-table th, html.ht-premium .control-table th.sticky1, html.ht-premium .control-table th.sticky2 { background: var(--table-head); color: var(--a-titulo); }
+html.ht-premium .control-table td { background: var(--row-bg); color: var(--a-texto); border-color: var(--a-linha); }
+html.ht-premium--escuro .control-table tr.row-alert td, html.ht-premium--escuro .control-table tr.row-alert :is(td.sticky1, td.sticky2) { background: #2A1E2C; }
+html.ht-premium--claro .control-table tr.row-alert td, html.ht-premium--claro .control-table tr.row-alert :is(td.sticky1, td.sticky2) { background: #FFF6F3; }
+html.ht-premium--escuro .control-table tr.row-done td, html.ht-premium--escuro .control-table tr.row-done :is(td.sticky1, td.sticky2) { background: #16302A; }
+html.ht-premium--claro .control-table tr.row-done td, html.ht-premium--claro .control-table tr.row-done :is(td.sticky1, td.sticky2) { background: #F1F8F3; }
+html.ht-premium .company-name-link { color: var(--a-titulo); }
+html.ht-premium .row-drag-grip, html.ht-premium .company-actions-toggle { color: var(--a-mudo); }
+
+/* cartões e janelas */
+html.ht-premium :is(.card, .panel) { background: var(--a-vidro); border-color: var(--a-linha); box-shadow: var(--a-sombra); backdrop-filter: blur(24px) saturate(140%); }
+html.ht-premium :is(dialog, .status-menu, .row-highlight-menu, .toast, #statusMenu, #rowHighlightMenu) { background: var(--a-solido); color: var(--a-texto); border-color: var(--a-linha); }
+html.ht-premium dialog::backdrop { background: rgba(7,11,26,.55); }
+html.ht-premium :is(button, a, input, select, summary):focus-visible { outline: 2px solid var(--a-acento); outline-offset: 2px; }
+}
+@media screen {
+/* situações "Pendente" e "N/A" da grade: texto um pouco mais escuro para a leitura no claro */
+html.ht-premium--claro .status-btn:is(.status-PENDING, .status-NA) :is(.status-icon, .status-text) { color: #46525C; }
+}

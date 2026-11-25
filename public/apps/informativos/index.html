@@ -57,6 +57,63 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#1d5a8f;box-sh
 .export-trigger{border-color:var(--line);background:#fff}
 .export-trigger:hover,.export-trigger[aria-expanded="true"]{background:#eaf1f8;border-color:#c9d5e2}
 </style>
+<script src="/apps/hub-premium-app.js"></script>
+<style id="ht-premium-informativos">
+/* Visual premium (padrão H. Teixeira Premium): só vale com html.ht-premium (ponte hub-premium-app.js) e só na tela.
+   O informativo aberto (informativo.html) continua como documento. */
+@media screen {
+html.ht-premium--escuro{--i-texto:#EEF2FA;--i-texto-2:#B9C3DA;--i-mudo:#A3AECB;--i-titulo:#FFFFFF;--i-linha:rgba(255,255,255,.10);--i-vidro:rgba(255,255,255,calc(.045*var(--ht-vidro-k,1)));--i-vidro-2:rgba(255,255,255,calc(.075*var(--ht-vidro-k,1)));--i-solido:#121A30;
+  --i-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%));--i-acento-texto:hsl(var(--ht-h,179) calc(var(--ht-s,75%)*.85) var(--ht-l-texto,61%));--i-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20);--i-sobre-acento:#04121A;
+  --i-urgente:#FF8A7C;--i-ambar:#F0C46A;--i-ok:#7FD6B0;--i-sombra:0 1px 0 rgba(255,255,255,.04) inset,0 calc(24px*var(--ht-sombra-k,1)) calc(60px*var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8*var(--ht-sombra-k,1)));color-scheme:dark}
+html.ht-premium--claro{--i-texto:#1A2033;--i-texto-2:#3D4456;--i-mudo:#5B6274;--i-titulo:#111830;--i-linha:rgba(40,44,56,.11);--i-vidro:rgba(255,255,255,min(.95,calc(.62*var(--ht-vidro-k,1))));--i-vidro-2:rgba(255,255,255,min(.97,calc(.82*var(--ht-vidro-k,1))));--i-solido:#FFFFFF;
+  --i-acento:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%));--i-acento-texto:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));--i-brilho:hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10);--i-sobre-acento:#FFFFFF;
+  --i-urgente:#B93E0E;--i-ambar:#8A5300;--i-ok:#26693F;--i-sombra:0 1px 2px rgba(40,44,56,.05),0 calc(14px*var(--ht-sombra-k,1)) calc(34px*var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22*var(--ht-sombra-k,1)));color-scheme:light}
+html.ht-premium{--navy:var(--i-acento-texto);--navy2:var(--i-acento-texto);--cyan:var(--i-acento);--ink:var(--i-texto);--muted:var(--i-mudo);--paper:var(--i-vidro);--line:var(--i-linha);--bg:transparent;--danger:var(--i-urgente);--warning:var(--i-ambar);--ok:var(--i-ok)}
+html.ht-premium,html.ht-premium body{background:transparent!important}
+html.ht-premium body{color:var(--i-texto);font-family:"DM Sans","Segoe UI",system-ui,sans-serif}
+html.ht-premium--ampliado body{zoom:1.14}
+html.ht-premium header{background:transparent;color:var(--i-texto);border-bottom-color:var(--i-linha)}
+html.ht-premium :is(h1,.section-title h2,.card h3,.folder-head h2,.dialog h2,.dialog h3){color:var(--i-titulo);font-family:Nunito,"Segoe UI",sans-serif}
+html.ht-premium .brand-kicker{color:var(--i-acento-texto);font-family:"DM Mono",ui-monospace,monospace;font-weight:400;letter-spacing:.2em}
+html.ht-premium :is(.subtitle,.admin-state,.technical,.folder-note,.folder-group-label,footer,.source-item,.meta,.note,.count,.export-popover small){color:var(--i-mudo)}
+html.ht-premium :is(.admin-state strong,.meta strong,.result strong,.source-item strong){color:var(--i-texto)}
+html.ht-premium .folder-group-label{font-family:"DM Mono",ui-monospace,monospace;font-weight:400}
+/* cartões de vidro */
+html.ht-premium :is(.toolbar,.card,.folder-panel,.empty,.info-grid,.file-box){background:var(--i-vidro);border-color:var(--i-linha);box-shadow:var(--i-sombra);color:var(--i-texto)}
+html.ht-premium :is(.pill,.summary .pill,.role-chip,.source,.folder-badge,.folder-item .folder-count){background:var(--i-vidro-2);border-color:var(--i-linha);color:var(--i-texto-2)}
+html.ht-premium .folder-item{color:var(--i-texto-2)}
+html.ht-premium .folder-item:hover{background:var(--i-vidro-2)}
+html.ht-premium .folder-item.active{background:var(--i-brilho);border-color:var(--i-acento);color:var(--i-titulo)}
+html.ht-premium .folder-item.active .folder-count{background:var(--i-acento);color:var(--i-sobre-acento)}
+html.ht-premium :is(.smart-folder,.smart-folder:before,.folder-badge:before){color:var(--i-acento-texto)}
+html.ht-premium .folder-actions,html.ht-premium .technical{border-top-color:var(--i-linha)}
+/* situação dos informativos: verde publicado, âmbar pendente, neutro rascunho e arquivado */
+html.ht-premium .status{background:color-mix(in srgb,var(--i-ok) 14%,transparent);color:var(--i-ok)}
+html.ht-premium .status.pending{background:color-mix(in srgb,var(--i-ambar) 14%,transparent);color:var(--i-ambar)}
+html.ht-premium .status.draft{background:var(--i-brilho);color:var(--i-acento-texto)}
+html.ht-premium .status.archived{background:var(--i-vidro-2);color:var(--i-mudo)}
+/* botões */
+html.ht-premium :is(.primary,.dark,.open){background:var(--i-acento);border-color:var(--i-acento);color:var(--i-sobre-acento)}
+html.ht-premium :is(.secondary,.small-link,.folder-create,.export-trigger){background:var(--i-vidro-2);border:1px solid var(--i-linha);color:var(--i-texto)}
+html.ht-premium :is(.secondary,.small-link,.export-trigger):hover,html.ht-premium .export-trigger[aria-expanded="true"]{background:var(--i-vidro-2);border-color:var(--i-acento)}
+html.ht-premium .danger{background:color-mix(in srgb,var(--i-urgente) 8%,transparent);border:1px solid color-mix(in srgb,var(--i-urgente) 40%,transparent);color:var(--i-urgente)}
+html.ht-premium .warning{background:color-mix(in srgb,var(--i-ambar) 14%,transparent);color:var(--i-ambar)}
+html.ht-premium button:disabled{background:var(--i-vidro);color:var(--i-mudo)}
+/* campos: folhas brancas */
+html.ht-premium :is(input,select,textarea){background:#FFFFFF;color:#1A2033;border-color:rgba(40,44,56,.18);color-scheme:light}
+/* menus e janelas: fundo sólido */
+html.ht-premium :is(.export-popover,.dialog){background:var(--i-solido);border-color:var(--i-linha);color:var(--i-texto)}
+html.ht-premium .export-popover button{background:transparent;color:var(--i-texto)}
+html.ht-premium .export-popover button:hover{background:var(--i-vidro-2)}
+html.ht-premium .export-popover .export-kind{color:var(--i-acento-texto)}
+html.ht-premium .modal{background:rgba(7,11,26,.6)}
+html.ht-premium .field label{color:var(--i-texto-2)}
+html.ht-premium .result{background:var(--i-brilho);border-color:var(--i-linha)}
+html.ht-premium .error{background:color-mix(in srgb,var(--i-urgente) 10%,transparent);border-color:color-mix(in srgb,var(--i-urgente) 35%,transparent);color:var(--i-urgente)}
+html.ht-premium .warnings{color:var(--i-ambar)}
+html.ht-premium :is(button,a):focus-visible{outline:2px solid var(--i-acento);outline-offset:2px}
+}
+</style>
 </head>
 <body>
 <header><div class="head"><div><div class="brand-kicker">H. Teixeira Contabilidade</div><h1>Biblioteca de Informativos</h1><p class="subtitle">Informativos do Departamento Tributário, com rascunho, publicação, apresentações, exportações, versões e pastas.</p></div><div class="head-actions"><div class="pwa-actions"><button class="hti-pwa-install" type="button" data-pwa-install><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-pwa-install-label>Modo aplicativo</span></button><span class="hti-pwa-mode-badge" data-pwa-mode-badge hidden>Modo aplicativo ativo</span></div><div class="admin-state" id="adminState">Verificando acesso…</div></div></div></header>

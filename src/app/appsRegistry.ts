@@ -108,6 +108,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/apuracao/index.html",
     mode: "embutido",
+    premium: true,
     description: "Versão no HUB (em construção): usa o login do HUB e funciona de qualquer lugar."
   },
   // Controle de Férias no HUB: mesma tela e mesmas regras do app do servidor, com os usuários do HUB.
@@ -121,6 +122,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/ferias/index.html",
     mode: "embutido",
+    premium: true,
     description: "Férias e ausências da equipe, com saldo por semestre. Usa o login do HUB e funciona de qualquer lugar."
   },
   // Apps do escritório que ainda não estão dentro do HUB: abrem a versão que roda no HTSERVER ou no site de origem.
@@ -136,6 +138,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/onboarding/index.html",
     mode: "embutido",
+    premium: true,
     description: "Ambiente contratual do onboarding: Contrato, Adendo, matriz de responsabilidades e checklist (recriação do Onboarding 1.1.35)."
   },
   // Carteira de Clientes: recriação da Carteira V2 2.1.0 com a base no Supabase (competências, empresas e auditoria).
@@ -149,6 +152,7 @@ export const hubApps: HubApp[] = [
     // no HUB é o espelho só para consulta; inclusões e alterações são feitas no app individual (/apps/carteira/)
     src: "/apps/carteira/index.html?modo=consulta",
     mode: "embutido",
+    premium: true,
     description: "Consulta da relação de empresas por competência mensal, sempre atualizada com o app Carteira de Clientes, onde o ADM faz inclusões e alterações."
   },
   {
@@ -172,6 +176,7 @@ export const hubApps: HubApp[] = [
     access: "todos",
     src: "/apps/informativos/index.html",
     mode: "embutido",
+    premium: true,
     description: "Biblioteca de informativos do Departamento Tributário (recriação do Infos HT dentro do HUB)."
   },
   // Simuladores: cada um é um item do submenu "Simuladores" (public/apps/simuladores/<nome>/).

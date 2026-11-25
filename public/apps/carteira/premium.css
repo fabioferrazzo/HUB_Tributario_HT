@@ -1,0 +1,93 @@
+/*
+ * Visual premium (padrão H. Teixeira Premium) da Carteira de Clientes no HUB.
+ * Só vale com html.ht-premium (ponte /apps/hub-premium-app.js) e só na tela.
+ */
+@media screen {
+html.ht-premium--escuro {
+  --c-texto: #EEF2FA; --c-texto-2: #B9C3DA; --c-mudo: #A3AECB; --c-titulo: #FFFFFF;
+  --c-linha: rgba(255,255,255,.10); --c-linha-forte: rgba(255,255,255,.22);
+  --c-vidro: rgba(255,255,255,calc(.045 * var(--ht-vidro-k, 1))); --c-vidro-2: rgba(255,255,255,calc(.075 * var(--ht-vidro-k, 1)));
+  --c-fixo: #151E35; --c-solido: #121A30;
+  --c-acento: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%)); --c-acento-texto: hsl(var(--ht-h,179) calc(var(--ht-s,75%) * .85) var(--ht-l-texto,61%));
+  --c-brilho: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,42%) / .20); --c-sobre-acento: #04121A;
+  --c-urgente: #FF8A7C; --c-ambar: #F0C46A; --c-ok: #7FD6B0;
+  --c-sombra: 0 1px 0 rgba(255,255,255,.04) inset, 0 calc(24px * var(--ht-sombra-k,1)) calc(60px * var(--ht-sombra-k,1)) -30px rgba(0,0,0,calc(.8 * var(--ht-sombra-k,1)));
+  color-scheme: dark;
+}
+html.ht-premium--claro {
+  --c-texto: #1A2033; --c-texto-2: #3D4456; --c-mudo: #5B6274; --c-titulo: #111830;
+  --c-linha: rgba(40,44,56,.11); --c-linha-forte: rgba(40,44,56,.24);
+  --c-vidro: rgba(255,255,255,min(.95, calc(.62 * var(--ht-vidro-k, 1)))); --c-vidro-2: rgba(255,255,255,min(.97, calc(.82 * var(--ht-vidro-k, 1))));
+  --c-fixo: #F4F3EE; --c-solido: #FFFFFF;
+  --c-acento: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%)); --c-acento-texto: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-texto,24%));
+  --c-brilho: hsl(var(--ht-h,179) var(--ht-s,75%) var(--ht-l-acento,28%) / .10); --c-sobre-acento: #FFFFFF;
+  --c-urgente: #B93E0E; --c-ambar: #8A5300; --c-ok: #26693F;
+  --c-sombra: 0 1px 2px rgba(40,44,56,.05), 0 calc(14px * var(--ht-sombra-k,1)) calc(34px * var(--ht-sombra-k,1)) -24px rgba(40,44,56,calc(.22 * var(--ht-sombra-k,1)));
+  color-scheme: light;
+}
+html.ht-premium {
+  --bg: transparent; --panel: var(--c-vidro); --text: var(--c-texto); --muted: var(--c-mudo); --line: var(--c-linha);
+  --blue: var(--c-acento-texto); --blue-2: var(--c-acento); --teal: var(--c-acento); --danger: var(--c-urgente);
+  --warning-bg: color-mix(in srgb, var(--c-ambar) 12%, transparent); --warning-border: color-mix(in srgb, var(--c-ambar) 40%, transparent);
+  --shadow: var(--c-sombra);
+}
+html.ht-premium, html.ht-premium body { background: transparent !important; }
+html.ht-premium body { color: var(--c-texto); font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; }
+html.ht-premium--ampliado body { zoom: 1.14; }
+html.ht-premium :is(.brand-title, .login-card h1, h1, h2, h3) { color: var(--c-titulo); font-family: Nunito, "Segoe UI", sans-serif; }
+html.ht-premium :is(.brand-subtitle, .kpi-label, .dashboard-note, .login-hint, .audit-empty, .dashboard-empty) { color: var(--c-mudo); }
+html.ht-premium .field label { color: var(--c-texto-2); }
+html.ht-premium .brand-mark { border-color: var(--c-acento); color: var(--c-acento-texto); }
+html.ht-premium .login-brand { background: var(--c-acento); border-color: var(--c-acento); color: var(--c-sobre-acento); }
+/* cabeçalho, abas e cartões */
+html.ht-premium .topbar { background: var(--c-vidro-2); border-bottom-color: var(--c-linha); color: var(--c-texto); backdrop-filter: blur(18px); }
+html.ht-premium .session-badge { background: var(--c-vidro-2); border-color: var(--c-linha); color: var(--c-texto-2); }
+html.ht-premium .app-tabs { background: transparent; border-bottom-color: var(--c-linha); }
+html.ht-premium .app-tab { background: var(--c-vidro-2); border-color: var(--c-linha); color: var(--c-texto-2); }
+html.ht-premium .app-tab:hover { background: var(--c-vidro-2); color: var(--c-titulo); border-color: var(--c-acento); }
+html.ht-premium .app-tab.active { background: var(--c-acento); border-color: var(--c-acento); color: var(--c-sobre-acento); }
+html.ht-premium :is(.control-panel, .table-panel, .dashboard-summary-bar, .kpi-card, .dashboard-regime-card, .regime-total-item, .panel, .card) {
+  background: var(--c-vidro); border-color: var(--c-linha); box-shadow: var(--c-sombra); color: var(--c-texto);
+}
+html.ht-premium :is(.regime-total-item:not(:disabled):hover, button.kpi-card:hover) { background: var(--c-vidro-2); border-color: var(--c-acento); }
+html.ht-premium .regime-total-item span { color: var(--c-texto); }
+html.ht-premium .kpi-card.kpi-delinquency { border-top-color: var(--c-ambar); }
+html.ht-premium :is(.period-chip, .dashboard-note, .dashboard-empty, .audit-empty) { background: var(--c-vidro-2); color: var(--c-acento-texto); }
+html.ht-premium :is(.dashboard-note, .dashboard-empty, .audit-empty) { color: var(--c-mudo); }
+html.ht-premium .dashboard-formula-note { background: var(--c-vidro-2); border-left-color: var(--c-acento); color: var(--c-texto-2); }
+html.ht-premium .notice-panel { color: var(--c-ambar); }
+/* campos: folhas brancas */
+html.ht-premium :is(input, select, textarea):not(.cell-input) { background: #FFFFFF; color: #1A2033; border-color: rgba(40,44,56,.18); color-scheme: light; }
+/* botões */
+html.ht-premium .btn.primary { background: var(--c-acento); border-color: var(--c-acento); color: var(--c-sobre-acento); }
+html.ht-premium :is(.btn.secondary, .btn.ghost) { background: var(--c-vidro-2); border-color: var(--c-linha); color: var(--c-texto); }
+html.ht-premium :is(.btn.secondary, .btn.ghost):hover { background: var(--c-vidro-2); border-color: var(--c-acento); }
+html.ht-premium .btn.danger-outline { background: transparent; border-color: color-mix(in srgb, var(--c-urgente) 40%, transparent); color: var(--c-urgente); }
+html.ht-premium .btn.save { background: var(--c-acento); border-color: var(--c-acento); color: var(--c-sobre-acento); }
+/* tabela */
+html.ht-premium .table-x-scroll-top { background: transparent; border-bottom-color: var(--c-linha); }
+html.ht-premium :is(th, td) { border-color: var(--c-linha); }
+html.ht-premium .header-row th { background: var(--c-fixo); color: var(--c-titulo); border-bottom-color: var(--c-linha-forte); }
+html.ht-premium .filter-row th { background: var(--c-fixo); }
+html.ht-premium tbody td, html.ht-premium tbody tr:nth-child(even) td { background: transparent; color: var(--c-texto); }
+html.ht-premium tbody tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+html.ht-premium--claro tbody tr:nth-child(even) td { background: rgba(255,255,255,.35); }
+html.ht-premium tbody tr:hover td { background: var(--c-brilho); }
+html.ht-premium .column-resizer::after { background: var(--c-linha-forte); }
+html.ht-premium .cell-input { color: var(--c-texto); }
+html.ht-premium :is(.cell-input:hover, .cell-input:focus) { background: #FFFFFF; color: #1A2033; }
+html.ht-premium .row-delete { background: color-mix(in srgb, var(--c-urgente) 12%, transparent); border-color: color-mix(in srgb, var(--c-urgente) 35%, transparent); color: var(--c-urgente); }
+html.ht-premium #saveState.pending { color: var(--c-ambar); }
+/* janelas, avisos e entrada: fundo sólido */
+html.ht-premium :is(.modal, .login-card) { background: var(--c-solido); color: var(--c-texto); }
+html.ht-premium .modal .info-box { background: var(--c-vidro-2); border-color: var(--c-linha); }
+html.ht-premium .modal table th { background: var(--c-fixo); color: var(--c-titulo); }
+html.ht-premium .modal-backdrop { background: rgba(7,11,26,.55); }
+html.ht-premium .login-screen { background: transparent; }
+html.ht-premium .login-hint { background: var(--c-vidro-2); }
+html.ht-premium .toast { background: var(--c-solido); color: var(--c-texto); border: 1px solid var(--c-linha); }
+html.ht-premium .toast.error { color: var(--c-urgente); }
+html.ht-premium .toast.success { color: var(--c-ok); }
+html.ht-premium .toast.warning { color: var(--c-ambar); }
+html.ht-premium :is(button, a, input, select):focus-visible { outline: 2px solid var(--c-acento); outline-offset: 2px; }
+}
