@@ -22,9 +22,14 @@
   container-type: inline-size;
 }
 
-@container (max-width: 900px) {
+/* A grade consulta a largura real da área (casca), não a própria grade. */
+.registros-raiz {
+  container: registros / inline-size;
+}
+
+@container registros (max-width: 940px) {
   .registros-page {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
@@ -418,6 +423,20 @@
   gap: 12px;
 }
 
+.registros-rotulo {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--rg-mudo);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.registros-totais button.atencao strong {
+  color: var(--rg-ambar);
+}
+
 .registros-detalhe__cabeca h2 {
   margin: 0;
   color: var(--rg-texto);
@@ -631,9 +650,21 @@
   min-height: 120px;
 }
 
+/* Barra de salvar fixa no pé da tela enquanto o formulário está à vista (não some no meio das seções). */
 .registros-salvar {
+  position: sticky;
+  bottom: 10px;
+  z-index: 3;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--rg-linha);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--rg-fundo-item) 92%, transparent);
+  box-shadow: 0 10px 28px -18px rgba(20, 24, 40, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .registros-salvar .primary-action,
@@ -862,4 +893,329 @@
   background: var(--hp-vidro);
   color: var(--hp-texto-2);
   font-size: calc(12.5px * var(--hp-esc, 1));
+}
+
+/* ---------- Padrão H. Teixeira Premium: acabamento próprio da tela (tipografia, selos, lista, barra) ---------- */
+.hub-premium .registros-page {
+  grid-template-columns: minmax(330px, 430px) minmax(0, 1fr);
+}
+
+.hub-premium--ampliado .registros-page {
+  grid-template-columns: minmax(380px, 500px) minmax(0, 1fr);
+  gap: 26px;
+}
+
+@container registros (max-width: 1100px) {
+  .hub-premium--ampliado .registros-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Indicadores: o rótulo encolhe com o cartão e nunca é cortado. */
+.hub-premium .registros-totais > * {
+  container-type: inline-size;
+}
+
+.hub-premium .registros-lista,
+.hub-premium .registros-detalhe {
+  padding: calc(18px * var(--hp-esc, 1));
+}
+
+/* Rótulos técnicos em DM Mono */
+.hub-premium .registros-rotulo,
+.hub-premium .registro-item__cnpj,
+.hub-premium .registro-selo,
+.hub-premium .registros-subabas small,
+.hub-premium .registros-alteracoes-empresa small,
+.hub-premium .registros-anexos small,
+.hub-premium .registros-eventos small {
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.hub-premium .registros-rotulo {
+  color: var(--hp-acento-texto);
+  font-size: calc(10.5px * var(--hp-esc, 1));
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hub-premium .registros-detalhe__cabeca h2 {
+  font-size: calc(24px * var(--hp-esc, 1));
+  line-height: 1.2;
+}
+
+.hub-premium .registros-detalhe__cabeca p {
+  color: var(--hp-mudo);
+  font-size: calc(12.5px * var(--hp-esc, 1));
+}
+
+/* Indicadores: número fino em Nunito; "Em revisão" em âmbar quando há pendências */
+.hub-premium .registros-totais {
+  gap: calc(10px * var(--hp-esc, 1));
+}
+
+.hub-premium .registros-totais > * {
+  padding: calc(12px * var(--hp-esc, 1)) calc(11px * var(--hp-esc, 1));
+  border-color: var(--hp-linha);
+  border-radius: 16px;
+  background: var(--hp-vidro-2);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hub-premium .registros-totais strong {
+  color: var(--hp-titulo, var(--hp-texto));
+  font-size: calc(34px * var(--hp-esc, 1));
+  line-height: 1;
+}
+
+.hub-premium .registros-totais span {
+  color: var(--hp-mudo);
+  font-size: min(calc(10.5px * var(--hp-esc, 1)), 10.2cqi);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.hub-premium .registros-totais button.atencao strong {
+  color: var(--hp-ambar, #e0a030);
+}
+
+.hub-premium .registros-totais button.ativo {
+  border-color: var(--hp-acento);
+  box-shadow: 0 0 22px var(--hp-brilho, rgba(27, 188, 187, 0.18));
+}
+
+/* Busca e filtros em vidro */
+.hub-premium .registros-toolbar .panel-search {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+}
+
+.hub-premium .registros-toolbar .panel-search input {
+  color: var(--hp-texto);
+}
+
+.hub-premium .registros-toolbar .panel-search input::placeholder {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .registros-toolbar select {
+  min-height: calc(38px * var(--hp-esc, 1));
+  border-radius: 12px;
+}
+
+.hub-premium .registros-novo {
+  min-height: calc(42px * var(--hp-esc, 1));
+  border-radius: 14px;
+  font-size: calc(14px * var(--hp-esc, 1));
+}
+
+/* Itens da lista: vidro, ponto luminoso pela situação, selos em cápsula */
+.hub-premium .registros-itens {
+  gap: calc(8px * var(--hp-esc, 1));
+}
+
+.hub-premium .registro-item {
+  position: relative;
+  padding: calc(12px * var(--hp-esc, 1)) calc(14px * var(--hp-esc, 1)) calc(12px * var(--hp-esc, 1)) calc(30px * var(--hp-esc, 1));
+  border: 1px solid var(--hp-linha);
+  border-radius: 16px;
+  background: var(--hp-vidro);
+  color: var(--hp-texto);
+}
+
+.hub-premium .registro-item::before {
+  content: "";
+  position: absolute;
+  top: calc(17px * var(--hp-esc, 1));
+  left: calc(13px * var(--hp-esc, 1));
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--hp-mudo);
+}
+
+.hub-premium .registro-item--revisao::before {
+  background: var(--hp-ambar, #e0a030);
+  box-shadow: 0 0 12px var(--hp-ambar, #e0a030);
+}
+
+.hub-premium .registro-item--ativo::before {
+  background: var(--hp-acento);
+  box-shadow: 0 0 12px var(--hp-acento);
+}
+
+.hub-premium .registro-item:hover {
+  border-color: var(--hp-linha-forte);
+}
+
+.hub-premium .registro-item[aria-current="true"] {
+  border-color: var(--hp-acento);
+  background: var(--hp-vidro-2);
+  box-shadow: 0 0 0 1px var(--hp-acento) inset, 0 0 26px var(--hp-brilho, rgba(27, 188, 187, 0.18));
+}
+
+.hub-premium .registro-item__titulo {
+  color: var(--hp-titulo, var(--hp-texto));
+  font-weight: 600;
+}
+
+.hub-premium .registro-item__cnpj {
+  color: var(--hp-texto-2);
+  font-size: calc(12px * var(--hp-esc, 1));
+}
+
+.hub-premium .registro-item__meta {
+  color: var(--hp-mudo);
+  font-size: calc(12px * var(--hp-esc, 1));
+}
+
+.hub-premium .registro-item__meta span:last-child {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc, 1));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hub-premium .registro-selo {
+  padding: 2px 9px;
+  border: 1px solid var(--hp-linha);
+  border-radius: 999px;
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-size: calc(10px * var(--hp-esc, 1));
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hub-premium :is(.registro-selo--abertura, .registro-selo--cliente_novo, .registro-selo--status-ativo) {
+  border-color: transparent;
+  background: var(--hp-brilho, rgba(27, 188, 187, 0.18));
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .registro-selo--status-revisao {
+  border-color: transparent;
+  background: var(--hp-ambar-fundo, rgba(224, 160, 48, 0.16));
+  color: var(--hp-prazo, var(--hp-ambar, #e0a030));
+}
+
+/* Seções do formulário */
+.hub-premium .registros-secao {
+  padding: 0 calc(16px * var(--hp-esc, 1));
+  border-color: var(--hp-linha);
+  background: var(--hp-vidro);
+}
+
+.hub-premium .registros-secao[open] {
+  padding-bottom: calc(16px * var(--hp-esc, 1));
+}
+
+.hub-premium .registros-secao > summary {
+  padding: calc(14px * var(--hp-esc, 1)) 0;
+  color: var(--hp-titulo, var(--hp-texto));
+  font-weight: 700;
+}
+
+.hub-premium .registros-secao > summary small {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+}
+
+.hub-premium .registros-form label {
+  color: var(--hp-texto-2);
+}
+
+/* Campos: folha clara dentro do vidro (contraste garantido, como nas demais telas migradas) */
+.hub-premium .registros-form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  min-height: calc(40px * var(--hp-esc, 1));
+  border: 1px solid rgba(40, 44, 56, 0.16);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1c2a3a;
+  font-size: calc(14px * var(--hp-esc, 1));
+  color-scheme: light;
+}
+
+.hub-premium .registros-form :is(input, select, textarea):focus-visible,
+.hub-premium .registros-page :is(button, a):focus-visible {
+  outline: 2px solid var(--hp-acento);
+  outline-offset: 2px;
+}
+
+.hub-premium .registros-categorias button.ativo {
+  border-color: var(--hp-acento);
+  background: var(--hp-brilho, rgba(27, 188, 187, 0.18));
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium .registros-empresa-link button,
+.hub-premium .registros-alteracoes-empresa button,
+.hub-premium .registros-anexo__abrir {
+  color: var(--hp-acento-texto);
+}
+
+.hub-premium :is(.registros-alteracoes-empresa li, .registros-anexos li, .registros-eventos li, .registros-socios li, .registros-cnaes li) {
+  border-color: var(--hp-linha);
+  border-radius: 12px;
+  background: var(--hp-vidro-2);
+}
+
+/* Barra de salvar em vidro */
+.hub-premium--escuro .registros-page {
+  --rg-barra: rgba(14, 19, 38, 0.9);
+}
+
+.hub-premium--claro .registros-page {
+  --rg-barra: rgba(250, 250, 248, 0.94);
+}
+
+.hub-premium .registros-salvar {
+  border-color: var(--hp-linha);
+  border-radius: 16px;
+  background: var(--rg-barra);
+  box-shadow: var(--hp-sombra);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.hub-premium .registros-salvar .primary-action,
+.hub-premium .registros-responsavel .primary-action {
+  min-height: calc(42px * var(--hp-esc, 1));
+  padding: 0 calc(18px * var(--hp-esc, 1));
+  border-radius: 12px;
+  font-size: calc(14px * var(--hp-esc, 1));
+}
+
+.hub-premium .registros-detalhe__acoes button {
+  min-height: calc(36px * var(--hp-esc, 1));
+  border-radius: 999px;
+  padding: 0 calc(14px * var(--hp-esc, 1));
+}
+
+.hub-premium .registros-vazio {
+  color: var(--hp-mudo);
+}
+
+.hub-premium .registros-vazio svg {
+  color: var(--hp-acento-texto);
+}
+
+/* Cartões estreitos: rótulos mais juntos */
+@container (max-width: 640px) {
+  .hub-premium .registros-rotulo {
+    letter-spacing: 0.12em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-premium .registros-totais > * {
+    transition: none;
+  }
 }

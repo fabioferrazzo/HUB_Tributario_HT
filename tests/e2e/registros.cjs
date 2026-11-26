@@ -95,7 +95,7 @@ async function rodar(browser, tema, tamanho, largura) {
   await page.waitForTimeout(500);
   check(`${rotulo} registro salvo`, /Registro criado/.test(await page.locator(".registros-form .module-notice").innerText()));
   const item = page.locator(".registro-item").first();
-  check(`${rotulo} aparece na lista aguardando revisão`, /Aguardando revisão/.test(await item.innerText()) && /11\.222\.333\/0001-81/.test(await item.innerText()));
+  check(`${rotulo} aparece na lista aguardando revisão`, /Aguardando revisão/i.test(await item.innerText()) && /11\.222\.333\/0001-81/.test(await item.innerText()));
   check(`${rotulo} contador de revisão`, (await page.locator(".registros-totais button").first().locator("strong").innerText()) === "1");
 
   // Documentos
@@ -106,7 +106,7 @@ async function rodar(browser, tema, tamanho, largura) {
   // Revisão e responsável
   await page.locator(".registros-detalhe__acoes button", { hasText: "Marcar como revisado" }).click();
   await page.waitForTimeout(400);
-  check(`${rotulo} marcado como revisado`, /Ativo/.test(await page.locator(".registro-item").first().innerText()));
+  check(`${rotulo} marcado como revisado`, /Ativo/i.test(await page.locator(".registro-item").first().innerText()));
   await page.locator(".registros-responsavel select").selectOption("local-colaborador");
   await page.locator(".registros-responsavel button").click();
   await page.waitForTimeout(600);
@@ -143,17 +143,38 @@ async function rodar(browser, tema, tamanho, largura) {
   check(`${rotulo} mensagem "Alteração registrada."`, /Alteração registrada/.test(await page.locator(".registros-form .module-notice").innerText()));
   const alt = page.locator(".registro-item").first();
   const altTexto = await alt.innerText();
-  check(`${rotulo} alteração na lista com o que mudou e a data`, /Quadro societário/.test(altTexto) && /Atividades \(CNAE\)/.test(altTexto) && /Alteração de 20\/11\/2026/.test(altTexto), altTexto.replace(/\n/g, " | "));
+  check(`${rotulo} alteração na lista com o que mudou e a data`, /Quadro societário/i.test(altTexto) && /Atividades \(CNAE\)/i.test(altTexto) && /Alteração de 20\/11\/2026/.test(altTexto), altTexto.replace(/\n/g, " | "));
   check(`${rotulo} alteração ligada à empresa`, /Empresa:\s*\[TESTE\] COMERCIO DE PECAS SERRANAS LTDA/.test(await page.locator(".registros-empresa-link").innerText()) && /Responsável: Colaborador/.test(await page.locator(".registros-empresa-link").innerText()));
   await page.screenshot({ path: path.join(OUT, `registros-alteracao-${tema}-${tamanho}-${largura}.png`) });
   await page.locator(".registros-detalhe__acoes button", { hasText: "Marcar como concluída" }).click();
   await page.waitForTimeout(400);
-  check(`${rotulo} alteração concluída`, /Concluída/.test(await page.locator(".registro-item").first().innerText()));
+  check(`${rotulo} alteração concluída`, /Concluída/i.test(await page.locator(".registro-item").first().innerText()));
   await page.locator(".registros-empresa-link button").click();
   await page.waitForTimeout(500);
   check(`${rotulo} empresa abre na subaba Registros com a lista de alterações`, (await page.locator(".registros-subabas [aria-selected=true]").innerText()).includes("Registros") && (await page.locator(".registros-alteracoes-empresa li").count()) === 1);
   check(`${rotulo} contatos salvos no registro`, (await page.locator(".registros-form label", { hasText: "E-mail 2" }).locator("input").inputValue()) === "financeiro@pecasserranas.com.br");
   check(`${rotulo} botão de enviar contatos ao Controle de Apuração`, (await page.locator(".registros-enviar-contatos").count()) === 1);
+
+  // Padrão premium: tipografia, rótulo do detalhe, barra de salvar e indicadores inteiros
+  const premium = await page.evaluate(() => {
+    const css = (sel, prop) => { const el = document.querySelector(sel); return el ? getComputedStyle(el)[prop] : ""; };
+    const rotulos = [...document.querySelectorAll(".registros-totais span")];
+    return {
+      ligado: !!document.querySelector(".hub-premium"),
+      titulo: css(".registros-detalhe__cabeca h2", "fontFamily"),
+      rotulo: css(".registros-rotulo", "fontFamily"),
+      selo: css(".registro-selo", "fontFamily"),
+      numero: css(".registros-totais strong", "fontWeight"),
+      barra: css(".registros-salvar", "position"),
+      cortados: rotulos.filter((el) => el.scrollWidth > el.clientWidth + 1).map((el) => el.textContent)
+    };
+  });
+  check(
+    `${rotulo} visual premium (Nunito, DM Mono, número fino, barra fixa)`,
+    premium.ligado && /Nunito/.test(premium.titulo) && /DM Mono/.test(premium.rotulo) && /DM Mono/.test(premium.selo) && premium.numero === "200" && premium.barra === "sticky",
+    JSON.stringify(premium)
+  );
+  check(`${rotulo} rótulos dos indicadores inteiros`, !premium.cortados.length, premium.cortados.join(", "));
 
   // Layout: nada estourando
   const estouro = await page.evaluate(() => {
