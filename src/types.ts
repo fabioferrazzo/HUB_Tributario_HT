@@ -274,6 +274,9 @@ export type DadosReceita = {
   telefone1?: string;
   telefone2?: string;
   email?: string;
+  capitalSocial?: number | null;
+  porte?: string;
+  fontesComplementares?: string[];
   consultadoEm: string;
 };
 

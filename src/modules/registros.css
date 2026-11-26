@@ -1277,3 +1277,24 @@
   background: var(--hp-ambar-fundo, rgba(224, 160, 48, 0.16));
   color: var(--hp-prazo, var(--hp-ambar, #e0a030));
 }
+
+.registros-capital {
+  margin: 0 0 10px;
+  color: var(--rg-texto);
+  font-size: 13.5px;
+}
+
+.registros-receita-fonte {
+  color: var(--rg-mudo);
+}
+
+.hub-premium .registros-capital {
+  color: var(--hp-texto-2);
+  font-size: calc(13.5px * var(--hp-esc, 1));
+}
+
+.hub-premium .registros-capital strong {
+  color: var(--hp-titulo, var(--hp-texto));
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-weight: 500;
+}

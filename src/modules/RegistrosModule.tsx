@@ -66,6 +66,10 @@ function dataBr(iso: string) {
   return d && m && a ? `${d}/${m}/${a}` : iso;
 }
 
+function formatarMoeda(valor: number) {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 function tamanhoArquivo(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -798,9 +802,20 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                 </div>
                 {rascunho.situacao || rascunho.municipio || rascunho.naturezaJuridica ? (
                   <p className="registros-receita-linha">
-                    {[rascunho.situacao && `Situação: ${rascunho.situacao}`, rascunho.municipio && `${rascunho.municipio}/${rascunho.uf}`, rascunho.naturezaJuridica]
+                    {[
+                      rascunho.situacao && `Situação: ${rascunho.situacao}`,
+                      rascunho.municipio && `${rascunho.municipio}/${rascunho.uf}`,
+                      rascunho.naturezaJuridica,
+                      rascunho.dadosReceita?.porte && `Porte: ${rascunho.dadosReceita.porte}`
+                    ]
                       .filter(Boolean)
                       .join(" · ")}
+                    {rascunho.dadosReceita?.fonte ? (
+                      <span className="registros-receita-fonte">
+                        {" "}
+                        · Fonte: {[rascunho.dadosReceita.fonte, ...(rascunho.dadosReceita.fontesComplementares || [])].join(" + ")}
+                      </span>
+                    ) : null}
                   </p>
                 ) : null}
               </details>
@@ -842,6 +857,11 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                 <summary>
                   Sócios <small>{rascunho.socios.length}</small>
                 </summary>
+                {rascunho.dadosReceita?.capitalSocial ? (
+                  <p className="registros-capital">
+                    Capital social: <strong>{formatarMoeda(rascunho.dadosReceita.capitalSocial)}</strong>
+                  </p>
+                ) : null}
                 {rascunho.socios.length ? (
                   <ul className="registros-socios">
                     {rascunho.socios.map((socio) => (
@@ -855,7 +875,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                     ))}
                   </ul>
                 ) : (
-                  <p className="field-note">Sem sócios da Receita. Informe o CNPJ e use "Buscar na Receita", ou registre nas observações.</p>
+                  <p className="field-note">Sem sócios da Receita. Informe o CNPJ e use "Atualizar da Receita", ou registre nas observações.</p>
                 )}
               </details>
 

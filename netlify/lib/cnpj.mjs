@@ -79,14 +79,47 @@ export async function consultarReceita(cnpj, fontes = FONTES_RECEITA) {
   const resultados = await Promise.allSettled(tentativas);
   const alvo = somenteDigitos(cnpj);
   // Resposta de outro CNPJ (base com problema) é descartada.
-  const ok = resultados.find((r) => r.status === "fulfilled" && r.value?.cnpj === alvo);
-  if (ok) return ok.value;
+  const validos = resultados.filter((r) => r.status === "fulfilled" && r.value?.cnpj === alvo).map((r) => r.value);
+  if (validos.length) return completarDados(validos[0], validos.slice(1));
   const erros = resultados.map((r) => r.reason).filter(Boolean);
   if (erros.length && erros.every((e) => e?.statusCode === 404)) throw httpError(404, "CNPJ não encontrado nas bases públicas da Receita.");
   if (erros.some((e) => e?.statusCode === 404)) {
     throw httpError(404, "CNPJ ainda não consta em todas as bases públicas (pode ser empresa recém-aberta); as demais estão fora do ar.");
   }
   throw httpError(503, "As bases públicas da Receita (BrasilAPI, Minha Receita e CNPJá) estão fora do ar agora. Tente de novo em alguns minutos.");
+}
+
+const vazio = (v) => v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length);
+
+/**
+ * A base principal (a primeira que respondeu, na ordem de preferência) pode vir sem e-mail, telefone, capital social
+ * etc.; os campos vazios são completados com as outras bases que também responderam. Nada preenchido é trocado.
+ */
+export function completarDados(principal, outras = []) {
+  const dados = { ...principal };
+  const usadas = [];
+  for (const outra of outras) {
+    let usou = false;
+    for (const campo of ["email", "capitalSocial", "porte", "nomeFantasia", "naturezaJuridica", "dataInicio", "socios", "cnaePrincipal", "cnaesSecundarios", "regimeSugerido"]) {
+      if (vazio(dados[campo]) && !vazio(outra[campo])) {
+        dados[campo] = outra[campo];
+        usou = true;
+      }
+    }
+    const telefones = [dados.telefone1, dados.telefone2, outra.telefone1, outra.telefone2].filter(Boolean).filter((t, i, l) => l.indexOf(t) === i);
+    if (telefones[0] !== dados.telefone1 || (telefones[1] || "") !== (dados.telefone2 || "")) {
+      [dados.telefone1 = "", dados.telefone2 = ""] = telefones;
+      usou = true;
+    }
+    if (usou) usadas.push(outra.fonte);
+  }
+  if (usadas.length) dados.fontesComplementares = usadas;
+  return dados;
+}
+
+function numeroOuNulo(valor) {
+  const n = typeof valor === "number" ? valor : Number(String(valor ?? "").replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 /** CNPJá (open.cnpja.com): formato próprio, convertido para o mesmo formato das demais bases. */
@@ -121,6 +154,8 @@ export function normalizarCnpja(bruto) {
     telefone1: telefones[0] || "",
     telefone2: telefones[1] || "",
     email: String(bruto?.emails?.[0]?.address || "").trim().toLowerCase(),
+    capitalSocial: numeroOuNulo(empresa?.equity),
+    porte: String(empresa?.size?.text || "").trim(),
     simples,
     mei,
     consultadoEm: new Date().toISOString()
@@ -272,6 +307,8 @@ export function normalizarReceita(bruto, fonte = "BrasilAPI") {
     telefone1: formatarTelefone(bruto?.ddd_telefone_1),
     telefone2: formatarTelefone(bruto?.ddd_telefone_2),
     email: String(bruto?.email || "").trim().toLowerCase(),
+    capitalSocial: numeroOuNulo(bruto?.capital_social),
+    porte: String(bruto?.descricao_porte || bruto?.porte || "").trim(),
     simples: bruto?.opcao_pelo_simples ?? null,
     mei: bruto?.opcao_pelo_mei ?? null,
     consultadoEm: new Date().toISOString()

@@ -9,6 +9,9 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
 const RECEITA = {
   fonte: "BrasilAPI",
+  fontesComplementares: ["CNPJá"],
+  capitalSocial: 70000,
+  porte: "Microempresa",
   cnpj: "11222333000181",
   razaoSocial: "[TESTE] COMERCIO DE PECAS SERRANAS LTDA",
   nomeFantasia: "PECAS SERRANAS",
@@ -78,6 +81,8 @@ async function rodar(browser, tema, tamanho, largura) {
   check(`${rotulo} regime sugerido pela Receita`, (await form.locator("label", { hasText: "Regime tributário" }).locator("input").inputValue()) === "Simples Nacional");
   check(`${rotulo} data de início`, (await form.locator("input[type=date]").inputValue()) === "2026-11-03");
   check(`${rotulo} sócios listados`, (await form.locator(".registros-socios li").count()) === 2);
+  check(`${rotulo} capital social em reais`, /Capital social:\s*R\$\s*70\.000,00/.test(await form.locator(".registros-capital").innerText().catch(() => "")));
+  check(`${rotulo} porte e fontes da consulta`, /Porte: Microempresa/.test(await form.locator(".registros-receita-linha").innerText()) && /Fonte: BrasilAPI \+ CNPJá/.test(await form.locator(".registros-receita-linha").innerText()));
   check(`${rotulo} CNAE principal e secundários`, (await form.locator(".registros-cnaes li").count()) === 3 && /Principal/.test(await form.locator(".registros-cnaes__principal").innerText()));
 
   check(`${rotulo} telefone e e-mail da Receita nos contatos`, (await form.locator("label", { hasText: "Telefone 1" }).locator("input").inputValue()) === "(54) 3244-1234" && (await form.locator("label", { hasText: "E-mail 1" }).locator("input").inputValue()) === "contato@pecasserranas.com.br");

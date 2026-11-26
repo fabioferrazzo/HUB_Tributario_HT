@@ -47,11 +47,17 @@ globalThis.fetch = async (url, opt = {}) => {
   }
   if (u.startsWith("https://minhareceita.org/")) {
     if (receitaFora) return r({ message: "indisponível" }, 503);
-    return u.endsWith("00000000000191") ? r({ message: "não encontrado" }, 404) : r({ ...RECEITA, razao_social: "[TESTE] ACME (MINHA RECEITA)" });
+    return u.endsWith("00000000000191") ? r({ message: "não encontrado" }, 404) : r({ ...RECEITA, razao_social: "[TESTE] ACME (MINHA RECEITA)", email: null });
   }
   if (u.startsWith("https://open.cnpja.com/office/")) {
     if (u.endsWith("00000000000191")) return r({ message: "não encontrado" }, 404);
-    return r({ taxId: "11222333000181", company: { name: "[TESTE] ACME (CNPJÁ)", simples: { optant: true }, simei: { optant: false } }, status: { text: "Ativa" }, phones: [{ area: "54", number: "32441234" }] });
+    return r({
+      taxId: "11222333000181",
+      company: { name: "[TESTE] ACME (CNPJÁ)", equity: 70000, size: { text: "Microempresa" }, simples: { optant: true }, simei: { optant: false } },
+      status: { text: "Ativa" },
+      phones: [{ area: "54", number: "32441234" }, { area: "54", number: "981303552" }],
+      emails: [{ address: "Socio@Acme.com.br" }]
+    });
   }
   if (u.endsWith("/auth/v1/user")) return opt.headers?.authorization === "Bearer tok-admin" ? r({ id: "u-admin", email: "adm@teste" }) : r({ id: "u-colab", email: "col@teste" });
   if (u.includes("/profiles?id=eq.u-admin")) return r([{ id: "u-admin", email: "Adm@Teste", nome: "Fábio", role: "admin", active: true }]);
@@ -136,6 +142,13 @@ ok("consulta: sem sessão é recusada", r.status === 401);
 receitaFalha = 1;
 r = await chamar({ acao: "consultar-cnpj", cnpj: "11222333000181" }, { authorization: "Bearer tok-colab" });
 ok("consulta: BrasilAPI fora do ar usa a Minha Receita", r.status === 200 && r.data.dados.fonte === "Minha Receita", r.data.dados?.fonte);
+const d = r.data.dados || {};
+ok(
+  "consulta: campos vazios completados pela outra base (e-mail, capital, porte, 2º telefone), sem trocar os preenchidos",
+  d.razaoSocial === "[TESTE] ACME (MINHA RECEITA)" && d.email === "socio@acme.com.br" && d.capitalSocial === 70000 && d.porte === "Microempresa" &&
+    d.telefone1 === "(54) 3244-1234" && d.telefone2 === "(54) 98130-3552" && JSON.stringify(d.fontesComplementares) === JSON.stringify(["CNPJá"]),
+  JSON.stringify({ email: d.email, capital: d.capitalSocial, porte: d.porte, t1: d.telefone1, t2: d.telefone2, fontes: d.fontesComplementares })
+);
 r = await chamar({ acao: "consultar-cnpj", cnpj: "00.000.000/0001-91" }, { authorization: "Bearer tok-colab" });
 ok("consulta: CNPJ inexistente informa 'não encontrado'", r.status === 404 && /não encontrad/i.test(r.data.error), r.data.error);
 receitaFora = true;
@@ -162,7 +175,7 @@ const reg = banco.registros.get(r.data.registroId);
 ok("entrada: cria registro com CNPJ, tipo e dados da Receita", r.status === 200 && r.data.criado && reg?.cnpj === "11222333000181" && reg.tipo === "abertura" && reg.status === "revisao" && reg.origem === "email" && reg.razao_social === "[TESTE] ACME" && reg.dados_receita?.razaoSocial === RECEITA.razao_social, reg?.razao_social);
 ok("entrada: razão do e-mail diferente da Receita gera alerta no evento", banco.eventos.some((e) => e.email_id === "msg-001" && /diferente da Receita/.test(e.resumo) && /\[TESTE\] ACME COMERCIO LTDA/.test(e.resumo)));
 ok("entrada: regime sugerido e CNAEs gravados", reg?.regime === "Simples Nacional" && reg.cnaes_secundarios.length === 1 && reg.socios.length === 1);
-ok("entrada: telefone e e-mail da Receita no registro novo", reg?.telefone1 === "(54) 3244-1234" && reg.email1 === "contato@acme.com.br" && reg.telefone2 === "", `${reg?.telefone1} ${reg?.email1}`);
+ok("entrada: telefone e e-mail da Receita no registro novo (2º telefone completado pela outra base)", reg?.telefone1 === "(54) 3244-1234" && reg.email1 === "contato@acme.com.br" && reg.telefone2 === "(54) 98130-3552", `${reg?.telefone1} ${reg?.email1}`);
 ok("entrada: evento com assunto, remetente e id do e-mail", banco.eventos.some((e) => e.email_id === "msg-001" && e.remetente === "societario.hteixeira@gmail.com" && /Abertura/.test(e.assunto)));
 ok("entrada: anexo gravado na pasta do registro (nome seguro)", banco.objetos.length === 1 && banco.objetos[0].caminho.startsWith(`registros/${reg.id}/`) && /Contrato_Social_ACME\.pdf$/.test(banco.objetos[0].caminho) && banco.anexos.length === 1, banco.objetos[0]?.caminho);
 ok("entrada: anexo grande demais fica anotado no evento", banco.eventos.some((e) => /video-grande\.mp4/.test(e.resumo)));
