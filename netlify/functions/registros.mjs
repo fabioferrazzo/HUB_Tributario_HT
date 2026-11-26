@@ -5,7 +5,18 @@
 //                                               (Controle de Apuração) e avisa: sino e mensagem no chat
 //   - enviar-contatos      (administrador ou responsável) -> leva telefones e e-mails ao cadastro da empresa no Controle de Apuração
 //   - entrada-email        (script do Gmail, cabeçalho x-registros-token) -> cria/atualiza o registro (ou a alteração) com os anexos
-import { CATEGORIAS_ALTERACAO, cnpjValido, consultarReceita, detectarCategorias, detectarTipo, extrairCnpjs, formatarCnpj, somenteDigitos } from "../lib/cnpj.mjs";
+import {
+  CATEGORIAS_ALTERACAO,
+  cnpjValido,
+  consultarReceita,
+  detectarCategorias,
+  detectarTipo,
+  extrairCnpjs,
+  extrairRazaoSocial,
+  formatarCnpj,
+  mesmaRazaoSocial,
+  somenteDigitos
+} from "../lib/cnpj.mjs";
 
 const JSON_HEADERS = { "content-type": "application/json", "cache-control": "no-store" };
 const REMETENTES_PADRAO = ["societario.hteixeira@gmail.com", "carlosreis.hteixeira@gmail.com"];
@@ -61,9 +72,10 @@ export default async function handler(request) {
   }
 }
 
+// A razão social não entra aqui: quem decide é quem chama (a do e-mail tem preferência; se a Receita trouxer outra,
+// o registro mostra o alerta e o usuário escolhe). Os dados da Receita ficam guardados em dados_receita.
 function linhaRegistroDaReceita(dados) {
   return {
-    razao_social: dados.razaoSocial,
     nome_fantasia: dados.nomeFantasia,
     data_inicio: dados.dataInicio || null,
     situacao_cadastral: dados.situacao,
@@ -366,12 +378,7 @@ async function entradaEmail(ctx, request, payload) {
   if (cnpj) {
     [empresa] = (await sb(`${supabaseUrl}/rest/v1/hub_registros?cnpj=eq.${cnpj}&tipo=neq.alteracao&select=*&limit=1`, { headers })) || [];
   }
-  const razaoDoAssunto = assunto
-    .replace(/^(\s*(enc|fwd?|res|re)\s*:\s*)+/i, "")
-    .replace(/\b(abertura|altera[cç][aã]o( contratual)?|cliente novo)\b\s*[-:–]?\s*/gi, "")
-    .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}/g, "")
-    .replace(/[\s\-–:]+$/g, "")
-    .trim();
+  const razaoDoEmail = extrairRazaoSocial(assunto, corpo);
   const dataEmail = dataEmSaoPaulo(payload?.data);
 
   if (tipo === "alteracao") {
@@ -388,11 +395,11 @@ async function entradaEmail(ctx, request, payload) {
           empresa_id: empresa?.id || null,
           categorias: detectarCategorias(`${assunto}\n${corpo}`),
           data_alteracao: dataEmail,
-          razao_social: dados?.razaoSocial || empresa?.razao_social || razaoDoAssunto.slice(0, 200),
           ie: empresa?.ie || "",
           codigo_dominio: empresa?.codigo_dominio || "",
           regime: empresa?.regime || dados?.regimeSugerido || "",
-          ...(dados ? linhaRegistroDaReceita(dados) : {})
+          ...(dados ? linhaRegistroDaReceita(dados) : {}),
+          razao_social: empresa?.razao_social || razaoDoEmail || dados?.razaoSocial || ""
         })
       })) || [];
     criado = true;
@@ -400,7 +407,11 @@ async function entradaEmail(ctx, request, payload) {
       await sb(`${supabaseUrl}/rest/v1/hub_registros?id=eq.${empresa.id}`, {
         method: "PATCH",
         headers: { ...headers, "content-type": "application/json" },
-        body: JSON.stringify(dados ? linhaRegistroDaReceita(dados) : { updated_at: new Date().toISOString() })
+        body: JSON.stringify(
+          dados
+            ? { ...linhaRegistroDaReceita(dados), ...(empresa.razao_social ? {} : { razao_social: dados.razaoSocial }) }
+            : { updated_at: new Date().toISOString() }
+        )
       }).catch(() => null);
       await sb(`${supabaseUrl}/rest/v1/hub_registros_eventos`, {
         method: "POST",
@@ -419,7 +430,12 @@ async function entradaEmail(ctx, request, payload) {
       (await sb(`${supabaseUrl}/rest/v1/hub_registros?id=eq.${registro.id}&select=*`, {
         method: "PATCH",
         headers: { ...headers, "content-type": "application/json", prefer: "return=representation" },
-        body: JSON.stringify({ status: "revisao", ...(TIPOS_REGISTRO.has(tipo) && tipo !== "outro" ? { tipo } : {}), ...(dados ? linhaRegistroDaReceita(dados) : {}) })
+        body: JSON.stringify({
+          status: "revisao",
+          ...(TIPOS_REGISTRO.has(tipo) && tipo !== "outro" ? { tipo } : {}),
+          ...(dados ? linhaRegistroDaReceita(dados) : {}),
+          ...(registro.razao_social ? {} : { razao_social: razaoDoEmail || dados?.razaoSocial || "" })
+        })
       })) || [registro];
   } else {
     [registro] =
@@ -431,12 +447,12 @@ async function entradaEmail(ctx, request, payload) {
           tipo,
           status: "revisao",
           origem: "email",
-          razao_social: dados?.razaoSocial || (cnpj ? "" : razaoDoAssunto.slice(0, 200)),
           regime: dados?.regimeSugerido || "",
           telefone1: dados?.telefone1 || "",
           telefone2: dados?.telefone2 || "",
           email1: dados?.email || "",
-          ...(dados ? linhaRegistroDaReceita(dados) : {})
+          ...(dados ? linhaRegistroDaReceita(dados) : {}),
+          razao_social: razaoDoEmail || dados?.razaoSocial || ""
         })
       })) || [];
     criado = true;
@@ -446,7 +462,12 @@ async function entradaEmail(ctx, request, payload) {
   const avisosEvento = [];
   if (!cnpj) avisosEvento.push("CNPJ não identificado no e-mail: informe-o no registro.");
   if (cnpjs.length > 1) avisosEvento.push(`Outros CNPJs citados: ${cnpjs.slice(1).map(formatarCnpj).join(", ")}.`);
-  if (erroReceita) avisosEvento.push(`Consulta à Receita: ${erroReceita}.`);
+  if (erroReceita) avisosEvento.push(`Consulta à Receita: ${erroReceita.replace(/\.$/, "")}.`);
+  if (razaoDoEmail && dados?.razaoSocial && !mesmaRazaoSocial(razaoDoEmail, dados.razaoSocial)) {
+    avisosEvento.push(
+      `Razão social do e-mail ("${razaoDoEmail}") diferente da Receita ("${dados.razaoSocial}", fonte ${dados.fonte}). Confira o motivo; o registro mantém a do e-mail.`
+    );
+  }
 
   const [evento] =
     (await sb(`${supabaseUrl}/rest/v1/hub_registros_eventos?select=id`, {

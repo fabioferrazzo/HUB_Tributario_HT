@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, Building2, FilePen, FileText, Mail, Paperclip, Plus, RefreshCw, Save, Search, Send, Trash2, UserCheck } from "lucide-react";
+import { AlertTriangle, Archive, ArchiveRestore, Building2, FilePen, FileText, Mail, Paperclip, Plus, RefreshCw, Save, Search, Send, Trash2, UserCheck } from "lucide-react";
 import { type ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HubProfile, HubUser, RegistroAnexo, RegistroEmpresa, RegistroEvento, RegistroStatus, RegistroTipo } from "../types";
 import { PanelHeader } from "../components/common";
@@ -10,6 +10,7 @@ import {
   ROTULO_STATUS_REGISTRO,
   ROTULO_TIPO_REGISTRO,
   aplicarDadosReceita,
+  razaoSocialDivergente,
   cnpjValido,
   consultarCnpj,
   definirResponsavel,
@@ -282,7 +283,11 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
         setRascunho({ ...salvo, observacoes: rascunho.observacoes });
         await registrarEvento(salvo.id, "receita", `Dados atualizados pela Receita (${dados.fonte}).`, user);
         setEventos(await listEventos(salvo.id));
-        setMensagem(`Dados da Receita atualizados (${dados.fonte}).`);
+        setMensagem(
+          razaoSocialDivergente(salvo)
+            ? `Dados da Receita atualizados (${dados.fonte}). A razão social da Receita é diferente: veja o alerta abaixo da razão social.`
+            : `Dados da Receita atualizados (${dados.fonte}).`
+        );
       } else {
         setMensagem(`Dados encontrados na Receita (${dados.fonte}). Confira e salve o registro.`);
       }
@@ -457,6 +462,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
   }
 
   const ehAlteracao = rascunho?.tipo === "alteracao";
+  const razaoReceita = rascunho ? razaoSocialDivergente(rascunho) : "";
   const empresaDaAlteracao = rascunho && ehAlteracao ? empresaDe(rascunho) : undefined;
   const alteracoesDaEmpresa =
     rascunho && !ehAlteracao && !criando
@@ -592,6 +598,11 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                       <span className={`registro-selo registro-selo--${registro.tipo}`}>{ROTULO_TIPO_REGISTRO[registro.tipo]}</span>
                     )}
                     <span className={`registro-selo registro-selo--status-${registro.status}`}>{rotuloStatus(registro)}</span>
+                    {razaoSocialDivergente(registro) ? (
+                      <span className="registro-selo registro-selo--divergente" title="A razão social difere da Receita">
+                        Razão divergente
+                      </span>
+                    ) : null}
                   </span>
                   <span className="registro-item__meta">
                     <span>
@@ -696,6 +707,19 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                     Razão social
                     <input value={rascunho.razaoSocial} onChange={(event) => alterar("razaoSocial", event.target.value)} />
                   </label>
+                  {razaoReceita ? (
+                    <div className="registros-largo registros-alerta-razao" role="alert">
+                      <AlertTriangle size={16} aria-hidden="true" />
+                      <p>
+                        A Receita ({rascunho.dadosReceita?.fonte || "consulta pública"}) traz outra razão social para este CNPJ:{" "}
+                        <strong>{razaoReceita}</strong>. Confira o motivo (mudança de nome recente, erro no e-mail ou CNPJ
+                        trocado) antes de seguir.
+                      </p>
+                      <button type="button" onClick={() => alterar("razaoSocial", razaoReceita)}>
+                        Usar a razão social da Receita
+                      </button>
+                    </div>
+                  ) : null}
                   {ehAlteracao ? (
                     <>
                       <label>

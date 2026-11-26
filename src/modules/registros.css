@@ -1219,3 +1219,61 @@
     transition: none;
   }
 }
+
+/* Alerta: razão social diferente da Receita (atenção = âmbar) */
+.registros-alerta-razao {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid rgba(224, 160, 48, 0.45);
+  border-radius: 12px;
+  background: rgba(224, 160, 48, 0.1);
+  color: var(--rg-texto);
+  font-size: 13px;
+}
+
+.registros-alerta-razao > svg {
+  margin-top: 2px;
+  color: var(--rg-ambar);
+}
+
+.registros-alerta-razao p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.registros-alerta-razao button {
+  grid-column: 2;
+  justify-self: start;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(224, 160, 48, 0.55);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.registros-alerta-razao button:hover {
+  background: rgba(224, 160, 48, 0.16);
+}
+
+.registro-selo--divergente {
+  background: rgba(224, 160, 48, 0.16);
+  color: var(--rg-ambar);
+}
+
+.hub-premium .registros-alerta-razao {
+  color: var(--hp-texto);
+  font-size: calc(13px * var(--hp-esc, 1));
+}
+
+.hub-premium .registro-selo--divergente {
+  border-color: transparent;
+  background: var(--hp-ambar-fundo, rgba(224, 160, 48, 0.16));
+  color: var(--hp-prazo, var(--hp-ambar, #e0a030));
+}

@@ -52,32 +52,138 @@ export function detectarTipo(texto) {
 
 async function buscarJson(url) {
   const controle = new AbortController();
-  const timer = setTimeout(() => controle.abort(), 9000);
+  const timer = setTimeout(() => controle.abort(), 7000);
   try {
     const resposta = await fetch(url, { headers: { accept: "application/json" }, signal: controle.signal });
     if (resposta.status === 404) throw httpError(404, "CNPJ não encontrado na Receita.");
     if (!resposta.ok) throw httpError(502, `Consulta indisponível (${resposta.status}).`);
     return await resposta.json();
+  } catch (error) {
+    if (error?.name === "AbortError") throw httpError(504, "Consulta demorou demais.");
+    throw error;
   } finally {
     clearTimeout(timer);
   }
 }
 
-export async function consultarReceita(cnpj) {
-  const fontes = [
-    ["BrasilAPI", `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`],
-    ["Minha Receita", `https://minhareceita.org/${cnpj}`]
-  ];
-  let ultimoErro = null;
-  for (const [fonte, url] of fontes) {
-    try {
-      return normalizarReceita(await buscarJson(url), fonte);
-    } catch (error) {
-      ultimoErro = error;
-      if (error?.statusCode === 404) break;
+// Três bases públicas consultadas ao mesmo tempo; vale a primeira que responder (na ordem de preferência,
+// se mais de uma responder). Assim uma base fora do ar não trava o HUB.
+const FONTES_RECEITA = [
+  ["BrasilAPI", (cnpj) => `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, (bruto) => normalizarReceita(bruto, "BrasilAPI")],
+  ["Minha Receita", (cnpj) => `https://minhareceita.org/${cnpj}`, (bruto) => normalizarReceita(bruto, "Minha Receita")],
+  ["CNPJá", (cnpj) => `https://open.cnpja.com/office/${cnpj}`, (bruto) => normalizarCnpja(bruto)]
+];
+
+export async function consultarReceita(cnpj, fontes = FONTES_RECEITA) {
+  const tentativas = fontes.map(([, url, normalizar]) => buscarJson(url(cnpj)).then(normalizar));
+  const resultados = await Promise.allSettled(tentativas);
+  const alvo = somenteDigitos(cnpj);
+  // Resposta de outro CNPJ (base com problema) é descartada.
+  const ok = resultados.find((r) => r.status === "fulfilled" && r.value?.cnpj === alvo);
+  if (ok) return ok.value;
+  const erros = resultados.map((r) => r.reason).filter(Boolean);
+  if (erros.length && erros.every((e) => e?.statusCode === 404)) throw httpError(404, "CNPJ não encontrado nas bases públicas da Receita.");
+  if (erros.some((e) => e?.statusCode === 404)) {
+    throw httpError(404, "CNPJ ainda não consta em todas as bases públicas (pode ser empresa recém-aberta); as demais estão fora do ar.");
+  }
+  throw httpError(503, "As bases públicas da Receita (BrasilAPI, Minha Receita e CNPJá) estão fora do ar agora. Tente de novo em alguns minutos.");
+}
+
+/** CNPJá (open.cnpja.com): formato próprio, convertido para o mesmo formato das demais bases. */
+export function normalizarCnpja(bruto) {
+  const cnae = (codigo, descricao) => {
+    const c = somenteDigitos(codigo);
+    if (!c || /^0+$/.test(c)) return null;
+    const fmt = c.length === 7 ? `${c.slice(0, 4)}-${c.slice(4, 5)}/${c.slice(5)}` : c;
+    return { codigo: fmt, descricao: String(descricao || "").trim() };
+  };
+  const empresa = bruto?.company || {};
+  const telefones = (Array.isArray(bruto?.phones) ? bruto.phones : []).map((t) => formatarTelefone(`${t?.area || ""}${t?.number || ""}`)).filter(Boolean);
+  const dataInicio = String(bruto?.founded || "").slice(0, 10);
+  const mei = empresa?.simei?.optant ?? null;
+  const simples = empresa?.simples?.optant ?? null;
+  return {
+    fonte: "CNPJá",
+    cnpj: somenteDigitos(bruto?.taxId),
+    razaoSocial: String(empresa?.name || "").trim(),
+    nomeFantasia: String(bruto?.alias || "").trim(),
+    dataInicio: /^\d{4}-\d{2}-\d{2}$/.test(dataInicio) ? dataInicio : "",
+    situacao: String(bruto?.status?.text || "").trim().toUpperCase(),
+    naturezaJuridica: String(empresa?.nature?.text || "").trim(),
+    municipio: String(bruto?.address?.city || "").trim().toUpperCase(),
+    uf: String(bruto?.address?.state || "").trim(),
+    cnaePrincipal: cnae(bruto?.mainActivity?.id, bruto?.mainActivity?.text),
+    cnaesSecundarios: (Array.isArray(bruto?.sideActivities) ? bruto.sideActivities : []).map((a) => cnae(a?.id, a?.text)).filter(Boolean),
+    socios: (Array.isArray(empresa?.members) ? empresa.members : [])
+      .map((m) => ({ nome: String(m?.person?.name || "").trim(), qualificacao: String(m?.role?.text || "").trim(), desde: String(m?.since || "").slice(0, 10) }))
+      .filter((m) => m.nome),
+    regimeSugerido: mei === true ? "MEI" : simples === true ? "Simples Nacional" : "",
+    telefone1: telefones[0] || "",
+    telefone2: telefones[1] || "",
+    email: String(bruto?.emails?.[0]?.address || "").trim().toLowerCase(),
+    simples,
+    mei,
+    consultadoEm: new Date().toISOString()
+  };
+}
+
+/** Compara razões sociais sem diferenciar maiúsculas, acentos, pontuação e espaços. */
+export function mesmaRazaoSocial(a, b) {
+  const n = (v) =>
+    String(v || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, " ")
+      .replace(/\b(LIMITADA)\b/g, "LTDA")
+      .trim();
+  return n(a) === n(b);
+}
+
+// Sem "i": "ME" em maiúsculas é sufixo de empresa; "me" minúsculo é pronome.
+const SUFIXO_EMPRESA = /\b(LTDA|Ltda|LIMITADA|Limitada|EIRELI|EPP|ME|MEI|SLU|S\/?A|S\.A\.?)(?![A-Za-z])\.?/;
+
+/**
+ * Razão social citada no e-mail: primeiro o assunto (sem "ABERTURA", "CLIENTE NOVO", CNPJ etc.); se o assunto não
+ * tiver nome, o trecho do texto antes do CNPJ (ex.: "KETERSON ... LTDA, CNPJ 62865660000192, ...") ou a linha com
+ * "LTDA", "ME", "EIRELI"...
+ */
+export function extrairRazaoSocial(assunto, corpo) {
+  const limpar = (v) =>
+    String(v || "")
+      .replace(/^(\s*(enc|fwd?|res|re)\s*:\s*)+/i, "")
+      .replace(/\b(raz[aã]o social|empresa|cliente)\s*:\s*/gi, "")
+      .replace(/\b(abertura|altera[cç](?:[aã]o|[oõ]es)( contratual)?|cliente novo|novo cliente)\b\s*[-:–]?\s*/gi, "")
+      .replace(/\bCNPJ\b\s*(n[ºo°.]*)?\s*:?/gi, "")
+      .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}|\b\d{14}\b/g, "")
+      .replace(/^[\s\-–:,;.]+|[\s\-–:,;]+$/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  const temNome = (v) => (v.match(/[A-Za-zÀ-ÿ]/g) || []).length >= 4;
+
+  const doAssunto = limpar(assunto);
+  if (temNome(doAssunto)) return doAssunto.slice(0, 200);
+
+  const linhas = String(corpo || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 40);
+  for (const linha of linhas) {
+    const posCnpj = linha.search(/\bCNPJ\b|\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}|\b\d{14}\b/i);
+    if (posCnpj > 0) {
+      const antes = limpar(linha.slice(0, posCnpj).split(/[,;(]/).filter((p) => temNome(p)).pop() || "");
+      if (temNome(antes)) return antes.slice(0, 200);
     }
   }
-  throw ultimoErro || httpError(502, "Consulta à Receita indisponível no momento.");
+  for (const linha of linhas) {
+    const m = linha.match(SUFIXO_EMPRESA);
+    if (m && m.index > 0) {
+      const nome = limpar(linha.slice(0, m.index + m[0].length).split(/[,;:]/).pop());
+      if (temNome(nome)) return nome.slice(0, 200);
+    }
+  }
+  return "";
 }
 
 export function sugerirRegime(bruto) {

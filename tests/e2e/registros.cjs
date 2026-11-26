@@ -115,6 +115,22 @@ async function rodar(browser, tema, tamanho, largura) {
   await page.locator(".registros-secao summary", { hasText: "Histórico do registro" }).click();
   check(`${rotulo} histórico registra criação e responsável`, (await page.locator(".registros-eventos li").count()) >= 2 && /Responsável pela apuração: Colaborador/.test(await page.locator(".registros-eventos").innerText()));
 
+  // Razão social do e-mail diferente da Receita: a Receita não sobrescreve sozinha; alerta e botão para usar a oficial
+  const campoRazao = page.locator(".registros-form label", { hasText: "Razão social" }).locator("input");
+  await campoRazao.fill("[TESTE] NOME INFORMADO NO E-MAIL LTDA");
+  await page.locator(".registros-form .registros-cnpj__linha button").click();
+  await page.waitForTimeout(600);
+  check(`${rotulo} Receita não troca a razão social já preenchida`, (await campoRazao.inputValue()) === "[TESTE] NOME INFORMADO NO E-MAIL LTDA");
+  const alerta = page.locator(".registros-alerta-razao");
+  check(`${rotulo} alerta de razão social divergente`, (await alerta.count()) === 1 && (await alerta.innerText()).includes(RECEITA.razaoSocial));
+  check(`${rotulo} mensagem avisa da divergência`, /diferente/.test(await page.locator(".registros-form .module-notice").innerText()));
+  check(`${rotulo} selo "Razão divergente" na lista`, /Razão divergente/i.test(await page.locator(".registro-item").first().innerText()));
+  await alerta.locator("button").click();
+  check(`${rotulo} botão usa a razão social da Receita`, (await campoRazao.inputValue()) === RECEITA.razaoSocial && (await page.locator(".registros-alerta-razao").count()) === 0);
+  await page.locator(".registros-form button[type=submit]").click();
+  await page.waitForTimeout(500);
+  check(`${rotulo} selo some depois de salvar`, !/Razão divergente/i.test(await page.locator(".registro-item").first().innerText()));
+
   // Subaba Alterações: nova alteração ligada à empresa
   await page.locator(".registros-subabas [role=tab]", { hasText: "Alterações" }).click();
   check(`${rotulo} subaba Alterações começa vazia`, /Nenhuma alteração/.test(await page.locator(".registros-lista .empty-state").innerText()));

@@ -57,6 +57,7 @@ type RegistroRow = {
   cnae_principal: RegistroEmpresa["cnaePrincipal"];
   cnaes_secundarios: RegistroEmpresa["cnaesSecundarios"] | null;
   receita_atualizada_em: string | null;
+  dados_receita?: DadosReceita | null;
   telefone1: string | null;
   telefone2: string | null;
   email1: string | null;
@@ -130,6 +131,7 @@ function mapRegistro(row: RegistroRow): RegistroEmpresa {
     cnaePrincipal: row.cnae_principal || null,
     cnaesSecundarios: Array.isArray(row.cnaes_secundarios) ? row.cnaes_secundarios : [],
     receitaAtualizadaEm: row.receita_atualizada_em || "",
+    dadosReceita: row.dados_receita || null,
     telefone1: row.telefone1 || "",
     telefone2: row.telefone2 || "",
     email1: row.email1 || "",
@@ -166,6 +168,7 @@ function linhaEditavel(registro: RegistroEmpresa) {
     cnae_principal: registro.cnaePrincipal,
     cnaes_secundarios: registro.cnaesSecundarios,
     receita_atualizada_em: registro.receitaAtualizadaEm || null,
+    ...(registro.dadosReceita ? { dados_receita: registro.dadosReceita } : {}),
     telefone1: registro.telefone1.trim(),
     telefone2: registro.telefone2.trim(),
     email1: registro.email1.trim().toLowerCase(),
@@ -183,7 +186,9 @@ export function aplicarDadosReceita(registro: RegistroEmpresa, dados: DadosRecei
   return {
     ...registro,
     cnpj: dados.cnpj || registro.cnpj,
-    razaoSocial: dados.razaoSocial || registro.razaoSocial,
+    // A razão social já preenchida (ex.: a informada no e-mail) não é trocada em silêncio: se a da Receita for
+    // diferente, a tela mostra o alerta e o usuário decide (razaoSocialDivergente).
+    razaoSocial: registro.razaoSocial.trim() || dados.razaoSocial,
     nomeFantasia: dados.nomeFantasia,
     dataInicio: dados.dataInicio || registro.dataInicio,
     situacao: dados.situacao,
@@ -197,8 +202,27 @@ export function aplicarDadosReceita(registro: RegistroEmpresa, dados: DadosRecei
     telefone1: registro.telefone1 || dados.telefone1 || "",
     telefone2: registro.telefone2 || dados.telefone2 || "",
     email1: registro.email1 || dados.email || "",
-    receitaAtualizadaEm: dados.consultadoEm
+    receitaAtualizadaEm: dados.consultadoEm,
+    dadosReceita: dados
   };
+}
+
+function normalizarRazao(valor: string) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/\b(LIMITADA)\b/g, "LTDA")
+    .trim();
+}
+
+/** Razão social da Receita, quando é diferente da que está no registro (senão, vazio). */
+export function razaoSocialDivergente(registro: RegistroEmpresa): string {
+  const daReceita = registro.dadosReceita?.razaoSocial || "";
+  if (!daReceita || !registro.razaoSocial.trim()) return "";
+  if (registro.dadosReceita?.cnpj && registro.cnpj && registro.dadosReceita.cnpj !== registro.cnpj) return "";
+  return normalizarRazao(daReceita) === normalizarRazao(registro.razaoSocial) ? "" : daReceita;
 }
 
 export function novoRegistroVazio(user: HubUser, tipo: RegistroTipo = "abertura"): RegistroEmpresa {

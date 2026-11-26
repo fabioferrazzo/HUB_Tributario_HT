@@ -294,6 +294,8 @@ export type RegistroEmpresa = {
   cnaePrincipal: RegistroCnae | null;
   cnaesSecundarios: RegistroCnae[];
   receitaAtualizadaEm: string;
+  /** Última resposta da Receita (com a razão social oficial, para comparar com a informada no e-mail). */
+  dadosReceita?: DadosReceita | null;
   telefone1: string;
   telefone2: string;
   email1: string;

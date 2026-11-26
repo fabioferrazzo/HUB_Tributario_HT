@@ -10,6 +10,7 @@ process.env.REGISTROS_ENTRADA_TOKEN = "token-teste";
 const chamadas = [];
 const banco = { registros: new Map(), eventos: [], anexos: [], objetos: [], avisos: new Map(), destinatarios: [], notificacoes: [], fila: [], periodos: { "u-colab": [{ competence: "2026-11", status: "OPEN" }], "u-admin": [{ competence: "2026-10", status: "CLOSED" }] }, carteira: [], apuracao: [], chat: [], contatos: [] };
 let receitaFalha = 0;
+let receitaFora = false;
 let seq = 0;
 
 const RECEITA = {
@@ -41,10 +42,17 @@ globalThis.fetch = async (url, opt = {}) => {
   const r = (d, status = 200) => new Response(JSON.stringify(d), { status });
 
   if (u.startsWith("https://brasilapi.com.br/api/cnpj/v1/")) {
-    if (receitaFalha > 0) { receitaFalha -= 1; return r({ message: "indisponível" }, 503); }
+    if (receitaFora || receitaFalha > 0) { if (receitaFalha > 0) receitaFalha -= 1; return r({ message: "indisponível" }, 503); }
     return u.endsWith("00000000000191") ? r({ message: "não encontrado" }, 404) : r(RECEITA);
   }
-  if (u.startsWith("https://minhareceita.org/")) return r({ ...RECEITA, razao_social: "[TESTE] ACME (MINHA RECEITA)" });
+  if (u.startsWith("https://minhareceita.org/")) {
+    if (receitaFora) return r({ message: "indisponível" }, 503);
+    return u.endsWith("00000000000191") ? r({ message: "não encontrado" }, 404) : r({ ...RECEITA, razao_social: "[TESTE] ACME (MINHA RECEITA)" });
+  }
+  if (u.startsWith("https://open.cnpja.com/office/")) {
+    if (u.endsWith("00000000000191")) return r({ message: "não encontrado" }, 404);
+    return r({ taxId: "11222333000181", company: { name: "[TESTE] ACME (CNPJÁ)", simples: { optant: true }, simei: { optant: false } }, status: { text: "Ativa" }, phones: [{ area: "54", number: "32441234" }] });
+  }
   if (u.endsWith("/auth/v1/user")) return opt.headers?.authorization === "Bearer tok-admin" ? r({ id: "u-admin", email: "adm@teste" }) : r({ id: "u-colab", email: "col@teste" });
   if (u.includes("/profiles?id=eq.u-admin")) return r([{ id: "u-admin", email: "Adm@Teste", nome: "Fábio", role: "admin", active: true }]);
   if (u.includes("/profiles?id=eq.u-colab")) return r([{ id: "u-colab", email: "col@teste", nome: "Colaboradora Teste", role: "colaborador", active: true }]);
@@ -129,7 +137,11 @@ receitaFalha = 1;
 r = await chamar({ acao: "consultar-cnpj", cnpj: "11222333000181" }, { authorization: "Bearer tok-colab" });
 ok("consulta: BrasilAPI fora do ar usa a Minha Receita", r.status === 200 && r.data.dados.fonte === "Minha Receita", r.data.dados?.fonte);
 r = await chamar({ acao: "consultar-cnpj", cnpj: "00.000.000/0001-91" }, { authorization: "Bearer tok-colab" });
-ok("consulta: CNPJ inexistente informa 'não encontrado'", r.status === 404 && /não encontrado/i.test(r.data.error), r.data.error);
+ok("consulta: CNPJ inexistente informa 'não encontrado'", r.status === 404 && /não encontrad/i.test(r.data.error), r.data.error);
+receitaFora = true;
+r = await chamar({ acao: "consultar-cnpj", cnpj: "11222333000181" }, { authorization: "Bearer tok-colab" });
+ok("consulta: BrasilAPI e Minha Receita fora do ar usam a CNPJá", r.status === 200 && r.data.dados.fonte === "CNPJá" && r.data.dados.razaoSocial === "[TESTE] ACME (CNPJÁ)" && r.data.dados.regimeSugerido === "Simples Nacional", JSON.stringify(r.data.dados || r.data));
+receitaFora = false;
 
 // 2. Entrada por e-mail
 const email = {
@@ -147,7 +159,8 @@ r = await chamar({ ...email, de: "estranho@gmail.com" }, { "x-registros-token": 
 ok("entrada: remetente não autorizado é ignorado", r.status === 200 && r.data.ignorado === true && banco.registros.size === 0);
 r = await chamar(email, { "x-registros-token": "token-teste" });
 const reg = banco.registros.get(r.data.registroId);
-ok("entrada: cria registro com CNPJ, tipo e dados da Receita", r.status === 200 && r.data.criado && reg?.cnpj === "11222333000181" && reg.tipo === "abertura" && reg.status === "revisao" && reg.origem === "email" && reg.razao_social === RECEITA.razao_social, JSON.stringify(r.data));
+ok("entrada: cria registro com CNPJ, tipo e dados da Receita", r.status === 200 && r.data.criado && reg?.cnpj === "11222333000181" && reg.tipo === "abertura" && reg.status === "revisao" && reg.origem === "email" && reg.razao_social === "[TESTE] ACME" && reg.dados_receita?.razaoSocial === RECEITA.razao_social, reg?.razao_social);
+ok("entrada: razão do e-mail diferente da Receita gera alerta no evento", banco.eventos.some((e) => e.email_id === "msg-001" && /diferente da Receita/.test(e.resumo) && /\[TESTE\] ACME COMERCIO LTDA/.test(e.resumo)));
 ok("entrada: regime sugerido e CNAEs gravados", reg?.regime === "Simples Nacional" && reg.cnaes_secundarios.length === 1 && reg.socios.length === 1);
 ok("entrada: telefone e e-mail da Receita no registro novo", reg?.telefone1 === "(54) 3244-1234" && reg.email1 === "contato@acme.com.br" && reg.telefone2 === "", `${reg?.telefone1} ${reg?.email1}`);
 ok("entrada: evento com assunto, remetente e id do e-mail", banco.eventos.some((e) => e.email_id === "msg-001" && e.remetente === "societario.hteixeira@gmail.com" && /Abertura/.test(e.assunto)));
@@ -169,6 +182,14 @@ r = await chamar({ ...email, messageId: "msg-003", de: "carlosreis.hteixeira@gma
 const reg3 = banco.registros.get(r.data.registroId);
 ok("entrada: sem CNPJ cria registro pela razão do assunto", r.data.criado && reg3.cnpj === "" && reg3.tipo === "cliente_novo" && reg3.razao_social === "[TESTE] Padaria Serrana", reg3?.razao_social);
 ok("entrada: evento avisa que falta o CNPJ", banco.eventos.some((e) => e.email_id === "msg-003" && /CNPJ não identificado/.test(e.resumo)));
+receitaFora = true;
+r = await chamar(
+  { ...email, messageId: "msg-real", assunto: "cliente novo", corpo: "[TESTE] KETERSON ALESSANDRO PAIM LTDA, CNPJ 62865660000192, data da alteração 19/11/2026\n\nAtenciosamente.", anexos: [], anexosIgnorados: [] },
+  { "x-registros-token": "token-teste" }
+);
+receitaFora = false;
+const regReal = banco.registros.get(r.data.registroId);
+ok("entrada: razão social tirada do texto quando o assunto não tem nome", r.data.criado && regReal?.razao_social === "[TESTE] KETERSON ALESSANDRO PAIM LTDA" && regReal.cnpj === "62865660000192" && regReal.tipo === "cliente_novo", regReal?.razao_social);
 
 // 3. Responsável pela apuração
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-colab" }, { authorization: "Bearer tok-colab" });
@@ -177,7 +198,7 @@ r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelI
 const patchReg = chamadas.find((c) => c.m === "PATCH" && c.u.startsWith(`/rest/v1/hub_registros?id=eq.${reg.id}`) && c.auth === "Bearer tok-admin");
 ok("responsável: gravado com a sessão do administrador", r.status === 200 && Boolean(patchReg) && patchReg.body.responsavel_id === "u-colab", JSON.stringify(r.data));
 const apur = banco.apuracao.at(-1);
-ok("responsável: empresa incluída na apuração aberta (11/2026) do responsável", r.data.apuracao?.incluida && r.data.apuracao.competencia === "2026-11" && apur?.owner_user_id === "u-colab" && apur.competence === "2026-11" && apur.legal_name === RECEITA.razao_social && apur.cnpj === "11222333000181" && apur.tax_regime === "Simples Nacional" && apur.auth === "Bearer tok-admin", JSON.stringify(r.data.apuracao));
+ok("responsável: empresa incluída na apuração aberta (11/2026) do responsável", r.data.apuracao?.incluida && r.data.apuracao.competencia === "2026-11" && apur?.owner_user_id === "u-colab" && apur.competence === "2026-11" && apur.legal_name === "[TESTE] ACME" && apur.cnpj === "11222333000181" && apur.tax_regime === "Simples Nacional" && apur.auth === "Bearer tok-admin", JSON.stringify(r.data.apuracao));
 ok("responsável: mensagem no chat com a sessão do administrador", r.data.chatEnviado && banco.chat.at(-1)?.p_conversa === "conv-1" && banco.chat.at(-1).auth === "Bearer tok-admin" && /Nova empresa sob sua responsabilidade/.test(banco.chat.at(-1).p_conteudo) && /apuração de 11\/2026/.test(banco.chat.at(-1).p_conteudo));
 ok("responsável: sino do responsável", r.data.notificado && banco.notificacoes.some((n) => n.user_id === "u-colab" && n.route === "registros" && n.target_ref === reg.id && /11\/2026/.test(n.body)));
 ok("responsável: sem e-mail e sem aviso no quadro", banco.fila.length === 0 && banco.avisos.size === 0);
