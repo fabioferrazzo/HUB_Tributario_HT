@@ -1,10 +1,11 @@
-import { Archive, ArchiveRestore, Building2, FileText, Mail, Paperclip, Plus, RefreshCw, Save, Search, Trash2, UserCheck } from "lucide-react";
+import { Archive, ArchiveRestore, Building2, FilePen, FileText, Mail, Paperclip, Plus, RefreshCw, Save, Search, Send, Trash2, UserCheck } from "lucide-react";
 import { type ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HubProfile, HubUser, RegistroAnexo, RegistroEmpresa, RegistroEvento, RegistroStatus, RegistroTipo } from "../types";
 import { PanelHeader } from "../components/common";
 import { RichTextEditor } from "../components/RichTextEditor";
 import { confirmDeletion, formatDateTime, getErrorMessage, normalizeForSearch } from "../lib/formatters";
 import {
+  CATEGORIAS_ALTERACAO,
   REGIMES_SUGERIDOS,
   ROTULO_STATUS_REGISTRO,
   ROTULO_TIPO_REGISTRO,
@@ -13,6 +14,7 @@ import {
   consultarCnpj,
   definirResponsavel,
   deleteRegistro,
+  enviarContatosApuracao,
   formatarCnpj,
   getRegistrosSource,
   linkDoAnexo,
@@ -29,6 +31,26 @@ import {
 import "./registros.css";
 
 type FiltroStatus = RegistroStatus | "todos";
+type Subaba = "registros" | "alteracoes";
+
+const TIPOS_EMPRESA: RegistroTipo[] = ["abertura", "cliente_novo", "outro"];
+const ROTULO_STATUS_ALTERACAO: Record<RegistroStatus, string> = {
+  revisao: "Aguardando revisão",
+  ativo: "Concluída",
+  arquivado: "Arquivada"
+};
+
+function rotuloStatus(registro: Pick<RegistroEmpresa, "tipo" | "status">) {
+  return registro.tipo === "alteracao" ? ROTULO_STATUS_ALTERACAO[registro.status] : ROTULO_STATUS_REGISTRO[registro.status];
+}
+
+function lerSubaba(): Subaba {
+  try {
+    return window.sessionStorage.getItem("hub_registros_subaba") === "alteracoes" ? "alteracoes" : "registros";
+  } catch {
+    return "registros";
+  }
+}
 
 const ROTULO_EVENTO: Record<RegistroEvento["tipo"], string> = {
   ...ROTULO_TIPO_REGISTRO,
@@ -57,6 +79,9 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
   const [filtroTipo, setFiltroTipo] = useState<RegistroTipo | "todos">("todos");
+  const [filtroCategoria, setFiltroCategoria] = useState("todas");
+  const [subaba, setSubabaEstado] = useState<Subaba>(lerSubaba);
+  const ehAlteracoes = subaba === "alteracoes";
 
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
   const [rascunho, setRascunho] = useState<RegistroEmpresa | null>(null);
@@ -99,8 +124,18 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
     void carregar();
   }, [carregar]);
 
+  const setSubaba = useCallback((nova: Subaba) => {
+    setSubabaEstado(nova);
+    try {
+      window.sessionStorage.setItem("hub_registros_subaba", nova);
+    } catch {
+      // sem sessionStorage
+    }
+  }, []);
+
   const abrir = useCallback(
     (registro: RegistroEmpresa) => {
+      setSubaba(registro.tipo === "alteracao" ? "alteracoes" : "registros");
       setCriando(false);
       setSelecionadoId(registro.id);
       setRascunho({ ...registro });
@@ -109,7 +144,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
       setMensagem("");
       setErro("");
     },
-    []
+    [setSubaba]
   );
 
   // Abertura pelo sino (notificação de registro).
@@ -158,29 +193,39 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
   const filtrados = useMemo(() => {
     const termo = normalizeForSearch(busca);
     return registros.filter((registro) => {
+      if ((registro.tipo === "alteracao") !== ehAlteracoes) return false;
       if (filtroStatus !== "todos" && registro.status !== filtroStatus) return false;
-      if (filtroTipo !== "todos" && registro.tipo !== filtroTipo) return false;
+      if (!ehAlteracoes && filtroTipo !== "todos" && registro.tipo !== filtroTipo) return false;
+      if (ehAlteracoes && filtroCategoria !== "todas" && !registro.categorias.includes(filtroCategoria)) return false;
       if (!termo) return true;
       return normalizeForSearch(
-        `${registro.razaoSocial} ${registro.nomeFantasia} ${registro.cnpj} ${formatarCnpj(registro.cnpj)} ${registro.codigoDominio} ${registro.ie} ${nomeDoUsuario(registro.responsavelId)}`
+        `${registro.razaoSocial} ${registro.nomeFantasia} ${registro.cnpj} ${formatarCnpj(registro.cnpj)} ${registro.codigoDominio} ${registro.ie} ${nomeDoUsuario(registro.responsavelId)} ${registro.telefone1} ${registro.telefone2} ${registro.email1} ${registro.email2} ${registro.categorias.map((c) => CATEGORIAS_ALTERACAO[c] || c).join(" ")}`
       ).includes(termo);
     });
-  }, [registros, busca, filtroStatus, filtroTipo, nomeDoUsuario]);
+  }, [registros, busca, filtroStatus, filtroTipo, filtroCategoria, ehAlteracoes, nomeDoUsuario]);
 
-  const totais = useMemo(
-    () => ({
-      revisao: registros.filter((item) => item.status === "revisao").length,
-      ativo: registros.filter((item) => item.status === "ativo").length,
-      semResponsavel: registros.filter((item) => item.status !== "arquivado" && !item.responsavelId).length,
-      total: registros.length
-    }),
-    [registros]
+  const empresas = useMemo(() => registros.filter((item) => item.tipo !== "alteracao"), [registros]);
+  const alteracoes = useMemo(() => registros.filter((item) => item.tipo === "alteracao"), [registros]);
+  const empresaDe = useCallback(
+    (alteracao: RegistroEmpresa) =>
+      empresas.find((item) => item.id === alteracao.empresaId) || (alteracao.cnpj ? empresas.find((item) => item.cnpj === alteracao.cnpj) : undefined),
+    [empresas]
   );
+
+  const totais = useMemo(() => {
+    const base = ehAlteracoes ? alteracoes : empresas;
+    return {
+      revisao: base.filter((item) => item.status === "revisao").length,
+      ativo: base.filter((item) => item.status === "ativo").length,
+      semResponsavel: empresas.filter((item) => item.status !== "arquivado" && !item.responsavelId).length,
+      esteMes: alteracoes.filter((item) => (item.dataAlteracao || item.createdAt).slice(0, 7) === new Date().toLocaleDateString("sv-SE").slice(0, 7)).length
+    };
+  }, [ehAlteracoes, alteracoes, empresas]);
 
   function novo() {
     setCriando(true);
     setSelecionadoId(null);
-    setRascunho(novoRegistroVazio(user));
+    setRascunho(novoRegistroVazio(user, ehAlteracoes ? "alteracao" : "abertura"));
     setResponsavelEscolhido("");
     setEditorSeq((seq) => seq + 1);
     setMensagem("");
@@ -202,8 +247,8 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
       setErro("CNPJ inválido. Confira os 14 dígitos.");
       return;
     }
-    if (criando && registros.some((item) => item.cnpj === cnpj)) {
-      const existente = registros.find((item) => item.cnpj === cnpj);
+    if (criando && rascunho.tipo !== "alteracao" && empresas.some((item) => item.cnpj === cnpj)) {
+      const existente = empresas.find((item) => item.cnpj === cnpj);
       if (existente) {
         abrir(existente);
         setMensagem("Este CNPJ já tem registro: aberto para revisão.");
@@ -241,7 +286,11 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
     setErro("");
     setMensagem("");
     try {
-      const salvo = await saveRegistro(rascunho, user, criando);
+      const ligado =
+        rascunho.tipo === "alteracao" && !rascunho.empresaId && rascunho.cnpj
+          ? { ...rascunho, empresaId: empresas.find((item) => item.cnpj === somenteDigitos(rascunho.cnpj))?.id || "" }
+          : rascunho;
+      const salvo = await saveRegistro(ligado, user, criando);
       substituirNaLista(salvo);
       setCriando(false);
       setSelecionadoId(salvo.id);
@@ -262,7 +311,14 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
       const salvo = await saveRegistro({ ...rascunho, status }, user, false);
       substituirNaLista(salvo);
       setRascunho({ ...salvo, observacoes: rascunho.observacoes });
-      setMensagem(status === "arquivado" ? "Registro arquivado." : status === "ativo" ? "Registro marcado como revisado." : "Registro voltou para revisão.");
+      const alt = rascunho.tipo === "alteracao";
+      setMensagem(
+        status === "arquivado"
+          ? alt ? "Alteração arquivada." : "Registro arquivado."
+          : status === "ativo"
+            ? alt ? "Alteração marcada como concluída." : "Registro marcado como revisado."
+            : "Registro voltou para revisão."
+      );
     } catch (error) {
       setErro(getErrorMessage(error));
     } finally {
@@ -311,13 +367,36 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
               : " Incluída na carteira dele no Controle de Apuração (entra no próximo período gerado)."
             : "";
       const base = resultado.mensagem || (responsavelEscolhido ? `Responsável definido: ${nomeDoUsuario(responsavelEscolhido)}.` : "Responsável retirado.");
-      setMensagem(`${base}${feitos.length ? ` Avisado por ${feitos.join(" e ")}.` : ""}${textoApuracao}`);
+      const textoContatos = apuracao?.contatosEnviados ? " Telefones e e-mails enviados ao cadastro da empresa." : "";
+      setMensagem(`${base}${feitos.length ? ` Avisado por ${feitos.join(" e ")}.` : ""}${textoApuracao}${textoContatos}`);
       if (resultado.erros?.length) setErro(`Atenção: ${resultado.erros.join(" ")}`);
     } catch (error) {
       setErro(getErrorMessage(error));
     } finally {
       setSalvando(false);
     }
+  }
+
+  async function enviarContatos() {
+    if (!rascunho || criando) return;
+    setSalvando(true);
+    setErro("");
+    setMensagem("");
+    try {
+      const salvo = await saveRegistro(rascunho, user, false);
+      substituirNaLista(salvo);
+      setMensagem(await enviarContatosApuracao(salvo));
+    } catch (error) {
+      setErro(getErrorMessage(error));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  function alternarCategoria(chave: string) {
+    if (!rascunho) return;
+    const atual = rascunho.categorias;
+    alterar("categorias", atual.includes(chave) ? atual.filter((item) => item !== chave) : [...atual, chave]);
   }
 
   async function anexar(event: ChangeEvent<HTMLInputElement>) {
@@ -357,12 +436,55 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
     }
   }
 
+  const ehAlteracao = rascunho?.tipo === "alteracao";
+  const empresaDaAlteracao = rascunho && ehAlteracao ? empresaDe(rascunho) : undefined;
+  const alteracoesDaEmpresa =
+    rascunho && !ehAlteracao && !criando
+      ? alteracoes.filter((item) => item.empresaId === rascunho.id || (rascunho.cnpj && item.cnpj === rascunho.cnpj))
+      : [];
+  const podeEnviarContatos = Boolean(rascunho?.responsavelId) && (isAdmin || rascunho?.responsavelId === user.id);
+
   const podeExcluirAnexo = (anexo: RegistroAnexo) => isAdmin || user.role === "gestor" || anexo.createdBy === user.id || anexo.createdBy === (user.nome || user.email);
 
   return (
     <div className="registros-page hp-migrada">
       <section className="panel registros-lista">
         <PanelHeader title="Registros" icon={<Building2 size={18} strokeWidth={1.6} />} action={carregando ? "carregando" : fonte} />
+        <div aria-label="Subabas de Registros" className="registros-subabas" role="tablist">
+          <button
+            aria-selected={!ehAlteracoes}
+            className={!ehAlteracoes ? "ativo" : ""}
+            role="tab"
+            type="button"
+            onClick={() => {
+              setSubaba("registros");
+              setFiltroStatus("todos");
+            }}
+          >
+            <Building2 size={15} strokeWidth={1.6} />
+            Registros
+            <small>{empresas.length}</small>
+          </button>
+          <button
+            aria-selected={ehAlteracoes}
+            className={ehAlteracoes ? "ativo" : ""}
+            role="tab"
+            type="button"
+            onClick={() => {
+              setSubaba("alteracoes");
+              setFiltroStatus("todos");
+            }}
+          >
+            <FilePen size={15} strokeWidth={1.6} />
+            Alterações
+            <small>{alteracoes.length}</small>
+          </button>
+        </div>
+        <p className="registros-subaba-nota">
+          {ehAlteracoes
+            ? "Alterações de contrato social, quadro societário, CNAEs, endereço, capital e demais mudanças das empresas."
+            : "Empresas novas (aberturas feitas por nós) e clientes vindos de outros escritórios."}
+        </p>
         <div className="registros-totais">
           <button className={filtroStatus === "revisao" ? "ativo" : ""} type="button" onClick={() => setFiltroStatus(filtroStatus === "revisao" ? "todos" : "revisao")}>
             <strong>{totais.revisao}</strong>
@@ -370,37 +492,53 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
           </button>
           <button className={filtroStatus === "ativo" ? "ativo" : ""} type="button" onClick={() => setFiltroStatus(filtroStatus === "ativo" ? "todos" : "ativo")}>
             <strong>{totais.ativo}</strong>
-            <span>Ativos</span>
+            <span>{ehAlteracoes ? "Concluídas" : "Ativos"}</span>
           </button>
           <article>
-            <strong>{totais.semResponsavel}</strong>
-            <span>Sem responsável</span>
+            <strong>{ehAlteracoes ? totais.esteMes : totais.semResponsavel}</strong>
+            <span>{ehAlteracoes ? "Neste mês" : "Sem responsável"}</span>
           </article>
         </div>
         <div className="panel-toolbar registros-toolbar">
           <label className="panel-search">
             <Search size={14} strokeWidth={1.6} />
-            <input aria-label="Buscar registros" onChange={(event) => setBusca(event.target.value)} placeholder="Razão social, CNPJ, Domínio..." value={busca} />
+            <input
+              aria-label={ehAlteracoes ? "Buscar alterações" : "Buscar registros"}
+              onChange={(event) => setBusca(event.target.value)}
+              placeholder="Razão social, CNPJ, Domínio..."
+              value={busca}
+            />
           </label>
           <select aria-label="Filtrar por situação" value={filtroStatus} onChange={(event) => setFiltroStatus(event.target.value as FiltroStatus)}>
             <option value="todos">Todas as situações</option>
             {(Object.keys(ROTULO_STATUS_REGISTRO) as RegistroStatus[]).map((status) => (
               <option key={status} value={status}>
-                {ROTULO_STATUS_REGISTRO[status]}
+                {ehAlteracoes ? ROTULO_STATUS_ALTERACAO[status] : ROTULO_STATUS_REGISTRO[status]}
               </option>
             ))}
           </select>
-          <select aria-label="Filtrar por tipo" value={filtroTipo} onChange={(event) => setFiltroTipo(event.target.value as RegistroTipo | "todos")}>
-            <option value="todos">Todos os tipos</option>
-            {(Object.keys(ROTULO_TIPO_REGISTRO) as RegistroTipo[]).map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {ROTULO_TIPO_REGISTRO[tipo]}
-              </option>
-            ))}
-          </select>
+          {ehAlteracoes ? (
+            <select aria-label="Filtrar por tipo de alteração" value={filtroCategoria} onChange={(event) => setFiltroCategoria(event.target.value)}>
+              <option value="todas">Todos os tipos</option>
+              {Object.entries(CATEGORIAS_ALTERACAO).map(([chave, rotulo]) => (
+                <option key={chave} value={chave}>
+                  {rotulo}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select aria-label="Filtrar por tipo" value={filtroTipo} onChange={(event) => setFiltroTipo(event.target.value as RegistroTipo | "todos")}>
+              <option value="todos">Todos os tipos</option>
+              {TIPOS_EMPRESA.map((tipo) => (
+                <option key={tipo} value={tipo}>
+                  {ROTULO_TIPO_REGISTRO[tipo]}
+                </option>
+              ))}
+            </select>
+          )}
           <button className="primary-action registros-novo" type="button" onClick={novo}>
             <Plus size={15} strokeWidth={1.8} />
-            Novo registro
+            {ehAlteracoes ? "Nova alteração" : "Novo registro"}
           </button>
         </div>
         {erroLista ? <div className="form-error">{erroLista}</div> : null}
@@ -419,11 +557,27 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                 </span>
                 <span className="registro-item__cnpj">{registro.cnpj ? formatarCnpj(registro.cnpj) : "CNPJ a informar"}</span>
                 <span className="registro-item__selos">
-                  <span className={`registro-selo registro-selo--${registro.tipo}`}>{ROTULO_TIPO_REGISTRO[registro.tipo]}</span>
-                  <span className={`registro-selo registro-selo--status-${registro.status}`}>{ROTULO_STATUS_REGISTRO[registro.status]}</span>
+                  {registro.tipo === "alteracao" ? (
+                    (registro.categorias.length ? registro.categorias : ["outra"]).map((categoria) => (
+                      <span className="registro-selo registro-selo--alteracao" key={categoria}>
+                        {CATEGORIAS_ALTERACAO[categoria] || categoria}
+                      </span>
+                    ))
+                  ) : (
+                    <span className={`registro-selo registro-selo--${registro.tipo}`}>{ROTULO_TIPO_REGISTRO[registro.tipo]}</span>
+                  )}
+                  <span className={`registro-selo registro-selo--status-${registro.status}`}>{rotuloStatus(registro)}</span>
                 </span>
                 <span className="registro-item__meta">
-                  <span>{registro.responsavelId ? nomeDoUsuario(registro.responsavelId) : "Sem responsável"}</span>
+                  <span>
+                    {registro.tipo === "alteracao"
+                      ? registro.dataAlteracao
+                        ? `Alteração de ${dataBr(registro.dataAlteracao)}`
+                        : "Data a informar"
+                      : registro.responsavelId
+                        ? nomeDoUsuario(registro.responsavelId)
+                        : "Sem responsável"}
+                  </span>
                   <span>{formatDateTime(registro.updatedAt)}</span>
                 </span>
               </button>
@@ -431,7 +585,13 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
           ))}
         </ul>
         {!carregando && !filtrados.length ? (
-          <div className="empty-state">{registros.length ? "Nenhum registro com esses filtros." : "Nenhum registro ainda. Use \"Novo registro\" ou aguarde a entrada por e-mail."}</div>
+          <div className="empty-state">
+            {(ehAlteracoes ? alteracoes : empresas).length
+              ? "Nada com esses filtros."
+              : ehAlteracoes
+                ? "Nenhuma alteração ainda. Use \"Nova alteração\" ou aguarde a entrada por e-mail."
+                : "Nenhum registro ainda. Use \"Novo registro\" ou aguarde a entrada por e-mail."}
+          </div>
         ) : null}
       </section>
 
@@ -439,16 +599,17 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
         {!rascunho ? (
           <div className="registros-vazio">
             <Building2 aria-hidden="true" size={28} strokeWidth={1.4} />
-            <p>Selecione um registro na lista ou crie um novo.</p>
+            <p>{ehAlteracoes ? "Selecione uma alteração na lista ou registre uma nova." : "Selecione um registro na lista ou crie um novo."}</p>
           </div>
         ) : (
-          <form className="stack-form registros-form" onSubmit={salvar}>
+          <form className="stack-form registros-form" noValidate onSubmit={salvar}>
             <header className="registros-detalhe__cabeca">
               <div>
-                <h2>{criando ? "Novo registro" : rascunho.razaoSocial || "Sem razão social"}</h2>
+                <h2>{criando ? (ehAlteracao ? "Nova alteração" : "Novo registro") : rascunho.razaoSocial || "Sem razão social"}</h2>
                 <p>
+                  {ehAlteracao ? "Alteração · " : ""}
                   {rascunho.cnpj ? formatarCnpj(rascunho.cnpj) : "CNPJ a informar"}
-                  {!criando ? ` · ${ROTULO_STATUS_REGISTRO[rascunho.status]}` : ""}
+                  {!criando ? ` · ${rotuloStatus(rascunho)}` : ""}
                   {rascunho.receitaAtualizadaEm ? ` · Receita em ${formatDateTime(rascunho.receitaAtualizadaEm)}` : ""}
                 </p>
               </div>
@@ -457,7 +618,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                   {rascunho.status === "revisao" ? (
                     <button disabled={salvando} type="button" onClick={() => mudarStatus("ativo")}>
                       <UserCheck size={14} strokeWidth={1.6} />
-                      Marcar como revisado
+                      {ehAlteracao ? "Marcar como concluída" : "Marcar como revisado"}
                     </button>
                   ) : null}
                   {rascunho.status !== "arquivado" ? (
@@ -485,7 +646,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
             {erro ? <div className="form-error">{erro}</div> : null}
 
             <details className="registros-secao" open>
-              <summary>Dados da empresa</summary>
+              <summary>{ehAlteracao ? "Dados da alteração" : "Dados da empresa"}</summary>
               <div className="registros-grade">
                 <label className="registros-cnpj">
                   CNPJ
@@ -506,6 +667,44 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                   Razão social
                   <input value={rascunho.razaoSocial} onChange={(event) => alterar("razaoSocial", event.target.value)} />
                 </label>
+                {ehAlteracao ? (
+                  <>
+                    <label>
+                      Data da alteração
+                      <input type="date" value={rascunho.dataAlteracao} onChange={(event) => alterar("dataAlteracao", event.target.value)} />
+                    </label>
+                    <div className="registros-largo registros-categorias">
+                      <span>O que foi alterado</span>
+                      <div role="group" aria-label="O que foi alterado">
+                        {Object.entries(CATEGORIAS_ALTERACAO).map(([chave, rotulo]) => (
+                          <button
+                            aria-pressed={rascunho.categorias.includes(chave)}
+                            className={rascunho.categorias.includes(chave) ? "ativo" : ""}
+                            key={chave}
+                            type="button"
+                            onClick={() => alternarCategoria(chave)}
+                          >
+                            {rotulo}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="registros-largo registros-empresa-link">
+                      {empresaDaAlteracao ? (
+                        <>
+                          Empresa:{" "}
+                          <button type="button" onClick={() => abrir(empresaDaAlteracao)}>
+                            {empresaDaAlteracao.razaoSocial || formatarCnpj(empresaDaAlteracao.cnpj)}
+                          </button>
+                          {" · "}Responsável: {empresaDaAlteracao.responsavelId ? nomeDoUsuario(empresaDaAlteracao.responsavelId) : "não definido"}
+                        </>
+                      ) : (
+                        "Empresa ainda sem registro na subaba Registros (o vínculo é feito pelo CNPJ)."
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <>
                 <label className="registros-largo">
                   Nome fantasia
                   <input value={rascunho.nomeFantasia} onChange={(event) => alterar("nomeFantasia", event.target.value)} />
@@ -513,7 +712,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                 <label>
                   Tipo
                   <select value={rascunho.tipo} onChange={(event) => alterar("tipo", event.target.value as RegistroTipo)}>
-                    {(Object.keys(ROTULO_TIPO_REGISTRO) as RegistroTipo[]).map((tipo) => (
+                    {TIPOS_EMPRESA.map((tipo) => (
                       <option key={tipo} value={tipo}>
                         {ROTULO_TIPO_REGISTRO[tipo]}
                       </option>
@@ -541,6 +740,8 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                     ))}
                   </datalist>
                 </label>
+                  </>
+                )}
               </div>
               {rascunho.situacao || rascunho.municipio || rascunho.naturezaJuridica ? (
                 <p className="registros-receita-linha">
@@ -550,6 +751,39 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                 </p>
               ) : null}
             </details>
+
+            {!ehAlteracao ? (
+              <details className="registros-secao" open>
+                <summary>Contatos</summary>
+                <div className="registros-grade">
+                  <label>
+                    Telefone 1
+                    <input inputMode="tel" placeholder="(54) 0000-0000" value={rascunho.telefone1} onChange={(event) => alterar("telefone1", event.target.value)} />
+                  </label>
+                  <label>
+                    Telefone 2
+                    <input inputMode="tel" value={rascunho.telefone2} onChange={(event) => alterar("telefone2", event.target.value)} />
+                  </label>
+                  <label>
+                    E-mail 1
+                    <input type="email" placeholder="contato@empresa.com.br" value={rascunho.email1} onChange={(event) => alterar("email1", event.target.value)} />
+                  </label>
+                  <label>
+                    E-mail 2
+                    <input type="email" value={rascunho.email2} onChange={(event) => alterar("email2", event.target.value)} />
+                  </label>
+                </div>
+                {!criando && podeEnviarContatos ? (
+                  <button className="registros-anexar registros-enviar-contatos" disabled={salvando} type="button" onClick={enviarContatos}>
+                    <Send size={14} strokeWidth={1.6} />
+                    Salvar e enviar ao Controle de Apuração
+                  </button>
+                ) : null}
+                <p className="field-note">
+                  Ao definir o responsável, os telefones e e-mails vão para o cadastro da empresa no Controle de Apuração.
+                </p>
+              </details>
+            ) : null}
 
             <details className="registros-secao" open={rascunho.socios.length > 0}>
               <summary>
@@ -623,6 +857,27 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
 
             {!criando ? (
               <>
+                {alteracoesDaEmpresa.length ? (
+                  <details className="registros-secao" open>
+                    <summary>
+                      Alterações da empresa <small>{alteracoesDaEmpresa.length}</small>
+                    </summary>
+                    <ul className="registros-alteracoes-empresa">
+                      {alteracoesDaEmpresa.map((alt) => (
+                        <li key={alt.id}>
+                          <button type="button" onClick={() => abrir(alt)}>
+                            <FilePen size={14} strokeWidth={1.6} />
+                            <span>{(alt.categorias.length ? alt.categorias : ["outra"]).map((c) => CATEGORIAS_ALTERACAO[c] || c).join(", ")}</span>
+                          </button>
+                          <small>
+                            {alt.dataAlteracao ? dataBr(alt.dataAlteracao) : formatDateTime(alt.createdAt)} · {rotuloStatus(alt)}
+                          </small>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
+                {!ehAlteracao ? (
                 <details className="registros-secao" open>
                   <summary>Responsável pela apuração</summary>
                   {isAdmin ? (
@@ -655,6 +910,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                     Ao definir, a empresa entra na apuração aberta do responsável (Controle de Apuração) e ele é avisado no sino e no chat.
                   </p>
                 </details>
+                ) : null}
 
                 <details className="registros-secao" open>
                   <summary>

@@ -24,6 +24,18 @@ export const ROTULO_STATUS_REGISTRO: Record<RegistroStatus, string> = {
   arquivado: "Arquivado"
 };
 
+export const CATEGORIAS_ALTERACAO: Record<string, string> = {
+  contrato_social: "Contrato social",
+  quadro_societario: "Quadro societário",
+  cnae: "Atividades (CNAE)",
+  endereco: "Endereço",
+  capital_social: "Capital social",
+  razao_social: "Razão social / nome",
+  natureza_juridica: "Natureza jurídica",
+  regime: "Regime tributário",
+  outra: "Outra"
+};
+
 export const REGIMES_SUGERIDOS = ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real", "Lucro Arbitrado", "Imune/Isenta"];
 
 type LocalState = { registros: RegistroEmpresa[]; eventos: RegistroEvento[]; anexos: RegistroAnexo[] };
@@ -45,6 +57,13 @@ type RegistroRow = {
   cnae_principal: RegistroEmpresa["cnaePrincipal"];
   cnaes_secundarios: RegistroEmpresa["cnaesSecundarios"] | null;
   receita_atualizada_em: string | null;
+  telefone1: string | null;
+  telefone2: string | null;
+  email1: string | null;
+  email2: string | null;
+  categorias: string[] | null;
+  data_alteracao: string | null;
+  empresa_id: string | null;
   observacoes: string;
   tipo: RegistroTipo;
   status: RegistroStatus;
@@ -111,6 +130,13 @@ function mapRegistro(row: RegistroRow): RegistroEmpresa {
     cnaePrincipal: row.cnae_principal || null,
     cnaesSecundarios: Array.isArray(row.cnaes_secundarios) ? row.cnaes_secundarios : [],
     receitaAtualizadaEm: row.receita_atualizada_em || "",
+    telefone1: row.telefone1 || "",
+    telefone2: row.telefone2 || "",
+    email1: row.email1 || "",
+    email2: row.email2 || "",
+    categorias: Array.isArray(row.categorias) ? row.categorias : [],
+    dataAlteracao: row.data_alteracao || "",
+    empresaId: row.empresa_id || "",
     observacoes: row.observacoes || "",
     tipo: row.tipo,
     status: row.status,
@@ -140,6 +166,13 @@ function linhaEditavel(registro: RegistroEmpresa) {
     cnae_principal: registro.cnaePrincipal,
     cnaes_secundarios: registro.cnaesSecundarios,
     receita_atualizada_em: registro.receitaAtualizadaEm || null,
+    telefone1: registro.telefone1.trim(),
+    telefone2: registro.telefone2.trim(),
+    email1: registro.email1.trim().toLowerCase(),
+    email2: registro.email2.trim().toLowerCase(),
+    categorias: registro.categorias,
+    data_alteracao: registro.dataAlteracao || null,
+    empresa_id: registro.empresaId || null,
     observacoes: registro.observacoes,
     tipo: registro.tipo,
     status: registro.status
@@ -161,6 +194,9 @@ export function aplicarDadosReceita(registro: RegistroEmpresa, dados: DadosRecei
     cnaePrincipal: dados.cnaePrincipal,
     cnaesSecundarios: dados.cnaesSecundarios,
     regime: registro.regime || dados.regimeSugerido,
+    telefone1: registro.telefone1 || dados.telefone1 || "",
+    telefone2: registro.telefone2 || dados.telefone2 || "",
+    email1: registro.email1 || dados.email || "",
     receitaAtualizadaEm: dados.consultadoEm
   };
 }
@@ -184,6 +220,13 @@ export function novoRegistroVazio(user: HubUser, tipo: RegistroTipo = "abertura"
     cnaePrincipal: null,
     cnaesSecundarios: [],
     receitaAtualizadaEm: "",
+    telefone1: "",
+    telefone2: "",
+    email1: "",
+    email2: "",
+    categorias: [],
+    dataAlteracao: tipo === "alteracao" ? new Date().toLocaleDateString("sv-SE") : "",
+    empresaId: "",
     observacoes: "",
     tipo,
     status: "revisao",
@@ -233,10 +276,12 @@ export async function saveRegistro(registro: RegistroEmpresa, user: HubUser, cri
   const cnpj = somenteDigitos(registro.cnpj);
   if (cnpj && !cnpjValido(cnpj)) throw new Error("CNPJ inválido. Confira os 14 dígitos.");
   if (!cnpj && !registro.razaoSocial.trim()) throw new Error("Informe o CNPJ ou a razão social.");
+  const emailInvalido = [registro.email1, registro.email2].find((valor) => valor.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim()));
+  if (emailInvalido) throw new Error(`E-mail inválido: ${emailInvalido.trim()}`);
 
   if (getRegistrosSource() === "local") {
     const estado = lerLocal();
-    if (cnpj && estado.registros.some((item) => item.cnpj === cnpj && item.id !== registro.id)) {
+    if (registro.tipo !== "alteracao" && cnpj && estado.registros.some((item) => item.tipo !== "alteracao" && item.cnpj === cnpj && item.id !== registro.id)) {
       throw new Error("Já existe um registro com este CNPJ.");
     }
     const salvo = { ...registro, cnpj, updatedAt: new Date().toISOString() };
@@ -485,10 +530,16 @@ export async function consultarCnpj(cnpj: string): Promise<DadosReceita> {
   return resposta.dados;
 }
 
+export async function enviarContatosApuracao(registro: RegistroEmpresa): Promise<string> {
+  if (getRegistrosSource() === "local") return "Modo demonstração: os contatos não vão ao Controle de Apuração.";
+  const resposta = await chamarServidor<{ mensagem: string }>({ acao: "enviar-contatos", registroId: registro.id });
+  return resposta.mensagem;
+}
+
 export type ResultadoResponsavel = {
   notificado: boolean;
   chatEnviado: boolean;
-  apuracao: { incluida: boolean; jaExistia?: boolean; competencia: string; mensagem: string } | null;
+  apuracao: { incluida: boolean; jaExistia?: boolean; competencia: string; mensagem: string; contatosEnviados?: boolean } | null;
   erros: string[];
   mensagem?: string;
 };

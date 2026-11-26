@@ -95,6 +95,44 @@ export function sugerirRegime(bruto) {
   return "";
 }
 
+export function formatarTelefone(valor) {
+  const d = somenteDigitos(valor).replace(/^0+/, "");
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  return d;
+}
+
+// Categorias de alteração identificadas no assunto/texto do e-mail.
+export const CATEGORIAS_ALTERACAO = {
+  contrato_social: "Contrato social",
+  quadro_societario: "Quadro societário",
+  cnae: "Atividades (CNAE)",
+  endereco: "Endereço",
+  capital_social: "Capital social",
+  razao_social: "Razão social / nome",
+  natureza_juridica: "Natureza jurídica",
+  regime: "Regime tributário",
+  outra: "Outra"
+};
+
+export function detectarCategorias(texto) {
+  const t = String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const achadas = [];
+  const regra = (chave, re) => re.test(t) && achadas.push(chave);
+  regra("quadro_societario", /quadro societario|\bqsa\b|entrada de socio|saida de socio|retirada de socio|admissao de socio|cessao de quotas|transferencia de quotas|socio/);
+  regra("cnae", /\bcnae|atividade|objeto social/);
+  regra("endereco", /endereco|mudanca de sede|transferencia de sede|\bsede\b|filial/);
+  regra("capital_social", /capital social|aumento de capital|reducao de capital/);
+  regra("razao_social", /razao social|nome empresarial|nome fantasia/);
+  regra("natureza_juridica", /natureza juridica|transformacao|\bslu\b|\beireli\b|\bltda\b para/);
+  regra("regime", /regime tributario|enquadramento|desenquadramento|exclusao do simples|opcao pelo simples/);
+  regra("contrato_social", /contrato social|alteracao contratual|aditivo|consolidacao/);
+  return achadas.length ? achadas : ["outra"];
+}
+
 export function normalizarReceita(bruto, fonte = "BrasilAPI") {
   const cnae = (codigo, descricao) => {
     const c = somenteDigitos(codigo);
@@ -125,6 +163,9 @@ export function normalizarReceita(bruto, fonte = "BrasilAPI") {
     cnaesSecundarios: secundarios,
     socios,
     regimeSugerido: sugerirRegime(bruto),
+    telefone1: formatarTelefone(bruto?.ddd_telefone_1),
+    telefone2: formatarTelefone(bruto?.ddd_telefone_2),
+    email: String(bruto?.email || "").trim().toLowerCase(),
     simples: bruto?.opcao_pelo_simples ?? null,
     mei: bruto?.opcao_pelo_mei ?? null,
     consultadoEm: new Date().toISOString()

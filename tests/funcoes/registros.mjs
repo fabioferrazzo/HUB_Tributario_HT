@@ -8,7 +8,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
 process.env.REGISTROS_ENTRADA_TOKEN = "token-teste";
 
 const chamadas = [];
-const banco = { registros: new Map(), eventos: [], anexos: [], objetos: [], avisos: new Map(), destinatarios: [], notificacoes: [], fila: [], periodos: { "u-colab": [{ competence: "2026-11", status: "OPEN" }], "u-admin": [{ competence: "2026-10", status: "CLOSED" }] }, carteira: [], apuracao: [], chat: [] };
+const banco = { registros: new Map(), eventos: [], anexos: [], objetos: [], avisos: new Map(), destinatarios: [], notificacoes: [], fila: [], periodos: { "u-colab": [{ competence: "2026-11", status: "OPEN" }], "u-admin": [{ competence: "2026-10", status: "CLOSED" }] }, carteira: [], apuracao: [], chat: [], contatos: [] };
 let receitaFalha = 0;
 let seq = 0;
 
@@ -26,7 +26,10 @@ const RECEITA = {
   cnaes_secundarios: [{ codigo: 4520001, descricao: "Manutenção mecânica" }],
   qsa: [{ nome_socio: "[TESTE] FULANO", qualificacao_socio: "Sócio-Administrador", data_entrada_sociedade: "2026-11-03" }],
   opcao_pelo_simples: true,
-  opcao_pelo_mei: false
+  opcao_pelo_mei: false,
+  ddd_telefone_1: "5432441234",
+  ddd_telefone_2: "",
+  email: "Contato@Acme.com.br"
 };
 
 globalThis.fetch = async (url, opt = {}) => {
@@ -57,7 +60,13 @@ globalThis.fetch = async (url, opt = {}) => {
   }
   if (u.startsWith("/rest/v1/hub_registros_anexos")) { banco.anexos.push(body); return r([], 201); }
   if (u.startsWith("/rest/v1/hub_registros")) {
-    if (m === "GET") { const cnpj = (u.match(/cnpj=eq\.(\d+)/) || [])[1]; return r([...banco.registros.values()].filter((x) => x.cnpj === cnpj)); }
+    if (m === "GET") {
+      const id = (u.match(/[?&]id=eq\.([^&]+)/) || [])[1];
+      if (id) return r([...banco.registros.values()].filter((x) => x.id === id));
+      const cnpj = (u.match(/cnpj=eq\.(\d+)/) || [])[1];
+      const semAlteracao = /tipo=neq\.alteracao/.test(u);
+      return r([...banco.registros.values()].filter((x) => x.cnpj === cnpj && (!semAlteracao || x.tipo !== "alteracao")));
+    }
     if (m === "POST") { const x = { id: `00000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`, ...body }; banco.registros.set(x.id, x); return r([x], 201); }
     if (m === "PATCH") {
       const id = (u.match(/id=eq\.([^&]+)/) || [])[1];
@@ -85,9 +94,15 @@ globalThis.fetch = async (url, opt = {}) => {
     const chave = `${body.p.owner_user_id}:${body.p.cnpj}`;
     if (banco.carteira.includes(chave)) return r({ message: "CNPJ já cadastrado para este responsável." }, 400);
     banco.carteira.push(chave);
-    banco.apuracao.push({ ...body.p, auth: opt.headers?.authorization });
-    return r({ ok: true, id: "apur-1" });
+    const id = `apur-${banco.carteira.length}`;
+    banco.apuracao.push({ ...body.p, id, auth: opt.headers?.authorization });
+    return r({ ok: true, id });
   }
+  if (u.startsWith("/rest/v1/apur_companies")) {
+    const dono = (u.match(/owner_user_id=eq\.([^&]+)/) || [])[1];
+    return r(banco.apuracao.filter((x) => x.owner_user_id === dono).map((x) => ({ id: x.id, cnpj: x.cnpj, legal_name: x.legal_name })));
+  }
+  if (u.endsWith("/rpc/apur_company_set_contacts")) { banco.contatos.push({ ...body, auth: opt.headers?.authorization }); return r({ ok: true }); }
   if (u.endsWith("/rpc/chat_abrir_direta")) { if (body.p_outro === "u-admin") return r({ message: "Escolha outra pessoa para conversar." }, 400); return r("conv-1"); }
   if (u.endsWith("/rpc/chat_enviar")) { banco.chat.push({ ...body, auth: opt.headers?.authorization }); return r({ id: "m1" }); }
   if (u.includes("email_outbox") || u.includes("/rpc/")) return r([]);
@@ -134,6 +149,7 @@ r = await chamar(email, { "x-registros-token": "token-teste" });
 const reg = banco.registros.get(r.data.registroId);
 ok("entrada: cria registro com CNPJ, tipo e dados da Receita", r.status === 200 && r.data.criado && reg?.cnpj === "11222333000181" && reg.tipo === "abertura" && reg.status === "revisao" && reg.origem === "email" && reg.razao_social === RECEITA.razao_social, JSON.stringify(r.data));
 ok("entrada: regime sugerido e CNAEs gravados", reg?.regime === "Simples Nacional" && reg.cnaes_secundarios.length === 1 && reg.socios.length === 1);
+ok("entrada: telefone e e-mail da Receita no registro novo", reg?.telefone1 === "(54) 3244-1234" && reg.email1 === "contato@acme.com.br" && reg.telefone2 === "", `${reg?.telefone1} ${reg?.email1}`);
 ok("entrada: evento com assunto, remetente e id do e-mail", banco.eventos.some((e) => e.email_id === "msg-001" && e.remetente === "societario.hteixeira@gmail.com" && /Abertura/.test(e.assunto)));
 ok("entrada: anexo gravado na pasta do registro (nome seguro)", banco.objetos.length === 1 && banco.objetos[0].caminho.startsWith(`registros/${reg.id}/`) && /Contrato_Social_ACME\.pdf$/.test(banco.objetos[0].caminho) && banco.anexos.length === 1, banco.objetos[0]?.caminho);
 ok("entrada: anexo grande demais fica anotado no evento", banco.eventos.some((e) => /video-grande\.mp4/.test(e.resumo)));
@@ -142,9 +158,12 @@ const antes = banco.registros.size;
 r = await chamar(email, { "x-registros-token": "token-teste" });
 ok("entrada: o mesmo e-mail não é processado duas vezes", r.data.duplicado === true && banco.registros.size === antes && banco.objetos.length === 1);
 
-r = await chamar({ ...email, messageId: "msg-002", assunto: "Alteração contratual - CNPJ 11222333000181", anexos: [] }, { "x-registros-token": "token-teste" });
+r = await chamar({ ...email, messageId: "msg-002", data: "2026-11-20T13:00:00Z", assunto: "Alteração contratual - entrada de sócio e inclusão de CNAE - CNPJ 11222333000181", anexos: [] }, { "x-registros-token": "token-teste" });
 const reg2 = banco.registros.get(r.data.registroId);
-ok("entrada: alteração do mesmo CNPJ entra no registro existente", r.data.criado === false && r.data.registroId === reg.id && banco.registros.size === antes && reg2.tipo === "alteracao" && reg2.status === "revisao");
+ok("entrada: alteração vira item próprio (subaba Alterações) ligado à empresa", r.data.criado === true && r.data.registroId !== reg.id && banco.registros.size === antes + 1 && reg2.tipo === "alteracao" && reg2.empresa_id === reg.id && reg2.status === "revisao" && reg.tipo === "abertura", JSON.stringify({ tipo: reg2?.tipo, empresa: reg2?.empresa_id }));
+ok("entrada: categorias e data da alteração", JSON.stringify(reg2.categorias) === JSON.stringify(["quadro_societario", "cnae", "contrato_social"]) && reg2.data_alteracao === "2026-11-20", JSON.stringify(reg2.categorias) + " " + reg2.data_alteracao);
+ok("entrada: empresa recebe evento da alteração", banco.eventos.some((e) => e.registro_id === reg.id && e.tipo === "alteracao" && /subaba Alterações/.test(e.resumo)));
+ok("entrada: administradores avisados da alteração", banco.notificacoes.some((n) => n.titulo === "Alteração contratual recebida por e-mail" && n.target_ref === reg2.id));
 
 r = await chamar({ ...email, messageId: "msg-003", de: "carlosreis.hteixeira@gmail.com", assunto: "Fwd: Cliente novo - [TESTE] Padaria Serrana", corpo: "Vem de outro escritório, CNPJ ainda a confirmar.", anexos: [] }, { "x-registros-token": "token-teste" });
 const reg3 = banco.registros.get(r.data.registroId);
@@ -164,9 +183,22 @@ ok("responsável: sino do responsável", r.data.notificado && banco.notificacoes
 ok("responsável: sem e-mail e sem aviso no quadro", banco.fila.length === 0 && banco.avisos.size === 0);
 ok("responsável: eventos no histórico do registro", banco.eventos.some((e) => e.registro_id === reg.id && e.tipo === "responsavel" && /Colaboradora Teste/.test(e.resumo)) && banco.eventos.some((e) => e.registro_id === reg.id && /Incluída na apuração de 11\/2026/.test(e.resumo)));
 ok("responsável: sem erros", r.data.erros.length === 0, JSON.stringify(r.data.erros));
+ok("responsável: telefones e e-mails vão ao cadastro da empresa no Controle de Apuração", r.data.apuracao.contatosEnviados && banco.contatos.at(-1)?.p_id === "apur-1" && banco.contatos.at(-1).p.telefone1 === "(54) 3244-1234" && banco.contatos.at(-1).p.email1 === "contato@acme.com.br" && banco.contatos.at(-1).auth === "Bearer tok-admin", JSON.stringify(banco.contatos.at(-1)));
+
+// alteração em empresa que já tem responsável: o responsável é avisado no sino
+r = await chamar({ ...email, messageId: "msg-004", assunto: "ALTERAÇÃO - mudança de endereço - 11.222.333/0001-81", anexos: [] }, { "x-registros-token": "token-teste" });
+ok("entrada: responsável da empresa avisado da alteração", banco.notificacoes.some((n) => n.user_id === "u-colab" && n.titulo === "Alteração em empresa sob sua responsabilidade" && /Endereço/.test(n.body)), JSON.stringify(banco.notificacoes.at(-1)));
+
+// enviar contatos depois (registro editado)
+reg.telefone2 = "(54) 99999-0000";
+r = await chamar({ acao: "enviar-contatos", registroId: reg.id }, { authorization: "Bearer tok-colab" });
+ok("contatos: o responsável reenvia ao Controle de Apuração", r.status === 200 && banco.contatos.at(-1).p.telefone2 === "(54) 99999-0000" && banco.contatos.at(-1).p_id === "apur-1", JSON.stringify(r.data));
+const outro = banco.registros.get(reg3.id);
+r = await chamar({ acao: "enviar-contatos", registroId: reg3.id }, { authorization: "Bearer tok-colab" });
+ok("contatos: sem responsável definido é recusado", r.status === 400 && /responsável/.test(r.data.error), r.data.error);
 
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-colab" }, { authorization: "Bearer tok-admin" });
-ok("responsável: empresa já na carteira não duplica (informa)", r.data.apuracao?.jaExistia === true && banco.apuracao.length === 1 && r.data.erros.length === 0, JSON.stringify(r.data.apuracao));
+ok("responsável: empresa já na carteira não duplica (informa) e atualiza os contatos", r.data.apuracao?.jaExistia === true && banco.apuracao.length === 1 && r.data.erros.length === 0 && r.data.apuracao.contatosEnviados === true, JSON.stringify(r.data.apuracao));
 
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-admin" }, { authorization: "Bearer tok-admin" });
 ok("responsável: sem período aberto, entra só na carteira", r.data.apuracao?.incluida && r.data.apuracao.competencia === "" && banco.apuracao.at(-1).competence === null, JSON.stringify(r.data.apuracao));

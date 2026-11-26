@@ -187,6 +187,8 @@
       throw httpError("Login e senha são os do HUB. Use o HUB para entrar ou trocar a senha.", 400);
 
     if (path === "/api/companies" && method === "POST") return rpc("apur_company_create", { p: body });
+    if ((m = path.match(/^\/api\/companies\/([^/]+)\/contacts$/)) && method === "PUT")
+      return rpc("apur_company_set_contacts", { p_id: decodeURIComponent(m[1]), p: body });
     if ((m = path.match(/^\/api\/companies\/([^/]+)$/))) {
       if (method === "PUT") return rpc("apur_company_update", { p_id: decodeURIComponent(m[1]), p: body });
       if (method === "DELETE") return rpc("apur_company_delete", { p_id: decodeURIComponent(m[1]), p_competence: q.get("competence") || null });
@@ -288,7 +290,7 @@
     }
     if (bytes.length > MAX_IMPORT_BYTES) throw httpError("Arquivo maior que 8 MB.", 400);
     await loadScript("vendor/xlsx.full.min.js?v=0.20.3");
-    await loadScript("importador.js?v=" + APP_BUILD + "-hub5");
+    await loadScript("importador.js?v=" + APP_BUILD + "-hub6");
     var result;
     try {
       result = window.HubApuracaoImport.parse(window.XLSX, filename, bytes);
@@ -396,7 +398,7 @@
   async function exportMonthly(q) {
     var data = await rpc("apur_export_data", { p_competence: q.get("competence") || "", p_owner: uuidOrNull(q.get("owner_user_id")) });
     await loadScript("vendor/exceljs.min.js?v=4.4.0");
-    await loadScript("exportador.js?v=" + APP_BUILD + "-hub5");
+    await loadScript("exportador.js?v=" + APP_BUILD + "-hub6");
     var out = await window.HubApuracaoExport.build(window.ExcelJS, data);
     return new Response(new Blob([out.buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), {
       status: 200, headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -464,7 +466,7 @@
         }).observe(login, { attributes: true, attributeFilter: ["class"] });
       }
       var script = document.createElement("script");
-      script.src = "app.js?v=" + APP_BUILD + "-hub5";
+      script.src = "app.js?v=" + APP_BUILD + "-hub6";
       document.body.appendChild(script);
     } catch (e) {
       showBlocker(e.message || "Não foi possível entrar com o usuário do HUB.");

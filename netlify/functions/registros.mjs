@@ -3,8 +3,9 @@
 //   - consultar-cnpj       (usuário ativo)   -> dados públicos da Receita (BrasilAPI, com reserva na Minha Receita)
 //   - definir-responsavel  (administrador)   -> grava o responsável, inclui a empresa na apuração aberta dele
 //                                               (Controle de Apuração) e avisa: sino e mensagem no chat
-//   - entrada-email        (script do Gmail, cabeçalho x-registros-token) -> cria/atualiza o registro com os anexos
-import { cnpjValido, consultarReceita, detectarTipo, extrairCnpjs, formatarCnpj, somenteDigitos } from "../lib/cnpj.mjs";
+//   - enviar-contatos      (administrador ou responsável) -> leva telefones e e-mails ao cadastro da empresa no Controle de Apuração
+//   - entrada-email        (script do Gmail, cabeçalho x-registros-token) -> cria/atualiza o registro (ou a alteração) com os anexos
+import { CATEGORIAS_ALTERACAO, cnpjValido, consultarReceita, detectarCategorias, detectarTipo, extrairCnpjs, formatarCnpj, somenteDigitos } from "../lib/cnpj.mjs";
 
 const JSON_HEADERS = { "content-type": "application/json", "cache-control": "no-store" };
 const REMETENTES_PADRAO = ["societario.hteixeira@gmail.com", "carlosreis.hteixeira@gmail.com"];
@@ -53,6 +54,7 @@ export default async function handler(request) {
       return json(200, { ok: true, dados: await consultarReceita(cnpj) });
     }
     if (acao === "definir-responsavel") return await definirResponsavel(ctx, payload);
+    if (acao === "enviar-contatos") return await enviarContatos(ctx, payload);
     throw httpError(400, "Ação desconhecida.");
   } catch (error) {
     return json(error?.statusCode || 400, { error: error?.message || "Não foi possível concluir a operação." });
@@ -208,8 +210,11 @@ async function incluirNaApuracao(ctx, registro, responsavel) {
   const ultimo = periodos[0];
   const competencia = ultimo && ultimo.status !== "CLOSED" ? ultimo.competence : "";
   const nota = `Incluída pela aba Registros (${ROTULO_TIPO[registro.tipo] || "Registro"}) em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}.`;
+  let empresaApuracaoId = "";
+  let jaExistia = false;
+  let mensagemExistente = "";
   try {
-    await sb(`${supabaseUrl}/rest/v1/rpc/apur_company_create`, {
+    const criada = await sb(`${supabaseUrl}/rest/v1/rpc/apur_company_create`, {
       method: "POST",
       headers: { apikey: anonKey, authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: JSON.stringify({
@@ -224,14 +229,62 @@ async function incluirNaApuracao(ctx, registro, responsavel) {
         }
       })
     });
+    empresaApuracaoId = criada?.id || "";
   } catch (error) {
     const mensagem = String(error?.message || "");
-    if (/já cadastrad/i.test(mensagem)) {
-      return { incluida: true, jaExistia: true, competencia, mensagem: `a empresa já estava na carteira do responsável (${mensagem.replace(/\.$/, "")}).` };
-    }
-    throw error;
+    if (!/já cadastrad/i.test(mensagem)) throw error;
+    jaExistia = true;
+    mensagemExistente = `a empresa já estava na carteira do responsável (${mensagem.replace(/\.$/, "")}).`;
+    empresaApuracaoId = (await localizarEmpresaApuracao(ctx, registro, responsavel.id)) || "";
   }
-  return { incluida: true, jaExistia: false, competencia, mensagem: "" };
+  const contatosEnviados = empresaApuracaoId ? await gravarContatosApuracao(ctx, empresaApuracaoId, registro).catch(() => false) : false;
+  return { incluida: true, jaExistia, competencia, mensagem: mensagemExistente, contatosEnviados };
+}
+
+function contatosDoRegistro(registro) {
+  return {
+    telefone1: String(registro.telefone1 || "").trim(),
+    telefone2: String(registro.telefone2 || "").trim(),
+    email1: String(registro.email1 || "").trim().toLowerCase(),
+    email2: String(registro.email2 || "").trim().toLowerCase()
+  };
+}
+
+async function gravarContatosApuracao(ctx, empresaApuracaoId, registro) {
+  const contatos = contatosDoRegistro(registro);
+  if (!Object.values(contatos).some(Boolean)) return false;
+  await sb(`${ctx.supabaseUrl}/rest/v1/rpc/apur_company_set_contacts`, {
+    method: "POST",
+    headers: { apikey: ctx.anonKey, authorization: `Bearer ${ctx.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ p_id: empresaApuracaoId, p: contatos })
+  });
+  return true;
+}
+
+async function localizarEmpresaApuracao(ctx, registro, donoId) {
+  const base = `${ctx.supabaseUrl}/rest/v1/apur_companies?owner_user_id=eq.${encodeURIComponent(donoId)}&deleted=is.false&select=id,cnpj,legal_name`;
+  const lista = (await sb(base, { headers: svc(ctx.serviceKey) })) || [];
+  const cnpj = somenteDigitos(registro.cnpj);
+  const chave = (texto) => String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const porCnpj = cnpj ? lista.find((item) => somenteDigitos(item.cnpj) === cnpj) : null;
+  const porNome = lista.find((item) => chave(item.legal_name) === chave(registro.razao_social));
+  return (porCnpj || porNome)?.id || "";
+}
+
+// Telefones e e-mails do registro para o cadastro da empresa no Controle de Apuração.
+async function enviarContatos(ctx, payload) {
+  const { supabaseUrl, serviceKey, perfil } = ctx;
+  const registroId = String(payload?.registroId || "");
+  if (!/^[0-9a-f-]{36}$/i.test(registroId)) throw httpError(400, "Registro inválido.");
+  const [registro] = (await sb(`${supabaseUrl}/rest/v1/hub_registros?id=eq.${registroId}&select=*&limit=1`, { headers: svc(serviceKey) })) || [];
+  if (!registro) throw httpError(404, "Registro não encontrado.");
+  if (!registro.responsavel_id) throw httpError(400, "Defina primeiro o responsável pela apuração.");
+  if (perfil.role !== "admin" && perfil.id !== registro.responsavel_id) throw httpError(403, "Somente o administrador ou o responsável pela empresa.");
+  if (!Object.values(contatosDoRegistro(registro)).some(Boolean)) throw httpError(400, "Preencha ao menos um telefone ou e-mail e salve o registro.");
+  const empresaApuracaoId = await localizarEmpresaApuracao(ctx, registro, registro.responsavel_id);
+  if (!empresaApuracaoId) throw httpError(404, "A empresa não foi encontrada na carteira do responsável no Controle de Apuração.");
+  await gravarContatosApuracao(ctx, empresaApuracaoId, registro);
+  return json(200, { ok: true, mensagem: "Telefones e e-mails enviados ao cadastro da empresa no Controle de Apuração." });
 }
 
 function rotuloCompetencia(comp) {
@@ -309,10 +362,59 @@ async function entradaEmail(ctx, request, payload) {
 
   let registro = null;
   let criado = false;
+  let empresa = null;
   if (cnpj) {
-    [registro] = (await sb(`${supabaseUrl}/rest/v1/hub_registros?cnpj=eq.${cnpj}&select=*&limit=1`, { headers })) || [];
+    [empresa] = (await sb(`${supabaseUrl}/rest/v1/hub_registros?cnpj=eq.${cnpj}&tipo=neq.alteracao&select=*&limit=1`, { headers })) || [];
   }
-  if (registro) {
+  const razaoDoAssunto = assunto
+    .replace(/^(\s*(enc|fwd?|res|re)\s*:\s*)+/i, "")
+    .replace(/\b(abertura|altera[cç][aã]o( contratual)?|cliente novo)\b\s*[-:–]?\s*/gi, "")
+    .replace(/\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}/g, "")
+    .replace(/[\s\-–:]+$/g, "")
+    .trim();
+  const dataEmail = dataEmSaoPaulo(payload?.data);
+
+  if (tipo === "alteracao") {
+    // Subaba Alterações: cada alteração é um item próprio, ligado ao registro da empresa (se houver).
+    [registro] =
+      (await sb(`${supabaseUrl}/rest/v1/hub_registros?select=*`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json", prefer: "return=representation" },
+        body: JSON.stringify({
+          cnpj,
+          tipo: "alteracao",
+          status: "revisao",
+          origem: "email",
+          empresa_id: empresa?.id || null,
+          categorias: detectarCategorias(`${assunto}\n${corpo}`),
+          data_alteracao: dataEmail,
+          razao_social: dados?.razaoSocial || empresa?.razao_social || razaoDoAssunto.slice(0, 200),
+          ie: empresa?.ie || "",
+          codigo_dominio: empresa?.codigo_dominio || "",
+          regime: empresa?.regime || dados?.regimeSugerido || "",
+          ...(dados ? linhaRegistroDaReceita(dados) : {})
+        })
+      })) || [];
+    criado = true;
+    if (empresa) {
+      await sb(`${supabaseUrl}/rest/v1/hub_registros?id=eq.${empresa.id}`, {
+        method: "PATCH",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify(dados ? linhaRegistroDaReceita(dados) : { updated_at: new Date().toISOString() })
+      }).catch(() => null);
+      await sb(`${supabaseUrl}/rest/v1/hub_registros_eventos`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({
+          registro_id: empresa.id,
+          tipo: "alteracao",
+          resumo: `Alteração recebida por e-mail (subaba Alterações)${dados ? "; dados da Receita atualizados" : ""}.`,
+          assunto,
+          remetente
+        })
+      }).catch(() => null);
+    }
+  } else if ((registro = empresa)) {
     [registro] =
       (await sb(`${supabaseUrl}/rest/v1/hub_registros?id=eq.${registro.id}&select=*`, {
         method: "PATCH",
@@ -320,7 +422,6 @@ async function entradaEmail(ctx, request, payload) {
         body: JSON.stringify({ status: "revisao", ...(TIPOS_REGISTRO.has(tipo) && tipo !== "outro" ? { tipo } : {}), ...(dados ? linhaRegistroDaReceita(dados) : {}) })
       })) || [registro];
   } else {
-    const razaoDoAssunto = assunto.replace(/^(\s*(enc|fwd?|res|re)\s*:\s*)+/i, "").replace(/\b(abertura|altera[cç][aã]o( contratual)?|cliente novo)\b\s*[-:–]?\s*/gi, "").trim();
     [registro] =
       (await sb(`${supabaseUrl}/rest/v1/hub_registros?select=*`, {
         method: "POST",
@@ -332,6 +433,9 @@ async function entradaEmail(ctx, request, payload) {
           origem: "email",
           razao_social: dados?.razaoSocial || (cnpj ? "" : razaoDoAssunto.slice(0, 200)),
           regime: dados?.regimeSugerido || "",
+          telefone1: dados?.telefone1 || "",
+          telefone2: dados?.telefone2 || "",
+          email1: dados?.email || "",
           ...(dados ? linhaRegistroDaReceita(dados) : {})
         })
       })) || [];
@@ -429,7 +533,39 @@ async function entradaEmail(ctx, request, payload) {
     console.warn("Registros: não foi possível notificar os administradores.", error?.message || error);
   }
 
+  // Alteração em empresa que já tem responsável pela apuração: ele também é avisado no sino.
+  if (tipo === "alteracao" && empresa?.responsavel_id) {
+    try {
+      const categorias = (registro.categorias || []).map((c) => CATEGORIAS_ALTERACAO[c] || c).join(", ");
+      await sb(`${supabaseUrl}/rest/v1/notificacoes?on_conflict=user_id,dedupe_key`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json", prefer: "resolution=ignore-duplicates" },
+        body: JSON.stringify({
+          user_id: empresa.responsavel_id,
+          tipo: "registro",
+          titulo: "Alteração em empresa sob sua responsabilidade",
+          body: `${empresa.razao_social || formatarCnpj(cnpj)}: ${categorias || "alteração contratual"}.`,
+          meta: JSON.stringify({ route: "registros", id: registro.id }),
+          target_type: "registro",
+          target_ref: registro.id,
+          dedupe_key: `registro_alteracao_resp:${messageId}`,
+          route: "registros",
+          tone: "info",
+          active: true
+        })
+      });
+    } catch (error) {
+      console.warn("Registros: não foi possível avisar o responsável.", error?.message || error);
+    }
+  }
+
   return json(200, { ok: true, registroId: registro.id, criado, cnpj, tipo, anexos: anexosGravados, anexosRecusados });
+}
+
+function dataEmSaoPaulo(valor) {
+  const data = valor ? new Date(valor) : new Date();
+  const valida = Number.isNaN(data.getTime()) ? new Date() : data;
+  return valida.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 }
 
 function resumoCorpo(corpo) {

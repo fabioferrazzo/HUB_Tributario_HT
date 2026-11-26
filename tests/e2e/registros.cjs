@@ -27,6 +27,9 @@ const RECEITA = {
     { nome: "[TESTE] BELTRANA SOUZA", qualificacao: "Sócio", desde: "2026-11-03" }
   ],
   regimeSugerido: "Simples Nacional",
+  telefone1: "(54) 3244-1234",
+  telefone2: "",
+  email: "contato@pecasserranas.com.br",
   consultadoEm: new Date().toISOString()
 };
 
@@ -58,6 +61,7 @@ async function rodar(browser, tema, tamanho, largura) {
   await page.waitForSelector(".registros-page");
   check(`${rotulo} aba Registros abre no menu Escritório`, (await page.locator(".registros-page.hp-migrada").count()) === 1);
   check(`${rotulo} lista vazia orienta o usuário`, /Novo registro/.test(await page.locator(".registros-lista .empty-state").innerText()));
+  check(`${rotulo} subabas Registros e Alterações`, (await page.locator(".registros-subabas [role=tab]").allInnerTexts()).map((t) => t.replace(/\s+\d+$/, "").trim()).join("|") === "Registros|Alterações");
 
   // Novo registro pelo CNPJ
   await page.click(".registros-novo");
@@ -76,10 +80,17 @@ async function rodar(browser, tema, tamanho, largura) {
   check(`${rotulo} sócios listados`, (await form.locator(".registros-socios li").count()) === 2);
   check(`${rotulo} CNAE principal e secundários`, (await form.locator(".registros-cnaes li").count()) === 3 && /Principal/.test(await form.locator(".registros-cnaes__principal").innerText()));
 
+  check(`${rotulo} telefone e e-mail da Receita nos contatos`, (await form.locator("label", { hasText: "Telefone 1" }).locator("input").inputValue()) === "(54) 3244-1234" && (await form.locator("label", { hasText: "E-mail 1" }).locator("input").inputValue()) === "contato@pecasserranas.com.br");
+  await form.locator("label", { hasText: "Telefone 2" }).locator("input").fill("(54) 99999-0000");
+  await form.locator("label", { hasText: "E-mail 2" }).locator("input").fill("financeiro.pecasserranas.com.br");
   await form.locator("label", { hasText: "Inscrição estadual" }).locator("input").fill("123/4567890");
   await form.locator("label", { hasText: "Código no Domínio" }).locator("input").fill("[TESTE] 9876");
   await form.locator(".registros-obs [contenteditable='true']").click();
   await page.keyboard.type("[TESTE] Aguardando alvará municipal.");
+  await form.locator("button[type=submit]").click();
+  await page.waitForTimeout(400);
+  check(`${rotulo} e-mail inválido é recusado`, /E-mail inválido/.test(await page.locator(".registros-form .form-error").innerText().catch(() => "")));
+  await form.locator("label", { hasText: "E-mail 2" }).locator("input").fill("financeiro@pecasserranas.com.br");
   await form.locator("button[type=submit]").click();
   await page.waitForTimeout(500);
   check(`${rotulo} registro salvo`, /Registro criado/.test(await page.locator(".registros-form .module-notice").innerText()));
@@ -103,6 +114,35 @@ async function rodar(browser, tema, tamanho, largura) {
   check(`${rotulo} aviso de modo demonstração`, /Modo demonstração/.test(await page.locator(".registros-form .module-notice").innerText()));
   await page.locator(".registros-secao summary", { hasText: "Histórico do registro" }).click();
   check(`${rotulo} histórico registra criação e responsável`, (await page.locator(".registros-eventos li").count()) >= 2 && /Responsável pela apuração: Colaborador/.test(await page.locator(".registros-eventos").innerText()));
+
+  // Subaba Alterações: nova alteração ligada à empresa
+  await page.locator(".registros-subabas [role=tab]", { hasText: "Alterações" }).click();
+  check(`${rotulo} subaba Alterações começa vazia`, /Nenhuma alteração/.test(await page.locator(".registros-lista .empty-state").innerText()));
+  await page.click(".registros-novo");
+  check(`${rotulo} botão vira "Nova alteração"`, /Nova alteração/.test(await page.locator(".registros-novo").innerText()) && /Nova alteração/.test(await page.locator(".registros-detalhe__cabeca h2").innerText()));
+  await page.locator(".registros-form .registros-cnpj input").fill("11222333000181");
+  await page.locator(".registros-form .registros-cnpj__linha button").click();
+  await page.waitForTimeout(400);
+  check(`${rotulo} alteração aceita CNPJ de empresa já registrada`, /Dados encontrados/.test(await page.locator(".registros-form .module-notice").innerText()));
+  await page.locator(".registros-categorias button", { hasText: "Quadro societário" }).click();
+  await page.locator(".registros-categorias button", { hasText: "Atividades (CNAE)" }).click();
+  await page.locator(".registros-form label", { hasText: "Data da alteração" }).locator("input").fill("2026-11-20");
+  check(`${rotulo} alteração não mostra responsável nem contatos`, (await page.locator(".registros-responsavel").count()) === 0 && (await page.locator(".registros-form label", { hasText: "Telefone 1" }).count()) === 0);
+  await page.locator(".registros-form button[type=submit]").click();
+  await page.waitForTimeout(500);
+  const alt = page.locator(".registro-item").first();
+  const altTexto = await alt.innerText();
+  check(`${rotulo} alteração na lista com o que mudou e a data`, /Quadro societário/.test(altTexto) && /Atividades \(CNAE\)/.test(altTexto) && /Alteração de 20\/11\/2026/.test(altTexto), altTexto.replace(/\n/g, " | "));
+  check(`${rotulo} alteração ligada à empresa`, /Empresa:\s*\[TESTE\] COMERCIO DE PECAS SERRANAS LTDA/.test(await page.locator(".registros-empresa-link").innerText()) && /Responsável: Colaborador/.test(await page.locator(".registros-empresa-link").innerText()));
+  await page.screenshot({ path: path.join(OUT, `registros-alteracao-${tema}-${tamanho}-${largura}.png`) });
+  await page.locator(".registros-detalhe__acoes button", { hasText: "Marcar como concluída" }).click();
+  await page.waitForTimeout(400);
+  check(`${rotulo} alteração concluída`, /Concluída/.test(await page.locator(".registro-item").first().innerText()));
+  await page.locator(".registros-empresa-link button").click();
+  await page.waitForTimeout(500);
+  check(`${rotulo} empresa abre na subaba Registros com a lista de alterações`, (await page.locator(".registros-subabas [aria-selected=true]").innerText()).includes("Registros") && (await page.locator(".registros-alteracoes-empresa li").count()) === 1);
+  check(`${rotulo} contatos salvos no registro`, (await page.locator(".registros-form label", { hasText: "E-mail 2" }).locator("input").inputValue()) === "financeiro@pecasserranas.com.br");
+  check(`${rotulo} botão de enviar contatos ao Controle de Apuração`, (await page.locator(".registros-enviar-contatos").count()) === 1);
 
   // Layout: nada estourando
   const estouro = await page.evaluate(() => {

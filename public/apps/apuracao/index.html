@@ -11,7 +11,7 @@
   <meta name="format-detection" content="telephone=no">
   <title>H. Teixeira — Controle Fiscal</title>
   <link rel="icon" href="../../favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub5">
+  <link rel="stylesheet" href="styles.css?v=0.11.8.13-hub6">
   <script src="/apps/hub-premium-app.js"></script>
   <script src="/apps/hub-premium-tema.js" data-atributo="data-theme" data-escuro="dark" data-claro="light" data-chave="ht_theme" data-padrao="light"></script>
   <link rel="stylesheet" href="premium.css?v=1">
@@ -171,6 +171,10 @@
         <label>Código Domínio<input id="companyDominio" autocomplete="off"></label>
         <label>Regime<select id="companyRegime"><option>SIMPLES NACIONAL</option><option>LUCRO PRESUMIDO</option><option>LUCRO REAL</option><option>COOPERATIVA</option><option>OUTROS</option></select></label>
         <label>Envio<input id="companyEnvio" placeholder="WhatsApp, e-mail, protocolo…"></label>
+        <label>Telefone 1<input id="companyTelefone1" inputmode="tel" autocomplete="off" placeholder="(54) 0000-0000"></label>
+        <label>Telefone 2<input id="companyTelefone2" inputmode="tel" autocomplete="off"></label>
+        <label>E-mail 1<input id="companyEmail1" type="text" inputmode="email" autocomplete="off" placeholder="contato@empresa.com.br"></label>
+        <label>E-mail 2<input id="companyEmail2" type="text" inputmode="email" autocomplete="off"></label>
         <label id="companyOwnerLabel" class="hidden">Responsável<select id="companyOwner"></select></label>
         <label class="span2">Particularidades<textarea id="companyParticularities" rows="3"></textarea></label>
         <label class="span2">Observações<textarea id="companyNotes" rows="3"></textarea></label>
@@ -475,7 +479,7 @@
   <div id="toast" class="toast"></div>
   <div class="hub-apuracao-loading">Carregando o Controle de Apuração…</div>
   <div id="hubApuracaoBlocker" class="hub-apuracao-blocker" hidden><div><h2>Controle de Apuração</h2><p></p><button type="button" onclick="location.reload()">Tentar novamente</button></div></div>
-  <script src="hub-apuracao.js?v=0.11.8.13-hub5"></script>
+  <script src="hub-apuracao.js?v=0.11.8.13-hub6"></script>
   <script src="/apps/hub-app-shell.js" defer></script>
 </body>
 </html>

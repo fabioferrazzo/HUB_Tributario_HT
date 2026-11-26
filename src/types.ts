@@ -271,6 +271,9 @@ export type DadosReceita = {
   cnaesSecundarios: RegistroCnae[];
   socios: RegistroSocio[];
   regimeSugerido: string;
+  telefone1?: string;
+  telefone2?: string;
+  email?: string;
   consultadoEm: string;
 };
 
@@ -291,6 +294,14 @@ export type RegistroEmpresa = {
   cnaePrincipal: RegistroCnae | null;
   cnaesSecundarios: RegistroCnae[];
   receitaAtualizadaEm: string;
+  telefone1: string;
+  telefone2: string;
+  email1: string;
+  email2: string;
+  /** Só nas alterações: categorias (contrato social, quadro societário...), data e empresa ligada. */
+  categorias: string[];
+  dataAlteracao: string;
+  empresaId: string;
   observacoes: string;
   tipo: RegistroTipo;
   status: RegistroStatus;

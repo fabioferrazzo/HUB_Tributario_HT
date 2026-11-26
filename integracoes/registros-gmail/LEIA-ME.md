@@ -6,10 +6,11 @@ caixa fiscal10 (que também recebe o fiscal@), lê os e-mails de 5 em 5 minutos 
 recebido pelos dois endereços é gravado uma vez só (o HUB usa o Message-ID). O HUB identifica o CNPJ, consulta a
 Receita (razão social, data de início, sócios, CNAEs, Simples/MEI), grava os anexos e avisa o administrador no sino.
 
-Na aba **Registros**, a equipe completa IE, código no Domínio e observações. Só o administrador define o
-responsável pela apuração. Ao definir:
+Na aba **Registros**, a equipe completa IE, código no Domínio, contatos (2 telefones e 2 e-mails) e observações.
+Só o administrador define o responsável pela apuração. Ao definir:
 - a empresa entra na apuração aberta do responsável no Controle de Apuração (linha nova na competência em aberto;
   se não houver período aberto, entra na carteira e aparece no próximo período gerado);
+- os telefones e e-mails vão para o cadastro da empresa no Controle de Apuração;
 - o responsável recebe notificação no sino e uma mensagem no chat do HUB.
 
 Remetentes autorizados (padrão): societario.hteixeira@gmail.com e carlosreis.hteixeira@gmail.com.
@@ -64,6 +65,9 @@ marcador **HUB-Registrado** no Gmail; se algo falhar, o marcador **HUB-Erro** (o
 Dicas:
 - Com CNPJ no assunto ou no texto, o HUB preenche os dados da Receita sozinho. Sem CNPJ (empresa ainda em
   abertura), o registro é criado pela razão social do assunto, com a pendência "CNPJ não identificado".
-- Alteração de empresa que já tem registro entra no mesmo registro, como novo evento, e volta para "Em revisão".
+- E-mail de ALTERAÇÃO vira um item na subaba **Alterações** (aba Registros), ligado ao registro da empresa pelo
+  CNPJ, com o que mudou (contrato social, quadro societário, CNAE, endereço, capital...) identificado pelo assunto e
+  pelo texto. Se a empresa já tem responsável pela apuração, ele é avisado no sino.
+- E-mails de ABERTURA e CLIENTE NOVO ficam na subaba **Registros**, já com telefone e e-mail da Receita.
 - Anexos acima de 4 MB no total não vão pelo e-mail automático: anexe pela aba Registros (botão
   "Anexar documento"). O registro anota quais ficaram de fora.
