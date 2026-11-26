@@ -73,6 +73,8 @@ function verificarRegistros() {
       // Message-ID é o mesmo nas duas caixas (fiscal@ e fiscal10): o HUB não grava o mesmo e-mail duas vezes.
       var messageId = String(msg.getHeader("Message-ID") || "").trim() || id;
       if (cfg.remetentes.indexOf(emailDe_(msg.getFrom())) < 0) return;
+      // Só e-mails de registro (assunto com ABERTURA, ALTERAÇÃO ou CLIENTE NOVO); os demais ficam como estão.
+      if (!ehAssuntoDeRegistro_(msg.getSubject())) return;
 
       var anexos = [];
       var ignorados = [];
@@ -119,6 +121,15 @@ function verificarRegistros() {
 
   gravarProcessados_(processados);
   if (enviados) console.log("Registros: " + enviados + " e-mail(s) enviado(s) ao HUB.");
+}
+
+/** Assunto de registro: contém ABERTURA, ALTERAÇÃO (com ou sem acento) ou CLIENTE NOVO / NOVO CLIENTE. */
+function ehAssuntoDeRegistro_(assunto) {
+  var texto = String(assunto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+  return /(^|[^A-Z])(ABERTURA|ALTERACAO|ALTERACOES|CLIENTE NOVO|NOVO CLIENTE)([^A-Z]|$)/.test(texto);
 }
 
 /** Cria (ou recria) o gatilho de 5 em 5 minutos. */

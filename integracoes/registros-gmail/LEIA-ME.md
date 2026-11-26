@@ -52,7 +52,8 @@ Faça logado na conta **fiscal10.hteixeira@gmail.com** (perfil do Chrome fiscal1
 5. Escolha a função **testarConexao** > **Executar**. No **Registro de execução** deve aparecer
    "Conexão OK: o HUB aceitou o token".
 
-Pronto: a cada 5 minutos o script envia os e-mails novos dos remetentes autorizados. Os já enviados ganham o
+Pronto: a cada 5 minutos o script envia os e-mails novos dos remetentes autorizados cujo assunto tenha
+**ABERTURA**, **ALTERAÇÃO** ou **CLIENTE NOVO** (os demais e-mails desses remetentes são deixados como estão). Os já enviados ganham o
 marcador **HUB-Registrado** no Gmail; se algo falhar, o marcador **HUB-Erro** (o script tenta de novo).
 
 ## 4. Como encaminhar do WhatsApp
