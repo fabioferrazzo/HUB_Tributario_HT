@@ -124,6 +124,20 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
     void carregar();
   }, [carregar]);
 
+  // Ao voltar para a aba do navegador, atualiza a lista (registros que chegaram por e-mail), no máximo a cada 60 s.
+  const ultimaCarga = useRef(Date.now());
+  useEffect(() => {
+    function aoVoltar() {
+      if (document.visibilityState !== "visible" || Date.now() - ultimaCarga.current < 60_000) return;
+      ultimaCarga.current = Date.now();
+      listRegistros()
+        .then(setRegistros)
+        .catch(() => undefined);
+    }
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => document.removeEventListener("visibilitychange", aoVoltar);
+  }, []);
+
   const setSubaba = useCallback((nova: Subaba) => {
     setSubabaEstado(nova);
     try {
@@ -295,7 +309,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
       setCriando(false);
       setSelecionadoId(salvo.id);
       setRascunho({ ...salvo });
-      setMensagem(criando ? "Registro criado." : "Alterações salvas.");
+      setMensagem(criando ? (salvo.tipo === "alteracao" ? "Alteração registrada." : "Registro criado.") : "Alterações salvas.");
     } catch (error) {
       setErro(getErrorMessage(error));
     } finally {
@@ -328,14 +342,15 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
 
   async function excluir() {
     if (!rascunho || criando || !isAdmin) return;
-    if (!confirmDeletion(`Excluir o registro "${rascunho.razaoSocial || formatarCnpj(rascunho.cnpj)}" com todos os anexos? Esta ação não pode ser desfeita.`)) return;
+    const alt = rascunho.tipo === "alteracao";
+    if (!confirmDeletion(`Excluir ${alt ? "a alteração" : "o registro"} "${rascunho.razaoSocial || formatarCnpj(rascunho.cnpj)}" com todos os anexos? Esta ação não pode ser desfeita.`)) return;
     setSalvando(true);
     try {
       await deleteRegistro(rascunho);
       setRegistros((lista) => lista.filter((item) => item.id !== rascunho.id));
       setSelecionadoId(null);
       setRascunho(null);
-      setMensagem("Registro excluído.");
+      setMensagem(alt ? "Alteração excluída." : "Registro excluído.");
     } catch (error) {
       setErro(getErrorMessage(error));
     } finally {
@@ -350,10 +365,12 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
     setMensagem("");
     try {
       const resultado = await definirResponsavel(rascunho, responsavelEscolhido, nomeDoUsuario(responsavelEscolhido), user);
-      await carregar();
-      const atualizado = (await listRegistros()).find((item) => item.id === rascunho.id);
+      // Uma única leitura da lista (antes eram duas) e os eventos em paralelo.
+      const [lista, eventosAtuais] = await Promise.all([listRegistros(), listEventos(rascunho.id)]);
+      setRegistros(lista);
+      const atualizado = lista.find((item) => item.id === rascunho.id);
       if (atualizado) setRascunho({ ...atualizado, observacoes: rascunho.observacoes });
-      setEventos(await listEventos(rascunho.id));
+      setEventos(eventosAtuais);
       const feitos = [resultado.notificado ? "sino" : "", resultado.chatEnviado ? "chat" : ""].filter(Boolean);
       const apuracao = resultado.apuracao;
       const competencia = apuracao?.competencia ? apuracao.competencia.split("-").reverse().join("/") : "";
@@ -394,9 +411,12 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
   }
 
   function alternarCategoria(chave: string) {
-    if (!rascunho) return;
-    const atual = rascunho.categorias;
-    alterar("categorias", atual.includes(chave) ? atual.filter((item) => item !== chave) : [...atual, chave]);
+    // Atualização funcional: cliques rápidos seguidos não se sobrescrevem.
+    setRascunho((atual) => {
+      if (!atual) return atual;
+      const lista = atual.categorias || [];
+      return { ...atual, categorias: lista.includes(chave) ? lista.filter((item) => item !== chave) : [...lista, chave] };
+    });
   }
 
   async function anexar(event: ChangeEvent<HTMLInputElement>) {

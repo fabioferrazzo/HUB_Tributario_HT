@@ -124,12 +124,23 @@ async function rodar(browser, tema, tamanho, largura) {
   await page.locator(".registros-form .registros-cnpj__linha button").click();
   await page.waitForTimeout(400);
   check(`${rotulo} alteração aceita CNPJ de empresa já registrada`, /Dados encontrados/.test(await page.locator(".registros-form .module-notice").innerText()));
-  await page.locator(".registros-categorias button", { hasText: "Quadro societário" }).click();
-  await page.locator(".registros-categorias button", { hasText: "Atividades (CNAE)" }).click();
+  // Cliques rápidos seguidos (sem esperar renderizar) não podem se sobrescrever.
+  await page.evaluate(() => {
+    const botoes = [...document.querySelectorAll(".registros-categorias button")];
+    const achar = (t) => botoes.find((b) => b.textContent.includes(t));
+    achar("Quadro societário").click();
+    achar("Atividades (CNAE)").click();
+    achar("Endereço").click();
+    achar("Endereço").click();
+  });
+  await page.waitForTimeout(150);
+  const marcadas = await page.locator(".registros-categorias button[aria-pressed=true]").allInnerTexts();
+  check(`${rotulo} cliques rápidos nas categorias não se perdem`, marcadas.length === 2 && marcadas.some((t) => /Quadro societário/.test(t)) && marcadas.some((t) => /CNAE/.test(t)), marcadas.join(", "));
   await page.locator(".registros-form label", { hasText: "Data da alteração" }).locator("input").fill("2026-11-20");
   check(`${rotulo} alteração não mostra responsável nem contatos`, (await page.locator(".registros-responsavel").count()) === 0 && (await page.locator(".registros-form label", { hasText: "Telefone 1" }).count()) === 0);
   await page.locator(".registros-form button[type=submit]").click();
   await page.waitForTimeout(500);
+  check(`${rotulo} mensagem "Alteração registrada."`, /Alteração registrada/.test(await page.locator(".registros-form .module-notice").innerText()));
   const alt = page.locator(".registro-item").first();
   const altTexto = await alt.innerText();
   check(`${rotulo} alteração na lista com o que mudou e a data`, /Quadro societário/.test(altTexto) && /Atividades \(CNAE\)/.test(altTexto) && /Alteração de 20\/11\/2026/.test(altTexto), altTexto.replace(/\n/g, " | "));

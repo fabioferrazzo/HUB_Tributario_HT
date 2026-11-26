@@ -1139,7 +1139,7 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
       let activeTab = "resumo";
       let drawers = { colaborador: false, coordenacao: false };
       let filters = { query: "", collaboratorId: "todos" };
-      let syncState = { token: "", remoteReady: false, saving: false };
+      let syncState = { token: "", remoteReady: false, saving: false, pendente: false };
       let syncSaveTimer = 0;
       let bonusTemplate = { fileName: "", sheetName: "", rows: [] };
 
@@ -1292,8 +1292,14 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
       }
 
       async function saveRemoteState() {
-        if (!syncState.token || syncState.saving) return;
+        if (!syncState.token) return;
+        // Alteração feita enquanto outra ainda está sendo gravada: grava de novo ao terminar (nada se perde).
+        if (syncState.saving) {
+          syncState.pendente = true;
+          return;
+        }
         syncState.saving = true;
+        syncState.pendente = false;
         setSyncStatus("salvando", "local");
 
         try {
@@ -1317,6 +1323,10 @@ html.ht-premium :is(button,a,input,select,textarea):focus-visible{outline:2px so
           console.warn("Não foi possível salvar a Coordenação no Supabase.", error?.message || error);
         } finally {
           syncState.saving = false;
+          if (syncState.pendente) {
+            syncState.pendente = false;
+            saveRemoteState();
+          }
         }
       }
 
