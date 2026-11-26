@@ -1,14 +1,12 @@
 // HUB Depto Tributário: aba Registros (aberturas, alterações contratuais e clientes novos).
 // Ações (POST, JSON com "acao"):
 //   - consultar-cnpj       (usuário ativo)   -> dados públicos da Receita (BrasilAPI, com reserva na Minha Receita)
-//   - definir-responsavel  (administrador)   -> grava o responsável e avisa: e-mail, sino e aviso particular (30 dias)
+//   - definir-responsavel  (administrador)   -> grava o responsável, inclui a empresa na apuração aberta dele
+//                                               (Controle de Apuração) e avisa: sino e mensagem no chat
 //   - entrada-email        (script do Gmail, cabeçalho x-registros-token) -> cria/atualiza o registro com os anexos
-import { processDueEmails } from "./email-outbox.mjs";
 import { cnpjValido, consultarReceita, detectarTipo, extrairCnpjs, formatarCnpj, somenteDigitos } from "../lib/cnpj.mjs";
 
 const JSON_HEADERS = { "content-type": "application/json", "cache-control": "no-store" };
-const DIA_MS = 24 * 60 * 60 * 1000;
-const PRAZO_AVISO_DIAS = 30;
 const REMETENTES_PADRAO = ["societario.hteixeira@gmail.com", "carlosreis.hteixeira@gmail.com"];
 const ANEXO_MAX_BYTES = 8 * 1024 * 1024;
 const TIPOS_REGISTRO = new Set(["abertura", "alteracao", "cliente_novo", "outro"]);
@@ -105,9 +103,6 @@ async function definirResponsavel(ctx, payload) {
     })) || [];
   if (!registro) throw httpError(404, "Registro não encontrado.");
 
-  // Aviso anterior deste registro sai do quadro (troca ou retirada do responsável).
-  for (const aviso of await avisosDoRegistro(ctx, registroId)) await apagarAviso(ctx, aviso.id);
-
   await sb(`${supabaseUrl}/rest/v1/hub_registros_eventos`, {
     method: "POST",
     headers: userHeaders,
@@ -119,69 +114,60 @@ async function definirResponsavel(ctx, payload) {
     })
   });
 
-  const resultado = { ok: true, emailEnviado: false, avisoCriado: false, notificado: false, erros: [] };
+  const resultado = { ok: true, notificado: false, chatEnviado: false, apuracao: null, erros: [] };
   if (!responsavel) return json(200, { ...resultado, mensagem: "Responsável retirado." });
 
   const nomeEmpresa = registro.razao_social || formatarCnpj(registro.cnpj) || "Empresa sem razão social";
-  const titulo = `Apuração sob sua responsabilidade: ${nomeEmpresa}`;
   const definidoEm = registro.responsavel_definido_em || new Date().toISOString();
 
+  // 1. Linha na apuração aberta do responsável (Controle de Apuração), pela função oficial do app.
   try {
-    await sb(`${supabaseUrl}/rest/v1/rpc/queue_email`, {
-      method: "POST",
-      headers: { ...svc(serviceKey), "content-type": "application/json" },
-      body: JSON.stringify({
-        p_to_email: String(responsavel.email).toLowerCase(),
-        p_to_name: responsavel.nome || null,
-        p_subject: titulo,
-        p_html_body: emailResponsavelHtml(registro, responsavel, ctx.hubUrl),
-        p_text_body: emailResponsavelTexto(registro, responsavel, ctx.hubUrl),
-        p_category: "registros",
-        p_target_type: "registro",
-        p_target_ref: registroId,
-        p_scheduled_for: new Date().toISOString(),
-        p_dedupe_key: `registro_responsavel:${registroId}:${responsavel.id}:${definidoEm}`,
-        p_created_by: perfil.id
-      })
-    });
-    resultado.emailEnviado = true;
+    resultado.apuracao = await incluirNaApuracao(ctx, registro, responsavel);
   } catch (error) {
-    resultado.erros.push(`E-mail: ${error?.message || "não foi possível enfileirar."}`);
+    resultado.apuracao = { incluida: false, competencia: "", mensagem: error?.message || "não foi possível incluir." };
+    resultado.erros.push(`Controle de Apuração: ${resultado.apuracao.mensagem}`);
   }
-
-  try {
-    const agora = Date.now();
-    const [aviso] =
-      (await sb(`${supabaseUrl}/rest/v1/quadro_avisos?select=id`, {
-        method: "POST",
-        headers: { ...userHeaders, prefer: "return=representation" },
-        body: JSON.stringify({
-          cell: 1,
-          kind: "texto",
-          visibility: "particular",
-          title: titulo.slice(0, 200),
-          content: `${avisoResponsavelHtml(registro)}${marcaAviso({
-            id: registroId,
-            criado: new Date(agora).toISOString(),
-            expira: new Date(agora + PRAZO_AVISO_DIAS * DIA_MS).toISOString()
-          })}`,
-          color: "#ffffff",
-          created_by: perfil.id,
-          created_by_email: String(perfil.email || "").toLowerCase()
-        })
-      })) || [];
-    if (!aviso?.id) throw new Error("aviso não retornado.");
-    await sb(`${supabaseUrl}/rest/v1/quadro_aviso_usuarios`, {
+  if (resultado.apuracao?.incluida) {
+    await sb(`${supabaseUrl}/rest/v1/hub_registros_eventos`, {
       method: "POST",
       headers: userHeaders,
-      body: JSON.stringify({ aviso_id: aviso.id, user_id: responsavel.id, email: String(responsavel.email).toLowerCase(), nome: responsavel.nome || "" })
-    });
-    resultado.avisoCriado = true;
-  } catch (error) {
-    resultado.erros.push(`Quadro de Avisos: ${error?.message || "não foi possível criar o aviso."}`);
+      body: JSON.stringify({
+        registro_id: registroId,
+        tipo: "nota",
+        resumo: resultado.apuracao.jaExistia
+          ? `Controle de Apuração: ${resultado.apuracao.mensagem}`
+          : resultado.apuracao.competencia
+            ? `Incluída na apuração de ${rotuloCompetencia(resultado.apuracao.competencia)} de ${responsavel.nome || responsavel.email}.`
+            : `Incluída na carteira de ${responsavel.nome || responsavel.email} no Controle de Apuração (sem período aberto).`,
+        created_by: perfil.id
+      })
+    }).catch(() => null);
   }
+  const textoApuracao = resultado.apuracao?.incluida
+    ? resultado.apuracao.competencia
+      ? `Ela já está na sua apuração de ${rotuloCompetencia(resultado.apuracao.competencia)} (Controle de Apuração).`
+      : "Ela já está na sua carteira do Controle de Apuração e entra no próximo período que você gerar."
+    : "";
 
+  // 2. Mensagem no chat (conversa direta do administrador com o responsável).
   if (responsavel.id !== perfil.id) {
+    try {
+      const conversa = await sb(`${supabaseUrl}/rest/v1/rpc/chat_abrir_direta`, {
+        method: "POST",
+        headers: userHeaders,
+        body: JSON.stringify({ p_outro: responsavel.id })
+      });
+      await sb(`${supabaseUrl}/rest/v1/rpc/chat_enviar`, {
+        method: "POST",
+        headers: userHeaders,
+        body: JSON.stringify({ p_conversa: conversa, p_conteudo: mensagemChat(registro, textoApuracao), p_anexos: [] })
+      });
+      resultado.chatEnviado = true;
+    } catch (error) {
+      resultado.erros.push(`Chat: ${error?.message || "não foi possível enviar a mensagem."}`);
+    }
+
+    // 3. Sino do responsável.
     try {
       await sb(`${supabaseUrl}/rest/v1/notificacoes?on_conflict=user_id,dedupe_key`, {
         method: "POST",
@@ -190,7 +176,7 @@ async function definirResponsavel(ctx, payload) {
           user_id: responsavel.id,
           tipo: "registro",
           titulo: "Nova empresa sob sua responsabilidade",
-          body: `${nomeEmpresa}${registro.cnpj ? ` (${formatarCnpj(registro.cnpj)})` : ""}: você foi definido como responsável pela apuração.`,
+          body: `${nomeEmpresa}${registro.cnpj ? ` (${formatarCnpj(registro.cnpj)})` : ""}: você é o responsável pela apuração.${textoApuracao ? ` ${textoApuracao}` : ""}`,
           meta: JSON.stringify({ route: "registros", id: registroId }),
           target_type: "registro",
           target_ref: registroId,
@@ -206,25 +192,51 @@ async function definirResponsavel(ctx, payload) {
     }
   }
 
-  if (resultado.emailEnviado) {
-    await processDueEmails(supabaseUrl, serviceKey, 1).catch((error) => resultado.erros.push(`E-mail na fila; envio imediato falhou: ${error?.message || error}`));
-  }
   return json(200, resultado);
 }
 
-// Aviso particular ligado ao registro: mesma marca oculta dos lembretes da Coordenação.
-function marcaAviso({ id, criado, expira }) {
-  return `<!--hub:registro id=${id} criado=${criado} expira=${expira}-->`;
+// Competência aberta = a mais recente do responsável, se não estiver encerrada.
+// Sem período aberto, a empresa entra só na carteira (aparece no próximo período gerado).
+async function incluirNaApuracao(ctx, registro, responsavel) {
+  const { supabaseUrl, serviceKey, anonKey, token } = ctx;
+  if (!String(registro.razao_social || "").trim()) throw new Error("informe a razão social no registro antes de definir o responsável.");
+  const periodos =
+    (await sb(
+      `${supabaseUrl}/rest/v1/apur_periods?owner_user_id=eq.${encodeURIComponent(responsavel.id)}&select=competence,status&order=competence.desc&limit=1`,
+      { headers: svc(serviceKey) }
+    )) || [];
+  const ultimo = periodos[0];
+  const competencia = ultimo && ultimo.status !== "CLOSED" ? ultimo.competence : "";
+  const nota = `Incluída pela aba Registros (${ROTULO_TIPO[registro.tipo] || "Registro"}) em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}.`;
+  try {
+    await sb(`${supabaseUrl}/rest/v1/rpc/apur_company_create`, {
+      method: "POST",
+      headers: { apikey: anonKey, authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        p: {
+          owner_user_id: responsavel.id,
+          legal_name: registro.razao_social,
+          cnpj: registro.cnpj || "",
+          dominio_code: registro.codigo_dominio || "",
+          tax_regime: registro.regime || "OUTROS",
+          notes: nota,
+          competence: competencia || null
+        }
+      })
+    });
+  } catch (error) {
+    const mensagem = String(error?.message || "");
+    if (/já cadastrad/i.test(mensagem)) {
+      return { incluida: true, jaExistia: true, competencia, mensagem: `a empresa já estava na carteira do responsável (${mensagem.replace(/\.$/, "")}).` };
+    }
+    throw error;
+  }
+  return { incluida: true, jaExistia: false, competencia, mensagem: "" };
 }
 
-async function avisosDoRegistro(ctx, registroId) {
-  const filtro = encodeURIComponent(`*hub:registro id=${registroId} *`);
-  const rows = await sb(`${ctx.supabaseUrl}/rest/v1/quadro_avisos?content=like.${filtro}&select=id`, { headers: svc(ctx.serviceKey) });
-  return Array.isArray(rows) ? rows : [];
-}
-
-async function apagarAviso(ctx, avisoId) {
-  await sb(`${ctx.supabaseUrl}/rest/v1/quadro_avisos?id=eq.${encodeURIComponent(avisoId)}`, { method: "DELETE", headers: svc(ctx.serviceKey) });
+function rotuloCompetencia(comp) {
+  const [ano, mes] = String(comp || "").split("-");
+  return mes && ano ? `${mes}/${ano}` : comp;
 }
 
 function linhasResumo(registro) {
@@ -239,41 +251,15 @@ function linhasResumo(registro) {
   return linhas;
 }
 
-function avisoResponsavelHtml(registro) {
+function mensagemChat(registro, textoApuracao) {
   return [
-    `<strong>${escapeHtml(registro.razao_social || formatarCnpj(registro.cnpj) || "Nova empresa")}</strong>`,
-    ...linhasResumo(registro)
-      .slice(1)
-      .map(([rotulo, valor]) => `<strong>${escapeHtml(rotulo)}:</strong> ${escapeHtml(valor)}`),
-    "<em>Detalhes e anexos na aba Registros.</em>"
-  ].join("<br>");
-}
-
-function emailResponsavelHtml(registro, pessoa, hubUrl) {
-  const celula = "border:1px solid #c9d1dc;padding:6px 10px;text-align:left;vertical-align:top";
-  const cabeca = `${celula};background:#eef1f6;width:150px`;
-  return [
-    `<p>Olá, ${escapeHtml(primeiroNome(pessoa.nome || pessoa.email))}.</p>`,
-    "<p>Você foi definido como responsável pela apuração desta empresa:</p>",
-    `<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">${linhasResumo(registro)
-      .map(([r, v]) => `<tr><th style="${cabeca}">${escapeHtml(r)}</th><td style="${celula}">${escapeHtml(v)}</td></tr>`)
-      .join("")}</table>`,
-    "<p>Os dados completos, sócios, atividades e documentos estão na aba Registros do HUB. O aviso também está no seu Quadro de Avisos particular.</p>",
-    hubUrl ? `<p><a href="${escapeHtml(hubUrl)}">Abrir o HUB Depto Tributário</a></p>` : "",
-    "<p>H. Teixeira Contabilidade · Departamento Tributário</p>"
+    "<p><strong>Nova empresa sob sua responsabilidade</strong></p>",
+    `<p>${linhasResumo(registro)
+      .map(([rotulo, valor]) => `<strong>${escapeHtml(rotulo)}:</strong> ${escapeHtml(valor)}`)
+      .join("<br>")}</p>`,
+    textoApuracao ? `<p>${escapeHtml(textoApuracao)}</p>` : "",
+    "<p>Sócios, atividades e documentos estão na aba Registros.</p>"
   ].join("");
-}
-
-function emailResponsavelTexto(registro, pessoa, hubUrl) {
-  return [
-    `Olá, ${primeiroNome(pessoa.nome || pessoa.email)}.`,
-    "",
-    "Você foi definido como responsável pela apuração desta empresa:",
-    ...linhasResumo(registro).map(([r, v]) => `${r}: ${v}`),
-    "",
-    "Os dados completos estão na aba Registros do HUB.",
-    hubUrl ? `HUB: ${hubUrl}` : ""
-  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -472,10 +458,6 @@ function nomeSeguro(nome) {
 
 // ---------------------------------------------------------------------------------------------
 // Utilidades
-
-function primeiroNome(nome) {
-  return String(nome || "").trim().split(/\s+/)[0] || "";
-}
 
 function escapeHtml(value) {
   return String(value ?? "")

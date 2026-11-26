@@ -1,10 +1,16 @@
 # Registros por e-mail: do WhatsApp ao HUB
 
-Fluxo: quem posta no grupo do WhatsApp encaminha a mensagem (e o contrato) por e-mail para a caixa de Registros.
-O script do Google, nessa caixa, lê os e-mails de 5 em 5 minutos e envia ao HUB. O HUB identifica o CNPJ,
-consulta a Receita (razão social, data de início, sócios, CNAEs, Simples/MEI), grava os anexos e avisa a
-coordenação no sino. Na aba **Registros**, a equipe completa IE, código no Domínio e observações; o administrador
-define o responsável pela apuração, que recebe e-mail, sino e aviso no quadro particular (30 dias).
+Fluxo: quem posta no grupo do WhatsApp encaminha a mensagem (e o contrato) por e-mail, sempre para os dois
+endereços: **fiscal@hteixeira.com.br** e **fiscal10.hteixeira@gmail.com**. O script do Google, instalado só na
+caixa fiscal10 (que também recebe o fiscal@), lê os e-mails de 5 em 5 minutos e envia ao HUB. O mesmo e-mail
+recebido pelos dois endereços é gravado uma vez só (o HUB usa o Message-ID). O HUB identifica o CNPJ, consulta a
+Receita (razão social, data de início, sócios, CNAEs, Simples/MEI), grava os anexos e avisa o administrador no sino.
+
+Na aba **Registros**, a equipe completa IE, código no Domínio e observações. Só o administrador define o
+responsável pela apuração. Ao definir:
+- a empresa entra na apuração aberta do responsável no Controle de Apuração (linha nova na competência em aberto;
+  se não houver período aberto, entra na carteira e aparece no próximo período gerado);
+- o responsável recebe notificação no sino e uma mensagem no chat do HUB.
 
 Remetentes autorizados (padrão): societario.hteixeira@gmail.com e carlosreis.hteixeira@gmail.com.
 
@@ -30,7 +36,7 @@ Remetentes autorizados (padrão): societario.hteixeira@gmail.com e carlosreis.ht
 
 ## 3. Caixa do Gmail que recebe os registros (uma vez)
 
-Faça logado na conta do Gmail que vai **receber** os encaminhamentos.
+Faça logado na conta **fiscal10.hteixeira@gmail.com** (perfil do Chrome fiscal10). Instale só nessa caixa.
 
 1. Abra script.google.com > **Novo projeto**. Renomeie (clique em "Projeto sem título") para `HUB Registros`.
 2. Apague o conteúdo do arquivo `Código.gs` e cole todo o conteúdo de `integracoes/registros-gmail/Codigo.gs`.
@@ -52,7 +58,7 @@ marcador **HUB-Registrado** no Gmail; se algo falhar, o marcador **HUB-Erro** (o
 
 - Mensagem de texto: toque e segure a mensagem > **⋮** (ou **Mais**) > **Compartilhar** > **Gmail**.
 - Documento (contrato social, alteração): abra o documento no WhatsApp > **Compartilhar** > **Gmail**.
-- Para: a caixa de Registros. Assunto começando por **ABERTURA**, **ALTERAÇÃO** ou **CLIENTE NOVO**,
+- Para: **fiscal@hteixeira.com.br** e **fiscal10.hteixeira@gmail.com**. Assunto começando por **ABERTURA**, **ALTERAÇÃO** ou **CLIENTE NOVO**,
   seguido da razão social e, se houver, do CNPJ. Exemplo: `ALTERAÇÃO - Padaria Serrana Ltda - 11.222.333/0001-81`.
 
 Dicas:

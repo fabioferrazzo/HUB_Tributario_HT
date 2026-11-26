@@ -70,6 +70,8 @@ function verificarRegistros() {
     thread.getMessages().forEach(function (msg) {
       var id = msg.getId();
       if (processados.indexOf(id) >= 0) return;
+      // Message-ID é o mesmo nas duas caixas (fiscal@ e fiscal10): o HUB não grava o mesmo e-mail duas vezes.
+      var messageId = String(msg.getHeader("Message-ID") || "").trim() || id;
       if (cfg.remetentes.indexOf(emailDe_(msg.getFrom())) < 0) return;
 
       var anexos = [];
@@ -92,7 +94,7 @@ function verificarRegistros() {
         muteHttpExceptions: true,
         payload: JSON.stringify({
           acao: "entrada-email",
-          messageId: id,
+          messageId: messageId,
           de: msg.getFrom(),
           assunto: msg.getSubject(),
           corpo: String(msg.getPlainBody() || "").slice(0, 20000),

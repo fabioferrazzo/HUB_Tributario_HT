@@ -1,5 +1,6 @@
 // Função registros (netlify/functions/registros.mjs) com fetch simulado:
-// consulta de CNPJ, entrada por e-mail (remetente, CNPJ, tipo, anexos, duplicidade, sino) e definição do responsável.
+// consulta de CNPJ, entrada por e-mail (remetente, CNPJ, tipo, anexos, duplicidade, sino) e definição do responsável
+// (apuração aberta, chat e sino).
 // Roda com: node tests/funcoes/registros.mjs
 process.env.VITE_SUPABASE_URL = "https://exemplo.supabase.co";
 process.env.VITE_SUPABASE_ANON_KEY = "anon";
@@ -7,7 +8,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "service";
 process.env.REGISTROS_ENTRADA_TOKEN = "token-teste";
 
 const chamadas = [];
-const banco = { registros: new Map(), eventos: [], anexos: [], objetos: [], avisos: new Map(), destinatarios: [], notificacoes: [], fila: [] };
+const banco = { registros: new Map(), eventos: [], anexos: [], objetos: [], avisos: new Map(), destinatarios: [], notificacoes: [], fila: [], periodos: { "u-colab": [{ competence: "2026-11", status: "OPEN" }], "u-admin": [{ competence: "2026-10", status: "CLOSED" }] }, carteira: [], apuracao: [], chat: [] };
 let receitaFalha = 0;
 let seq = 0;
 
@@ -76,6 +77,19 @@ globalThis.fetch = async (url, opt = {}) => {
     return r([...banco.avisos.values()].filter((a) => a.content.includes(like)).map((a) => ({ id: a.id })));
   }
   if (u.startsWith("/rest/v1/quadro_aviso_usuarios")) { banco.destinatarios.push(body); return r([], 201); }
+  if (u.startsWith("/rest/v1/apur_periods")) {
+    const dono = (u.match(/owner_user_id=eq\.([^&]+)/) || [])[1];
+    return r(banco.periodos[dono] || []);
+  }
+  if (u.endsWith("/rpc/apur_company_create")) {
+    const chave = `${body.p.owner_user_id}:${body.p.cnpj}`;
+    if (banco.carteira.includes(chave)) return r({ message: "CNPJ já cadastrado para este responsável." }, 400);
+    banco.carteira.push(chave);
+    banco.apuracao.push({ ...body.p, auth: opt.headers?.authorization });
+    return r({ ok: true, id: "apur-1" });
+  }
+  if (u.endsWith("/rpc/chat_abrir_direta")) { if (body.p_outro === "u-admin") return r({ message: "Escolha outra pessoa para conversar." }, 400); return r("conv-1"); }
+  if (u.endsWith("/rpc/chat_enviar")) { banco.chat.push({ ...body, auth: opt.headers?.authorization }); return r({ id: "m1" }); }
   if (u.includes("email_outbox") || u.includes("/rpc/")) return r([]);
   return r([]);
 };
@@ -143,19 +157,27 @@ ok("responsável: colaborador não pode definir", r.status === 403);
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-colab" }, { authorization: "Bearer tok-admin" });
 const patchReg = chamadas.find((c) => c.m === "PATCH" && c.u.startsWith(`/rest/v1/hub_registros?id=eq.${reg.id}`) && c.auth === "Bearer tok-admin");
 ok("responsável: gravado com a sessão do administrador", r.status === 200 && Boolean(patchReg) && patchReg.body.responsavel_id === "u-colab", JSON.stringify(r.data));
-const filaResp = banco.fila.at(-1);
-ok("responsável: e-mail ao responsável", r.data.emailEnviado && filaResp?.p_to_email === "col@teste" && /Apuração sob sua responsabilidade: \[TESTE\] ACME/.test(filaResp.p_subject) && /11\.222\.333\/0001-81/.test(filaResp.p_html_body));
-const aviso = [...banco.avisos.values()].at(-1);
-ok("responsável: aviso particular por 30 dias", r.data.avisoCriado && aviso.visibility === "particular" && /<!--hub:registro id=[^ ]+ criado=\S+ expira=\S+-->$/.test(aviso.content) && banco.destinatarios.at(-1)?.user_id === "u-colab");
-const m = aviso.content.match(/criado=(\S+) expira=(\S+?)-->/);
-ok("responsável: prazo do aviso = 30 dias", m && Math.round((Date.parse(m[2]) - Date.parse(m[1])) / 86400000) === 30);
-ok("responsável: sino do responsável", r.data.notificado && banco.notificacoes.some((n) => n.user_id === "u-colab" && n.route === "registros" && n.target_ref === reg.id));
-ok("responsável: evento no histórico do registro", banco.eventos.some((e) => e.registro_id === reg.id && e.tipo === "responsavel" && /Colaboradora Teste/.test(e.resumo)));
-const avisosAntes = banco.avisos.size;
+const apur = banco.apuracao.at(-1);
+ok("responsável: empresa incluída na apuração aberta (11/2026) do responsável", r.data.apuracao?.incluida && r.data.apuracao.competencia === "2026-11" && apur?.owner_user_id === "u-colab" && apur.competence === "2026-11" && apur.legal_name === RECEITA.razao_social && apur.cnpj === "11222333000181" && apur.tax_regime === "Simples Nacional" && apur.auth === "Bearer tok-admin", JSON.stringify(r.data.apuracao));
+ok("responsável: mensagem no chat com a sessão do administrador", r.data.chatEnviado && banco.chat.at(-1)?.p_conversa === "conv-1" && banco.chat.at(-1).auth === "Bearer tok-admin" && /Nova empresa sob sua responsabilidade/.test(banco.chat.at(-1).p_conteudo) && /apuração de 11\/2026/.test(banco.chat.at(-1).p_conteudo));
+ok("responsável: sino do responsável", r.data.notificado && banco.notificacoes.some((n) => n.user_id === "u-colab" && n.route === "registros" && n.target_ref === reg.id && /11\/2026/.test(n.body)));
+ok("responsável: sem e-mail e sem aviso no quadro", banco.fila.length === 0 && banco.avisos.size === 0);
+ok("responsável: eventos no histórico do registro", banco.eventos.some((e) => e.registro_id === reg.id && e.tipo === "responsavel" && /Colaboradora Teste/.test(e.resumo)) && banco.eventos.some((e) => e.registro_id === reg.id && /Incluída na apuração de 11\/2026/.test(e.resumo)));
+ok("responsável: sem erros", r.data.erros.length === 0, JSON.stringify(r.data.erros));
+
+r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-colab" }, { authorization: "Bearer tok-admin" });
+ok("responsável: empresa já na carteira não duplica (informa)", r.data.apuracao?.jaExistia === true && banco.apuracao.length === 1 && r.data.erros.length === 0, JSON.stringify(r.data.apuracao));
+
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-admin" }, { authorization: "Bearer tok-admin" });
-ok("responsável: troca retira o aviso anterior", banco.avisos.size === avisosAntes && ![...banco.avisos.values()].some((a) => a.id === aviso.id));
-ok("responsável: quem define a si mesmo não recebe sino", r.data.notificado === false);
+ok("responsável: sem período aberto, entra só na carteira", r.data.apuracao?.incluida && r.data.apuracao.competencia === "" && banco.apuracao.at(-1).competence === null, JSON.stringify(r.data.apuracao));
+ok("responsável: quem define a si mesmo não recebe sino nem chat", r.data.notificado === false && r.data.chatEnviado === false && r.data.erros.length === 0);
+
+const semRazao = banco.registros.get(reg3.id);
+semRazao.razao_social = "";
+r = await chamar({ acao: "definir-responsavel", registroId: reg3.id, responsavelId: "u-colab" }, { authorization: "Bearer tok-admin" });
+ok("responsável: sem razão social avisa e ainda notifica", r.status === 200 && r.data.apuracao?.incluida === false && /razão social/.test(r.data.erros.join(" ")) && r.data.notificado);
+
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: null }, { authorization: "Bearer tok-admin" });
-ok("responsável: retirar apaga o aviso", r.status === 200 && ![...banco.avisos.values()].some((a) => a.content.includes(`hub:registro id=${reg.id} `)));
+ok("responsável: retirar funciona", r.status === 200 && r.data.mensagem === "Responsável retirado.");
 
 process.exit(falhas ? 1 : 0);

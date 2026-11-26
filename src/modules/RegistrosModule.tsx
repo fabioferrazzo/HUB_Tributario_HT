@@ -298,9 +298,20 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
       const atualizado = (await listRegistros()).find((item) => item.id === rascunho.id);
       if (atualizado) setRascunho({ ...atualizado, observacoes: rascunho.observacoes });
       setEventos(await listEventos(rascunho.id));
-      const feitos = [resultado.emailEnviado ? "e-mail" : "", resultado.notificado ? "sino" : "", resultado.avisoCriado ? "aviso no quadro particular (30 dias)" : ""].filter(Boolean);
+      const feitos = [resultado.notificado ? "sino" : "", resultado.chatEnviado ? "chat" : ""].filter(Boolean);
+      const apuracao = resultado.apuracao;
+      const competencia = apuracao?.competencia ? apuracao.competencia.split("-").reverse().join("/") : "";
+      const textoApuracao = !apuracao
+        ? ""
+        : apuracao.jaExistia
+          ? " A empresa já estava na carteira dele no Controle de Apuração."
+          : apuracao.incluida
+            ? competencia
+              ? ` Incluída na apuração de ${competencia} dele (Controle de Apuração).`
+              : " Incluída na carteira dele no Controle de Apuração (entra no próximo período gerado)."
+            : "";
       const base = resultado.mensagem || (responsavelEscolhido ? `Responsável definido: ${nomeDoUsuario(responsavelEscolhido)}.` : "Responsável retirado.");
-      setMensagem(`${base}${feitos.length ? ` Avisado por ${feitos.join(", ")}.` : ""}`);
+      setMensagem(`${base}${feitos.length ? ` Avisado por ${feitos.join(" e ")}.` : ""}${textoApuracao}`);
       if (resultado.erros?.length) setErro(`Atenção: ${resultado.erros.join(" ")}`);
     } catch (error) {
       setErro(getErrorMessage(error));
@@ -641,7 +652,7 @@ export function RegistrosModule({ user, hubUsers }: { user: HubUser; hubUsers: H
                     {rascunho.responsavelId && rascunho.responsavelDefinidoEm
                       ? `Definido em ${formatDateTime(rascunho.responsavelDefinidoEm)}. `
                       : ""}
-                    Ao definir, o usuário recebe e-mail, notificação no sino e um aviso no Quadro de Avisos particular (por 30 dias).
+                    Ao definir, a empresa entra na apuração aberta do responsável (Controle de Apuração) e ele é avisado no sino e no chat.
                   </p>
                 </details>
 

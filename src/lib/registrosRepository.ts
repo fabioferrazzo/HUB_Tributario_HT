@@ -485,7 +485,13 @@ export async function consultarCnpj(cnpj: string): Promise<DadosReceita> {
   return resposta.dados;
 }
 
-export type ResultadoResponsavel = { emailEnviado: boolean; avisoCriado: boolean; notificado: boolean; erros: string[]; mensagem?: string };
+export type ResultadoResponsavel = {
+  notificado: boolean;
+  chatEnviado: boolean;
+  apuracao: { incluida: boolean; jaExistia?: boolean; competencia: string; mensagem: string } | null;
+  erros: string[];
+  mensagem?: string;
+};
 
 export async function definirResponsavel(registro: RegistroEmpresa, responsavelId: string, responsavelNome: string, user: HubUser): Promise<ResultadoResponsavel> {
   if (getRegistrosSource() === "local") {
@@ -500,7 +506,7 @@ export async function definirResponsavel(registro: RegistroEmpresa, responsavelI
       novoEventoLocal(registro.id, "responsavel", responsavelId ? `Responsável pela apuração: ${responsavelNome}` : "Responsável pela apuração retirado", user)
     );
     gravarLocal(estado);
-    return { emailEnviado: false, avisoCriado: false, notificado: false, erros: [], mensagem: "Modo demonstração: o aviso ao responsável não é enviado." };
+    return { notificado: false, chatEnviado: false, apuracao: null, erros: [], mensagem: "Modo demonstração: o sino, o chat e o Controle de Apuração não são acionados." };
   }
   return chamarServidor<ResultadoResponsavel>({ acao: "definir-responsavel", registroId: registro.id, responsavelId: responsavelId || null });
 }
