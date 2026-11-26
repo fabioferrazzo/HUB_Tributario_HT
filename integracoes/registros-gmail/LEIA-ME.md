@@ -64,6 +64,12 @@ marcador **HUB-Registrado** no Gmail; se algo falhar, o marcador **HUB-Erro** (o
   seguido da razão social e, se houver, do CNPJ. Exemplo: `ALTERAÇÃO - Padaria Serrana Ltda - 11.222.333/0001-81`.
 
 Dicas:
+- Dados que o HUB lê do texto (um por linha, no formato "Campo: valor"; também vale "Campo valor" separado por
+  vírgula): **Razão social**, **Nome fantasia**, **Código Domínio**, **IE** (ou "Isento"), **Regime** (Simples
+  Nacional, Lucro Presumido, Lucro Real, MEI...), **E-mail**, **Telefone** e **Data de início**. Exemplo:
+  `Código Domínio: 1234` · `IE: 096/0123456` · `Regime: Simples Nacional` · `E-mail: contato@empresa.com.br`.
+  O que vier no e-mail tem preferência sobre a Receita; num registro que já existe, só os campos vazios são
+  preenchidos. A assinatura do e-mail é ignorada (só valem campos com rótulo).
 - Com CNPJ no assunto ou no texto, o HUB preenche os dados da Receita sozinho. Sem CNPJ (empresa ainda em
   abertura), o registro é criado pela razão social do assunto, com a pendência "CNPJ não identificado".
 - E-mail de ALTERAÇÃO vira um item na subaba **Alterações** (aba Registros), ligado ao registro da empresa pelo

@@ -203,6 +203,31 @@ r = await chamar(
 receitaFora = false;
 const regReal = banco.registros.get(r.data.registroId);
 ok("entrada: razão social tirada do texto quando o assunto não tem nome", r.data.criado && regReal?.razao_social === "[TESTE] KETERSON ALESSANDRO PAIM LTDA" && regReal.cnpj === "62865660000192" && regReal.tipo === "cliente_novo", regReal?.razao_social);
+r = await chamar(
+  {
+    ...email,
+    messageId: "msg-campos",
+    assunto: "cliente novo",
+    corpo: "Razão social: [TESTE] KETERSON ALESSANDRO PAIM LTDA\nCNPJ: 62.865.660/0001-92\nCódigo Domínio: 1234\nIE: 0960123456\nRegime tributário: Lucro Presumido\nE-mail: Keterson@Teste.com.br\nTelefone: (54) 99999-0000\n\nAtenciosamente,\nSocietário (54) 3244-0000",
+    anexos: [],
+    anexosIgnorados: []
+  },
+  { "x-registros-token": "token-teste" }
+);
+const regCampos = banco.registros.get(r.data.registroId);
+ok(
+  "entrada: campos do texto (Domínio, IE, regime, e-mail, telefone) preenchem o registro existente",
+  r.data.registroId === regReal.id && regCampos.codigo_dominio === "1234" && regCampos.ie === "0960123456" && regCampos.regime === "Lucro Presumido" &&
+    regCampos.email1 === "keterson@teste.com.br" && regCampos.telefone1 === "(54) 99999-0000" && regCampos.razao_social === "[TESTE] KETERSON ALESSANDRO PAIM LTDA",
+  JSON.stringify({ d: regCampos?.codigo_dominio, ie: regCampos?.ie, reg: regCampos?.regime, e: regCampos?.email1, t: regCampos?.telefone1, t2: regCampos?.telefone2 })
+);
+ok("entrada: assinatura do e-mail não vira telefone do cliente", regCampos.telefone2 !== "(54) 3244-0000");
+ok("entrada: histórico mostra os dados lidos do e-mail", banco.eventos.some((e) => e.email_id === "msg-campos" && /Dados lidos do e-mail: Código no Domínio 1234 · IE 0960123456 · Regime Lucro Presumido/.test(e.resumo)));
+r = await chamar(
+  { ...email, messageId: "msg-campos-2", assunto: "cliente novo", corpo: "CNPJ 62865660000192, Código Domínio: 9999, Regime: Simples Nacional", anexos: [], anexosIgnorados: [] },
+  { "x-registros-token": "token-teste" }
+);
+ok("entrada: dado já preenchido não é trocado por e-mail posterior", banco.registros.get(regReal.id).codigo_dominio === "1234" && banco.registros.get(regReal.id).regime === "Lucro Presumido");
 
 // 3. Responsável pela apuração
 r = await chamar({ acao: "definir-responsavel", registroId: reg.id, responsavelId: "u-colab" }, { authorization: "Bearer tok-colab" });

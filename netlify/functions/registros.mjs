@@ -11,10 +11,12 @@ import {
   consultarReceita,
   detectarCategorias,
   detectarTipo,
+  extrairCamposDoEmail,
   extrairCnpjs,
   extrairRazaoSocial,
   formatarCnpj,
   mesmaRazaoSocial,
+  resumoCamposDoEmail,
   somenteDigitos
 } from "../lib/cnpj.mjs";
 
@@ -379,6 +381,23 @@ async function entradaEmail(ctx, request, payload) {
     [empresa] = (await sb(`${supabaseUrl}/rest/v1/hub_registros?cnpj=eq.${cnpj}&tipo=neq.alteracao&select=*&limit=1`, { headers })) || [];
   }
   const razaoDoEmail = extrairRazaoSocial(assunto, corpo);
+  const doEmail = extrairCamposDoEmail(corpo);
+  // Contatos: os já gravados primeiro, depois os do e-mail, depois os da Receita (sem repetir; até 2 de cada).
+  const contatos = (atual = {}) => {
+    const unicos = (lista) => lista.filter(Boolean).filter((v, i, l) => l.indexOf(v) === i);
+    const emails = unicos([atual.email1, atual.email2, ...doEmail.emails, dados?.email]);
+    const tels = unicos([atual.telefone1, atual.telefone2, ...doEmail.telefones, dados?.telefone1, dados?.telefone2]);
+    return { email1: emails[0] || "", email2: emails[1] || "", telefone1: tels[0] || "", telefone2: tels[1] || "" };
+  };
+  // Só preenche o que estiver vazio no registro.
+  const camposVazios = (atual = {}) => ({
+    ...(atual.ie ? {} : doEmail.ie ? { ie: doEmail.ie } : {}),
+    ...(atual.codigo_dominio ? {} : doEmail.codigoDominio ? { codigo_dominio: doEmail.codigoDominio } : {}),
+    ...(atual.regime ? {} : doEmail.regime || dados?.regimeSugerido ? { regime: doEmail.regime || dados?.regimeSugerido } : {}),
+    ...(atual.data_inicio ? {} : dados?.dataInicio || doEmail.dataInicio ? { data_inicio: dados?.dataInicio || doEmail.dataInicio } : {}),
+    ...(atual.nome_fantasia ? {} : dados?.nomeFantasia || doEmail.nomeFantasia ? { nome_fantasia: dados?.nomeFantasia || doEmail.nomeFantasia } : {}),
+    ...contatos(atual)
+  });
   const dataEmail = dataEmSaoPaulo(payload?.data);
 
   if (tipo === "alteracao") {
@@ -395,10 +414,11 @@ async function entradaEmail(ctx, request, payload) {
           empresa_id: empresa?.id || null,
           categorias: detectarCategorias(`${assunto}\n${corpo}`),
           data_alteracao: dataEmail,
-          ie: empresa?.ie || "",
-          codigo_dominio: empresa?.codigo_dominio || "",
-          regime: empresa?.regime || dados?.regimeSugerido || "",
           ...(dados ? linhaRegistroDaReceita(dados) : {}),
+          ...camposVazios(empresa || {}),
+          ie: empresa?.ie || doEmail.ie || "",
+          codigo_dominio: empresa?.codigo_dominio || doEmail.codigoDominio || "",
+          regime: empresa?.regime || doEmail.regime || dados?.regimeSugerido || "",
           razao_social: empresa?.razao_social || razaoDoEmail || dados?.razaoSocial || ""
         })
       })) || [];
@@ -409,8 +429,8 @@ async function entradaEmail(ctx, request, payload) {
         headers: { ...headers, "content-type": "application/json" },
         body: JSON.stringify(
           dados
-            ? { ...linhaRegistroDaReceita(dados), ...(empresa.razao_social ? {} : { razao_social: dados.razaoSocial }) }
-            : { updated_at: new Date().toISOString() }
+            ? { ...linhaRegistroDaReceita(dados), ...camposVazios(empresa), ...(empresa.razao_social ? {} : { razao_social: dados.razaoSocial }) }
+            : { ...camposVazios(empresa), updated_at: new Date().toISOString() }
         )
       }).catch(() => null);
       await sb(`${supabaseUrl}/rest/v1/hub_registros_eventos`, {
@@ -434,6 +454,7 @@ async function entradaEmail(ctx, request, payload) {
           status: "revisao",
           ...(TIPOS_REGISTRO.has(tipo) && tipo !== "outro" ? { tipo } : {}),
           ...(dados ? linhaRegistroDaReceita(dados) : {}),
+          ...camposVazios(registro),
           ...(registro.razao_social ? {} : { razao_social: razaoDoEmail || dados?.razaoSocial || "" })
         })
       })) || [registro];
@@ -447,11 +468,8 @@ async function entradaEmail(ctx, request, payload) {
           tipo,
           status: "revisao",
           origem: "email",
-          regime: dados?.regimeSugerido || "",
-          telefone1: dados?.telefone1 || "",
-          telefone2: dados?.telefone2 || "",
-          email1: dados?.email || "",
           ...(dados ? linhaRegistroDaReceita(dados) : {}),
+          ...camposVazios({}),
           razao_social: razaoDoEmail || dados?.razaoSocial || ""
         })
       })) || [];
@@ -463,6 +481,8 @@ async function entradaEmail(ctx, request, payload) {
   if (!cnpj) avisosEvento.push("CNPJ não identificado no e-mail: informe-o no registro.");
   if (cnpjs.length > 1) avisosEvento.push(`Outros CNPJs citados: ${cnpjs.slice(1).map(formatarCnpj).join(", ")}.`);
   if (erroReceita) avisosEvento.push(`Consulta à Receita: ${erroReceita.replace(/\.$/, "")}.`);
+  const lidos = resumoCamposDoEmail(doEmail);
+  if (lidos) avisosEvento.push(`Dados lidos do e-mail: ${lidos}.`);
   if (razaoDoEmail && dados?.razaoSocial && !mesmaRazaoSocial(razaoDoEmail, dados.razaoSocial)) {
     avisosEvento.push(
       `Razão social do e-mail ("${razaoDoEmail}") diferente da Receita ("${dados.razaoSocial}", fonte ${dados.fonte}). Confira o motivo; o registro mantém a do e-mail.`

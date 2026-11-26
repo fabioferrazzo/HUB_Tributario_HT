@@ -175,6 +175,106 @@ export function mesmaRazaoSocial(a, b) {
   return n(a) === n(b);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Campos informados no texto do e-mail ("Código Domínio: 1234", "IE 123/456, Regime: Simples Nacional"...)
+
+const ROTULOS_CAMPOS = [
+  ["razaoSocial", /^raz[aã]o\s+social\b/i],
+  ["nomeFantasia", /^(?:nome\s+)?fantasia\b/i],
+  ["codigoDominio", /^(?:(?:n[uú]mero|n[ºo°]\.?|c[oó]d(?:igo|\.)?)\s*)?(?:(?:n[oa]|d[oa]|de)\s+)?dom[ií]nio\b/i],
+  ["ie", /^(?:i\.?\s?e\.?|insc(?:ri[cç][aã]o|\.)?\s*estadual)(?=[\s:\-–=]|$)/i],
+  ["emails", /^e-?mails?\b/i],
+  ["telefones", /^(?:telefones?|tel\.?|fones?|celular(?:es)?|whats(?:app)?)(?=[\s:\-–=]|$)/i],
+  ["regime", /^(?:regime(?:\s+(?:tribut[aá]rio|de\s+tributa[cç][aã]o))?|tributa[cç][aã]o)\b/i],
+  ["dataInicio", /^(?:data\s+(?:de\s+|do\s+)?(?:in[ií]cio|abertura)(?:\s+(?:das\s+)?atividades)?|in[ií]cio\s+(?:das\s+)?atividades)\b/i]
+];
+
+export function normalizarRegime(valor) {
+  const v = String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (!v.trim()) return "";
+  if (/\bmei\b|microempreendedor/.test(v)) return "MEI";
+  if (/simples/.test(v)) return "Simples Nacional";
+  if (/presumido/.test(v)) return "Lucro Presumido";
+  if (/arbitrado/.test(v)) return "Lucro Arbitrado";
+  if (/\breal\b/.test(v)) return "Lucro Real";
+  if (/imune|isent/.test(v)) return "Imune/Isenta";
+  return String(valor).trim().slice(0, 60);
+}
+
+function dataIso(valor) {
+  const t = String(valor || "");
+  let m = t.match(/(\d{2})[/.-](\d{2})[/.-](\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
+}
+
+/** Lê do texto os campos que o Societário costuma informar. Só valores com rótulo (evita pegar a assinatura). */
+export function extrairCamposDoEmail(corpo) {
+  const campos = { razaoSocial: "", nomeFantasia: "", codigoDominio: "", ie: "", emails: [], telefones: [], regime: "", dataInicio: "" };
+  const linhas = String(corpo || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 80);
+  for (const linha of linhas) {
+    // Vários campos na mesma linha: "IE 123/456, Domínio 1234; Regime: Simples" (vírgula seguida de letra separa).
+    for (const trecho of linha.split(/\s*[;|]\s*|,\s*(?=[A-Za-zÀ-ÿ])/)) {
+      const t = trecho.replace(/^[-•*·>\s]+/, "").trim();
+      for (const [campo, rotulo] of ROTULOS_CAMPOS) {
+        const m = t.match(rotulo);
+        if (!m) continue;
+        const valor = t
+          .slice(m[0].length)
+          .replace(/^\s*(?:[:\-–=]|n[ºo°]\.?)?\s*/i, "")
+          .replace(/[\s.;,]+$/, "")
+          .trim();
+        if (!valor) break;
+        if (campo === "emails") {
+          for (const e of valor.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) || []) {
+            const email = e.toLowerCase();
+            if (!campos.emails.includes(email)) campos.emails.push(email);
+          }
+        } else if (campo === "telefones") {
+          for (const f of valor.match(/\(?\d{2}\)?[\s.-]*9?\d{4}[\s.-]?\d{4}/g) || []) {
+            const tel = formatarTelefone(f);
+            if (tel && !campos.telefones.includes(tel)) campos.telefones.push(tel);
+          }
+        } else if (campo === "regime") {
+          campos.regime ||= normalizarRegime(valor);
+        } else if (campo === "dataInicio") {
+          campos.dataInicio ||= dataIso(valor);
+        } else if (campo === "ie") {
+          campos.ie ||= /isent/i.test(valor) ? "ISENTO" : valor.slice(0, 30);
+        } else if (!campos[campo]) {
+          campos[campo] = valor.slice(0, campo === "codigoDominio" ? 40 : 200);
+        }
+        break;
+      }
+    }
+  }
+  return campos;
+}
+
+/** Resumo legível do que foi lido do e-mail (vai para o histórico do registro). */
+export function resumoCamposDoEmail(c) {
+  return [
+    c.codigoDominio && `Código no Domínio ${c.codigoDominio}`,
+    c.ie && `IE ${c.ie}`,
+    c.regime && `Regime ${c.regime}`,
+    c.dataInicio && `Início ${c.dataInicio.split("-").reverse().join("/")}`,
+    c.nomeFantasia && `Nome fantasia ${c.nomeFantasia}`,
+    c.emails.length && `E-mail ${c.emails.join(", ")}`,
+    c.telefones.length && `Telefone ${c.telefones.join(", ")}`
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 // Sem "i": "ME" em maiúsculas é sufixo de empresa; "me" minúsculo é pronome.
 const SUFIXO_EMPRESA = /\b(LTDA|Ltda|LIMITADA|Limitada|EIRELI|EPP|ME|MEI|SLU|S\/?A|S\.A\.?)(?![A-Za-z])\.?/;
 
@@ -195,6 +295,10 @@ export function extrairRazaoSocial(assunto, corpo) {
       .replace(/\s{2,}/g, " ")
       .trim();
   const temNome = (v) => (v.match(/[A-Za-zÀ-ÿ]/g) || []).length >= 4;
+
+  // "Razão social: ..." escrito no texto tem prioridade.
+  const rotulada = extrairCamposDoEmail(corpo).razaoSocial;
+  if (temNome(limpar(rotulada))) return limpar(rotulada).slice(0, 200);
 
   const doAssunto = limpar(assunto);
   if (temNome(doAssunto)) return doAssunto.slice(0, 200);
