@@ -199,3 +199,121 @@
   background: var(--hp-brilho);
   color: var(--hp-acento-texto);
 }
+
+/* ---------- Usuários: opções de senha (senhas v2, 27/11/2026). Vale nos dois visuais. ---------- */
+.admin-senha {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(40, 44, 56, 0.14);
+  border-radius: 14px;
+}
+
+.admin-senha legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.admin-senha .toggle-row {
+  align-items: flex-start;
+  line-height: 1.35;
+}
+
+.admin-senha input[type="radio"],
+.admin-senha input[type="checkbox"] {
+  margin-top: 2px;
+}
+
+.admin-user-senha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.admin-user-selo {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(40, 44, 56, 0.08);
+  color: #3d4456;
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.admin-user-selo--provisoria {
+  background: rgba(224, 160, 48, 0.16);
+  color: #8a5300;
+}
+
+.admin-senha-informar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(224, 160, 48, 0.45);
+  border-radius: 12px;
+  background: rgba(224, 160, 48, 0.1);
+}
+
+.admin-senha-informar span {
+  margin-right: auto;
+}
+
+.admin-senha-informar code {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.admin-senha-informar button {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(40, 44, 56, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: #1a2033;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hub-premium .hp-migrada .admin-senha {
+  border-color: var(--hp-linha);
+}
+
+.hub-premium .hp-migrada .admin-senha legend {
+  color: var(--hp-titulo, var(--hp-texto));
+  font-family: Nunito, "Segoe UI", system-ui, sans-serif;
+}
+
+.hub-premium .hp-migrada .admin-user-selo {
+  border: 1px solid var(--hp-linha);
+  background: var(--hp-vidro-2);
+  color: var(--hp-texto-2);
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: calc(10.5px * var(--hp-esc, 1));
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hub-premium .hp-migrada .admin-user-selo--provisoria {
+  border-color: transparent;
+  background: rgba(224, 160, 48, 0.16);
+  color: var(--hp-prazo, var(--hp-ambar, #e0a030));
+}
+
+.hub-premium .hp-migrada .admin-senha-informar {
+  color: var(--hp-texto);
+}

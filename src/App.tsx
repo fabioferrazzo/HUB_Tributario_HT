@@ -1,12 +1,13 @@
 import { QuadroGeral } from "./modules/QuadroGeral";
 import type { HubNotification, HubProfile, HubRoute, HubUser } from "./types";
-import { ChevronDown, LogOut, Maximize2, Palette, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, KeyRound, LogOut, Maximize2, Palette, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
 import { ModuleFrame, dispatchFrameAction } from "./components/common";
 import type { PomodoroArchivedNote } from "./app/appTypes";
 import { PomodoroFloatingNotes } from "./components/PomodoroFloatingNotes";
 import { useVisualPremium, variaveisDaPaleta, abrirPersonalizarVisual } from "./lib/visualPremium";
 import { PersonalizarVisual } from "./components/PersonalizarVisual";
+import { TrocarSenha } from "./components/TrocarSenha";
 import "./premium.css";
 import { TopBar } from "./components/TopBar";
 import { ChatCentral, type ChatJanela } from "./components/chat/ChatCentral";
@@ -48,6 +49,7 @@ const windowMode = new URLSearchParams(window.location.search).get("janela") ===
 
 export function App() {
   const [user, setUser] = useState<HubUser | null>(() => getStoredSession());
+  const [trocandoSenha, setTrocandoSenha] = useState(false);
   const [avisoLogin, setAvisoLogin] = useState<{ texto: string; email: string } | null>(null);
   const saindoRef = useRef(false);
   const [chatJanela, setChatJanela] = useState<ChatJanela>(() => {
@@ -329,6 +331,9 @@ export function App() {
         <section className="workspace-body window-mode-body" ref={workspaceRef}>
           {renderRoute(currentRoute, user, hubUsers, handleRoute)}
         </section>
+        {user.senhaProvisoria ? (
+          <TrocarSenha user={user} obrigatoria onFechar={() => undefined} onTrocada={(atualizado) => setUser(atualizado)} onSair={handleSignOut} />
+        ) : null}
       </div>
     );
   }
@@ -531,6 +536,12 @@ export function App() {
           </button>
         ) : null}
         <InstalarDesktop />
+        {!user.senhaTrocaBloqueada || user.role === "admin" ? (
+          <button className="sign-out sign-out--senha" type="button" title="Trocar minha senha" onClick={() => setTrocandoSenha(true)}>
+            <KeyRound size={17} />
+            <span>Trocar senha</span>
+          </button>
+        ) : null}
         <button className="sign-out" type="button" onClick={handleSignOut}>
           <LogOut size={17} />
           <span>Sair</span>
@@ -559,6 +570,18 @@ export function App() {
         </section>
       </main>
       {visual.ativo && paletaAberta ? <PersonalizarVisual visual={visual} onFechar={() => setPaletaAberta(false)} /> : null}
+      {user.senhaProvisoria || trocandoSenha ? (
+        <TrocarSenha
+          user={user}
+          obrigatoria={Boolean(user.senhaProvisoria)}
+          onFechar={() => setTrocandoSenha(false)}
+          onTrocada={(atualizado) => {
+            setUser(atualizado);
+            setTrocandoSenha(false);
+          }}
+          onSair={handleSignOut}
+        />
+      ) : null}
       {currentRoute !== "chat" ? (
         <ChatCentral hubUsers={hubUsers} janela={chatJanela} modo="janela" onJanela={setChatJanela} onNaoLidas={setChatNaoLidas} user={user} />
       ) : null}

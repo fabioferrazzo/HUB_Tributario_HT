@@ -5,6 +5,10 @@ export type HubUser = {
   email: string;
   nome: string;
   role: UserRole;
+  /** Senha provisória: o HUB exige uma senha nova antes de seguir. */
+  senhaProvisoria?: boolean;
+  /** O administrador bloqueou a troca de senha por este usuário. */
+  senhaTrocaBloqueada?: boolean;
 };
 
 export type TeamMember = {
@@ -17,6 +21,8 @@ export type TeamMember = {
 export type HubProfile = TeamMember & {
   id?: string;
   active: boolean;
+  senhaProvisoria?: boolean;
+  senhaTrocaBloqueada?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };

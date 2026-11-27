@@ -1,6 +1,6 @@
 import type { HubUser, UserRole } from "../types";
 import { isSupabaseConfigured, supabase } from "./supabase";
-import { findLocalUserByEmail, LOCAL_DEMO_PASSWORD } from "./usersRepository";
+import { findLocalUserByEmail, LOCAL_DEMO_PASSWORD, senhaLocalDe } from "./usersRepository";
 
 const SESSION_KEY = "hub_tributario_session";
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "fiscal10.hteixeira@gmail.com";
@@ -22,7 +22,8 @@ async function getSupabaseProfile(userId: string, email: string): Promise<HubUse
     throw new Error("Supabase não configurado.");
   }
 
-  const { data, error } = await supabase.from("profiles").select("id,email,nome,role,active").eq("id", userId).single();
+  // "*": funciona antes e depois do patch_senhas_v2.sql (marcas de senha opcionais).
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
 
   if (error || !data) {
     return {
@@ -41,8 +42,19 @@ async function getSupabaseProfile(userId: string, email: string): Promise<HubUse
     id: data.id,
     email: data.email,
     nome: data.nome,
-    role: data.role as UserRole
+    role: data.role as UserRole,
+    senhaProvisoria: Boolean(data.senha_provisoria),
+    senhaTrocaBloqueada: Boolean(data.senha_troca_bloqueada)
   };
+}
+
+/** Atualiza a sessão guardada (ex.: depois de trocar a senha provisória). */
+export function atualizarSessao(parcial: Partial<HubUser>) {
+  const atual = getStoredSession();
+  if (!atual) return null;
+  const novo = { ...atual, ...parcial };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(novo));
+  return novo;
 }
 
 export async function signIn(email: string, password: string): Promise<HubUser> {
@@ -71,7 +83,7 @@ export async function signIn(email: string, password: string): Promise<HubUser> 
 
   const found = findLocalUserByEmail(normalizedEmail);
 
-  if (!found || !found.active || password !== LOCAL_DEMO_PASSWORD) {
+  if (!found || !found.active || password !== senhaLocalDe(found.email)) {
     throw new Error("E-mail ou senha inválidos.");
   }
 
@@ -79,7 +91,9 @@ export async function signIn(email: string, password: string): Promise<HubUser> 
     id: found.id,
     email: found.email,
     nome: found.nome,
-    role: found.role as UserRole
+    role: found.role as UserRole,
+    senhaProvisoria: Boolean(found.senhaProvisoria),
+    senhaTrocaBloqueada: Boolean(found.senhaTrocaBloqueada)
   };
 
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));

@@ -37,6 +37,8 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
       }, alvo);
     const paginaHub = () => page.evaluate(() => scrollY + [...document.querySelectorAll("*")].reduce((t, el) => t + el.scrollTop, 0));
 
+    // A rolagem do próprio menu lateral (ao clicar no item) não conta: mede só o que muda depois das ações do Consultor.
+    const antes = await paginaHub();
     await f.locator("#wizardNextBtn").click(); // etapa 1 incompleta: mostra a mensagem de erro no topo das etapas
     await page.waitForTimeout(1200);
     let d = await folga(".wizard-shell");
@@ -51,7 +53,8 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
     check(`${largura}px: análise aparece logo abaixo das abas (sem esconder o início)`, d >= 0 && d <= 40, `${d}px`);
     if (largura === 1366) await page.screenshot({ path: path.join(OUT, "consultor-rolagem.png") });
 
-    check(`${largura}px: página do HUB não se move`, (await paginaHub()) === 0, String(await paginaHub()));
+    const depois = await paginaHub();
+    check(`${largura}px: página do HUB não se move`, depois === antes, `${antes} -> ${depois}`);
     await page.close();
   }
   check("sem erros de script", errors.length === 0, errors.slice(0, 3).join(" | "));

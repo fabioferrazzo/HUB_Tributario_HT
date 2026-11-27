@@ -21,7 +21,7 @@ require("fs").mkdirSync(out, { recursive: true });
 
   // o botão que abre/fecha um submenu (ex.: Simuladores) não é tela: fica de fora para o submenu continuar aberto
   const labels = await page.locator(".sidebar button:not(.side-nav-submenu-toggle)").allInnerTexts();
-  const menu = labels.map((l) => l.trim()).filter((l) => l && !/Sair/.test(l));
+  const menu = labels.map((l) => l.trim()).filter((l) => l && !/Sair|Trocar senha/.test(l)); // ações, não telas
   console.log("Menu:", JSON.stringify(menu));
 
   for (const label of menu) {

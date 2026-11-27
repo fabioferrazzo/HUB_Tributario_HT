@@ -19,7 +19,39 @@ type ProfileRow = {
   active: boolean;
   created_at: string;
   updated_at: string;
+  senha_provisoria?: boolean | null;
+  senha_troca_bloqueada?: boolean | null;
 };
+
+/** Como a senha do usuário novo (ou redefinida) é tratada. */
+export type OpcoesSenha = {
+  /** O HUB gera a senha e envia por e-mail ao usuário (ninguém precisa digitá-la). */
+  gerarSenha: boolean;
+  /** Senha digitada pelo administrador (quando não gera). */
+  senha?: string;
+  /** Exigir senha nova no primeiro acesso. */
+  exigirTroca: boolean;
+  /** Impedir que o usuário troque a senha (prevalece sobre "exigir troca"). */
+  bloquearTroca: boolean;
+};
+
+export type ResultadoEnvioSenha = { emailSent: boolean; emailReason?: string; senhaParaInformar?: string };
+
+// Modo demonstração: senha de cada usuário guardada só neste navegador (para testar troca e 1º acesso).
+const LOCAL_SENHAS_KEY = "hub_local_senhas";
+export function senhaLocalDe(email: string) {
+  return readStorage<Record<string, string>>(LOCAL_SENHAS_KEY, {})[email.trim().toLowerCase()] || LOCAL_DEMO_PASSWORD;
+}
+function gravarSenhaLocal(email: string, senha: string) {
+  const senhas = readStorage<Record<string, string>>(LOCAL_SENHAS_KEY, {});
+  writeStorage(LOCAL_SENHAS_KEY, { ...senhas, [email.trim().toLowerCase()]: senha });
+}
+function senhaLocalGerada() {
+  const letras = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const v = crypto.getRandomValues(new Uint32Array(12));
+  const s = Array.from(v, (n) => letras[n % letras.length]).join("");
+  return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8)}7`;
+}
 
 type StoredProfile = Partial<HubProfile> & {
   email: string;
@@ -80,7 +112,7 @@ export async function listAppUsers(): Promise<HubProfile[]> {
     const client = assertSupabase();
     const { data, error } = await client
       .from("profiles")
-      .select("id,email,nome,role,active,created_at,updated_at")
+      .select("*")
       .order("nome", { ascending: true });
 
     if (error) throw error;
@@ -272,6 +304,8 @@ function normalizeProfile(profile: StoredProfile): HubProfile {
     iniciais: profile.iniciais || getInitials(nome),
     role: profile.role || "colaborador",
     active: profile.active ?? true,
+    senhaProvisoria: Boolean(profile.senhaProvisoria),
+    senhaTrocaBloqueada: Boolean(profile.senhaTrocaBloqueada),
     createdAt: profile.createdAt || now,
     updatedAt: now
   };
@@ -285,9 +319,111 @@ function mapProfileRow(row: ProfileRow): HubProfile {
     iniciais: getInitials(row.nome),
     role: row.role,
     active: row.active,
+    senhaProvisoria: Boolean(row.senha_provisoria),
+    senhaTrocaBloqueada: Boolean(row.senha_troca_bloqueada),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Senhas v2: criar com senha provisória, redefinir, marcar (exigir/bloquear) e trocar a própria senha.
+
+async function chamarAdminUsers(corpo: Record<string, unknown>, erroPadrao: string) {
+  const client = assertSupabase();
+  const { data } = await client.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sessão expirada. Entre novamente.");
+  const response = await fetch("/.netlify/functions/admin-users", {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify(corpo)
+  });
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown> & { error?: string };
+  if (!response.ok) throw new Error(payload.error || erroPadrao);
+  return payload;
+}
+
+const corpoPerfil = (profile: HubProfile) => ({
+  id: profile.id,
+  email: profile.email.trim().toLowerCase(),
+  nome: profile.nome.trim(),
+  role: profile.role,
+  active: profile.active
+});
+
+const corpoSenha = (opcoes: OpcoesSenha) => ({
+  gerarSenha: opcoes.gerarSenha,
+  password: opcoes.gerarSenha ? "" : (opcoes.senha || "").trim(),
+  exigirTroca: !opcoes.bloquearTroca && opcoes.exigirTroca,
+  bloquearTroca: opcoes.bloquearTroca
+});
+
+function validarOpcoesSenha(opcoes: OpcoesSenha) {
+  if (!opcoes.gerarSenha && (opcoes.senha || "").trim().length < 8) {
+    throw new Error("Informe uma senha com pelo menos 8 caracteres ou deixe o HUB gerar a senha provisória.");
+  }
+}
+
+export async function criarUsuario(profile: HubProfile, opcoes: OpcoesSenha): Promise<{ users: HubProfile[] } & ResultadoEnvioSenha> {
+  validarOpcoesSenha(opcoes);
+  if (getUsersSource() === "supabase") {
+    const r = await chamarAdminUsers({ ...corpoPerfil(profile), id: undefined, createAuthUser: true, ...corpoSenha(opcoes) }, "Não foi possível criar o usuário.");
+    window.dispatchEvent(new Event("hub:users"));
+    return { users: await listAppUsers(), emailSent: Boolean(r.emailSent), emailReason: r.emailReason as string | undefined, senhaParaInformar: r.senhaParaInformar as string | undefined };
+  }
+  const senha = opcoes.gerarSenha ? senhaLocalGerada() : (opcoes.senha || "").trim();
+  gravarSenhaLocal(profile.email, senha);
+  const novo = normalizeProfile({ ...profile, senhaProvisoria: !opcoes.bloquearTroca && opcoes.exigirTroca, senhaTrocaBloqueada: opcoes.bloquearTroca });
+  const users = [novo, ...loadLocalUsers().filter((u) => u.email.toLowerCase() !== novo.email.toLowerCase())];
+  saveLocalUsers(users);
+  // Demonstração: não há e-mail; a senha gerada aparece só para o administrador informar.
+  return { users: sortUsers(users), emailSent: false, emailReason: "modo demonstração", senhaParaInformar: opcoes.gerarSenha ? senha : undefined };
+}
+
+export async function redefinirSenha(profile: HubProfile, opcoes: OpcoesSenha): Promise<ResultadoEnvioSenha> {
+  validarOpcoesSenha(opcoes);
+  if (getUsersSource() === "supabase") {
+    if (!profile.id) throw new Error("Perfil sem ID.");
+    const r = await chamarAdminUsers({ action: "reset-password", ...corpoPerfil(profile), ...corpoSenha(opcoes) }, "Não foi possível redefinir a senha.");
+    window.dispatchEvent(new Event("hub:users"));
+    return { emailSent: Boolean(r.emailSent), emailReason: r.emailReason as string | undefined, senhaParaInformar: r.senhaParaInformar as string | undefined };
+  }
+  const senha = opcoes.gerarSenha ? senhaLocalGerada() : (opcoes.senha || "").trim();
+  gravarSenhaLocal(profile.email, senha);
+  await gravarMarcasSenha(profile, opcoes);
+  return { emailSent: false, emailReason: "modo demonstração", senhaParaInformar: opcoes.gerarSenha ? senha : undefined };
+}
+
+export async function gravarMarcasSenha(profile: HubProfile, opcoes: Pick<OpcoesSenha, "exigirTroca" | "bloquearTroca">): Promise<HubProfile[]> {
+  if (getUsersSource() === "supabase") {
+    await chamarAdminUsers({ action: "marcas-senha", ...corpoPerfil(profile), exigirTroca: !opcoes.bloquearTroca && opcoes.exigirTroca, bloquearTroca: opcoes.bloquearTroca }, "Não foi possível gravar as opções de senha.");
+    window.dispatchEvent(new Event("hub:users"));
+    return listAppUsers();
+  }
+  const users = loadLocalUsers().map((u) =>
+    u.email.toLowerCase() === profile.email.toLowerCase()
+      ? { ...u, senhaTrocaBloqueada: opcoes.bloquearTroca, senhaProvisoria: !opcoes.bloquearTroca && opcoes.exigirTroca, updatedAt: new Date().toISOString() }
+      : u
+  );
+  saveLocalUsers(users);
+  return sortUsers(users);
+}
+
+/** O próprio usuário troca a senha (confere a senha atual no servidor). */
+export async function trocarMinhaSenha(email: string, senhaAtual: string, novaSenha: string) {
+  if (novaSenha.length < 8) throw new Error("A nova senha precisa ter pelo menos 8 caracteres.");
+  if (!/[A-Za-zÀ-ÿ]/.test(novaSenha) || !/\d/.test(novaSenha)) throw new Error("Use letras e números na nova senha.");
+  if (novaSenha === senhaAtual) throw new Error("A nova senha precisa ser diferente da atual.");
+  if (getUsersSource() === "supabase") {
+    await chamarAdminUsers({ action: "trocar-propria-senha", senhaAtual, novaSenha }, "Não foi possível trocar a senha.");
+    return;
+  }
+  const local = loadLocalUsers().find((u) => u.email.toLowerCase() === email.toLowerCase());
+  if (local?.senhaTrocaBloqueada && !local.senhaProvisoria) throw new Error("A troca de senha está bloqueada pela coordenação. Fale com o administrador.");
+  if (senhaAtual !== senhaLocalDe(email)) throw new Error("Senha atual incorreta.");
+  gravarSenhaLocal(email, novaSenha);
+  saveLocalUsers(loadLocalUsers().map((u) => (u.email.toLowerCase() === email.toLowerCase() ? { ...u, senhaProvisoria: false } : u)));
 }
 
 function sortUsers(users: HubProfile[]) {

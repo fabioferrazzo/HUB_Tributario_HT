@@ -29,33 +29,52 @@ export default async function handler(request) {
   if (!payload.ok) return json(400, { error: payload.error });
 
   const body = payload.value;
-  const profile = normalizeProfile(body);
-  const password = String(body.password || "").trim();
   const action = String(body.action || "upsert-user");
-
-  if (!profile.email || !profile.nome) {
-    return json(400, { error: "Nome e e-mail são obrigatórios." });
-  }
-
-  if (!ROLES.has(profile.role)) {
-    return json(400, { error: "Perfil inválido." });
-  }
-
-  if ((action === "reset-password" || body.createAuthUser !== false) && password.length < 8) {
-    return json(400, { error: "Informe uma senha inicial com pelo menos 8 caracteres." });
-  }
+  const ctx = { supabaseUrl, supabaseAnonKey, serviceRoleKey };
 
   try {
     const authUser = await verifySession(supabaseUrl, supabaseAnonKey, token);
+
+    // Troca da própria senha: qualquer usuário ativo, salvo bloqueio do administrador.
+    if (action === "trocar-propria-senha") {
+      return json(200, await trocarPropriaSenha(ctx, authUser, body));
+    }
+
+    const profile = normalizeProfile(body);
+    if (!profile.email || !profile.nome) {
+      return json(400, { error: "Nome e e-mail são obrigatórios." });
+    }
+    if (!ROLES.has(profile.role)) {
+      return json(400, { error: "Perfil inválido." });
+    }
+
     await assertAdminCaller(supabaseUrl, serviceRoleKey, authUser.id);
+
+    const marcas = lerMarcasDeSenha(body);
+    // Confere antes de criar/alterar qualquer coisa se o banco já tem as marcas de senha (patch_senhas_v2.sql).
+    if (action === "marcas-senha" || action === "reset-password" || body.createAuthUser !== false) {
+      await lerPerfilParaSenha(ctx, authUser.id);
+    }
+    const gerarSenha = body.gerarSenha === true;
+    const precisaSenha = action === "reset-password" || (action === "upsert-user" && body.createAuthUser !== false);
+    const password = precisaSenha ? (gerarSenha ? gerarSenhaProvisoria() : String(body.password || "").trim()) : "";
+    if (precisaSenha && password.length < 8) {
+      return json(400, { error: "Informe uma senha inicial com pelo menos 8 caracteres." });
+    }
+
+    // Só as marcas (exigir troca / bloquear troca), sem mexer na senha.
+    if (action === "marcas-senha") {
+      if (!profile.id) return json(400, { error: "ID do usuário não informado." });
+      await gravarMarcasDeSenha(ctx, profile.id, marcas);
+      return json(200, { ok: true, marcas });
+    }
 
     if (action === "reset-password") {
       if (!profile.id) {
         return json(400, { error: "ID Auth Supabase não informado para redefinir senha." });
       }
 
-      // Somente o admin define senhas: o banco so aceita a troca com esta autorizacao
-      // (ver supabase/patch_senhas_somente_admin.sql).
+      // O banco só aceita a troca com esta autorização (ver supabase/patch_senhas_somente_admin.sql).
       await authorizePasswordChange(supabaseUrl, serviceRoleKey, profile.id, authUser.id);
       try {
         await resetAuthUserPassword(supabaseUrl, serviceRoleKey, profile.id, password);
@@ -63,13 +82,15 @@ export default async function handler(request) {
         await revokePasswordAuthorization(supabaseUrl, serviceRoleKey, profile.id);
         throw resetError;
       }
-      const email = await sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, authUser.id);
-      return json(200, { ok: true, ...email });
+      await gravarMarcasDeSenha(ctx, profile.id, marcas);
+      const email = await sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, authUser.id, { novo: false, exigirTroca: marcas.senha_provisoria });
+      return json(200, { ok: true, ...email, ...senhaParaOAdmin(email, gerarSenha, password) });
     }
 
     let userId = profile.id;
+    const criando = body.createAuthUser !== false;
 
-    if (body.createAuthUser !== false) {
+    if (criando) {
       const created = await createAuthUser(supabaseUrl, serviceRoleKey, profile, password);
       userId = created.user?.id || created.id || created.user_id;
     }
@@ -86,10 +107,141 @@ export default async function handler(request) {
       active: profile.active
     });
 
-    return json(200, { profile: savedProfile });
+    if (!criando) return json(200, { profile: savedProfile });
+
+    await gravarMarcasDeSenha(ctx, userId, marcas);
+    const email = await sendPasswordResetEmail(supabaseUrl, serviceRoleKey, { ...profile, id: userId }, password, authUser.id, { novo: true, exigirTroca: marcas.senha_provisoria });
+    return json(200, { profile: savedProfile, ...email, ...senhaParaOAdmin(email, gerarSenha, password) });
   } catch (error) {
     const statusCode = error.statusCode && error.statusCode >= 400 ? error.statusCode : 400;
     return json(statusCode, { error: toPublicMessage(error) });
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Senhas v2 (27/11/2026): troca pelo próprio usuário, senha provisória e bloqueio por usuário.
+
+const LETRAS_SENHA = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+
+/** Senha provisória aleatória (sem caracteres que se confundem: 0/O, 1/l/I), ex.: "Kp7q-Xm3r-T9wz". */
+export function gerarSenhaProvisoria() {
+  for (;;) {
+    const bytes = crypto.getRandomValues(new Uint32Array(12));
+    const letras = Array.from(bytes, (n) => LETRAS_SENHA[n % LETRAS_SENHA.length]).join("");
+    if (/[A-Z]/.test(letras) && /[a-z]/.test(letras) && /\d/.test(letras)) {
+      return `${letras.slice(0, 4)}-${letras.slice(4, 8)}-${letras.slice(8, 12)}`;
+    }
+  }
+}
+
+/** Bloquear a troca e exigir troca no primeiro acesso não combinam: o bloqueio prevalece. */
+export function lerMarcasDeSenha(body) {
+  const bloqueada = body.bloquearTroca === true;
+  return { senha_troca_bloqueada: bloqueada, senha_provisoria: !bloqueada && body.exigirTroca !== false };
+}
+
+/** A senha só volta para a tela do administrador quando foi gerada pelo HUB e o e-mail não saiu. */
+function senhaParaOAdmin(email, gerada, password) {
+  return gerada && !email.emailSent ? { senhaParaInformar: password } : {};
+}
+
+async function gravarMarcasDeSenha(ctx, userId, marcas) {
+  try {
+    await supabaseRequest(`${trimUrl(ctx.supabaseUrl)}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      headers: { ...serviceHeaders(ctx.serviceRoleKey), "content-type": "application/json", prefer: "return=minimal" },
+      body: JSON.stringify(marcas)
+    });
+  } catch (error) {
+    if (/senha_provisoria|senha_troca_bloqueada|column/i.test(error?.message || "")) {
+      throw httpError(500, "Atualização pendente no banco: execute supabase/patch_senhas_v2.sql no Supabase.");
+    }
+    throw error;
+  }
+}
+
+async function lerPerfilParaSenha(ctx, userId) {
+  try {
+    const rows = await supabaseRequest(
+      `${trimUrl(ctx.supabaseUrl)}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,nome,role,active,senha_provisoria,senha_troca_bloqueada&limit=1`,
+      { headers: serviceHeaders(ctx.serviceRoleKey) }
+    );
+    return Array.isArray(rows) ? rows[0] : null;
+  } catch (error) {
+    if (/senha_provisoria|senha_troca_bloqueada|column/i.test(error?.message || "")) {
+      throw httpError(500, "Atualização pendente no banco: execute supabase/patch_senhas_v2.sql no Supabase.");
+    }
+    throw error;
+  }
+}
+
+async function conferirSenhaAtual(ctx, email, senha) {
+  const resposta = await fetch(`${trimUrl(ctx.supabaseUrl)}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: ctx.supabaseAnonKey, "content-type": "application/json" },
+    body: JSON.stringify({ email, password: senha })
+  });
+  return resposta.ok;
+}
+
+export async function trocarPropriaSenha(ctx, authUser, body) {
+  const atual = String(body.senhaAtual || "");
+  const nova = String(body.novaSenha || "");
+  const perfil = await lerPerfilParaSenha(ctx, authUser.id);
+  if (!perfil?.active) throw httpError(403, "Usuário desativado.");
+  const admin = perfil.role === "admin";
+  if (perfil.senha_troca_bloqueada && !perfil.senha_provisoria && !admin) {
+    throw httpError(403, "A troca de senha está bloqueada pela coordenação. Fale com o administrador.");
+  }
+  if (nova.length < 8) throw httpError(400, "A nova senha precisa ter pelo menos 8 caracteres.");
+  if (!/[A-Za-zÀ-ÿ]/.test(nova) || !/\d/.test(nova)) throw httpError(400, "Use letras e números na nova senha.");
+  if (nova === atual) throw httpError(400, "A nova senha precisa ser diferente da atual.");
+  if (!(await conferirSenhaAtual(ctx, perfil.email || authUser.email, atual))) {
+    throw httpError(400, "Senha atual incorreta.");
+  }
+
+  await authorizePasswordChange(ctx.supabaseUrl, ctx.serviceRoleKey, authUser.id, authUser.id);
+  try {
+    await resetAuthUserPassword(ctx.supabaseUrl, ctx.serviceRoleKey, authUser.id, nova);
+  } catch (error) {
+    await revokePasswordAuthorization(ctx.supabaseUrl, ctx.serviceRoleKey, authUser.id);
+    throw error;
+  }
+  if (perfil.senha_provisoria) {
+    await gravarMarcasDeSenha(ctx, authUser.id, { senha_provisoria: false, senha_troca_bloqueada: Boolean(perfil.senha_troca_bloqueada) });
+  }
+  if (!admin) await avisarAdminsTrocaDeSenha(ctx, perfil);
+  return { ok: true };
+}
+
+/** Sino dos administradores: "Fulano alterou a própria senha" (sem a senha, claro). */
+async function avisarAdminsTrocaDeSenha(ctx, perfil) {
+  try {
+    const admins = await supabaseRequest(`${trimUrl(ctx.supabaseUrl)}/rest/v1/profiles?role=eq.admin&active=eq.true&select=id`, {
+      headers: serviceHeaders(ctx.serviceRoleKey)
+    });
+    const agora = new Date().toISOString();
+    const linhas = (Array.isArray(admins) ? admins : []).map((a) => ({
+      user_id: a.id,
+      tipo: "seguranca_senha",
+      titulo: "Senha alterada pelo usuário",
+      body: `${perfil.nome || perfil.email} alterou a própria senha no HUB.`,
+      meta: JSON.stringify({ userId: perfil.id, email: perfil.email }),
+      dedupe_key: `senha_propria:${perfil.id}:${Date.now()}`,
+      route: "admin",
+      tone: "info",
+      active: true,
+      created_at: agora,
+      updated_at: agora
+    }));
+    if (!linhas.length) return;
+    await supabaseRequest(`${trimUrl(ctx.supabaseUrl)}/rest/v1/notificacoes`, {
+      method: "POST",
+      headers: { ...serviceHeaders(ctx.serviceRoleKey), "content-type": "application/json", prefer: "return=minimal" },
+      body: JSON.stringify(linhas)
+    });
+  } catch (error) {
+    console.warn("Não foi possível avisar os administradores da troca de senha.", error?.message || error);
   }
 }
 
@@ -187,19 +339,28 @@ async function revokePasswordAuthorization(supabaseUrl, serviceRoleKey, userId) 
 // A senha provisoria nunca e gravada no banco: o e-mail sai na hora (quando o envio
 // esta ativo no Netlify) e a fila email_outbox guarda apenas um registro SEM a senha.
 // Motivo: a fila pode ser consultada por gestores e o envio pode estar desligado.
-async function sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy) {
+async function sendPasswordResetEmail(supabaseUrl, serviceRoleKey, profile, password, createdBy, opcoes = {}) {
   const appUrl = getAppBaseUrl();
-  const subject = "Senha provisória do HUB Depto Tributário";
+  const novo = opcoes.novo === true;
+  const exigirTroca = opcoes.exigirTroca !== false;
+  const subject = novo ? "Seu acesso ao HUB Depto Tributário" : "Senha provisória do HUB Depto Tributário";
   const dedupeKey = `password_reset:${profile.id}:${Date.now()}`;
+  const abertura = novo
+    ? `Olá, ${profile.nome}! Seu acesso ao HUB Depto Tributário da H. Teixeira foi criado.`
+    : "Uma senha provisória foi gerada para seu acesso ao HUB Depto Tributário.";
+  const rotuloSenha = exigirTroca ? "Senha provisória" : "Senha";
+  const aviso = exigirTroca ? "No primeiro acesso, o HUB vai pedir que você crie uma senha nova, só sua." : "";
   const htmlBody = (secret) =>
-    "<p>Uma senha provisória foi gerada para seu acesso ao HUB Depto Tributário.</p>" +
+    `<p>${escapeHtml(abertura)}</p>` +
     `<p><strong>E-mail:</strong> ${escapeHtml(profile.email)}</p>` +
-    `<p><strong>Senha provisória:</strong> ${escapeHtml(secret)}</p>` +
+    `<p><strong>${rotuloSenha}:</strong> ${escapeHtml(secret)}</p>` +
+    (aviso ? `<p>${escapeHtml(aviso)}</p>` : "") +
     `<p>Acesse: <a href="${escapeHtml(appUrl)}">${escapeHtml(appUrl)}</a></p>`;
   const textBody = (secret) =>
-    "Uma senha provisória foi gerada para seu acesso ao HUB Depto Tributário.\n" +
+    `${abertura}\n` +
     `E-mail: ${profile.email}\n` +
-    `Senha provisória: ${secret}\n` +
+    `${rotuloSenha}: ${secret}\n` +
+    (aviso ? `${aviso}\n` : "") +
     `Acesse: ${appUrl}`;
 
   let result = { emailSent: false, emailReason: "envio de e-mails desativado no Netlify (EMAIL_DELIVERY_ENABLED)" };

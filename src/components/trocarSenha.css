@@ -1,0 +1,207 @@
+/* Trocar senha: folha clara (legível nos dois temas), centralizada sobre um véu. */
+.trocar-senha-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 16, 32, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.trocar-senha {
+  display: grid;
+  gap: 12px;
+  width: min(440px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 22px 22px 18px;
+  border: 1px solid rgba(40, 44, 56, 0.12);
+  border-radius: 20px;
+  background: #ffffff;
+  color: #1a2033;
+  box-shadow: 0 30px 70px -30px rgba(10, 16, 32, 0.6);
+  color-scheme: light;
+  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+.trocar-senha__topo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.trocar-senha__icone {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(15, 143, 142, 0.12);
+  color: #0a6e6d;
+}
+
+.trocar-senha h2 {
+  margin: 0 0 4px;
+  color: #111830;
+  font-family: Nunito, "Segoe UI", system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.trocar-senha__topo p {
+  margin: 0;
+  color: #4a5266;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.trocar-senha__fechar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(40, 44, 56, 0.14);
+  border-radius: 10px;
+  background: #fff;
+  color: #3d4456;
+  cursor: pointer;
+}
+
+.trocar-senha label {
+  display: grid;
+  gap: 5px;
+  color: #3d4456;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.trocar-senha input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(40, 44, 56, 0.2);
+  border-radius: 12px;
+  background: #fff;
+  color: #1a2033;
+  font: inherit;
+  font-weight: 500;
+  font-size: 14.5px;
+}
+
+.trocar-senha input:focus-visible,
+.trocar-senha button:focus-visible {
+  outline: 2px solid #0f8f8e;
+  outline-offset: 2px;
+}
+
+.trocar-senha__mostrar {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-self: start;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: #0a6e6d;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trocar-senha__regras {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f4f6f9;
+  list-style: none;
+  color: #5b6274;
+  font-size: 12.5px;
+}
+
+.trocar-senha__regras li {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.trocar-senha__regras li svg {
+  opacity: 0.35;
+}
+
+.trocar-senha__regras li.ok {
+  color: #0a6e6d;
+  font-weight: 600;
+}
+
+.trocar-senha__regras li.ok svg {
+  opacity: 1;
+}
+
+.trocar-senha__erro {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #9b2c12;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.trocar-senha__ok {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(15, 143, 142, 0.12);
+  color: #0a6e6d;
+  font-weight: 600;
+}
+
+.trocar-senha__acoes {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.trocar-senha__acoes .primary-action {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+}
+
+.trocar-senha__acoes .primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.trocar-senha__sair {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 42px;
+  margin-right: auto;
+  padding: 0 14px;
+  border: 1px solid rgba(40, 44, 56, 0.16);
+  border-radius: 12px;
+  background: #fff;
+  color: #3d4456;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trocar-senha-fundo {
+    backdrop-filter: none;
+  }
+}

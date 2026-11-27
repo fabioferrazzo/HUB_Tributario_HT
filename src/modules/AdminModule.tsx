@@ -1,5 +1,5 @@
 import { APP_RELEASE_LABEL, HOMOLOGATION_STORAGE_KEY, dailyOperationalGuide, homologationBlocks, homologationStatusLabels, roleOptions, weeklyOperationalGuide } from "../app/appConfig";
-import { CheckCircle2, Edit3, UserRound, UserRoundCog } from "lucide-react";
+import { CheckCircle2, Copy, Edit3, Eye, EyeOff, KeyRound, Lock, UserRound, UserRoundCog } from "lucide-react";
 import type { CoordSyncHealth, EmailOperationResponse, EmailQueuePreviewItem, HomologationStatus } from "../app/appTypes";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { HubProfile, HubUser, UserRole } from "../types";
@@ -7,7 +7,7 @@ import { PanelHeader, StatusPill } from "../components/common";
 import { buildOperationalHealthChecks, readHomologationStatuses } from "../lib/healthChecks";
 import { formatDateTime, formatRole, getActiveProfiles, getErrorMessage, getInitials, getProfileKey } from "../lib/formatters";
 import { getSupabaseAccessToken } from "../lib/auth";
-import { getUsersSource, listAppUsers, resetAppUserPassword, saveAppUserWithOptions, setAppUserActive } from "../lib/usersRepository";
+import { criarUsuario, getUsersSource, gravarMarcasSenha, listAppUsers, redefinirSenha, saveAppUserWithOptions, setAppUserActive, type ResultadoEnvioSenha } from "../lib/usersRepository";
 import "./escritorioPremium.css";
 
 export function AdminModule({ currentUser }: { currentUser: HubUser }) {
@@ -20,10 +20,16 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
   const [authId, setAuthId] = useState("");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [initialPassword, setInitialPassword] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("");
   const [role, setRole] = useState<UserRole>("colaborador");
   const [active, setActive] = useState(true);
+  // Senha: o HUB gera (e envia por e-mail) ou o administrador digita; na edição, redefinir é opcional.
+  const [modoSenha, setModoSenha] = useState<"nao" | "gerar" | "digitar">("gerar");
+  const [senhaDigitada, setSenhaDigitada] = useState("");
+  const [exigirTroca, setExigirTroca] = useState(true);
+  const [bloquearTroca, setBloquearTroca] = useState(false);
+  const [marcasOriginais, setMarcasOriginais] = useState({ exigirTroca: true, bloquearTroca: false });
+  const [senhaParaInformar, setSenhaParaInformar] = useState<{ nome: string; senha: string } | null>(null);
+  const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [coordHealth, setCoordHealth] = useState<CoordSyncHealth>({
     status: "Não consultado",
     detail: "A sincronização da Coordenação será conferida neste painel.",
@@ -127,79 +133,86 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
     setAuthId("");
     setNome("");
     setEmail("");
-    setInitialPassword("");
-    setTemporaryPassword("");
     setRole("colaborador");
     setActive(true);
+    setModoSenha("gerar");
+    setSenhaDigitada("");
+    setExigirTroca(true);
+    setBloquearTroca(false);
+    setMarcasOriginais({ exigirTroca: true, bloquearTroca: false });
   }
 
   function startEdit(profile: HubProfile) {
     setNotice("");
+    setSenhaParaInformar(null);
     setEditingKey(getProfileKey(profile));
     setAuthId(profile.id || "");
     setNome(profile.nome);
     setEmail(profile.email);
-    setInitialPassword("");
-    setTemporaryPassword("");
     setRole(profile.role);
     setActive(profile.active);
+    setModoSenha("nao");
+    setSenhaDigitada("");
+    const marcas = { exigirTroca: Boolean(profile.senhaProvisoria), bloquearTroca: Boolean(profile.senhaTrocaBloqueada) };
+    setExigirTroca(marcas.exigirTroca);
+    setBloquearTroca(marcas.bloquearTroca);
+    setMarcasOriginais(marcas);
+  }
+
+  function mensagemEnvio(r: ResultadoEnvioSenha, quem: string, inicio: string) {
+    const primeiroAcesso = !bloquearTroca && exigirTroca ? " No primeiro acesso, o HUB pedirá uma senha nova." : "";
+    if (r.emailSent) return `${inicio} A senha foi enviada por e-mail para ${email.trim()}.${primeiroAcesso}`;
+    if (r.senhaParaInformar) {
+      setSenhaParaInformar({ nome: quem, senha: r.senhaParaInformar });
+      setSenhaVisivel(false);
+      return `${inicio} O e-mail não saiu (${r.emailReason || "envio indisponível"}): a senha está guardada abaixo para você informar pessoalmente.${primeiroAcesso}`;
+    }
+    return `${inicio} O e-mail não saiu (${r.emailReason || "envio indisponível"}): informe a senha ao usuário pessoalmente.${primeiroAcesso}`;
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!nome.trim() || !email.trim()) return;
-    if (source === "supabase" && !editingKey && initialPassword.trim().length < 8) {
-      setError("Informe uma senha inicial com pelo menos 8 caracteres.");
-      return;
-    }
-    if (source === "supabase" && editingKey && temporaryPassword.trim() && temporaryPassword.trim().length < 8) {
-      setError("Informe uma senha provisória com pelo menos 8 caracteres.");
+    if (modoSenha === "digitar" && senhaDigitada.trim().length < 8) {
+      setError("Informe uma senha com pelo menos 8 caracteres ou deixe o HUB gerar a senha provisória.");
       return;
     }
 
     setSaving(true);
     setError("");
     setNotice("");
+    setSenhaParaInformar(null);
+
+    const perfil: HubProfile = {
+      id: authId || editingKey || undefined,
+      nome: nome.trim(),
+      email: email.trim(),
+      iniciais: getInitials(nome),
+      role,
+      active
+    };
+    const opcoes = { gerarSenha: modoSenha === "gerar", senha: senhaDigitada, exigirTroca, bloquearTroca };
 
     try {
-      const saved = await saveAppUserWithOptions(
-        {
-          id: authId || editingKey || undefined,
-          nome: nome.trim(),
-          email: email.trim(),
-          iniciais: getInitials(nome),
-          role,
-          active
-        },
-        {
-          createAuthUser: source === "supabase" && !editingKey && !authId,
-          password: initialPassword.trim()
-        }
-      );
-      setUsers(saved);
-
-      if (source === "supabase" && editingKey && temporaryPassword.trim()) {
-        const resetResult = await resetAppUserPassword(
-          {
-            id: authId || editingKey || undefined,
-            nome: nome.trim(),
-            email: email.trim(),
-            iniciais: getInitials(nome),
-            role,
-            active
-          },
-          temporaryPassword
-        );
-
-        setNotice(
-          resetResult.emailSent
-            ? "Usuário atualizado. Senha provisória redefinida e enviada por e-mail ao usuário."
-            : `Usuário atualizado. Senha provisória redefinida; o e-mail não foi enviado (${resetResult.emailReason || "envio indisponível"}). Informe a senha ao usuário pessoalmente.`
-        );
-      } else {
-        setNotice(editingKey ? "Usuário atualizado." : "Usuário salvo.");
+      if (!editingKey) {
+        const r = await criarUsuario(perfil, opcoes);
+        setUsers(r.users);
+        setNotice(mensagemEnvio(r, perfil.nome, `Usuário ${perfil.nome} criado.`));
+        resetForm();
+        return;
       }
 
+      let saved = await saveAppUserWithOptions(perfil, { createAuthUser: false });
+      if (modoSenha !== "nao") {
+        const r = await redefinirSenha(perfil, opcoes);
+        saved = await listAppUsers();
+        setNotice(mensagemEnvio(r, perfil.nome, "Usuário atualizado e senha redefinida."));
+      } else {
+        const marcasMudaram = exigirTroca !== marcasOriginais.exigirTroca || bloquearTroca !== marcasOriginais.bloquearTroca;
+        if (marcasMudaram) saved = await gravarMarcasSenha(perfil, { exigirTroca, bloquearTroca });
+        setNotice(marcasMudaram ? "Usuário atualizado (opções de senha gravadas)." : "Usuário atualizado.");
+      }
+      setUsers(saved);
       resetForm();
     } catch (saveError) {
       setError(getErrorMessage(saveError));
@@ -240,6 +253,24 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
 
         {error ? <p className="module-error">{error}</p> : null}
         {notice ? <p className="module-notice">{notice}</p> : null}
+        {senhaParaInformar ? (
+          <div className="admin-senha-informar" role="status">
+            <span>
+              Senha de <strong>{senhaParaInformar.nome}</strong>:{" "}
+              <code>{senhaVisivel ? senhaParaInformar.senha : "•••• •••• ••••"}</code>
+            </span>
+            <button type="button" onClick={() => setSenhaVisivel((v) => !v)} aria-pressed={senhaVisivel}>
+              {senhaVisivel ? <EyeOff size={14} strokeWidth={1.6} /> : <Eye size={14} strokeWidth={1.6} />}
+              {senhaVisivel ? "Ocultar" : "Mostrar"}
+            </button>
+            <button type="button" onClick={() => void navigator.clipboard?.writeText(senhaParaInformar.senha)}>
+              <Copy size={14} strokeWidth={1.6} /> Copiar
+            </button>
+            <button type="button" onClick={() => setSenhaParaInformar(null)}>
+              Já informei
+            </button>
+          </div>
+        ) : null}
 
         <div className="admin-summary">
           <article>
@@ -268,6 +299,20 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
                 <strong>{profile.nome}</strong>
                 <span>{profile.email}</span>
                 <small>{formatRole(profile.role)}</small>
+                {profile.senhaProvisoria || profile.senhaTrocaBloqueada ? (
+                  <span className="admin-user-senha">
+                    {profile.senhaProvisoria ? (
+                      <em className="admin-user-selo admin-user-selo--provisoria">
+                        <KeyRound size={12} strokeWidth={1.8} aria-hidden="true" /> Senha provisória
+                      </em>
+                    ) : null}
+                    {profile.senhaTrocaBloqueada ? (
+                      <em className="admin-user-selo">
+                        <Lock size={12} strokeWidth={1.8} aria-hidden="true" /> Troca de senha bloqueada
+                      </em>
+                    ) : null}
+                  </span>
+                ) : null}
               </div>
               <StatusPill label={profile.active ? "ativo" : "inativo"} />
               <div className="record-actions">
@@ -342,33 +387,47 @@ export function AdminModule({ currentUser }: { currentUser: HubUser }) {
               ))}
             </select>
           </label>
-          {source === "supabase" && !editingKey ? (
-            <label>
-              Senha inicial
-              <input
-                autoComplete="new-password"
-                minLength={8}
-                onChange={(event) => setInitialPassword(event.target.value)}
-                type="password"
-                value={initialPassword}
-                required
-              />
+          <fieldset className="admin-senha">
+            <legend>Senha</legend>
+            {editingKey ? (
+              <label className="toggle-row">
+                <input type="radio" name="modo-senha" checked={modoSenha === "nao"} onChange={() => setModoSenha("nao")} />
+                Manter a senha atual
+              </label>
+            ) : null}
+            <label className="toggle-row">
+              <input type="radio" name="modo-senha" checked={modoSenha === "gerar"} onChange={() => setModoSenha("gerar")} />
+              {editingKey ? "Gerar nova senha provisória e enviar por e-mail" : "Gerar senha provisória e enviar por e-mail"}
             </label>
-          ) : null}
-          {source === "supabase" && editingKey ? (
-            <label>
-              Nova senha provisória
-              <input
-                autoComplete="new-password"
-                minLength={8}
-                onChange={(event) => setTemporaryPassword(event.target.value)}
-                placeholder="Opcional"
-                type="password"
-                value={temporaryPassword}
-              />
-              <small className="form-hint">Preencha somente se quiser redefinir a senha deste usuário.</small>
+            <label className="toggle-row">
+              <input type="radio" name="modo-senha" checked={modoSenha === "digitar"} onChange={() => setModoSenha("digitar")} />
+              Definir a senha eu mesmo
             </label>
-          ) : null}
+            {modoSenha === "digitar" ? (
+              <label>
+                Senha (mínimo 8 caracteres)
+                <input autoComplete="new-password" minLength={8} onChange={(event) => setSenhaDigitada(event.target.value)} type="password" value={senhaDigitada} />
+              </label>
+            ) : null}
+            <label className="toggle-row">
+              <input
+                checked={exigirTroca && !bloquearTroca}
+                disabled={bloquearTroca}
+                onChange={(event) => setExigirTroca(event.target.checked)}
+                type="checkbox"
+              />
+              Exigir troca de senha no primeiro acesso
+            </label>
+            <label className="toggle-row">
+              <input checked={bloquearTroca} onChange={(event) => setBloquearTroca(event.target.checked)} type="checkbox" />
+              Impedir que o usuário troque a senha
+            </label>
+            <small className="form-hint">
+              {bloquearTroca
+                ? "A senha fica como você definiu: o usuário não vê a opção \u201cTrocar senha\u201d. Só você pode alterá-la."
+                : "O usuário pode trocar a própria senha pelo menu \u201cTrocar senha\u201d; você é avisado no sino quando ele trocar."}
+            </small>
+          </fieldset>
           <label className="toggle-row">
             <input checked={active} onChange={(event) => setActive(event.target.checked)} type="checkbox" />
             Usuário ativo
