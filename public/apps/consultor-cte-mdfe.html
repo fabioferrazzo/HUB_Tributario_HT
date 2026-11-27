@@ -2491,7 +2491,7 @@ html.ht-premium :is(.app-tab,.btn,.win-btn,.icon-btn,.example-filter,.wizard-dot
     // v2.4: em duas colunas, a coluna do formulário tem rolagem própria — volta ao topo dela sem mexer na página
     const col = document.querySelector('.guided-form-col');
     if (col && col.scrollHeight > col.clientHeight && getComputedStyle(col).overflowY === 'auto') col.scrollTo({ top: 0, behavior: 'smooth' });
-    else document.querySelector('#guidedForm').scrollIntoView({behavior:'smooth', block:'start'});
+    else (document.querySelector('.wizard-shell') || document.querySelector('#guidedForm')).scrollIntoView({behavior:'smooth', block:'start'});
   }
 
   function initTabs() {
@@ -3636,6 +3636,27 @@ html.ht-premium :is(.app-tab,.btn,.win-btn,.icon-btn,.example-filter,.wizard-dot
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
 })(typeof window!=='undefined'?window:globalThis);
 
+</script>
+<script>
+// Rolagem que para logo abaixo das barras fixas (cabeçalho do app e abas Consulta guiada/Exemplos/Relatório):
+// antes, ao trocar de etapa ou gerar a análise, o começo do conteúdo ficava escondido atrás delas.
+(function(){
+  function alturaFixa(sel){
+    const el=document.querySelector(sel); if(!el||el.hidden) return 0;
+    const cs=getComputedStyle(el); if(cs.position!=='sticky'&&cs.position!=='fixed') return 0;
+    return Math.max(0,(parseFloat(cs.top)||0)+el.getBoundingClientRect().height);
+  }
+  function ajustar(){
+    const topo=Math.max(alturaFixa('.topbar'),alturaFixa('.app-tabs'));
+    document.documentElement.style.setProperty('--consultor-rolagem-topo',Math.round(topo+12)+'px');
+  }
+  const css=document.createElement('style');
+  css.textContent='.wizard-shell,#guidedForm,#resultPanel,#reportView{scroll-margin-top:var(--consultor-rolagem-topo,140px)}';
+  document.head.appendChild(css);
+  ajustar();
+  addEventListener('resize',ajustar);
+  if(window.ResizeObserver){const ro=new ResizeObserver(ajustar);['.topbar','.app-tabs'].forEach(q=>{const el=document.querySelector(q);if(el)ro.observe(el);});}
+})();
 </script>
 <script src="/apps/hub-app-shell.js" defer></script>
 </body>

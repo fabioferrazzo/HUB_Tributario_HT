@@ -663,3 +663,14 @@ body{font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-seri
 h1,h2{color:#0b1f3a;font-weight:800}
 .brand strong,.brand b{color:#0b1f3a}
 button{border-radius:9px}
+
+/* Competência em português por cima do seletor de mês do navegador (competencia-ptbr.js) */
+.competencia-ptbr{position:relative;display:inline-flex;align-items:stretch;min-width:0}
+.competencia-ptbr input{min-width:172px}
+/* Fora do foco o texto do navegador some e aparece o português; ao digitar no campo, volta o do navegador. */
+.competencia-ptbr--ativa input:not(:focus){color:transparent}
+.competencia-ptbr--ativa input:not(:focus)::-webkit-datetime-edit{color:transparent}
+.competencia-ptbr__texto{position:absolute;top:0;bottom:0;right:26px;display:none;align-items:center;pointer-events:none;white-space:nowrap;overflow:hidden}
+.competencia-ptbr--ativa .competencia-ptbr__texto{display:flex}
+.competencia-ptbr--ativa:focus-within .competencia-ptbr__texto{display:none}
+@media (max-width:720px){.workspace-bar .toolbar > .field:has(#competenceInput){grid-column:1/-1}.month-nav .competencia-ptbr{flex:1}.month-nav .competencia-ptbr input{min-width:0;width:100%}}

@@ -94,6 +94,18 @@ function auditar(arg) {
   const moldura = await page.locator(".frame-page").evaluate((el) => el.className);
   check("premium: moldura do HUB transparente (premium: true no cadastro)", /frame-page--premium/.test(moldura), moldura);
 
+  // Situações em português: nenhum código interno em inglês (BLOCKED, PENDING...) visível nas telas.
+  const codigos = [];
+  for (const pagina of ["dashboard", "closures", "reconciliation", "imports", "templates"]) {
+    await app().evaluate((p) => document.querySelector(`.nav button[data-page="${p}"]`)?.click(), pagina);
+    await page.waitForTimeout(250);
+    const achados = await app().evaluate(() => (document.querySelector("main")?.innerText || document.body.innerText).match(/\b(BLOCKED|BLOCKING|PENDING|READY_WITH_PENDING|CLOSED_CLEAN|CLOSED_WITH_PENDING|AUTO_MATCHED|UNMATCHED|REQUIRES_REVIEW|RECONCILED|CONFIRMED|DIVERGENT|ESTIMATED|NÃO FECHADO|SEM DADOS)\b/g) || []);
+    codigos.push(...achados.map((c) => `${pagina}:${c}`));
+  }
+  check("situações em português (sem códigos em inglês na tela)", codigos.length === 0, codigos.slice(0, 5).join(", "));
+  await app().evaluate(() => document.querySelector('.nav button[data-page="dashboard"]')?.click());
+  await page.waitForTimeout(250);
+
   // Diálogo: folha clara, legível no tema escuro.
   await app().evaluate(() => document.getElementById("backupDialog").showModal());
   await page.waitForTimeout(300);
