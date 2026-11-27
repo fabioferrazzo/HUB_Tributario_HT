@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-// Visual premium (beta): liga/desliga, tema (escuro/claro) e tamanho do texto (compacto/ampliado).
+// Visual premium (padrão H. Teixeira Premium): liga/desliga, tema (escuro/claro) e tamanho do texto (compacto/ampliado).
 // Fica guardado neste navegador e vale para o app inteiro (menu, cabeçalho, rodapé e Quadro geral).
-// Por enquanto só o administrador pode ligar; para os demais o visual atual continua igual.
+// Liberado para toda a equipe (27/11/2026) e ligado por padrão; quem preferir pode voltar ao visual clássico.
 
 export type TemaPremium = "escuro" | "claro";
 export type TamanhoPremium = "compacto" | "ampliado";
@@ -85,7 +85,8 @@ export function lerPaleta(): PaletaPremium {
 
 export function lerVisualPremium(): VisualPremium {
   return {
-    ativo: ler(ATIVO_KEY) === "1",
+    // Padrão: ligado. Só fica desligado se a pessoa escolheu o visual clássico ("0").
+    ativo: ler(ATIVO_KEY) !== "0",
     tema: ler(TEMA_KEY) === "claro" ? "claro" : "escuro",
     tamanho: ler(TAMANHO_KEY) === "ampliado" ? "ampliado" : "compacto",
     paleta: lerPaleta()

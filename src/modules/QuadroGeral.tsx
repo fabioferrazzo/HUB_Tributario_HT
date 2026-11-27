@@ -31,7 +31,7 @@ import { salvarVisualPremium, useVisualPremium } from "../lib/visualPremium";
 const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const AVISO_RECOLHIDO_KEY = "hub_quadro_geral_aviso_recolhido";
 const AGENDA_ITENS_POR_DIA = 4;
-// Visual premium (beta): por enquanto só o administrador vê a opção; a equipe segue no visual atual.
+// Visual premium: padrão para toda a equipe; quem escolheu o visual clássico pode voltar ao premium por aqui.
 const QuadroPremium = lazy(() => import("./QuadroPremium").then((modulo) => ({ default: modulo.QuadroPremium })));
 
 function inicioDoDia(data: Date) {
@@ -332,7 +332,7 @@ export function QuadroGeral({
 
   const rotaAgenda = rotaDoApp("agenda");
 
-  const podeVisualPremium = user.role === "admin";
+  const podeVisualPremium = true;
   const visual = useVisualPremium(podeVisualPremium);
   function alternarVisualPremium(ativo: boolean) {
     salvarVisualPremium({ ativo });
@@ -404,8 +404,8 @@ export function QuadroGeral({
           </button>
         ) : null}
         {podeVisualPremium ? (
-          <button type="button" className="btn-mini qg-visual-premium" onClick={() => alternarVisualPremium(true)} title="Ver o Quadro geral no novo visual (só você vê esta opção)">
-            <Sparkles size={13} strokeWidth={1.6} /> Visual premium (beta)
+          <button type="button" className="btn-mini qg-visual-premium" onClick={() => alternarVisualPremium(true)} title="Voltar ao visual premium">
+            <Sparkles size={13} strokeWidth={1.6} /> Visual premium
           </button>
         ) : null}
       </div>

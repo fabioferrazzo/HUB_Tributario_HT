@@ -24,7 +24,7 @@ import { pautaRichTextToPlain } from "../lib/richText";
 import { abrirPersonalizarVisual, salvarVisualPremium, type TamanhoPremium, type TemaPremium } from "../lib/visualPremium";
 import "./quadroPremium.css";
 
-// Quadro geral no visual premium (beta, só para o administrador por enquanto).
+// Quadro geral no visual premium (padrão da equipe).
 // Usa os mesmos dados e as mesmas ações do Quadro geral atual; muda só a apresentação:
 // grade em blocos, vidro fosco e luzes, tema escuro ou claro e texto compacto ou ampliado.
 
@@ -258,8 +258,8 @@ export function QuadroPremium(props: QuadroPremiumProps) {
             >
               <Palette size={19} strokeWidth={1.6} />
             </button>
-            <button type="button" className="qp-botao" onClick={onSair} title="Voltar ao visual atual do Quadro geral">
-              <LayoutGrid size={15} strokeWidth={1.6} /> Visual atual
+            <button type="button" className="qp-botao" onClick={onSair} title="Usar o visual clássico do HUB">
+              <LayoutGrid size={15} strokeWidth={1.6} /> Visual clássico
             </button>
           </div>
         </header>

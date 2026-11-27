@@ -134,8 +134,8 @@ export function App() {
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
-  // Visual premium (beta, só administrador): menu, cabeçalho, rodapé e Quadro geral com o novo tema.
-  const visual = useVisualPremium(user?.role === "admin");
+  // Visual premium (padrão da equipe): menu, cabeçalho, rodapé e telas no tema novo.
+  const visual = useVisualPremium(Boolean(user));
   useEffect(() => {
     const corpo = document.body;
     if (visual.ativo) corpo.dataset.hubPremium = visual.tema;

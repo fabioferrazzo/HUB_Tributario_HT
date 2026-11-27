@@ -14,7 +14,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   page.on("console", (m) => { if (m.type() === "error" && !/favicon|fonts\.g/.test(m.location().url + m.text())) errors.push(m.text()); });
 
   await page.goto(BASE + "/");
-  await page.evaluate(() => { localStorage.removeItem("hub_qg_visual_premium"); });
+  await page.evaluate(() => { localStorage.setItem("hub_qg_visual_premium", "0"); });
   await page.reload();
   await page.waitForSelector(".login-foto img");
   await page.waitForTimeout(600);
@@ -73,7 +73,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   check("entra no HUB pela nova tela", (await page.locator(".app-shell").count()) === 1);
 
   check("sem erros no console", errors.length === 0, errors.slice(0, 3).join(" | "));
-  await page.evaluate(() => { localStorage.removeItem("hub_qg_visual_premium"); localStorage.removeItem("hub_qp_tema"); });
+  await page.evaluate(() => { localStorage.setItem("hub_qg_visual_premium", "0"); localStorage.removeItem("hub_qp_tema"); });
   await browser.close();
   console.log(results.join("\n"));
 })().catch((e) => {

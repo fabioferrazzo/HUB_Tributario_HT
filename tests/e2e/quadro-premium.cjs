@@ -17,7 +17,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
   await page.goto(BASE + "/");
   await page.evaluate(() => {
-    localStorage.removeItem("hub_qg_visual_premium");
+    localStorage.setItem("hub_qg_visual_premium", "0");
     localStorage.removeItem("hub_qp_tema");
     localStorage.removeItem("hub_qp_tamanho");
     const hoje = new Date();
@@ -54,7 +54,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
 
   check("visual atual continua sendo o padrão", (await page.locator(".qg-colunas").count()) === 1 && (await page.locator(".qp").count()) === 0);
   const botao = page.locator("button.qg-visual-premium");
-  check("administrador vê a opção Visual premium (beta)", (await botao.count()) === 1);
+  check("quem está no visual clássico vê a opção Visual premium", (await botao.count()) === 1);
   await botao.click();
   await page.waitForSelector(".qp", { timeout: 8000 });
   await page.waitForTimeout(800);
@@ -193,13 +193,13 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "OK   " : "FALHA"}
   await page.setViewportSize({ width: 1600, height: 1000 });
 
   // Voltar ao visual atual.
-  await page.click(".qp button:has-text('Visual atual')");
+  await page.click(".qp button:has-text('Visual clássico')");
   await page.waitForTimeout(500);
-  check("Visual atual volta às três colunas", (await page.locator(".qg-colunas").count()) === 1 && (await page.locator(".qp").count()) === 0);
-  check("Visual atual tira o tema do menu e do cabeçalho", (await page.locator(".app-shell.hub-premium").count()) === 0);
+  check("Visual clássico volta às três colunas", (await page.locator(".qg-colunas").count()) === 1 && (await page.locator(".qp").count()) === 0);
+  check("Visual clássico tira o tema do menu e do cabeçalho", (await page.locator(".app-shell.hub-premium").count()) === 0);
 
   check("sem erros no console", errors.length === 0, errors.slice(0, 3).join(" | "));
-  await page.evaluate(() => localStorage.removeItem("hub_qg_visual_premium"));
+  await page.evaluate(() => localStorage.setItem("hub_qg_visual_premium", "0"));
   await browser.close();
   console.log(results.join("\n"));
 })().catch((e) => {

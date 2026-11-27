@@ -3,7 +3,7 @@
  * Inclua no <head> do app:  <script src="/apps/hub-premium-app.js"></script>
  *
  * - Dentro do HUB (iframe): segue o HUB. Só liga quando o HUB está com o visual premium
- *   (hoje, apenas para o administrador), e acompanha tema, tamanho e paleta na hora.
+ *   (padrão para toda a equipe), e acompanha tema, tamanho e paleta na hora.
  * - Aberto sozinho: liga se o visual premium foi ativado neste navegador.
  * - Coloca no <html> as classes  ht-premium  ht-premium--escuro|claro  ht-premium--compacto|ampliado
  *   e as variáveis da paleta (--ht-h, --ht-s, --ht-l-acento, --ht-l-texto, --ht-luz...).
@@ -55,7 +55,7 @@
   }
 
   function estadoLocal() {
-    if (ler("hub_qg_visual_premium") !== "1") return { ativo: false };
+    if (ler("hub_qg_visual_premium") === "0") return { ativo: false }; // padrão: ligado (só "0" = visual clássico)
     var vars = {};
     try {
       var p = JSON.parse(ler("ht_premium_paleta") || "null");
